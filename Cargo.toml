@@ -1,0 +1,3 @@
+[workspace]
+members = ["ura-core", "ura"]
+resolver = "2"

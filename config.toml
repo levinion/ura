@@ -1,0 +1,8 @@
+scale = 2.0
+xcursor_size = 48
+refresh = 60_000
+
+[keymap]
+"run alacritty" = ["mod", "t"]
+"run google-chrome-stable" = ["mod", "w"]
+"quit" = ["mod", "q"]
