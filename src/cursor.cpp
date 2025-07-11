@@ -50,7 +50,7 @@ void on_cursor_button(wl_listener* listener, void* data) {
   } else {
     // focus client
     double sx, sy;
-    wlr_surface* surface;
+    wlr_surface* surface = nullptr;
     auto toplevel = server->desktop_toplevel_at(&surface, &sx, &sy);
     if (toplevel != nullptr)
       toplevel->focus();
@@ -136,7 +136,7 @@ void UraServer::process_cursor_resize() {
     }
   }
 
-  struct wlr_box* geo_box = &toplevel->xdg_toplevel->base->geometry;
+  auto geo_box = &toplevel->xdg_toplevel->base->geometry;
   wlr_scene_node_set_position(
     &toplevel->scene_tree->node,
     new_left - geo_box->x,
@@ -183,7 +183,7 @@ UraServer::desktop_toplevel_at(wlr_surface** surface, double* sx, double* sy) {
 void UraServer::process_cursor_passthrough(uint32_t time_msec) {
   double sx, sy;
   auto seat = this->seat;
-  wlr_surface* surface;
+  wlr_surface* surface = nullptr;
 
   auto toplevel = this->desktop_toplevel_at(&surface, &sx, &sy);
 

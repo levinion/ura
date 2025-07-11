@@ -4,6 +4,8 @@
 namespace ura {
 
 UraServer* UraServer::init() {
+  wlr_log_init(WLR_DEBUG, NULL);
+
   auto server = new UraServer {};
   // create wayland display
   server->display = wl_display_create();
@@ -11,7 +13,7 @@ UraServer* UraServer::init() {
   auto event_loop = wl_display_get_event_loop(server->display);
 
   // create wlroots backend, renderer and allocator
-  server->backend = wlr_backend_autocreate(event_loop, nullptr);
+  server->backend = wlr_backend_autocreate(event_loop, NULL);
 
   if (server->backend == NULL) {
     wlr_log(WLR_ERROR, "failed to create wlr_backend");
@@ -106,6 +108,11 @@ UraServer* UraServer::init() {
 void UraServer::run() {
   // create wayland socket
   auto socket = wl_display_add_socket_auto(this->display);
+  if (!socket) {
+    wlr_backend_destroy(this->backend);
+    exit(1);
+  }
+
   // start backend
   if (!wlr_backend_start(this->backend)) {
     wlr_backend_destroy(this->backend);

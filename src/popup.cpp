@@ -1,4 +1,5 @@
 #include "ura/popup.hpp"
+#include <cassert>
 #include "ura/callback.hpp"
 
 namespace ura {
@@ -27,6 +28,7 @@ void on_new_popup(wl_listener* listener, void* data) {
   popup->xdg_popup = xdg_popup;
 
   auto parent = wlr_xdg_surface_try_from_wlr_surface(xdg_popup->parent);
+  assert(parent != NULL);
   auto parent_tree = static_cast<wlr_scene_tree*>(parent->data);
   xdg_popup->base->data =
     wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base);

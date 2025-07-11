@@ -1,4 +1,6 @@
 #include "ura/keyboard.hpp"
+#include <xkbcommon/xkbcommon-keysyms.h>
+#include "ura/ura.hpp"
 
 namespace ura {
 
@@ -93,6 +95,13 @@ void UraServer::register_keyboard(wlr_input_device* device) {
 
 bool UraServer::process_keybindings(uint32_t modifier, xkb_keysym_t sym) {
   //TODO: handle keybindings
+
+  if (modifier & WLR_MODIFIER_LOGO) {
+    if (sym == XKB_KEY_e) {
+      wl_display_terminate(this->display);
+      return true;
+    }
+  }
 
   // true for not to pass key to clients
   return false;
