@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Ura
+Comment=A dynamic tiling Wayland compositor
+Exec=ura
+Type=Application
