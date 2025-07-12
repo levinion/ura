@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ura/config.hpp"
 #include "ura/ura.hpp"
 
 namespace ura {
@@ -51,10 +52,18 @@ public:
   wlr_box grab_geobox;
   uint32_t resize_edges;
 
-  // Methods
+  UraConfigManager config_mgr;
 
-  // lifecycle
+  // Methods
   static UraServer* init();
+  void setup_cursor();
+  void setup_input();
+  void setup_toplevel();
+  void setup_popup();
+  void setup_output();
+  void setup_compositor();
+  void setup_base();
+
   void run();
   void destroy();
   ~UraServer();

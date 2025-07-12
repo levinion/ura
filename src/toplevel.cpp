@@ -5,80 +5,6 @@
 
 namespace ura {
 
-void UraToplevel::focus() {
-  auto server = this->server;
-  auto seat = server->seat;
-  auto prev_surface = seat->keyboard_state.focused_surface;
-  auto surface = this->xdg_toplevel->base->surface;
-
-  if (prev_surface == surface) {
-    // should only focus once
-    return;
-  }
-  if (prev_surface) {
-    // unfocus previous focused toplevel
-    auto prev_toplevel = wlr_xdg_toplevel_try_from_wlr_surface(prev_surface);
-    if (prev_toplevel != nullptr) {
-      wlr_xdg_toplevel_set_activated(prev_toplevel, false);
-    }
-  }
-
-  // move scene to top
-  wlr_scene_node_raise_to_top(&this->scene_tree->node);
-  wl_list_remove(&this->link);
-  wl_list_insert(&server->toplevels, &this->link);
-
-  // activate this toplevel
-  wlr_xdg_toplevel_set_activated(this->xdg_toplevel, true);
-
-  auto keyboard = wlr_seat_get_keyboard(seat);
-  if (keyboard != nullptr) {
-    wlr_seat_keyboard_notify_enter(
-      seat,
-      surface,
-      keyboard->keycodes,
-      keyboard->num_keycodes,
-      &keyboard->modifiers
-    );
-  }
-}
-
-// move window
-void UraToplevel::move() {
-  auto server = this->server;
-
-  server->grabbed_toplevel = this;
-  server->cursor_mode = CursorMode::CURSOR_MOVE;
-
-  server->grab_x = server->cursor->x - this->scene_tree->node.x;
-  server->grab_y = server->cursor->y - this->scene_tree->node.y;
-}
-
-// resize window
-void UraToplevel::resize(uint32_t edges) {
-  auto server = this->server;
-
-  server->grabbed_toplevel = this;
-  server->cursor_mode = CursorMode::CURSOR_RESIZE;
-
-  auto geo_box = &this->xdg_toplevel->base->geometry;
-
-  double border_x = (this->scene_tree->node.x + geo_box->x)
-    + ((edges & WLR_EDGE_RIGHT) ? geo_box->width : 0);
-  double border_y = (this->scene_tree->node.y + geo_box->y)
-    + ((edges & WLR_EDGE_BOTTOM) ? geo_box->height : 0);
-  server->grab_x = server->cursor->x - border_x;
-  server->grab_y = server->cursor->y - border_y;
-
-  server->grab_geobox = *geo_box;
-  server->grab_geobox.x += this->scene_tree->node.x;
-  server->grab_geobox.y += this->scene_tree->node.y;
-
-  server->resize_edges = edges;
-}
-
-// callbacks
-
 // create a new toplevel
 void on_new_toplevel(wl_listener* listener, void* data) {
   UraServer* server = wl_container_of(listener, server, new_xdg_toplevel);
@@ -148,7 +74,6 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
 
 void on_toplevel_destroy(wl_listener* listener, void* data) {
   UraToplevel* toplevel = wl_container_of(listener, toplevel, destroy);
-
   wl_list_remove(&toplevel->map.link);
   wl_list_remove(&toplevel->unmap.link);
   wl_list_remove(&toplevel->commit.link);
@@ -157,8 +82,7 @@ void on_toplevel_destroy(wl_listener* listener, void* data) {
   wl_list_remove(&toplevel->request_resize.link);
   wl_list_remove(&toplevel->request_maximize.link);
   wl_list_remove(&toplevel->request_fullscreen.link);
-
-  free(toplevel);
+  delete toplevel;
 }
 
 void on_toplevel_request_move(wl_listener* listener, void* data) {
@@ -187,6 +111,78 @@ void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {
   if (toplevel->xdg_toplevel->base->initialized) {
     wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
   }
+}
+
+void UraToplevel::focus() {
+  auto server = this->server;
+  auto seat = server->seat;
+  auto prev_surface = seat->keyboard_state.focused_surface;
+  auto surface = this->xdg_toplevel->base->surface;
+
+  if (prev_surface == surface) {
+    // should only focus once
+    return;
+  }
+  if (prev_surface) {
+    // unfocus previous focused toplevel
+    auto prev_toplevel = wlr_xdg_toplevel_try_from_wlr_surface(prev_surface);
+    if (prev_toplevel) {
+      wlr_xdg_toplevel_set_activated(prev_toplevel, false);
+    }
+  }
+
+  // move scene to top
+  wlr_scene_node_raise_to_top(&this->scene_tree->node);
+  wl_list_remove(&this->link);
+  wl_list_insert(&server->toplevels, &this->link);
+
+  // activate this toplevel
+  wlr_xdg_toplevel_set_activated(this->xdg_toplevel, true);
+
+  auto keyboard = wlr_seat_get_keyboard(seat);
+  if (keyboard) {
+    wlr_seat_keyboard_notify_enter(
+      seat,
+      surface,
+      keyboard->keycodes,
+      keyboard->num_keycodes,
+      &keyboard->modifiers
+    );
+  }
+}
+
+// move window
+void UraToplevel::move() {
+  auto server = this->server;
+
+  server->grabbed_toplevel = this;
+  server->cursor_mode = CursorMode::CURSOR_MOVE;
+
+  server->grab_x = server->cursor->x - this->scene_tree->node.x;
+  server->grab_y = server->cursor->y - this->scene_tree->node.y;
+}
+
+// resize window
+void UraToplevel::resize(uint32_t edges) {
+  auto server = this->server;
+
+  server->grabbed_toplevel = this;
+  server->cursor_mode = CursorMode::CURSOR_RESIZE;
+
+  auto geo_box = &this->xdg_toplevel->base->geometry;
+
+  double border_x = (this->scene_tree->node.x + geo_box->x)
+    + ((edges & WLR_EDGE_RIGHT) ? geo_box->width : 0);
+  double border_y = (this->scene_tree->node.y + geo_box->y)
+    + ((edges & WLR_EDGE_BOTTOM) ? geo_box->height : 0);
+  server->grab_x = server->cursor->x - border_x;
+  server->grab_y = server->cursor->y - border_y;
+
+  server->grab_geobox = *geo_box;
+  server->grab_geobox.x += this->scene_tree->node.x;
+  server->grab_geobox.y += this->scene_tree->node.y;
+
+  server->resize_edges = edges;
 }
 
 } // namespace ura

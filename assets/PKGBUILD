@@ -1,0 +1,32 @@
+pkgname=ura-git
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="A dynamic tiling Wayland compositor"
+url="https://github.com/levinion/ura"
+arch=("any")
+license=("GPLv3")
+depends=("luajit" "glibc" "sol-git")
+makedepends=("just" "cmake" "wayland-protocols")
+provides=("ura")
+conflicts=("ura")
+source=(
+  "$pkgname::git+https://github.com/levinion/$pkgname.git"
+)
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "$srcdir/$pkgname"
+  printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+build() {
+  cd "$srcdir/$pkgname"
+  just build
+}
+
+package() {
+  cd "$srcdir/$pkgname"
+  install -Dm755 "build/$pkgname" "$pkgdir/usr/bin/$pkgname"
+  install -Dm644 "LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "assets/ura.desktop" "$pkgdir/usr/share/wayland-sessions/ura.desktop"
+}

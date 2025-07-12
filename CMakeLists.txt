@@ -6,7 +6,7 @@ project(${name} CXX)
 # clang setting
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # set(CMAKE_CXX_COMPILER "/usr/bin/clang++" CACHE STRING "C++ compiler" FORCE)
-# set(CMAKE_CXX_STANDARD 26)
+set(CMAKE_CXX_STANDARD 26)
 
 # src
 file(GLOB_RECURSE SRC src/*.cpp)
@@ -35,3 +35,11 @@ target_link_libraries(${name} PUBLIC ${wayland-server_LIBRARIES})
 
 pkg_check_modules(xkbcommon REQUIRED xkbcommon)
 target_link_libraries(${name} PUBLIC ${xkbcommon_LIBRARIES})
+
+pkg_check_modules(sol2 REQUIRED sol2)
+target_link_libraries(${name} PUBLIC ${sol2_LIBRARIES})
+target_include_directories(${name} PUBLIC ${sol2_INCLUDE_DIRS})
+
+pkg_check_modules(luajit REQUIRED luajit)
+target_link_libraries(${name} PUBLIC ${luajit_LIBRARIES})
+target_include_directories(${name} PUBLIC ${luajit_INCLUDE_DIRS})

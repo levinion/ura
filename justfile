@@ -8,7 +8,7 @@ debug:
   gdb -q ./build/$(cat build/CMakeCache.txt | grep CMAKE_PROJECT_NAME | awk -F '=' '{print $2}')
 
 init:
-  mkdir protocol
+  mkdir -p protocol
   wayland-scanner server-header /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml protocol/xdg-shell-protocol.h
   cmake -B build
 

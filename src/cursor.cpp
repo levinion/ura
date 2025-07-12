@@ -159,7 +159,7 @@ UraServer::desktop_toplevel_at(wlr_surface** surface, double* sx, double* sy) {
   );
 
   // check validity
-  if (node == nullptr || node->type != WLR_SCENE_NODE_BUFFER) {
+  if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
     return nullptr;
   }
 
@@ -173,7 +173,7 @@ UraServer::desktop_toplevel_at(wlr_surface** surface, double* sx, double* sy) {
   *surface = scene_surface->surface;
 
   auto tree = node->parent;
-  while (tree != nullptr && tree->node.data == nullptr) {
+  while (tree && !tree->node.data) {
     tree = tree->node.parent;
   }
 
