@@ -1,7 +1,6 @@
 #include "ura/keyboard.hpp"
 #include <wayland-server-core.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
-#include <print>
 #include "ura/config.hpp"
 #include "ura/server.hpp"
 #include "ura/callback.hpp"
@@ -102,17 +101,10 @@ void on_keyboard_destroy(struct wl_listener* listener, void* data) {
 bool UraServer::process_keybindings(uint32_t modifier, xkb_keysym_t sym) {
   auto keypair_id = (static_cast<uint64_t>(modifier) << 32) | sym;
 
-  std::println("pressed: {} {} {}", modifier, sym, keypair_id);
-
   if (this->config_mgr->keybinding.contains(keypair_id)) {
     this->config_mgr->keybinding[keypair_id]();
     return true;
   };
-
-  // fallback, just for test
-  if (modifier & WLR_MODIFIER_LOGO && sym == XKB_KEY_Escape) {
-    wl_display_terminate(this->display);
-  }
 
   // return false to not pass keys to clients
   return false;

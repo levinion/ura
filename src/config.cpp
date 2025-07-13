@@ -1,4 +1,4 @@
-#include <print>
+#include <filesystem>
 #define SOL_ALL_SAFETIES_ON 1
 
 #include "ura/config.hpp"
@@ -62,7 +62,6 @@ void UraConfigManager::register_function() {
     "map",
     [&](std::string modifiers, std::string key, sol::protected_function func) {
       auto keypair_id = keypair_id_from_string(modifiers, key);
-      std::println("{} {} {}", modifiers, key, keypair_id);
       this->keybinding[keypair_id] = func;
     }
   );
@@ -75,7 +74,10 @@ void UraConfigManager::register_function() {
 }
 
 void UraConfigManager::load_config() {
-  lua.script_file("/home/maruka/.config/ura/init.lua");
+  std::string _home_dir = getenv("HOME");
+  auto home_dir = std::filesystem::path(_home_dir);
+  auto config_path = home_dir / ".config/ura/init.lua";
+  lua.script_file(config_path);
 }
 
 } // namespace ura
