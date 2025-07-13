@@ -8,7 +8,7 @@ namespace ura {
 
 // callback when cursor moves
 void on_cursor_motion(wl_listener* listener, void* data) {
-  UraServer* server = wl_container_of(listener, server, cursor_motion);
+  auto server = UraServer::get_instance();
   auto event = static_cast<wlr_pointer_motion_event*>(data);
   wlr_cursor_move(
     server->cursor,
@@ -21,7 +21,7 @@ void on_cursor_motion(wl_listener* listener, void* data) {
 
 // callback on cursor moves absolutely
 void on_cursor_motion_absolute(wl_listener* listener, void* data) {
-  UraServer* server = wl_container_of(listener, server, cursor_motion_absolute);
+  auto server = UraServer::get_instance();
   auto event = static_cast<wlr_pointer_motion_absolute_event*>(data);
   wlr_cursor_warp_absolute(
     server->cursor,
@@ -34,7 +34,7 @@ void on_cursor_motion_absolute(wl_listener* listener, void* data) {
 
 // this sends the click/press event
 void on_cursor_button(wl_listener* listener, void* data) {
-  UraServer* server = wl_container_of(listener, server, cursor_button);
+  auto server = UraServer::get_instance();
   auto event = static_cast<wlr_pointer_button_event*>(data);
 
   // notify focused client with button pressed event
@@ -51,7 +51,7 @@ void on_cursor_button(wl_listener* listener, void* data) {
     // focus client
     double sx, sy;
     wlr_surface* surface = nullptr;
-    auto toplevel = server->desktop_toplevel_at(&surface, &sx, &sy);
+    auto toplevel = server->foreground_toplevel(&surface, &sx, &sy);
     if (toplevel != nullptr)
       toplevel->focus();
   }
@@ -59,7 +59,7 @@ void on_cursor_button(wl_listener* listener, void* data) {
 
 // cursor scroll event
 void on_cursor_axis(wl_listener* listener, void* data) {
-  UraServer* server = wl_container_of(listener, server, cursor_axis);
+  auto server = UraServer::get_instance();
   auto event = static_cast<wlr_pointer_axis_event*>(data);
   wlr_seat_pointer_notify_axis(
     server->seat,
@@ -73,7 +73,7 @@ void on_cursor_axis(wl_listener* listener, void* data) {
 }
 
 void on_cursor_frame(wl_listener* listener, void* data) {
-  UraServer* server = wl_container_of(listener, server, cursor_frame);
+  auto server = UraServer::get_instance();
   wlr_seat_pointer_notify_frame(server->seat);
 }
 
@@ -148,9 +148,9 @@ void UraServer::process_cursor_resize() {
   wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, new_width, new_height);
 }
 
-// get toplevel
+// returns the topmost toplevel under current cursor coordination
 UraToplevel*
-UraServer::desktop_toplevel_at(wlr_surface** surface, double* sx, double* sy) {
+UraServer::foreground_toplevel(wlr_surface** surface, double* sx, double* sy) {
   auto node = wlr_scene_node_at(
     &this->scene->tree.node,
     this->cursor->x,
@@ -183,15 +183,14 @@ UraServer::desktop_toplevel_at(wlr_surface** surface, double* sx, double* sy) {
 
 void UraServer::process_cursor_passthrough(uint32_t time_msec) {
   double sx, sy;
-  auto seat = this->seat;
   wlr_surface* surface = nullptr;
-
-  auto toplevel = this->desktop_toplevel_at(&surface, &sx, &sy);
+  auto toplevel = this->foreground_toplevel(&surface, &sx, &sy);
 
   if (!toplevel) {
     wlr_cursor_set_xcursor(this->cursor, this->cursor_mgr, "default");
   }
 
+  auto seat = this->seat;
   if (surface) {
     wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
     wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);

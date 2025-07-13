@@ -26,22 +26,28 @@ void UraServer::register_keyboard(wlr_input_device* device) {
   // set repeat rate
   wlr_keyboard_set_repeat_info(wlr_keyboard, 40, 300);
 
-  keyboard->modifiers.notify = on_keyboard_modifiers;
-  wl_signal_add(&wlr_keyboard->events.modifiers, &keyboard->modifiers);
-  keyboard->key.notify = on_keyboard_key;
-  wl_signal_add(&wlr_keyboard->events.key, &keyboard->key);
-  keyboard->destroy.notify = on_keyboard_destroy;
-  wl_signal_add(&device->events.destroy, &keyboard->destroy);
+  this->runtime->register_callback(
+    &wlr_keyboard->events.modifiers,
+    on_keyboard_modifiers,
+    keyboard
+  );
+
+  this->runtime
+    ->register_callback(&wlr_keyboard->events.key, on_keyboard_key, keyboard);
+
+  this->runtime->register_callback(
+    &wlr_keyboard->events.key,
+    on_keyboard_destroy,
+    keyboard
+  );
 
   wlr_seat_set_keyboard(this->seat, keyboard->keyboard);
-
-  wl_list_insert(&this->keyboards, &keyboard->link);
 }
 
 void on_keyboard_modifiers(wl_listener* listener, void* data) {
-  UraKeyboard* keyboard = wl_container_of(listener, keyboard, modifiers);
-
   auto server = UraServer::get_instance();
+  auto keyboard = server->runtime->fetch<UraKeyboard*>(listener);
+
   // set current keyboard to seat
   wlr_seat_set_keyboard(server->seat, keyboard->keyboard);
   // send modifiers event to clients
@@ -52,9 +58,10 @@ void on_keyboard_modifiers(wl_listener* listener, void* data) {
 }
 
 void on_keyboard_key(wl_listener* listener, void* data) {
-  UraKeyboard* keyboard = wl_container_of(listener, keyboard, key);
-  auto event = static_cast<wlr_keyboard_key_event*>(data);
   auto server = UraServer::get_instance();
+  auto keyboard = server->runtime->fetch<UraKeyboard*>(listener);
+
+  auto event = static_cast<wlr_keyboard_key_event*>(data);
   auto seat = server->seat;
 
   // libinput keycode to x key code
@@ -90,12 +97,8 @@ void on_keyboard_key(wl_listener* listener, void* data) {
 }
 
 void on_keyboard_destroy(struct wl_listener* listener, void* data) {
-  UraKeyboard* keyboard = wl_container_of(listener, keyboard, destroy);
-  wl_list_remove(&keyboard->modifiers.link);
-  wl_list_remove(&keyboard->key.link);
-  wl_list_remove(&keyboard->destroy.link);
-  wl_list_remove(&keyboard->link);
-  delete keyboard;
+  auto server = UraServer::get_instance();
+  server->runtime->remove(listener);
 }
 
 bool UraServer::process_keybindings(uint32_t modifier, xkb_keysym_t sym) {

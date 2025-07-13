@@ -1,12 +1,15 @@
 #include "ura/server.hpp"
 #include "ura/output.hpp"
+#include <cassert>
 #include "ura/callback.hpp"
 #include "ura/ura.hpp"
 
 namespace ura {
 
 void on_new_output(wl_listener* listener, void* data) {
-  UraServer* server = wl_container_of(listener, server, new_output);
+  auto server = UraServer::get_instance();
+
+  // setup wlr_output
   auto _wlr_output = static_cast<wlr_output*>(data);
   wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
 
@@ -22,18 +25,27 @@ void on_new_output(wl_listener* listener, void* data) {
   wlr_output_commit_state(_wlr_output, &state);
   wlr_output_state_finish(&state);
 
+  // create ura output object from _wlr_output
   auto output = new UraOutput {};
   output->output = _wlr_output;
 
-  output->frame.notify = on_output_frame;
-  wl_signal_add(&_wlr_output->events.frame, &output->frame);
-  output->request_state.notify = on_output_request_state;
-  wl_signal_add(&_wlr_output->events.request_state, &output->request_state);
-  output->destroy.notify = on_output_destroy;
-  wl_signal_add(&_wlr_output->events.destroy, &output->destroy);
+  // register callback
+  server->runtime
+    ->register_callback(&_wlr_output->events.frame, on_output_frame, output);
 
-  wl_list_insert(&server->outputs, &output->link);
+  server->runtime->register_callback(
+    &_wlr_output->events.request_state,
+    on_output_request_state,
+    output
+  );
 
+  server->runtime->register_callback(
+    &_wlr_output->events.destroy,
+    on_output_destroy,
+    output
+  );
+
+  // add this wlr_output to scene layout
   auto output_layout_output =
     wlr_output_layout_add_auto(server->output_layout, _wlr_output);
   auto scene_output = wlr_scene_output_create(server->scene, _wlr_output);
@@ -45,8 +57,10 @@ void on_new_output(wl_listener* listener, void* data) {
 }
 
 void on_output_frame(wl_listener* listener, void* data) {
-  UraOutput* output = wl_container_of(listener, output, frame);
-  auto scene = UraServer::get_instance()->scene;
+  auto server = UraServer::get_instance();
+  auto output = server->runtime->fetch<UraOutput*>(listener);
+
+  auto scene = server->scene;
   auto scene_output = wlr_scene_get_scene_output(scene, output->output);
   wlr_scene_output_commit(scene_output, nullptr);
 
@@ -56,18 +70,15 @@ void on_output_frame(wl_listener* listener, void* data) {
 }
 
 void on_output_request_state(wl_listener* listener, void* data) {
-  UraOutput* output = wl_container_of(listener, output, request_state);
+  auto server = UraServer::get_instance();
+  auto output = server->runtime->fetch<UraOutput*>(listener);
   auto event = static_cast<wlr_output_event_request_state*>(data);
   wlr_output_commit_state(output->output, event->state);
 }
 
 void on_output_destroy(wl_listener* listener, void* data) {
-  UraOutput* output = wl_container_of(listener, output, destroy);
-  wl_list_remove(&output->frame.link);
-  wl_list_remove(&output->request_state.link);
-  wl_list_remove(&output->destroy.link);
-  wl_list_remove(&output->link);
-  delete output;
+  auto server = UraServer::get_instance();
+  server->runtime->remove(listener);
 }
 
 } // namespace ura

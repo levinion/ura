@@ -1,3 +1,4 @@
+#include "ura/server.hpp"
 #include "ura/popup.hpp"
 #include "ura/callback.hpp"
 
@@ -14,14 +15,23 @@ void on_new_popup(wl_listener* listener, void* data) {
     wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base);
 
   // callbacks
-  popup->commit.notify = on_popup_commit;
-  wl_signal_add(&xdg_popup->base->surface->events.commit, &popup->commit);
-  popup->destroy.notify = on_popup_destroy;
-  wl_signal_add(&xdg_popup->events.destroy, &popup->destroy);
+  auto server = UraServer::get_instance();
+  server->runtime->register_callback(
+    &xdg_popup->base->surface->events.commit,
+    on_popup_commit,
+    popup
+  );
+
+  server->runtime->register_callback(
+    &xdg_popup->base->surface->events.destroy,
+    on_popup_destroy,
+    popup
+  );
 }
 
 void on_popup_commit(wl_listener* listener, void* data) {
-  UraPopup* popup = wl_container_of(listener, popup, commit);
+  auto server = UraServer::get_instance();
+  auto popup = server->runtime->fetch<UraPopup*>(listener);
 
   if (popup->xdg_popup->base->initial_commit) {
     // TODO: do some work
@@ -30,10 +40,8 @@ void on_popup_commit(wl_listener* listener, void* data) {
 }
 
 void on_popup_destroy(wl_listener* listener, void* data) {
-  UraPopup* popup = wl_container_of(listener, popup, destroy);
-  wl_list_remove(&popup->commit.link);
-  wl_list_remove(&popup->destroy.link);
-  delete popup;
+  auto server = UraServer::get_instance();
+  server->runtime->remove(listener);
 }
 
 } // namespace ura

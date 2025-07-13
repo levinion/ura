@@ -7,9 +7,10 @@ namespace ura {
 
 // create a new toplevel
 void on_new_toplevel(wl_listener* listener, void* data) {
-  UraServer* server = wl_container_of(listener, server, new_xdg_toplevel);
+  auto server = UraServer::get_instance();
   auto xdg_toplevel = static_cast<wlr_xdg_toplevel*>(data);
 
+  // setup ura toplevel
   auto toplevel = new UraToplevel {};
   toplevel->xdg_toplevel = xdg_toplevel;
   toplevel->scene_tree = wlr_scene_xdg_surface_create(
@@ -19,54 +20,78 @@ void on_new_toplevel(wl_listener* listener, void* data) {
   toplevel->scene_tree->node.data = toplevel;
   xdg_toplevel->base->data = toplevel->scene_tree;
 
-  // setup callback
-  toplevel->map.notify = on_toplevel_map;
-  wl_signal_add(&xdg_toplevel->base->surface->events.map, &toplevel->map);
-  toplevel->unmap.notify = on_toplevel_unmap;
-  wl_signal_add(&xdg_toplevel->base->surface->events.unmap, &toplevel->unmap);
-  toplevel->commit.notify = on_toplevel_commit;
-  wl_signal_add(&xdg_toplevel->base->surface->events.commit, &toplevel->commit);
-  toplevel->destroy.notify = on_toplevel_destroy;
-  wl_signal_add(&xdg_toplevel->events.destroy, &toplevel->destroy);
+  // register callback
+  server->runtime->register_callback(
+    &xdg_toplevel->base->surface->events.map,
+    on_toplevel_map,
+    toplevel
+  );
 
-  toplevel->request_move.notify = on_toplevel_request_move;
-  wl_signal_add(&xdg_toplevel->events.request_move, &toplevel->request_move);
-  toplevel->request_resize.notify = on_toplevel_request_resize;
-  wl_signal_add(
+  server->runtime->register_callback(
+    &xdg_toplevel->base->surface->events.unmap,
+    on_toplevel_unmap,
+    toplevel
+  );
+
+  server->runtime->register_callback(
+    &xdg_toplevel->base->surface->events.commit,
+    on_toplevel_commit,
+    toplevel
+  );
+
+  server->runtime->register_callback(
+    &xdg_toplevel->base->surface->events.destroy,
+    on_toplevel_destroy,
+    toplevel
+  );
+
+  server->runtime->register_callback(
+    &xdg_toplevel->events.request_move,
+    on_toplevel_request_move,
+    toplevel
+  );
+
+  server->runtime->register_callback(
     &xdg_toplevel->events.request_resize,
-    &toplevel->request_resize
+    on_toplevel_request_resize,
+    toplevel
   );
-  toplevel->request_maximize.notify = on_toplevel_request_maximize;
-  wl_signal_add(
+
+  server->runtime->register_callback(
     &xdg_toplevel->events.request_maximize,
-    &toplevel->request_maximize
+    on_toplevel_request_maximize,
+    toplevel
   );
-  toplevel->request_fullscreen.notify = on_toplevel_request_fullscreen;
-  wl_signal_add(
+
+  server->runtime->register_callback(
     &xdg_toplevel->events.request_fullscreen,
-    &toplevel->request_fullscreen
+    on_toplevel_request_fullscreen,
+    toplevel
   );
 }
 
 void on_toplevel_map(wl_listener* listener, void* data) {
-  UraToplevel* toplevel = wl_container_of(listener, toplevel, map);
-  wl_list_insert(&UraServer::get_instance()->toplevels, &toplevel->link);
+  auto server = UraServer::get_instance();
+  auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   toplevel->focus();
 }
 
 void on_toplevel_unmap(wl_listener* listener, void* data) {
-  UraToplevel* toplevel = wl_container_of(listener, toplevel, unmap);
-
   auto server = UraServer::get_instance();
+  auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
+
   // remove from toplevels
   if (toplevel == server->grabbed_toplevel) {
     server->reset_cursor_mode();
   }
-  wl_list_remove(&toplevel->link);
+
+  // TODO: remove toplevel from scene
 }
 
 void on_toplevel_commit(wl_listener* listener, void* data) {
-  UraToplevel* toplevel = wl_container_of(listener, toplevel, commit);
+  auto server = UraServer::get_instance();
+  auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
+
   if (toplevel->xdg_toplevel->current.fullscreen) {
     auto server = UraServer::get_instance();
     auto output = wlr_output_layout_output_at(
@@ -87,31 +112,27 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
 }
 
 void on_toplevel_destroy(wl_listener* listener, void* data) {
-  UraToplevel* toplevel = wl_container_of(listener, toplevel, destroy);
-  wl_list_remove(&toplevel->map.link);
-  wl_list_remove(&toplevel->unmap.link);
-  wl_list_remove(&toplevel->commit.link);
-  wl_list_remove(&toplevel->destroy.link);
-  wl_list_remove(&toplevel->request_move.link);
-  wl_list_remove(&toplevel->request_resize.link);
-  wl_list_remove(&toplevel->request_maximize.link);
-  wl_list_remove(&toplevel->request_fullscreen.link);
-  delete toplevel;
+  auto server = UraServer::get_instance();
+  // TODO: runtime should find all related objects and remove them all
+  server->runtime->remove(listener);
 }
 
 void on_toplevel_request_move(wl_listener* listener, void* data) {
-  UraToplevel* toplevel = wl_container_of(listener, toplevel, request_move);
+  auto server = UraServer::get_instance();
+  auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   toplevel->move();
 }
 
 void on_toplevel_request_resize(wl_listener* listener, void* data) {
-  UraToplevel* toplevel = wl_container_of(listener, toplevel, request_resize);
+  auto server = UraServer::get_instance();
+  auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   auto event = static_cast<wlr_xdg_toplevel_resize_event*>(data);
   toplevel->resize(event->edges);
 }
 
 void on_toplevel_request_maximize(wl_listener* listener, void* data) {
-  UraToplevel* toplevel = wl_container_of(listener, toplevel, request_maximize);
+  auto server = UraServer::get_instance();
+  auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   wlr_xdg_toplevel_set_maximized(
     toplevel->xdg_toplevel,
     !toplevel->xdg_toplevel->current.maximized
@@ -120,8 +141,8 @@ void on_toplevel_request_maximize(wl_listener* listener, void* data) {
 }
 
 void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {
-  UraToplevel* toplevel =
-    wl_container_of(listener, toplevel, request_fullscreen);
+  auto server = UraServer::get_instance();
+  auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   wlr_xdg_toplevel_set_fullscreen(
     toplevel->xdg_toplevel,
     !toplevel->xdg_toplevel->current.fullscreen
@@ -147,10 +168,10 @@ void UraToplevel::focus() {
     }
   }
 
+  server->focused_toplevel = this;
+
   // move scene to top
   wlr_scene_node_raise_to_top(&this->scene_tree->node);
-  wl_list_remove(&this->link);
-  wl_list_insert(&server->toplevels, &this->link);
 
   // activate this toplevel
   wlr_xdg_toplevel_set_activated(this->xdg_toplevel, true);
@@ -199,6 +220,12 @@ void UraToplevel::resize(uint32_t edges) {
   server->grab_geobox.y += this->scene_tree->node.y;
 
   server->resize_edges = edges;
+}
+
+void UraToplevel::set_fullscreen(bool flag) {
+  auto toplevel = this->xdg_toplevel;
+  wlr_xdg_toplevel_set_fullscreen(toplevel, flag);
+  wlr_xdg_surface_schedule_configure(toplevel->base);
 }
 
 } // namespace ura

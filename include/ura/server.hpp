@@ -2,6 +2,7 @@
 
 #include "ura/config.hpp"
 #include "ura/ura.hpp"
+#include "ura/runtime.hpp"
 
 namespace ura {
 
@@ -25,27 +26,12 @@ public:
   wlr_scene_output_layout* scene_layout;
 
   wlr_output_layout* output_layout;
-  wl_list outputs;
-  wl_listener new_output;
-
   wlr_xdg_shell* xdg_shell;
-  wl_listener new_xdg_toplevel;
-  wl_listener new_xdg_popup;
-  wl_list toplevels;
 
   wlr_cursor* cursor;
   wlr_xcursor_manager* cursor_mgr;
-  wl_listener cursor_motion;
-  wl_listener cursor_motion_absolute;
-  wl_listener cursor_button;
-  wl_listener cursor_axis;
-  wl_listener cursor_frame;
 
   wlr_seat* seat;
-  wl_listener new_input;
-  wl_listener request_cursor;
-  wl_listener request_set_selection;
-  wl_list keyboards;
   CursorMode cursor_mode;
   UraToplevel* grabbed_toplevel;
   double grab_x, grab_y;
@@ -53,21 +39,19 @@ public:
   uint32_t resize_edges;
 
   std::unique_ptr<UraConfigManager> config_mgr;
+  std::unique_ptr<UraRuntime> runtime;
 
   // Methods
   static UraServer* get_instance();
   UraServer* init();
-  void setup_cursor();
-  void setup_input();
-  void setup_toplevel();
-  void setup_popup();
-  void setup_output();
-  void setup_compositor();
-  void setup_base();
 
   void run();
   void destroy();
   ~UraServer();
+
+  UraToplevel*
+  foreground_toplevel(wlr_surface** surface, double* sx, double* sy);
+  UraToplevel* focused_toplevel;
 
   void register_keyboard(wlr_input_device* device);
   void register_pointer(wlr_input_device* device);
@@ -77,11 +61,20 @@ public:
   void process_cursor_resize();
   void process_cursor_passthrough(uint32_t time_msec);
   void reset_cursor_mode();
-  UraToplevel*
-  desktop_toplevel_at(wlr_surface** surface, double* sx, double* sy);
+
+  inline void terminate() {
+    wl_display_terminate(this->display);
+  }
 
 private:
   static UraServer* instance;
+  void setup_cursor();
+  void setup_input();
+  void setup_toplevel();
+  void setup_popup();
+  void setup_output();
+  void setup_compositor();
+  void setup_base();
 };
 
 } // namespace ura

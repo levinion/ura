@@ -13,6 +13,7 @@ file(GLOB_RECURSE SRC src/*.cpp)
 add_executable(${name} ${SRC})
 
 # link std library staticly
+target_compile_options(${name} PRIVATE)
 target_link_options(${name} PRIVATE -static-libgcc -static-libstdc++)
 
 # include header
