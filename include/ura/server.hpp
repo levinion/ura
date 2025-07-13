@@ -52,10 +52,11 @@ public:
   wlr_box grab_geobox;
   uint32_t resize_edges;
 
-  UraConfigManager config_mgr;
+  std::unique_ptr<UraConfigManager> config_mgr;
 
   // Methods
-  static UraServer* init();
+  static UraServer* get_instance();
+  UraServer* init();
   void setup_cursor();
   void setup_input();
   void setup_toplevel();
@@ -78,6 +79,9 @@ public:
   void reset_cursor_mode();
   UraToplevel*
   desktop_toplevel_at(wlr_surface** surface, double* sx, double* sy);
+
+private:
+  static UraServer* instance;
 };
 
 } // namespace ura

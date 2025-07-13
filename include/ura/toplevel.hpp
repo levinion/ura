@@ -1,6 +1,5 @@
 #pragma once
 
-#include "ura/server.hpp"
 #include "ura/ura.hpp"
 
 namespace ura {
@@ -8,7 +7,6 @@ namespace ura {
 class UraToplevel {
 public:
   wl_list link;
-  UraServer* server;
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
   wl_listener map;

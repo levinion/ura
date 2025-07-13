@@ -1,13 +1,12 @@
 #pragma once
 
-#include "ura/server.hpp"
+#include "ura/ura.hpp"
 
 namespace ura {
 
 class UraKeyboard {
 public:
   wl_list link;
-  UraServer* server;
   wlr_keyboard* keyboard;
 
   wl_listener modifiers;

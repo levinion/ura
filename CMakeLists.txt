@@ -17,7 +17,7 @@ target_link_options(${name} PRIVATE -static-libgcc -static-libstdc++)
 
 # include header
 target_include_directories(${name} PUBLIC include/)
-target_include_directories(${name} PUBLIC protocol/)
+target_include_directories(${name} PUBLIC include/protocols/)
 
 # add third party dependencies here
 # add_subdirectory(./vendor/hierro2d-cpp)

@@ -1,7 +1,11 @@
 #include "ura/keyboard.hpp"
+#include <wayland-server-core.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
-#include "ura/ura.hpp"
+#include <print>
+#include "ura/config.hpp"
+#include "ura/server.hpp"
 #include "ura/callback.hpp"
+#include "ura/ura.hpp"
 
 namespace ura {
 
@@ -9,7 +13,6 @@ void UraServer::register_keyboard(wlr_input_device* device) {
   auto wlr_keyboard = wlr_keyboard_from_input_device(device);
 
   auto keyboard = new UraKeyboard {};
-  keyboard->server = this;
   keyboard->keyboard = wlr_keyboard;
 
   // setup xkb_keymap
@@ -38,19 +41,21 @@ void UraServer::register_keyboard(wlr_input_device* device) {
 
 void on_keyboard_modifiers(wl_listener* listener, void* data) {
   UraKeyboard* keyboard = wl_container_of(listener, keyboard, modifiers);
+
+  auto server = UraServer::get_instance();
   // set current keyboard to seat
-  wlr_seat_set_keyboard(keyboard->server->seat, keyboard->keyboard);
+  wlr_seat_set_keyboard(server->seat, keyboard->keyboard);
   // send modifiers event to clients
   wlr_seat_keyboard_notify_modifiers(
-    keyboard->server->seat,
+    server->seat,
     &keyboard->keyboard->modifiers
   );
 }
 
 void on_keyboard_key(wl_listener* listener, void* data) {
   UraKeyboard* keyboard = wl_container_of(listener, keyboard, key);
-  auto server = keyboard->server;
   auto event = static_cast<wlr_keyboard_key_event*>(data);
+  auto server = UraServer::get_instance();
   auto seat = server->seat;
 
   // libinput keycode to x key code
@@ -95,17 +100,18 @@ void on_keyboard_destroy(struct wl_listener* listener, void* data) {
 }
 
 bool UraServer::process_keybindings(uint32_t modifier, xkb_keysym_t sym) {
-  //TODO: handle keybindings
+  auto keypair_id = (static_cast<uint64_t>(modifier) << 32) | sym;
 
-  if (modifier & WLR_MODIFIER_LOGO) {
-    if (sym == XKB_KEY_e) {
-      wl_display_terminate(this->display);
-      return true;
-    }
-    if (sym == XKB_KEY_t) {
-      this->config_mgr.load_config();
-      return true;
-    }
+  std::println("pressed: {} {} {}", modifier, sym, keypair_id);
+
+  if (this->config_mgr->keybinding.contains(keypair_id)) {
+    this->config_mgr->keybinding[keypair_id]();
+    return true;
+  };
+
+  // fallback, just for test
+  if (modifier & WLR_MODIFIER_LOGO && sym == XKB_KEY_Escape) {
+    wl_display_terminate(this->display);
   }
 
   // return false to not pass keys to clients

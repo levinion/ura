@@ -11,10 +11,9 @@ void on_new_toplevel(wl_listener* listener, void* data) {
   auto xdg_toplevel = static_cast<wlr_xdg_toplevel*>(data);
 
   auto toplevel = new UraToplevel {};
-  toplevel->server = server;
   toplevel->xdg_toplevel = xdg_toplevel;
   toplevel->scene_tree = wlr_scene_xdg_surface_create(
-    &toplevel->server->scene->tree,
+    &UraServer::get_instance()->scene->tree,
     xdg_toplevel->base
   );
   toplevel->scene_tree->node.data = toplevel;
@@ -51,16 +50,17 @@ void on_new_toplevel(wl_listener* listener, void* data) {
 
 void on_toplevel_map(wl_listener* listener, void* data) {
   UraToplevel* toplevel = wl_container_of(listener, toplevel, map);
-  wl_list_insert(&toplevel->server->toplevels, &toplevel->link);
+  wl_list_insert(&UraServer::get_instance()->toplevels, &toplevel->link);
   toplevel->focus();
 }
 
 void on_toplevel_unmap(wl_listener* listener, void* data) {
   UraToplevel* toplevel = wl_container_of(listener, toplevel, unmap);
 
+  auto server = UraServer::get_instance();
   // remove from toplevels
-  if (toplevel == toplevel->server->grabbed_toplevel) {
-    toplevel->server->reset_cursor_mode();
+  if (toplevel == server->grabbed_toplevel) {
+    server->reset_cursor_mode();
   }
   wl_list_remove(&toplevel->link);
 }
@@ -114,7 +114,7 @@ void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {
 }
 
 void UraToplevel::focus() {
-  auto server = this->server;
+  auto server = UraServer::get_instance();
   auto seat = server->seat;
   auto prev_surface = seat->keyboard_state.focused_surface;
   auto surface = this->xdg_toplevel->base->surface;
@@ -153,7 +153,7 @@ void UraToplevel::focus() {
 
 // move window
 void UraToplevel::move() {
-  auto server = this->server;
+  auto server = UraServer::get_instance();
 
   server->grabbed_toplevel = this;
   server->cursor_mode = CursorMode::CURSOR_MOVE;
@@ -164,7 +164,7 @@ void UraToplevel::move() {
 
 // resize window
 void UraToplevel::resize(uint32_t edges) {
-  auto server = this->server;
+  auto server = UraServer::get_instance();
 
   server->grabbed_toplevel = this;
   server->cursor_mode = CursorMode::CURSOR_RESIZE;

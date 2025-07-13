@@ -24,7 +24,6 @@ void on_new_output(wl_listener* listener, void* data) {
 
   auto output = new UraOutput {};
   output->output = _wlr_output;
-  output->server = server;
 
   output->frame.notify = on_output_frame;
   wl_signal_add(&_wlr_output->events.frame, &output->frame);
@@ -47,7 +46,7 @@ void on_new_output(wl_listener* listener, void* data) {
 
 void on_output_frame(wl_listener* listener, void* data) {
   UraOutput* output = wl_container_of(listener, output, frame);
-  auto scene = output->server->scene;
+  auto scene = UraServer::get_instance()->scene;
   auto scene_output = wlr_scene_get_scene_output(scene, output->output);
   wlr_scene_output_commit(scene_output, nullptr);
 

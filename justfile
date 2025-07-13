@@ -8,13 +8,15 @@ debug:
   gdb -q ./build/$(cat build/CMakeCache.txt | grep CMAKE_PROJECT_NAME | awk -F '=' '{print $2}')
 
 init:
-  mkdir -p protocol
-  wayland-scanner server-header /usr/share/wayland-protocols/stable/xdg-shell/xdg-shell.xml protocol/xdg-shell-protocol.h
+  mkdir -p include/protocols
+  wayland-scanner server-header ./protocols/xdg-shell.xml include/protocols/xdg-shell-protocol.h
+  wayland-scanner server-header ./protocols/wlr-layer-shell-unstable-v1.xml include/protocols/wlr-layer-shell-unstable-v1-protocol.h
+  wayland-scanner server-header ./protocols/wlr-output-power-management-unstable-v1.xml include/protocols/wlr-output-power-management-unstable-v1-protocol.h
   cmake -B build
 
 build:
   just init
-  cmake --build build
+  cmake --build build -j16
 
 clean:
   rm -rf build

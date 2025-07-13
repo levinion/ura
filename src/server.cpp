@@ -1,22 +1,34 @@
 #include "ura/server.hpp"
 #include "ura/callback.hpp"
+#include "ura/config.hpp"
 #include "ura/ura.hpp"
+#include "wlr/types/wlr_output_power_management_v1.h"
 
 namespace ura {
+
+UraServer* UraServer::instance = nullptr;
+
+UraServer* UraServer::get_instance() {
+  if (UraServer::instance == nullptr) {
+    UraServer::instance = new UraServer {};
+  }
+  return UraServer::instance;
+}
 
 UraServer* UraServer::init() {
   wlr_log_init(WLR_DEBUG, NULL);
 
-  auto server = new UraServer {};
-  server->setup_base();
-  server->setup_compositor();
-  server->setup_output();
-  server->setup_toplevel();
-  server->setup_popup();
-  server->setup_cursor();
-  server->setup_input();
+  this->setup_base();
+  this->setup_compositor();
+  this->setup_output();
+  this->setup_toplevel();
+  this->setup_popup();
+  this->setup_cursor();
+  this->setup_input();
 
-  return server;
+  this->config_mgr = UraConfigManager::init();
+
+  return this;
 }
 
 void UraServer::setup_base() {
@@ -48,6 +60,10 @@ void UraServer::setup_compositor() {
   wlr_data_device_manager_create(this->display);
   wlr_linux_dmabuf_v1_create_with_renderer(this->display, 4, this->renderer);
   wlr_shm_create_with_renderer(this->display, 2, this->renderer);
+  wlr_layer_shell_v1_create(this->display, 1);
+  // TODO: register event
+  wlr_output_manager_v1_create(this->display);
+  wlr_output_power_manager_v1_create(this->display);
 }
 
 void UraServer::setup_output() {
@@ -146,10 +162,13 @@ void UraServer::run() {
   wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s", socket);
 
   // load config
-  this->config_mgr.load_config();
+  this->config_mgr->load_config();
 
   // run event loop
   wl_display_run(this->display);
+
+  // cleanup
+  delete this;
 }
 
 void UraServer::destroy() {
