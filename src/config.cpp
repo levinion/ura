@@ -1,4 +1,5 @@
 #include <filesystem>
+#include "ura/ura.hpp"
 #define SOL_ALL_SAFETIES_ON 1
 
 #include "ura/config.hpp"
@@ -66,10 +67,49 @@ void UraConfigManager::register_function() {
     }
   );
 
-  auto server = UraServer::get_instance();
-
   this->ura.set_function("terminate", [&]() {
+    auto server = UraServer::get_instance();
     wl_display_terminate(server->display);
+  });
+
+  this->ura.set_function("close_window", [&]() {
+    auto server = UraServer::get_instance();
+    auto focused_surface = server->seat->keyboard_state.focused_surface;
+    if (!focused_surface)
+      return;
+    auto toplevel = wlr_xdg_toplevel_try_from_wlr_surface(focused_surface);
+    if (!toplevel)
+      return;
+    wlr_xdg_toplevel_send_close(toplevel);
+  });
+
+  this->ura.set_function("fullscreen", [&]() {
+    auto server = UraServer::get_instance();
+    auto focused_surface = server->seat->keyboard_state.focused_surface;
+    if (!focused_surface)
+      return;
+    auto toplevel = wlr_xdg_toplevel_try_from_wlr_surface(focused_surface);
+    if (!toplevel)
+      return;
+    wlr_xdg_toplevel_set_fullscreen(toplevel, !toplevel->current.fullscreen);
+    wlr_xdg_surface_schedule_configure(toplevel->base);
+  });
+
+  this->ura.set_function("set_output_scale", [&](float scale) {
+    auto server = UraServer::get_instance();
+    auto output = wlr_output_layout_output_at(
+      server->output_layout,
+      server->cursor->x,
+      server->cursor->y
+    );
+    output->scale = scale;
+  });
+
+  this->ura.set_function("reload", [&]() { this->load_config(); });
+  this->ura.set_function("set_keyboard_repeat", [&](int rate, int delay) {
+    auto server = UraServer::get_instance();
+    auto keyboard = server->seat->keyboard_state.keyboard;
+    wlr_keyboard_set_repeat_info(keyboard, rate, delay);
   });
 }
 

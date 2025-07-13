@@ -1,6 +1,7 @@
 #include "ura/server.hpp"
 #include "ura/output.hpp"
 #include "ura/callback.hpp"
+#include "ura/ura.hpp"
 
 namespace ura {
 
@@ -15,7 +16,6 @@ void on_new_output(wl_listener* listener, void* data) {
 
   auto mode = wlr_output_preferred_mode(_wlr_output);
   if (mode) {
-    // TODO: configure display mode here
     wlr_output_state_set_mode(&state, mode);
   }
 

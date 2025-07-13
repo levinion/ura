@@ -67,8 +67,22 @@ void on_toplevel_unmap(wl_listener* listener, void* data) {
 
 void on_toplevel_commit(wl_listener* listener, void* data) {
   UraToplevel* toplevel = wl_container_of(listener, toplevel, commit);
-  if (toplevel->xdg_toplevel->base->initial_commit) {
-    wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, 0, 0);
+  if (toplevel->xdg_toplevel->current.fullscreen) {
+    auto server = UraServer::get_instance();
+    auto output = wlr_output_layout_output_at(
+      server->output_layout,
+      server->cursor->x,
+      server->cursor->y
+    );
+    wlr_xdg_toplevel_set_size(
+      toplevel->xdg_toplevel,
+      output->current_mode->width,
+      output->current_mode->height
+    );
+    wlr_scene_node_set_position(&toplevel->scene_tree->node, 0, 0);
+  } else {
+    wlr_scene_node_set_position(&toplevel->scene_tree->node, 0, 0);
+    wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, 800, 600);
   }
 }
 
@@ -98,19 +112,21 @@ void on_toplevel_request_resize(wl_listener* listener, void* data) {
 
 void on_toplevel_request_maximize(wl_listener* listener, void* data) {
   UraToplevel* toplevel = wl_container_of(listener, toplevel, request_maximize);
-  // TODO: do nothing, but we should have some work to do
-  if (toplevel->xdg_toplevel->base->initialized) {
-    wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
-  }
+  wlr_xdg_toplevel_set_maximized(
+    toplevel->xdg_toplevel,
+    !toplevel->xdg_toplevel->current.maximized
+  );
+  wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
 }
 
 void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {
   UraToplevel* toplevel =
     wl_container_of(listener, toplevel, request_fullscreen);
-  // TODO: do nothing, but we should have some work to do
-  if (toplevel->xdg_toplevel->base->initialized) {
-    wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
-  }
+  wlr_xdg_toplevel_set_fullscreen(
+    toplevel->xdg_toplevel,
+    !toplevel->xdg_toplevel->current.fullscreen
+  );
+  wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
 }
 
 void UraToplevel::focus() {

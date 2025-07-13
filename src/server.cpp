@@ -3,6 +3,7 @@
 #include "ura/config.hpp"
 #include "ura/ura.hpp"
 #include "wlr/types/wlr_output_power_management_v1.h"
+#include "wlr/types/wlr_xdg_decoration_v1.h"
 
 namespace ura {
 
@@ -64,6 +65,7 @@ void UraServer::setup_compositor() {
   // TODO: register event
   wlr_output_manager_v1_create(this->display);
   wlr_output_power_manager_v1_create(this->display);
+  wlr_xdg_decoration_manager_v1_create(this->display);
 }
 
 void UraServer::setup_output() {
