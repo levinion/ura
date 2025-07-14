@@ -106,9 +106,6 @@ void UraServer::setup_cursor() {
   // create cursor manager with cursor size
   this->cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
 
-  // configure cursor and setup curosr callbacks
-  this->cursor_mode = CursorMode::CURSOR_PASSTHROUGH;
-
   // register callbacks
   this->runtime->register_callback(
     &this->cursor->events.motion,

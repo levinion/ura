@@ -78,7 +78,8 @@ void on_output_request_state(wl_listener* listener, void* data) {
 
 void on_output_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  server->runtime->remove(listener);
+  auto output = server->runtime->fetch<UraOutput*>(listener);
+  server->runtime->remove(output);
 }
 
 } // namespace ura

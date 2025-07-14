@@ -35,11 +35,8 @@ void UraServer::register_keyboard(wlr_input_device* device) {
   this->runtime
     ->register_callback(&wlr_keyboard->events.key, on_keyboard_key, keyboard);
 
-  this->runtime->register_callback(
-    &wlr_keyboard->events.key,
-    on_keyboard_destroy,
-    keyboard
-  );
+  this->runtime
+    ->register_callback(&device->events.destroy, on_keyboard_destroy, keyboard);
 
   wlr_seat_set_keyboard(this->seat, keyboard->keyboard);
 }
@@ -98,7 +95,8 @@ void on_keyboard_key(wl_listener* listener, void* data) {
 
 void on_keyboard_destroy(struct wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  server->runtime->remove(listener);
+  auto keyboard = server->runtime->fetch<UraKeyboard*>(listener);
+  server->runtime->remove(keyboard);
 }
 
 bool UraServer::process_keybindings(uint32_t modifier, xkb_keysym_t sym) {

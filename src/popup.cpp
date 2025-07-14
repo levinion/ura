@@ -41,7 +41,8 @@ void on_popup_commit(wl_listener* listener, void* data) {
 
 void on_popup_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  server->runtime->remove(listener);
+  auto popup = server->runtime->fetch<UraPopup*>(listener);
+  server->runtime->remove(popup);
 }
 
 } // namespace ura

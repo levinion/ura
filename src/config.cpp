@@ -97,6 +97,7 @@ void UraConfigManager::register_function() {
       server->cursor->y
     );
     output->scale = scale;
+    this->scale = scale;
   });
 
   this->ura.set_function("reload", [&]() { this->load_config(); });
@@ -105,6 +106,11 @@ void UraConfigManager::register_function() {
     // TODO: use UraKeyboard rather than wlr_keyboard
     auto keyboard = server->seat->keyboard_state.keyboard;
     wlr_keyboard_set_repeat_info(keyboard, rate, delay);
+  });
+
+  this->ura.set_function("focus_follow_mouse", [&](bool flag) {
+    auto server = UraServer::get_instance();
+    server->config_mgr->focus_follow_mouse = flag;
   });
 }
 

@@ -1,40 +1,56 @@
 #include "ura/ura.hpp"
 #include <memory>
+#include <string>
 #include <unordered_map>
+#include <vector>
+#include <list>
+#include "ura/toplevel.hpp"
 
 namespace ura {
-
-class UraContext {
-public:
-  wl_listener listener;
-  void* data = nullptr;
-};
 
 class UraRuntime {
 public:
   template<typename F>
   void register_callback(wl_signal* signal, F f, void* data) {
-    auto ctx = std::make_unique<UraContext>();
-    ctx->listener.notify = f;
-    wl_signal_add(signal, &ctx->listener);
+    auto listener = std::make_unique<wl_listener>();
+    listener->notify = f;
+    wl_signal_add(signal, listener.get());
 
-    ctx->data = data;
-    this->storage[&ctx->listener] = std::move(ctx);
+    this->storage[listener.get()] = data;
+    if (!this->listeners.contains(data)) {
+      this->listeners[data] = std::vector<std::unique_ptr<wl_listener>> {};
+    }
+    this->listeners[data].push_back(std::move(listener));
   }
 
-  static std::unique_ptr<UraRuntime> init();
+  inline static std::unique_ptr<UraRuntime> init() {
+    return std::make_unique<UraRuntime>();
+  }
 
+  // fetch resource by listener
   template<typename T>
-  T fetch(wl_listener* listener) {
-    return static_cast<T>(this->storage[listener]->data);
+  inline T fetch(wl_listener* listener) {
+    return static_cast<T>(this->storage[listener]);
   }
 
-  void remove(wl_listener* listener) {
-    wl_list_remove(&listener->link);
-    this->storage.erase(listener);
+  // remove all items linked with data, this will also delete data itself
+  template<typename T>
+  void remove(T data) {
+    for (auto& listener : this->listeners[data]) {
+      wl_list_remove(&listener->link);
+      this->storage.erase(listener.get());
+    }
+    this->listeners.erase(data);
+    delete data;
   }
+
+  std::list<UraToplevel*> toplevels;
 
 private:
-  std::unordered_map<wl_listener*, std::unique_ptr<UraContext>> storage;
+  // listener to data
+  std::unordered_map<wl_listener*, void*> storage;
+  // data to listeners
+  std::unordered_map<void*, std::vector<std::unique_ptr<wl_listener>>>
+    listeners;
 };
 } // namespace ura

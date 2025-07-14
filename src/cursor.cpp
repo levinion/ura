@@ -1,10 +1,9 @@
+#include <wayland-server-protocol.h>
 #include "ura/server.hpp"
 #include "ura/toplevel.hpp"
 #include "ura/ura.hpp"
 
 namespace ura {
-
-// callbacks
 
 // callback when cursor moves
 void on_cursor_motion(wl_listener* listener, void* data) {
@@ -45,9 +44,9 @@ void on_cursor_button(wl_listener* listener, void* data) {
     event->state
   );
 
-  if (event->state == WL_POINTER_BUTTON_STATE_RELEASED) {
-    server->reset_cursor_mode();
-  } else {
+  // focus pressed toplevel if focus_follow_mouse is not enabled
+  if (!server->config_mgr->focus_follow_mouse
+      && event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
     // focus client
     double sx, sy;
     wlr_surface* surface = nullptr;
@@ -82,70 +81,7 @@ void UraServer::register_pointer(wlr_input_device* device) {
 }
 
 void UraServer::process_cursor_motion(uint32_t time_msec) {
-  switch (this->cursor_mode) {
-    case CursorMode::CURSOR_MOVE:
-      this->process_cursor_move();
-      break;
-    case CursorMode::CURSOR_RESIZE:
-      this->process_cursor_resize();
-      break;
-    case CursorMode::CURSOR_PASSTHROUGH:
-      this->process_cursor_passthrough(time_msec);
-      break;
-  }
-}
-
-void UraServer::process_cursor_move() {
-  auto toplevel = this->grabbed_toplevel;
-  wlr_scene_node_set_position(
-    &toplevel->scene_tree->node,
-    this->cursor->x - this->grab_x,
-    this->cursor->y - this->grab_y
-  );
-}
-
-void UraServer::process_cursor_resize() {
-  auto toplevel = this->grabbed_toplevel;
-  double border_x = this->cursor->x - this->grab_x;
-  double border_y = this->cursor->y - this->grab_y;
-  int new_left = this->grab_geobox.x;
-  int new_right = this->grab_geobox.x + this->grab_geobox.width;
-  int new_top = this->grab_geobox.y;
-  int new_bottom = this->grab_geobox.y + this->grab_geobox.height;
-
-  if (this->resize_edges & WLR_EDGE_TOP) {
-    new_top = border_y;
-    if (new_top >= new_bottom) {
-      new_top = new_bottom - 1;
-    }
-  } else if (this->resize_edges & WLR_EDGE_BOTTOM) {
-    new_bottom = border_y;
-    if (new_bottom <= new_top) {
-      new_bottom = new_top + 1;
-    }
-  }
-  if (this->resize_edges & WLR_EDGE_LEFT) {
-    new_left = border_x;
-    if (new_left >= new_right) {
-      new_left = new_right - 1;
-    }
-  } else if (this->resize_edges & WLR_EDGE_RIGHT) {
-    new_right = border_x;
-    if (new_right <= new_left) {
-      new_right = new_left + 1;
-    }
-  }
-
-  auto geo_box = &toplevel->xdg_toplevel->base->geometry;
-  wlr_scene_node_set_position(
-    &toplevel->scene_tree->node,
-    new_left - geo_box->x,
-    new_top - geo_box->y
-  );
-
-  int new_width = new_right - new_left;
-  int new_height = new_bottom - new_top;
-  wlr_xdg_toplevel_set_size(toplevel->xdg_toplevel, new_width, new_height);
+  this->process_cursor_passthrough(time_msec);
 }
 
 // returns the topmost toplevel under current cursor coordination
@@ -194,14 +130,11 @@ void UraServer::process_cursor_passthrough(uint32_t time_msec) {
   if (surface) {
     wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
     wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
+    if (this->config_mgr->focus_follow_mouse)
+      toplevel->focus();
   } else {
     wlr_seat_pointer_clear_focus(seat);
   }
-}
-
-void UraServer::reset_cursor_mode() {
-  this->cursor_mode = CursorMode::CURSOR_PASSTHROUGH;
-  this->grabbed_toplevel = nullptr;
 }
 
 } // namespace ura

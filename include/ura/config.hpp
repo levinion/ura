@@ -17,6 +17,8 @@ public:
   sol::state lua;
   sol::table ura;
   std::unordered_map<uint64_t, sol::protected_function> keybinding;
+  bool focus_follow_mouse = true;
+  float scale = 1;
 
   static std::unique_ptr<UraConfigManager> init();
   void register_function();

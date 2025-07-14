@@ -1,16 +1,12 @@
 #pragma once
 
+#include <utility>
 #include "ura/config.hpp"
+#include "ura/output.hpp"
 #include "ura/ura.hpp"
 #include "ura/runtime.hpp"
 
 namespace ura {
-
-enum class CursorMode {
-  CURSOR_PASSTHROUGH,
-  CURSOR_MOVE,
-  CURSOR_RESIZE,
-};
 
 // extern
 class UraToplevel;
@@ -32,11 +28,6 @@ public:
   wlr_xcursor_manager* cursor_mgr;
 
   wlr_seat* seat;
-  CursorMode cursor_mode;
-  UraToplevel* grabbed_toplevel;
-  double grab_x, grab_y;
-  wlr_box grab_geobox;
-  uint32_t resize_edges;
 
   std::unique_ptr<UraConfigManager> config_mgr;
   std::unique_ptr<UraRuntime> runtime;
@@ -53,14 +44,20 @@ public:
   foreground_toplevel(wlr_surface** surface, double* sx, double* sy);
   UraToplevel* focused_toplevel;
 
+  inline wlr_output_mode* output_mode() {
+    auto output = wlr_output_layout_output_at(
+      this->output_layout,
+      this->cursor->x,
+      this->cursor->y
+    );
+    return output->current_mode;
+  }
+
   void register_keyboard(wlr_input_device* device);
   void register_pointer(wlr_input_device* device);
   bool process_keybindings(uint32_t modifier, xkb_keysym_t sym);
   void process_cursor_motion(uint32_t time_msec);
-  void process_cursor_move();
-  void process_cursor_resize();
   void process_cursor_passthrough(uint32_t time_msec);
-  void reset_cursor_mode();
 
   inline void terminate() {
     wl_display_terminate(this->display);
