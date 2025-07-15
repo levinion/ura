@@ -2,6 +2,8 @@ install:
   just build
   sudo install -Dm755 ./build/ura /usr/bin/
   sudo install -Dm644 ./assets/ura.desktop /usr/share/wayland-sessions/
+  sudo rm -rf /usr/share/lua/5.1/ura
+  sudo cp -r lua/ura /usr/share/lua/5.1
 
 run:
   just build
@@ -21,7 +23,7 @@ init:
 
 build:
   just init
-  cmake --build build -j16
+  cmake --build build -j$(nproc)
 
 clean:
   rm -rf build

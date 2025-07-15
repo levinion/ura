@@ -6,7 +6,7 @@ url="https://github.com/levinion/ura"
 arch=("any")
 license=("GPLv3")
 depends=("luajit" "glibc" "sol-git")
-makedepends=("just" "cmake")
+makedepends=("cmake" "pkgconf")
 provides=("ura")
 conflicts=("ura")
 source=(
@@ -21,12 +21,18 @@ pkgver() {
 
 build() {
   cd "$srcdir/$pkgname"
-  just build
+  mkdir -p include/protocols
+  wayland-scanner server-header ./protocols/xdg-shell.xml include/protocols/xdg-shell-protocol.h
+  wayland-scanner server-header ./protocols/wlr-layer-shell-unstable-v1.xml include/protocols/wlr-layer-shell-unstable-v1-protocol.h
+  wayland-scanner server-header ./protocols/wlr-output-power-management-unstable-v1.xml include/protocols/wlr-output-power-management-unstable-v1-protocol.h
+  cmake -B build
+  cmake --build build -j$(nproc)
 }
 
 package() {
   cd "$srcdir/$pkgname"
-  install -Dm755 "build/$pkgname" "$pkgdir/usr/bin/$pkgname"
-  install -Dm644 "LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm755 "build/ura" "$pkgdir/usr/bin/ura"
+  install -Dm644 "LICENSE" "$pkgdir/usr/share/licenses/ura/LICENSE"
   install -Dm644 "assets/ura.desktop" "$pkgdir/usr/share/wayland-sessions/ura.desktop"
+  sudo cp -r "lua/ura" "$pkgdir/usr/share/lua/5.1/"
 }
