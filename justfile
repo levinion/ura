@@ -1,3 +1,8 @@
+install:
+  just build
+  sudo install -Dm755 ./build/ura /usr/bin/
+  sudo install -Dm644 ./assets/ura.desktop /usr/share/wayland-sessions/
+
 run:
   just build
   ./build/$(cat build/CMakeCache.txt | grep CMAKE_PROJECT_NAME | awk -F '=' '{print $2}')
@@ -20,8 +25,3 @@ build:
 
 clean:
   rm -rf build
-
-install:
-  just build
-  sudo install -Dm755 ./build/ura /usr/bin/
-  sudo install -Dm644 ./assets/ura.desktop /usr/share/wayland-sessions/

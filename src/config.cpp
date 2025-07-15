@@ -1,124 +1,22 @@
-#include <filesystem>
-#include "ura/ura.hpp"
 #define SOL_ALL_SAFETIES_ON 1
 
+#include <filesystem>
+#include "ura/server.hpp"
 #include "ura/config.hpp"
 #include <sol/sol.hpp>
-#include <vector>
 #include <string>
-#include "ura/server.hpp"
-#include "ura/toplevel.hpp"
 
 namespace ura {
-
-std::vector<std::string> split(std::string& s) {
-  std::vector<std::string> v;
-  std::string t;
-  for (int i = 0; i < s.size(); i++) {
-    auto c = s[i];
-    if (c >= 'A' && c <= 'z') {
-      t.push_back(c);
-    } else if (c == '+') {
-      v.push_back(t);
-      t.clear();
-    }
-  }
-  if (!t.empty())
-    v.push_back(t);
-  return v;
+std::unique_ptr<UraConfig> UraConfig::init() {
+  return std::make_unique<UraConfig>();
 }
 
-uint64_t
-keypair_id_from_string(std::string& modifiers_str, std::string& key_str) {
-  // modifiers str to modifiers bit
-  auto modifiers = split(modifiers_str);
-  uint32_t mod = 0;
-  for (auto m : modifiers) {
-    if (m == "super" || m == "mod") {
-      mod |= WLR_MODIFIER_LOGO;
-    } else if (m == "alt" || m == "opt") {
-      mod |= WLR_MODIFIER_ALT;
-    } else if (m == "ctrl") {
-      mod |= WLR_MODIFIER_CTRL;
-    }
-  }
-  // key_str to keysym: k to XKB_KEY_k
-  xkb_keysym_t sym =
-    xkb_keysym_from_name(key_str.c_str(), XKB_KEYSYM_CASE_INSENSITIVE);
-
-  return (static_cast<uint64_t>(mod) << 32) | sym;
-}
-
-std::unique_ptr<UraConfigManager> UraConfigManager::init() {
-  auto mgr = std::make_unique<UraConfigManager>();
-  mgr->lua.open_libraries(sol::lib::base, sol::lib::os, sol::lib::package);
-  mgr->ura = mgr->lua.create_named_table("ura");
-  mgr->register_function();
-
-  return mgr;
-}
-
-void UraConfigManager::register_function() {
-  // map key
-  this->ura.set_function(
-    "map",
-    [&](std::string modifiers, std::string key, sol::protected_function func) {
-      auto keypair_id = keypair_id_from_string(modifiers, key);
-      this->keybinding[keypair_id] = func;
-    }
-  );
-
-  this->ura.set_function("terminate", [&]() {
-    UraServer::get_instance()->terminate();
-  });
-
-  this->ura.set_function("close_window", [&]() {
-    auto server = UraServer::get_instance();
-    auto toplevel = server->focused_toplevel;
-    if (!toplevel)
-      return;
-    toplevel->close();
-  });
-
-  this->ura.set_function("fullscreen", [&]() {
-    auto server = UraServer::get_instance();
-    auto toplevel = server->focused_toplevel;
-    if (!toplevel)
-      return;
-    toplevel->toggle_fullscreen();
-  });
-
-  this->ura.set_function("set_output_scale", [&](float scale) {
-    auto server = UraServer::get_instance();
-    // TODO: use UraOutput rather than wlr_output
-    auto output = wlr_output_layout_output_at(
-      server->output_layout,
-      server->cursor->x,
-      server->cursor->y
-    );
-    output->scale = scale;
-    this->scale = scale;
-  });
-
-  this->ura.set_function("reload", [&]() { this->load_config(); });
-  this->ura.set_function("set_keyboard_repeat", [&](int rate, int delay) {
-    auto server = UraServer::get_instance();
-    // TODO: use UraKeyboard rather than wlr_keyboard
-    auto keyboard = server->seat->keyboard_state.keyboard;
-    wlr_keyboard_set_repeat_info(keyboard, rate, delay);
-  });
-
-  this->ura.set_function("focus_follow_mouse", [&](bool flag) {
-    auto server = UraServer::get_instance();
-    server->config_mgr->focus_follow_mouse = flag;
-  });
-}
-
-void UraConfigManager::load_config() {
+void UraConfig::load() {
+  auto server = UraServer::get_instance();
   std::string _home_dir = getenv("HOME");
   auto home_dir = std::filesystem::path(_home_dir);
   auto config_path = home_dir / ".config/ura/init.lua";
-  lua.script_file(config_path);
+  server->lua->execute_file(config_path);
 }
 
 } // namespace ura

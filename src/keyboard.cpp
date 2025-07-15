@@ -31,10 +31,8 @@ void UraServer::register_keyboard(wlr_input_device* device) {
     on_keyboard_modifiers,
     keyboard
   );
-
   this->runtime
     ->register_callback(&wlr_keyboard->events.key, on_keyboard_key, keyboard);
-
   this->runtime
     ->register_callback(&device->events.destroy, on_keyboard_destroy, keyboard);
 
@@ -44,70 +42,47 @@ void UraServer::register_keyboard(wlr_input_device* device) {
 void on_keyboard_modifiers(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto keyboard = server->runtime->fetch<UraKeyboard*>(listener);
-
-  // set current keyboard to seat
-  wlr_seat_set_keyboard(server->seat, keyboard->keyboard);
-  // send modifiers event to clients
-  wlr_seat_keyboard_notify_modifiers(
-    server->seat,
-    &keyboard->keyboard->modifiers
-  );
+  keyboard->notify_modifiers();
 }
 
 void on_keyboard_key(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto keyboard = server->runtime->fetch<UraKeyboard*>(listener);
-
   auto event = static_cast<wlr_keyboard_key_event*>(data);
-  auto seat = server->seat;
-
-  // libinput keycode to x key code
-  uint32_t keycode = event->keycode + 8;
-
-  // get key syms from keycode
-  const xkb_keysym_t* syms;
-  auto nsyms =
-    xkb_state_key_get_syms(keyboard->keyboard->xkb_state, keycode, &syms);
-
-  auto modifiers = wlr_keyboard_get_modifiers(keyboard->keyboard);
-
-  auto handled = false;
-
-  // try handling with keybindings
-  if ((modifiers) && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-    for (int i = 0; i < nsyms; i++) {
-      if (server->process_keybindings(modifiers, syms[i]))
-        handled = true;
-    }
-  }
-
-  // pass keys to clients
-  if (!handled) {
-    wlr_seat_set_keyboard(seat, keyboard->keyboard);
-    wlr_seat_keyboard_notify_key(
-      seat,
-      event->time_msec,
-      event->keycode,
-      event->state
-    );
-  }
+  if (!keyboard->process_key(event))
+    keyboard->notify_key(event);
 }
 
 void on_keyboard_destroy(struct wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto keyboard = server->runtime->fetch<UraKeyboard*>(listener);
   server->runtime->remove(keyboard);
+  delete keyboard;
 }
 
-bool UraServer::process_keybindings(uint32_t modifier, xkb_keysym_t sym) {
-  auto keypair_id = (static_cast<uint64_t>(modifier) << 32) | sym;
+bool UraKeyboard::process_key(wlr_keyboard_key_event* event) {
+  auto server = UraServer::get_instance();
+  uint32_t keycode = event->keycode + 8; // xkeycode = libinput keycode + 8
+  auto sym = xkb_state_key_get_one_sym(this->keyboard->xkb_state, keycode);
+  auto modifiers = wlr_keyboard_get_modifiers(this->keyboard);
 
-  if (this->config_mgr->keybinding.contains(keypair_id)) {
-    this->config_mgr->keybinding[keypair_id]();
-    return true;
-  };
+  // if keybinding is matched, then not pass it to clients
+  if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+    // switch tty
+    if (sym >= XKB_KEY_XF86Switch_VT_1 && sym <= XKB_KEY_XF86Switch_VT_12) {
+      auto vt = sym - XKB_KEY_XF86Switch_VT_1 + 1;
+      wlr_session_change_vt(server->session, vt);
+      return true;
+    }
 
-  // return false to not pass keys to clients
+    // exec keybinding
+    auto id = (static_cast<uint64_t>(modifiers) << 32) | sym;
+    if (server->config->keybinding.contains(id)) {
+      server->config->keybinding[id]();
+      return true;
+    };
+  }
+
   return false;
 }
 } // namespace ura

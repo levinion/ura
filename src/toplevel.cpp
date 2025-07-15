@@ -1,5 +1,4 @@
 #include "ura/toplevel.hpp"
-#include <print>
 #include "ura/server.hpp"
 #include "ura/ura.hpp"
 #include "ura/callback.hpp"
@@ -90,19 +89,30 @@ void on_toplevel_unmap(wl_listener* listener, void* data) {
 void on_toplevel_commit(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
+
+  auto mode = server->output_mode();
+  auto scale = server->config->scale;
+  auto width = mode->width / scale;
+  auto height = mode->height / scale;
+
+  // handle fullscreen toplevel window
+  if (toplevel->fullscreen()) {
+    toplevel->focus();
+    toplevel->resize(width, height);
+    toplevel->move(0, 0);
+    return;
+  }
+
+  // else auto tiling
   auto& toplevels = server->runtime->toplevels;
   int sum = 0;
   for (auto toplevel : toplevels) {
-    if (!toplevel->hidden)
+    if (!toplevel->hidden && !toplevel->fullscreen())
       sum += 1;
   }
-  auto mode = server->output_mode();
-  auto scale = server->config_mgr->scale;
-  auto width = mode->width / scale;
-  auto height = mode->height / scale;
   int i = 0;
   for (auto window : toplevels) {
-    if (window->hidden)
+    if (window->hidden || window->fullscreen())
       continue;
     if (window != toplevel)
       i++;
@@ -120,6 +130,7 @@ void on_toplevel_destroy(wl_listener* listener, void* data) {
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   server->runtime->toplevels.remove(toplevel);
   server->runtime->remove(toplevel);
+  delete toplevel;
 }
 
 // void on_toplevel_request_move(wl_listener* listener, void* data) {
@@ -138,11 +149,9 @@ void on_toplevel_destroy(wl_listener* listener, void* data) {
 void on_toplevel_request_maximize(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  wlr_xdg_toplevel_set_maximized(
-    toplevel->xdg_toplevel,
-    !toplevel->xdg_toplevel->current.maximized
-  );
-  wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
+  // TODO:
+
+  // toplevel->toggle_fullscreen();
 }
 
 void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {

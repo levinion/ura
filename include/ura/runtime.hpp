@@ -1,6 +1,4 @@
-#include "ura/ura.hpp"
 #include <memory>
-#include <string>
 #include <unordered_map>
 #include <vector>
 #include <list>
@@ -41,7 +39,6 @@ public:
       this->storage.erase(listener.get());
     }
     this->listeners.erase(data);
-    delete data;
   }
 
   std::list<UraToplevel*> toplevels;

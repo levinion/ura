@@ -41,4 +41,9 @@ void on_keyboard_modifiers(wl_listener* listener, void* data);
 void on_keyboard_key(wl_listener* listener, void* data);
 void on_keyboard_destroy(wl_listener* listener, void* data);
 
+// decoration.cpp
+void on_new_toplevel_decoration(wl_listener* listener, void* data);
+void on_toplevel_decoration_destroy(wl_listener* listener, void* data);
+void on_toplevel_decoration_request_mode(wl_listener* listener, void* data);
+
 } // namespace ura

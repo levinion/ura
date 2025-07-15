@@ -43,6 +43,7 @@ void on_popup_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto popup = server->runtime->fetch<UraPopup*>(listener);
   server->runtime->remove(popup);
+  delete popup;
 }
 
 } // namespace ura

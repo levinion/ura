@@ -19,6 +19,8 @@ UraServer* UraServer::get_instance() {
 UraServer* UraServer::init() {
   wlr_log_init(WLR_DEBUG, NULL);
   this->runtime = UraRuntime::init();
+  this->config = UraConfig::init();
+  this->lua = Lua::init();
   this->setup_base();
   this->setup_compositor();
   this->setup_output();
@@ -26,14 +28,14 @@ UraServer* UraServer::init() {
   this->setup_popup();
   this->setup_cursor();
   this->setup_input();
-  this->config_mgr = UraConfigManager::init();
+  this->setup_decoration();
   return this;
 }
 
 void UraServer::setup_base() {
   this->display = wl_display_create();
   auto event_loop = wl_display_get_event_loop(this->display);
-  this->backend = wlr_backend_autocreate(event_loop, nullptr);
+  this->backend = wlr_backend_autocreate(event_loop, &this->session);
   if (!this->backend) {
     wlr_log(WLR_ERROR, "failed to create wlr_backend");
     exit(1);
@@ -60,7 +62,6 @@ void UraServer::setup_compositor() {
   // TODO: register event
   wlr_output_manager_v1_create(this->display);
   wlr_output_power_manager_v1_create(this->display);
-  wlr_xdg_decoration_manager_v1_create(this->display);
 }
 
 void UraServer::setup_output() {
@@ -157,6 +158,16 @@ void UraServer::setup_input() {
   );
 }
 
+void UraServer::setup_decoration() {
+  this->decoration_manager =
+    wlr_xdg_decoration_manager_v1_create(this->display);
+  this->runtime->register_callback(
+    &this->decoration_manager->events.new_toplevel_decoration,
+    on_new_toplevel_decoration,
+    nullptr
+  );
+}
+
 void UraServer::run() {
   // create wayland socket
   auto socket = wl_display_add_socket_auto(this->display);
@@ -177,7 +188,7 @@ void UraServer::run() {
   wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s", socket);
 
   // load config
-  this->config_mgr->load_config();
+  this->config->load();
 
   // run event loop
   wl_display_run(this->display);
@@ -192,6 +203,7 @@ void UraServer::destroy() {
   wlr_renderer_destroy(this->renderer);
   wlr_backend_destroy(this->backend);
   wl_display_destroy(this->display);
+  this->runtime->remove(nullptr);
 }
 
 UraServer::~UraServer() {

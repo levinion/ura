@@ -45,7 +45,7 @@ void on_cursor_button(wl_listener* listener, void* data) {
   );
 
   // focus pressed toplevel if focus_follow_mouse is not enabled
-  if (!server->config_mgr->focus_follow_mouse
+  if (!server->config->focus_follow_mouse
       && event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
     // focus client
     double sx, sy;
@@ -130,7 +130,7 @@ void UraServer::process_cursor_passthrough(uint32_t time_msec) {
   if (surface) {
     wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
     wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
-    if (this->config_mgr->focus_follow_mouse)
+    if (this->config->focus_follow_mouse)
       toplevel->focus();
   } else {
     wlr_seat_pointer_clear_focus(seat);
