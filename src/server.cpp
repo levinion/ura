@@ -1,6 +1,10 @@
 #include "ura/server.hpp"
 #include "ura/callback.hpp"
 #include "ura/config.hpp"
+#include "ura/output.hpp"
+#include "ura/runtime.hpp"
+#include "ura/keyboard.hpp"
+#include "ura/toplevel.hpp"
 #include "ura/ura.hpp"
 #include "wlr/types/wlr_output_power_management_v1.h"
 #include "wlr/types/wlr_xdg_decoration_v1.h"
@@ -29,6 +33,7 @@ UraServer* UraServer::init() {
   this->setup_cursor();
   this->setup_input();
   this->setup_decoration();
+  this->setup_layer_shell();
   return this;
 }
 
@@ -58,10 +63,15 @@ void UraServer::setup_compositor() {
   wlr_data_device_manager_create(this->display);
   wlr_linux_dmabuf_v1_create_with_renderer(this->display, 4, this->renderer);
   wlr_shm_create_with_renderer(this->display, 2, this->renderer);
-  wlr_layer_shell_v1_create(this->display, 1);
   // TODO: register event
   wlr_output_manager_v1_create(this->display);
   wlr_output_power_manager_v1_create(this->display);
+  wlr_fractional_scale_manager_v1_create(this->display, 1);
+  wlr_viewporter_create(this->display);
+  wlr_single_pixel_buffer_manager_v1_create(this->display);
+  auto foreign_registry = wlr_xdg_foreign_registry_create(this->display);
+  wlr_xdg_foreign_v1_create(this->display, foreign_registry);
+  wlr_xdg_foreign_v2_create(this->display, foreign_registry);
 }
 
 void UraServer::setup_output() {
@@ -168,6 +178,15 @@ void UraServer::setup_decoration() {
   );
 }
 
+void UraServer::setup_layer_shell() {
+  this->layer_shell = wlr_layer_shell_v1_create(this->display, 1);
+  this->runtime->register_callback(
+    &this->layer_shell->events.new_surface,
+    on_layer_shell_new_surface,
+    nullptr
+  );
+}
+
 void UraServer::run() {
   // create wayland socket
   auto socket = wl_display_add_socket_auto(this->display);
@@ -208,6 +227,60 @@ void UraServer::destroy() {
 
 UraServer::~UraServer() {
   this->destroy();
+}
+
+// returns the topmost toplevel under current cursor coordination
+UraToplevel*
+UraServer::foreground_toplevel(wlr_surface** surface, double* sx, double* sy) {
+  auto node = wlr_scene_node_at(
+    &this->scene->tree.node,
+    this->cursor->x,
+    this->cursor->y,
+    sx,
+    sy
+  );
+
+  // check validity
+  if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
+    return nullptr;
+  }
+
+  auto scene_buffer = wlr_scene_buffer_from_node(node);
+  auto scene_surface = wlr_scene_surface_try_from_buffer(scene_buffer);
+
+  if (!scene_surface) {
+    return nullptr;
+  }
+
+  *surface = scene_surface->surface;
+
+  auto tree = node->parent;
+  while (tree && !tree->node.data) {
+    tree = tree->node.parent;
+  }
+
+  return static_cast<UraToplevel*>(tree->node.data);
+}
+
+UraOutput* UraServer::current_output() {
+  auto output = wlr_output_layout_output_at(
+    this->output_layout,
+    this->cursor->x,
+    this->cursor->y
+  );
+  return UraOutput::get_instance(output);
+}
+
+UraKeyboard* UraServer::current_keyboard() {
+  auto keyboard = this->seat->keyboard_state.keyboard;
+  return UraKeyboard::get_instance(keyboard);
+}
+
+void UraServer::terminate() {
+  for (auto toplevel : this->runtime->toplevels) {
+    toplevel->close();
+  }
+  wl_display_terminate(this->display);
 }
 
 } // namespace ura

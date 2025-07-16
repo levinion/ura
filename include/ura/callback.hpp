@@ -1,3 +1,5 @@
+#pragma once
+
 #include "ura/ura.hpp"
 
 namespace ura {
@@ -45,5 +47,13 @@ void on_keyboard_destroy(wl_listener* listener, void* data);
 void on_new_toplevel_decoration(wl_listener* listener, void* data);
 void on_toplevel_decoration_destroy(wl_listener* listener, void* data);
 void on_toplevel_decoration_request_mode(wl_listener* listener, void* data);
+
+// layershell.cpp
+void on_layer_shell_new_surface(wl_listener* listener, void* data);
+void on_layer_shell_surface_commit(wl_listener* listener, void* data);
+void on_layer_shell_surface_destroy(wl_listener* listener, void* data);
+void on_layer_shell_surface_map(wl_listener* listener, void* data);
+void on_layer_shell_surface_unmap(wl_listener* listener, void* data);
+void on_layer_shell_new_popup(wl_listener* listener, void* data);
 
 } // namespace ura

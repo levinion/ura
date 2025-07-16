@@ -2,13 +2,14 @@
 
 #include "ura/config.hpp"
 #include "ura/ura.hpp"
-#include "ura/runtime.hpp"
-#include "wlr/types/wlr_xdg_decoration_v1.h"
 #include "ura/lua.hpp"
 
 namespace ura {
 // extern
 class UraToplevel;
+class UraOutput;
+class UraKeyboard;
+class UraRuntime;
 
 class UraServer {
 public:
@@ -25,12 +26,13 @@ public:
   wlr_xcursor_manager* cursor_mgr;
   wlr_seat* seat;
   wlr_xdg_decoration_manager_v1* decoration_manager;
+  wlr_layer_shell_v1* layer_shell;
 
   std::unique_ptr<UraConfig> config;
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;
 
-  // Methods
+  // Get the global instance of server
   static UraServer* get_instance();
   UraServer* init();
 
@@ -41,24 +43,11 @@ public:
   UraToplevel*
   foreground_toplevel(wlr_surface** surface, double* sx, double* sy);
   UraToplevel* focused_toplevel;
+  UraOutput* current_output();
+  UraKeyboard* current_keyboard();
 
-  inline wlr_output_mode* output_mode() {
-    auto output = wlr_output_layout_output_at(
-      this->output_layout,
-      this->cursor->x,
-      this->cursor->y
-    );
-    return output->current_mode;
-  }
-
-  void register_keyboard(wlr_input_device* device);
-  void register_pointer(wlr_input_device* device);
   void process_cursor_motion(uint32_t time_msec);
-  void process_cursor_passthrough(uint32_t time_msec);
-
-  inline void terminate() {
-    wl_display_terminate(this->display);
-  }
+  void terminate();
 
 private:
   static UraServer* instance;
@@ -70,6 +59,7 @@ private:
   void setup_compositor();
   void setup_base();
   void setup_decoration();
+  void setup_layer_shell();
 };
 
 } // namespace ura

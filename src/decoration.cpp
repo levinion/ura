@@ -2,6 +2,7 @@
 #include "ura/callback.hpp"
 #include "wlr/types/wlr_xdg_decoration_v1.h"
 #include "ura/decoration.hpp"
+#include "ura/runtime.hpp"
 
 namespace ura {
 

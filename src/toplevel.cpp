@@ -1,4 +1,6 @@
 #include "ura/toplevel.hpp"
+#include "ura/runtime.hpp"
+#include "ura/output.hpp"
 #include "ura/server.hpp"
 #include "ura/ura.hpp"
 #include "ura/callback.hpp"
@@ -19,6 +21,16 @@ void on_new_toplevel(wl_listener* listener, void* data) {
   );
   toplevel->scene_tree->node.data = toplevel;
   xdg_toplevel->base->data = toplevel->scene_tree;
+
+  // // notify scale
+  wlr_fractional_scale_v1_notify_scale(
+    xdg_toplevel->base->surface,
+    server->config->scale
+  );
+  wlr_surface_set_preferred_buffer_scale(
+    xdg_toplevel->base->surface,
+    server->config->scale
+  );
 
   // register callback
   server->runtime->register_callback(
@@ -89,8 +101,8 @@ void on_toplevel_unmap(wl_listener* listener, void* data) {
 void on_toplevel_commit(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-
-  auto mode = server->output_mode();
+  auto output = server->current_output();
+  auto mode = output->output->current_mode;
   auto scale = server->config->scale;
   auto width = mode->width / scale;
   auto height = mode->height / scale;
@@ -104,6 +116,7 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
   }
 
   // else auto tiling
+  auto gap = 30;
   auto& toplevels = server->runtime->toplevels;
   int sum = 0;
   for (auto toplevel : toplevels) {
@@ -119,18 +132,22 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
     else
       break;
   }
-  toplevel->resize(width / sum, height);
-  toplevel->move(width / sum * i, 0);
+  toplevel->resize((width - 2 * gap) / sum, height - 2 * gap);
+  toplevel->move(((width - 2 * gap) / sum * i) + gap, gap);
 }
 
 void on_toplevel_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  // TODO: set focus to another toplevel
   server->focused_toplevel = nullptr;
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   server->runtime->toplevels.remove(toplevel);
   server->runtime->remove(toplevel);
   delete toplevel;
+
+  if (!server->runtime->toplevels.empty()) {
+    auto new_toplevel = server->runtime->toplevels.front();
+    new_toplevel->focus();
+  }
 }
 
 // void on_toplevel_request_move(wl_listener* listener, void* data) {

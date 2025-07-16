@@ -1,8 +1,10 @@
+#pragma once
+
 #include <memory>
 #include <unordered_map>
 #include <vector>
 #include <list>
-#include "ura/toplevel.hpp"
+#include "ura/server.hpp"
 
 namespace ura {
 
@@ -42,6 +44,8 @@ public:
   }
 
   std::list<UraToplevel*> toplevels;
+  std::list<UraOutput*> outputs;
+  std::list<UraKeyboard*> keyboards;
 
 private:
   // listener to data

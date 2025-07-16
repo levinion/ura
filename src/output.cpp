@@ -1,18 +1,21 @@
+#include "ura/layer_shell.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
-#include <cassert>
 #include "ura/callback.hpp"
 #include "ura/ura.hpp"
+#include "ura/runtime.hpp"
+#include "ura/layer_shell.hpp"
 
 namespace ura {
 
 void on_new_output(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-
-  // setup wlr_output
   auto _wlr_output = static_cast<wlr_output*>(data);
+
+  // bind render and allocator to this output
   wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
 
+  // enable output so it can receive commit event
   wlr_output_state state;
   wlr_output_state_init(&state);
   wlr_output_state_set_enabled(&state, true);
@@ -29,44 +32,44 @@ void on_new_output(wl_listener* listener, void* data) {
   auto output = new UraOutput {};
   output->output = _wlr_output;
 
+  // create scene tree
+  output->background = wlr_scene_tree_create(&server->scene->tree);
+  output->bottom = wlr_scene_tree_create(&server->scene->tree);
+  output->top = wlr_scene_tree_create(&server->scene->tree);
+  output->overlay = wlr_scene_tree_create(&server->scene->tree);
+
   // register callback
   server->runtime
     ->register_callback(&_wlr_output->events.frame, on_output_frame, output);
-
   server->runtime->register_callback(
     &_wlr_output->events.request_state,
     on_output_request_state,
     output
   );
-
   server->runtime->register_callback(
     &_wlr_output->events.destroy,
     on_output_destroy,
     output
   );
 
-  // add this wlr_output to scene layout
+  // add this output to scene layout
   auto output_layout_output =
     wlr_output_layout_add_auto(server->output_layout, _wlr_output);
+
   auto scene_output = wlr_scene_output_create(server->scene, _wlr_output);
   wlr_scene_output_layout_add_output(
     server->scene_layout,
     output_layout_output,
     scene_output
   );
+
+  server->runtime->outputs.push_back(output);
 }
 
 void on_output_frame(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto output = server->runtime->fetch<UraOutput*>(listener);
-
-  auto scene = server->scene;
-  auto scene_output = wlr_scene_get_scene_output(scene, output->output);
-  wlr_scene_output_commit(scene_output, nullptr);
-
-  timespec now;
-  clock_gettime(CLOCK_MONOTONIC, &now);
-  wlr_scene_output_send_frame_done(scene_output, &now);
+  output->commit_frame();
 }
 
 void on_output_request_state(wl_listener* listener, void* data) {
@@ -80,7 +83,55 @@ void on_output_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto output = server->runtime->fetch<UraOutput*>(listener);
   server->runtime->remove(output);
+  server->runtime->outputs.remove(output);
   delete output;
+}
+
+void UraOutput::commit_frame() {
+  auto server = UraServer::get_instance();
+  auto scene = server->scene;
+  auto scene_output = wlr_scene_get_scene_output(scene, this->output);
+  // commit scene_output
+  wlr_scene_output_commit(scene_output, nullptr);
+  // notify clients
+  timespec now;
+  clock_gettime(CLOCK_MONOTONIC, &now);
+  wlr_scene_output_send_frame_done(scene_output, &now);
+}
+
+wlr_scene_tree* UraOutput::get_layer_by_type(zwlr_layer_shell_v1_layer type) {
+  wlr_scene_tree* layer;
+  switch (type) {
+    case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
+      layer = this->background;
+      break;
+    case ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM:
+      layer = this->bottom;
+      break;
+    case ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY:
+      layer = this->overlay;
+      break;
+    case ZWLR_LAYER_SHELL_V1_LAYER_TOP:
+      layer = this->top;
+      break;
+  }
+  return layer;
+}
+
+void UraOutput::commit_layers(UraLayerShell* layer_shell) {
+  wlr_box usable_area;
+  wlr_output_effective_resolution(
+    this->output,
+    &usable_area.width,
+    &usable_area.height
+  );
+  auto full_area = usable_area;
+
+  wlr_scene_layer_surface_v1_configure(
+    layer_shell->scene_surface,
+    &full_area,
+    &usable_area
+  );
 }
 
 } // namespace ura

@@ -1,5 +1,9 @@
 #include "ura/api.hpp"
 #include "ura/server.hpp"
+#include "ura/output.hpp"
+#include "ura/toplevel.hpp"
+#include "ura/ura.hpp"
+#include "ura/keyboard.hpp"
 
 namespace ura {
 
@@ -8,7 +12,7 @@ std::vector<std::string> split(std::string& s) {
   std::string t;
   for (int i = 0; i < s.size(); i++) {
     auto c = s[i];
-    if (c >= 'A' && c <= 'z') {
+    if (std::isalpha(c)) {
       t.push_back(c);
     } else if (c == '+') {
       v.push_back(t);
@@ -32,11 +36,19 @@ keypair_id_from_string(std::string& modifiers_str, std::string& key_str) {
       mod |= WLR_MODIFIER_ALT;
     } else if (m == "ctrl") {
       mod |= WLR_MODIFIER_CTRL;
+    } else if (m == "shift") {
+      mod |= WLR_MODIFIER_SHIFT;
     }
   }
-  // key_str to keysym: k to XKB_KEY_k
   xkb_keysym_t sym =
     xkb_keysym_from_name(key_str.c_str(), XKB_KEYSYM_CASE_INSENSITIVE);
+
+  // if shift is pressed, then upper sym should be binded
+  if (mod & WLR_MODIFIER_SHIFT && sym >= XKB_KEY_a && sym <= XKB_KEY_z) {
+    sym -= (XKB_KEY_a - XKB_KEY_A);
+  }
+
+  wlr_log(WLR_DEBUG, "bind: modifiers: %d; keysym: %d", mod, sym);
 
   return (static_cast<uint64_t>(mod) << 32) | sym;
 }
@@ -69,13 +81,8 @@ void fullscreen() {
 
 void set_output_scale(float scale) {
   auto server = UraServer::get_instance();
-  // TODO: use UraOutput rather than wlr_output
-  auto output = wlr_output_layout_output_at(
-    server->output_layout,
-    server->cursor->x,
-    server->cursor->y
-  );
-  output->scale = scale;
+  auto output = server->current_output();
+  output->output->scale = scale;
   server->config->scale = scale;
 }
 
@@ -86,9 +93,8 @@ void reload() {
 
 void set_keyboard_repeat(int rate, int delay) {
   auto server = UraServer::get_instance();
-  // TODO: use UraKeyboard rather than wlr_keyboard
-  auto keyboard = server->seat->keyboard_state.keyboard;
-  wlr_keyboard_set_repeat_info(keyboard, rate, delay);
+  auto keyboard = server->current_keyboard();
+  keyboard->set_repeat(rate, delay);
 }
 
 void focus_follow_mouse(bool flag) {

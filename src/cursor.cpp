@@ -1,5 +1,6 @@
 #include <wayland-server-protocol.h>
 #include "ura/server.hpp"
+#include "ura/output.hpp"
 #include "ura/toplevel.hpp"
 #include "ura/ura.hpp"
 
@@ -76,51 +77,14 @@ void on_cursor_frame(wl_listener* listener, void* data) {
   wlr_seat_pointer_notify_frame(server->seat);
 }
 
-void UraServer::register_pointer(wlr_input_device* device) {
-  wlr_cursor_attach_input_device(this->cursor, device);
-}
-
 void UraServer::process_cursor_motion(uint32_t time_msec) {
-  this->process_cursor_passthrough(time_msec);
-}
-
-// returns the topmost toplevel under current cursor coordination
-UraToplevel*
-UraServer::foreground_toplevel(wlr_surface** surface, double* sx, double* sy) {
-  auto node = wlr_scene_node_at(
-    &this->scene->tree.node,
-    this->cursor->x,
-    this->cursor->y,
-    sx,
-    sy
-  );
-
-  // check validity
-  if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
-    return nullptr;
-  }
-
-  auto scene_buffer = wlr_scene_buffer_from_node(node);
-  auto scene_surface = wlr_scene_surface_try_from_buffer(scene_buffer);
-
-  if (!scene_surface) {
-    return nullptr;
-  }
-
-  *surface = scene_surface->surface;
-
-  auto tree = node->parent;
-  while (tree && !tree->node.data) {
-    tree = tree->node.parent;
-  }
-
-  return static_cast<UraToplevel*>(tree->node.data);
-}
-
-void UraServer::process_cursor_passthrough(uint32_t time_msec) {
   double sx, sy;
   wlr_surface* surface = nullptr;
   auto toplevel = this->foreground_toplevel(&surface, &sx, &sy);
+
+  auto scale = this->current_output()->output->scale;
+  sx = sx / scale;
+  sy = sy / scale;
 
   if (!toplevel) {
     wlr_cursor_set_xcursor(this->cursor, this->cursor_mgr, "default");
@@ -132,8 +96,6 @@ void UraServer::process_cursor_passthrough(uint32_t time_msec) {
     wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
     if (this->config->focus_follow_mouse)
       toplevel->focus();
-  } else {
-    wlr_seat_pointer_clear_focus(seat);
   }
 }
 

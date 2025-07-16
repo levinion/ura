@@ -1,6 +1,7 @@
 #include "ura/server.hpp"
 #include "ura/popup.hpp"
 #include "ura/callback.hpp"
+#include "ura/runtime.hpp"
 
 namespace ura {
 

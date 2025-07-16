@@ -1,13 +1,22 @@
 #pragma once
 
 #include "ura/server.hpp"
-#include "ura/ura.hpp"
+#include "ura/runtime.hpp"
 
 namespace ura {
 
 class UraKeyboard {
 public:
   wlr_keyboard* keyboard;
+
+  static UraKeyboard* get_instance(wlr_keyboard* keyboard) {
+    auto keyboards = UraServer::get_instance()->runtime->keyboards;
+    return *std::find_if(keyboards.begin(), keyboards.end(), [&](auto i) {
+      return i->keyboard == keyboard;
+    });
+  }
+
+  void init(wlr_input_device* device);
 
   inline void set_repeat(int rate, int delay) {
     wlr_keyboard_set_repeat_info(keyboard, rate, delay);

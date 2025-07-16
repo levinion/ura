@@ -11,8 +11,10 @@ public:
   sol::table table;
 
   static std::unique_ptr<Lua> init();
-  void register_function();
   void execute(std::string script);
   void execute_file(std::filesystem::path);
+
+private:
+  void register_function();
 };
 } // namespace ura
