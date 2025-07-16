@@ -91,9 +91,18 @@ void on_layer_shell_surface_commit(wl_listener* listener, void* data) {
     wlr_scene_node_reparent(&layer_shell->scene_surface->tree->node, layer);
   }
 
-  // TODO: proper layer size
-  auto width = output->output->current_mode->width;
-  auto height = output->output->current_mode->height;
+  // configure size
+  auto width = layer_shell->layer_surface->pending.desired_width;
+  auto height = layer_shell->layer_surface->pending.desired_height;
+  auto scale = server->config->scale;
+  if (width == 0) {
+    width = output->output->current_mode->width / scale;
+  }
+  if (height == 0) {
+    height = output->output->current_mode->height / scale;
+  }
+
+  wlr_log(WLR_DEBUG, "layer_shell size: %d:%d", width, height);
   wlr_layer_surface_v1_configure(layer_shell->layer_surface, width, height);
   output->configure_layers();
 }

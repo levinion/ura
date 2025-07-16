@@ -82,10 +82,6 @@ void UraServer::process_cursor_motion(uint32_t time_msec) {
   wlr_surface* surface = nullptr;
   auto toplevel = this->foreground_toplevel(&surface, &sx, &sy);
 
-  auto scale = this->current_output()->output->scale;
-  sx = sx / scale;
-  sy = sy / scale;
-
   if (!toplevel) {
     wlr_cursor_set_xcursor(this->cursor, this->cursor_mgr, "default");
   }
