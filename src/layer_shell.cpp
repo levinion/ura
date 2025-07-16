@@ -64,11 +64,16 @@ void on_layer_shell_new_surface(wl_listener* listener, void* data) {
     layer_shell
   );
 
-  server->runtime->register_callback(
-    &layer_surface->events.new_popup,
-    on_layer_shell_new_popup,
-    layer_shell
-  );
+  // server->runtime->register_callback(
+  //   &layer_surface->events.new_popup,
+  //   on_layer_shell_new_popup,
+  //   layer_shell
+  // );
+
+  // add this shell to output's layer
+  auto list =
+    layer_shell->output->get_layer_list_by_type(layer_surface->pending.layer);
+  list.push_back(layer_shell);
 }
 
 void on_layer_shell_surface_commit(wl_listener* listener, void* data) {
@@ -86,15 +91,26 @@ void on_layer_shell_surface_commit(wl_listener* listener, void* data) {
     wlr_scene_node_reparent(&layer_shell->scene_surface->tree->node, layer);
   }
 
-  output->commit_layers(layer_shell);
+  // TODO: proper layer size
+  auto width = output->output->current_mode->width;
+  auto height = output->output->current_mode->height;
+  wlr_layer_surface_v1_configure(layer_shell->layer_surface, width, height);
+  output->configure_layers();
 }
 
 void on_layer_shell_surface_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto layer_shell = server->runtime->fetch<UraLayerShell*>(listener);
-  server->runtime->remove(layer_shell);
+
   // this will destroy scene node so there's no need to destroy again
-  wlr_layer_surface_v1_destroy(layer_shell->layer_surface);
+  // wlr_layer_surface_v1_destroy(layer_shell->layer_surface);
+
+  server->runtime->remove(layer_shell);
+  // remove from output's layer
+  auto list = layer_shell->output->get_layer_list_by_type(
+    layer_shell->layer_surface->pending.layer
+  );
+  list.remove(layer_shell);
   delete layer_shell;
 }
 
@@ -103,7 +119,7 @@ void on_layer_shell_surface_map(wl_listener* listener, void* data) {
   auto layer_shell = server->runtime->fetch<UraLayerShell*>(listener);
   wlr_scene_node_set_enabled(&layer_shell->scene_surface->tree->node, true);
   auto output = layer_shell->output;
-  output->commit_layers(layer_shell);
+  output->configure_layers();
 }
 
 void on_layer_shell_surface_unmap(wl_listener* listener, void* data) {
@@ -111,7 +127,7 @@ void on_layer_shell_surface_unmap(wl_listener* listener, void* data) {
   auto layer_shell = server->runtime->fetch<UraLayerShell*>(listener);
   wlr_scene_node_set_enabled(&layer_shell->scene_surface->tree->node, false);
   auto output = layer_shell->output;
-  output->commit_layers(layer_shell);
+  output->configure_layers();
 }
 
 void on_layer_shell_new_popup(wl_listener* listener, void* data) {}

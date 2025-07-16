@@ -1,6 +1,8 @@
 #include "ura/layer_shell.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
+#include <list>
+#include <utility>
 #include "ura/callback.hpp"
 #include "ura/ura.hpp"
 #include "ura/runtime.hpp"
@@ -51,6 +53,11 @@ void on_new_output(wl_listener* listener, void* data) {
     on_output_destroy,
     output
   );
+
+  wlr_scene_node_lower_to_bottom(&output->bottom->node);
+  wlr_scene_node_lower_to_bottom(&output->background->node);
+  wlr_scene_node_raise_to_top(&output->top->node);
+  wlr_scene_node_raise_to_top(&output->overlay->node);
 
   // add this output to scene layout
   auto output_layout_output =
@@ -118,7 +125,44 @@ wlr_scene_tree* UraOutput::get_layer_by_type(zwlr_layer_shell_v1_layer type) {
   return layer;
 }
 
-void UraOutput::commit_layers(UraLayerShell* layer_shell) {
+std::list<UraLayerShell*>&
+UraOutput::get_layer_list_by_type(zwlr_layer_shell_v1_layer type) {
+  switch (type) {
+    case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
+      return this->background_surfaces;
+      break;
+    case ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM:
+      return this->bottom_surfaces;
+      break;
+    case ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY:
+      return this->overlay_surfaces;
+      break;
+    case ZWLR_LAYER_SHELL_V1_LAYER_TOP:
+      return this->top_surfaces;
+      break;
+  }
+  std::unreachable();
+}
+
+void UraOutput::configure_layer(
+  wlr_scene_tree* layer,
+  std::list<UraLayerShell*>& list,
+  wlr_box* full_area,
+  wlr_box* usable_area
+) {
+  auto server = UraServer::get_instance();
+  auto scene_output = wlr_scene_get_scene_output(server->scene, this->output);
+  wlr_scene_node_set_position(&layer->node, scene_output->x, scene_output->y);
+  for (auto layer_shell : list) {
+    wlr_scene_layer_surface_v1_configure(
+      layer_shell->scene_surface,
+      full_area,
+      usable_area
+    );
+  }
+}
+
+void UraOutput::configure_layers() {
   wlr_box usable_area;
   wlr_output_effective_resolution(
     this->output,
@@ -126,9 +170,23 @@ void UraOutput::commit_layers(UraLayerShell* layer_shell) {
     &usable_area.height
   );
   auto full_area = usable_area;
-
-  wlr_scene_layer_surface_v1_configure(
-    layer_shell->scene_surface,
+  this->configure_layer(
+    this->background,
+    this->background_surfaces,
+    &full_area,
+    &usable_area
+  );
+  this->configure_layer(
+    this->bottom,
+    this->bottom_surfaces,
+    &full_area,
+    &usable_area
+  );
+  this
+    ->configure_layer(this->top, this->top_surfaces, &full_area, &usable_area);
+  this->configure_layer(
+    this->overlay,
+    this->overlay_surfaces,
     &full_area,
     &usable_area
   );

@@ -26,6 +26,8 @@ void Lua::register_function() {
   this->table.set_function("env", env);
 }
 
+// TODO: unsafe lua scripts
+
 void Lua::execute(std::string script) {
   this->state.script(script);
 }
