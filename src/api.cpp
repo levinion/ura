@@ -135,4 +135,9 @@ void hook(std::string name, sol::protected_function f) {
   config->hooks[name] = f;
 }
 
+void tiling_gap(float gap) {
+  auto& config = UraServer::get_instance()->config;
+  config->gap = gap;
+}
+
 } // namespace ura

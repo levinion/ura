@@ -14,8 +14,15 @@ public:
   wlr_scene_tree* scene_tree;
   UraOutput* output;
   bool mapped = true;
+  wlr_xdg_toplevel_decoration_v1* decoration;
+
+  static UraToplevel* from(wlr_xdg_toplevel* toplevel);
 
   void focus();
+
+  inline bool initialized() {
+    return this->xdg_toplevel->base->initialized;
+  }
 
   inline void move(int x, int y) {
     wlr_scene_node_set_position(&this->scene_tree->node, x, y);

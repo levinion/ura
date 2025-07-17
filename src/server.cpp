@@ -169,8 +169,17 @@ void UraServer::setup_input() {
 }
 
 void UraServer::setup_decoration() {
+  auto server_decoration_manager =
+    wlr_server_decoration_manager_create(this->display);
+
+  wlr_server_decoration_manager_set_default_mode(
+    server_decoration_manager,
+    WLR_SERVER_DECORATION_MANAGER_MODE_SERVER
+  );
+
   this->decoration_manager =
     wlr_xdg_decoration_manager_v1_create(this->display);
+
   this->runtime->register_callback(
     &this->decoration_manager->events.new_toplevel_decoration,
     on_new_toplevel_decoration,
@@ -275,7 +284,7 @@ UraOutput* UraServer::current_output() {
 
 UraKeyboard* UraServer::current_keyboard() {
   auto keyboard = this->seat->keyboard_state.keyboard;
-  return UraKeyboard::get_instance(keyboard);
+  return UraKeyboard::from(keyboard);
 }
 
 void UraServer::terminate() {

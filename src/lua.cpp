@@ -29,6 +29,7 @@ void Lua::register_function() {
   this->table.set_function("prev_workspace", prev_workspace);
   this->table.set_function("next_workspace", next_workspace);
   this->table.set_function("hook", hook);
+  this->table.set_function("tiling_gap", tiling_gap);
 }
 
 // TODO: unsafe lua scripts

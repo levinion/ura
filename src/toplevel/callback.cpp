@@ -1,3 +1,4 @@
+
 #include "ura/toplevel.hpp"
 #include "ura/runtime.hpp"
 #include "ura/output.hpp"
@@ -7,7 +8,6 @@
 #include "ura/workspace.hpp"
 
 namespace ura {
-
 // create a new toplevel
 void on_new_toplevel(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
@@ -23,6 +23,11 @@ void on_new_toplevel(wl_listener* listener, void* data) {
   toplevel->output = server->current_output();
   server->runtime->toplevels.push_back(toplevel);
   toplevel->output->current_workspace->add(toplevel);
+
+  // this is needed to get top most toplevel
+  toplevel->scene_tree->node.data = toplevel;
+  // this is needed to create popup surface
+  xdg_toplevel->base->data = toplevel->scene_tree;
 
   // // notify scale
   wlr_fractional_scale_v1_notify_scale(
@@ -118,8 +123,15 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
     return;
   }
 
+  if (toplevel->xdg_toplevel->base->initial_commit && toplevel->decoration) {
+    wlr_xdg_toplevel_decoration_v1_set_mode(
+      toplevel->decoration,
+      WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
+    );
+  }
+
   // else auto tiling
-  auto gap = 30;
+  auto gap = server->config->gap;
   auto& toplevels = server->current_output()->current_workspace->toplevels;
   // find mapped toplevel number
   int sum = 0;
@@ -137,9 +149,11 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
     else
       break;
   }
-  auto w = (width - 2 * gap) / sum;
+  auto gaps = sum - 1;
+  auto inner_gap = 10;
+  auto w = (width - 2 * gap - inner_gap * gaps) / sum;
   auto h = height - 2 * gap;
-  auto x = ((width - 2 * gap) / sum * i) + gap;
+  auto x = gap + (w + inner_gap) * i;
   auto y = gap;
   // check value
   if (w < 0 || h < 0 || w > width || h > height)
@@ -179,9 +193,8 @@ void on_toplevel_destroy(wl_listener* listener, void* data) {
 void on_toplevel_request_maximize(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  // TODO:
-
-  // toplevel->toggle_fullscreen();
+  // equal to fullscreen
+  toplevel->toggle_fullscreen();
 }
 
 void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {
@@ -189,43 +202,4 @@ void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   toplevel->toggle_fullscreen();
 }
-
-void UraToplevel::focus() {
-  auto server = UraServer::get_instance();
-  auto seat = server->seat;
-  auto prev_surface = seat->keyboard_state.focused_surface;
-  auto surface = this->xdg_toplevel->base->surface;
-
-  if (prev_surface == surface) {
-    // should only focus once
-    return;
-  }
-  if (prev_surface) {
-    // unfocus previous focused toplevel
-    auto prev_toplevel = wlr_xdg_toplevel_try_from_wlr_surface(prev_surface);
-    if (prev_toplevel) {
-      wlr_xdg_toplevel_set_activated(prev_toplevel, false);
-    }
-  }
-
-  server->focused_toplevel = this;
-
-  // move scene to top
-  wlr_scene_node_raise_to_top(&this->scene_tree->node);
-
-  // activate this toplevel
-  wlr_xdg_toplevel_set_activated(this->xdg_toplevel, true);
-
-  auto keyboard = wlr_seat_get_keyboard(seat);
-  if (keyboard) {
-    wlr_seat_keyboard_notify_enter(
-      seat,
-      surface,
-      keyboard->keycodes,
-      keyboard->num_keycodes,
-      &keyboard->modifiers
-    );
-  }
-}
-
 } // namespace ura

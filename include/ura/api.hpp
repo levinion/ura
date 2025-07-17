@@ -19,5 +19,6 @@ void switch_workspace(int index);
 void next_workspace();
 void prev_workspace();
 void hook(std::string, sol::protected_function f);
+void tiling_gap(float gap);
 
 } // namespace ura
