@@ -27,3 +27,4 @@ build:
 
 clean:
   rm -rf build
+  rm -rf include/protocols

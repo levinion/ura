@@ -2,8 +2,8 @@
 
 #include "ura/ura.hpp"
 #include "ura/server.hpp"
-#include "ura/runtime.hpp"
-#include "list"
+#include <list>
+#include "ura/workspace.hpp"
 
 namespace ura {
 
@@ -23,18 +23,11 @@ public:
   std::list<UraLayerShell*> background_surfaces;
   std::list<UraLayerShell*> top_surfaces;
   std::list<UraLayerShell*> overlay_surfaces;
+  std::list<std::unique_ptr<UraWorkSpace>> workspaces;
 
-  static UraOutput* get_instance(wlr_output* output) {
-    auto outputs = UraServer::get_instance()->runtime->outputs;
-    return *std::find_if(outputs.begin(), outputs.end(), [&](auto i) {
-      return i->output == output;
-    });
-  }
-
+  static UraOutput* get_instance(wlr_output* output);
   void commit_frame();
-
   void configure_layers();
-
   void configure_layer(
     wlr_scene_tree* layer,
     std::list<UraLayerShell*>& list,
@@ -44,6 +37,10 @@ public:
   wlr_scene_tree* get_layer_by_type(zwlr_layer_shell_v1_layer type);
   std::list<UraLayerShell*>&
   get_layer_list_by_type(zwlr_layer_shell_v1_layer type);
+
+  void create_workspace();
+  void switch_workspace(int index);
+  UraWorkSpace* current_workspace;
 };
 
 } // namespace ura

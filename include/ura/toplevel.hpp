@@ -1,16 +1,19 @@
 #pragma once
 
 #include "ura/ura.hpp"
+#include <cassert>
 #include <string>
 
 namespace ura {
+
+class UraOutput;
 
 class UraToplevel {
 public:
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
-
-  bool hidden = false;
+  UraOutput* output;
+  bool mapped = true;
 
   void focus();
 
@@ -27,7 +30,9 @@ public:
   }
 
   inline bool fullscreen() {
-    return this->xdg_toplevel->current.fullscreen;
+    if (!this->xdg_toplevel)
+      return false;
+    return this->xdg_toplevel->pending.fullscreen;
   }
 
   inline void toggle_fullscreen() {
@@ -38,13 +43,13 @@ public:
     wlr_xdg_toplevel_send_close(this->xdg_toplevel);
   }
 
-  inline void show() {
-    this->hidden = false;
+  inline void map() {
+    this->mapped = true;
     wlr_scene_node_set_enabled(&this->scene_tree->node, true);
   }
 
-  inline void hide() {
-    this->hidden = true;
+  inline void unmap() {
+    this->mapped = false;
     wlr_scene_node_set_enabled(&this->scene_tree->node, false);
   }
 

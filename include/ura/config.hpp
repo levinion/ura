@@ -1,10 +1,10 @@
 #pragma once
 
 #include <xkbcommon/xkbcommon.h>
+#include <sol/sol.hpp>
 #include <memory>
 #include <unordered_map>
 #include <string>
-#include <sol/sol.hpp>
 
 namespace ura {
 
@@ -17,7 +17,7 @@ public:
   std::unordered_map<uint64_t, sol::protected_function> keybinding;
   bool focus_follow_mouse = true;
   float scale = 1;
-
+  std::unordered_map<std::string, sol::protected_function> hooks;
   static std::unique_ptr<UraConfig> init();
   void load();
 };

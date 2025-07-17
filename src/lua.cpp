@@ -1,5 +1,6 @@
 #include "ura/lua.hpp"
 #include "ura/api.hpp"
+#include "ura/server.hpp"
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -24,6 +25,10 @@ void Lua::register_function() {
   this->table.set_function("set_keyboard_repeat", set_keyboard_repeat);
   this->table.set_function("focus_follow_mouse", focus_follow_mouse);
   this->table.set_function("env", env);
+  this->table.set_function("switch_workspace", switch_workspace);
+  this->table.set_function("prev_workspace", prev_workspace);
+  this->table.set_function("next_workspace", next_workspace);
+  this->table.set_function("hook", hook);
 }
 
 // TODO: unsafe lua scripts
@@ -35,5 +40,13 @@ void Lua::execute(std::string script) {
 void Lua::execute_file(std::filesystem::path path) {
   if (std::filesystem::is_regular_file(path))
     this->state.script_file(path);
+}
+
+void Lua::try_execute_hook(std::string name) {
+  auto server = UraServer::get_instance();
+  auto& config = server->config;
+  if (config->hooks.contains(name)) {
+    config->hooks[name]();
+  }
 }
 } // namespace ura

@@ -51,6 +51,7 @@ public:
 
 private:
   static UraServer* instance;
+
   void setup_cursor();
   void setup_input();
   void setup_toplevel();

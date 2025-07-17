@@ -4,6 +4,7 @@
 #include "ura/toplevel.hpp"
 #include "ura/ura.hpp"
 #include "ura/keyboard.hpp"
+#include "ura/workspace.hpp"
 
 namespace ura {
 
@@ -88,7 +89,10 @@ void set_output_scale(float scale) {
 
 void reload() {
   auto server = UraServer::get_instance();
+  // reset config
+  server->config = UraConfig::init();
   server->config->load();
+  server->lua->try_execute_hook("reload");
 }
 
 void set_keyboard_repeat(int rate, int delay) {
@@ -104,6 +108,31 @@ void focus_follow_mouse(bool flag) {
 
 void env(std::string name, std::string value) {
   setenv(name.data(), value.data(), true);
+}
+
+void switch_workspace(int index) {
+  auto server = UraServer::get_instance();
+  auto output = server->current_output();
+  output->switch_workspace(index);
+}
+
+void next_workspace() {
+  auto server = UraServer::get_instance();
+  auto output = server->current_output();
+  auto index = output->current_workspace->index();
+  output->switch_workspace(index + 1);
+}
+
+void prev_workspace() {
+  auto server = UraServer::get_instance();
+  auto output = server->current_output();
+  auto index = output->current_workspace->index();
+  output->switch_workspace(index - 1);
+}
+
+void hook(std::string name, sol::protected_function f) {
+  auto& config = UraServer::get_instance()->config;
+  config->hooks[name] = f;
 }
 
 } // namespace ura

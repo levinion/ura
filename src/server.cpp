@@ -208,6 +208,7 @@ void UraServer::run() {
 
   // load config
   this->config->load();
+  this->lua->try_execute_hook("startup");
 
   // run event loop
   wl_display_run(this->display);
@@ -221,8 +222,9 @@ void UraServer::destroy() {
   wlr_allocator_destroy(this->allocator);
   wlr_renderer_destroy(this->renderer);
   wlr_backend_destroy(this->backend);
-  wl_display_destroy(this->display);
   this->runtime->remove(nullptr);
+  wl_display_destroy(this->display);
+  wlr_scene_node_destroy(&this->scene->tree.node);
 }
 
 UraServer::~UraServer() {

@@ -29,5 +29,17 @@ ura.map("super", "f", function()
   ura.fullscreen()
 end)
 
-ura.set_output_scale(1)
+ura.map("ctrl", "left", function()
+  ura.prev_workspace()
+end)
+
+ura.map("ctrl", "right", function()
+  ura.next_workspace()
+end)
+
+ura.set_output_scale(2)
 ura.set_keyboard_repeat(40, 300)
+
+ura.hook("startup", function()
+  os.execute("swaybg -i ~/.config/i3/assets/bg.jpg &")
+end)

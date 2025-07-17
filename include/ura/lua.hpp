@@ -13,6 +13,7 @@ public:
   static std::unique_ptr<Lua> init();
   void execute(std::string script);
   void execute_file(std::filesystem::path);
+  void try_execute_hook(std::string name);
 
 private:
   void register_function();

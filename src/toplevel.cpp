@@ -4,6 +4,7 @@
 #include "ura/server.hpp"
 #include "ura/ura.hpp"
 #include "ura/callback.hpp"
+#include "ura/workspace.hpp"
 
 namespace ura {
 
@@ -19,8 +20,9 @@ void on_new_toplevel(wl_listener* listener, void* data) {
     &UraServer::get_instance()->scene->tree,
     xdg_toplevel->base
   );
-  toplevel->scene_tree->node.data = toplevel;
-  xdg_toplevel->base->data = toplevel->scene_tree;
+  toplevel->output = server->current_output();
+  server->runtime->toplevels.push_back(toplevel);
+  toplevel->output->current_workspace->add(toplevel);
 
   // // notify scale
   wlr_fractional_scale_v1_notify_scale(
@@ -80,22 +82,20 @@ void on_new_toplevel(wl_listener* listener, void* data) {
     on_toplevel_request_fullscreen,
     toplevel
   );
-
-  server->runtime->toplevels.push_back(toplevel);
 }
 
 void on_toplevel_map(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  if (toplevel->hidden)
-    toplevel->show();
+  if (!toplevel->mapped)
+    toplevel->map();
   toplevel->focus();
 }
 
 void on_toplevel_unmap(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  toplevel->hide();
+  toplevel->unmap();
 }
 
 void on_toplevel_commit(wl_listener* listener, void* data) {
@@ -107,6 +107,9 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
   auto width = mode->width / scale;
   auto height = mode->height / scale;
 
+  if (!toplevel->mapped)
+    return;
+
   // handle fullscreen toplevel window
   if (toplevel->fullscreen()) {
     toplevel->focus();
@@ -117,23 +120,32 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
 
   // else auto tiling
   auto gap = 30;
-  auto& toplevels = server->runtime->toplevels;
+  auto& toplevels = server->current_output()->current_workspace->toplevels;
+  // find mapped toplevel number
   int sum = 0;
   for (auto toplevel : toplevels) {
-    if (!toplevel->hidden && !toplevel->fullscreen())
+    if (toplevel->mapped && !toplevel->fullscreen())
       sum += 1;
   }
+  // find this toplevel index
   int i = 0;
   for (auto window : toplevels) {
-    if (window->hidden || window->fullscreen())
+    if (!window->mapped || window->fullscreen())
       continue;
     if (window != toplevel)
       i++;
     else
       break;
   }
-  toplevel->resize((width - 2 * gap) / sum, height - 2 * gap);
-  toplevel->move(((width - 2 * gap) / sum * i) + gap, gap);
+  auto w = (width - 2 * gap) / sum;
+  auto h = height - 2 * gap;
+  auto x = ((width - 2 * gap) / sum * i) + gap;
+  auto y = gap;
+  // check value
+  if (w < 0 || h < 0 || w > width || h > height)
+    return;
+  toplevel->resize(w, h);
+  toplevel->move(x, y);
 }
 
 void on_toplevel_destroy(wl_listener* listener, void* data) {
@@ -142,10 +154,11 @@ void on_toplevel_destroy(wl_listener* listener, void* data) {
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   server->runtime->toplevels.remove(toplevel);
   server->runtime->remove(toplevel);
+  toplevel->output->current_workspace->toplevels.remove(toplevel);
   delete toplevel;
 
   if (!server->runtime->toplevels.empty()) {
-    auto new_toplevel = server->runtime->toplevels.front();
+    auto new_toplevel = server->runtime->toplevels.back();
     new_toplevel->focus();
   }
 }
