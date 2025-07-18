@@ -27,6 +27,7 @@ public:
   wlr_seat* seat;
   wlr_xdg_decoration_manager_v1* decoration_manager;
   wlr_layer_shell_v1* layer_shell;
+  wlr_cursor_shape_manager_v1* cursor_shape_manager;
 
   std::unique_ptr<UraConfig> config;
   std::unique_ptr<UraRuntime> runtime;

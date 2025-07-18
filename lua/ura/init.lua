@@ -59,9 +59,10 @@ function M.hook(name, f)
   _ura.hook(name, f);
 end
 
----@param gap number
-function M.tiling_gap(gap)
-  _ura.tiling_gap(gap)
+---@param outer number
+---@param inner number
+function M.tiling_gap(outer, inner)
+  _ura.tiling_gap(outer, inner)
 end
 
 return M

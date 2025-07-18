@@ -12,8 +12,6 @@ void on_output_destroy(wl_listener* listener, void* data);
 
 // input.cpp
 void on_new_input(wl_listener* listener, void* data);
-void on_seat_request_cursor(wl_listener* listener, void* data);
-void on_seat_request_set_selection(wl_listener* listener, void* data);
 
 // cursor.cpp
 void on_cursor_motion(wl_listener* listener, void* data);
@@ -21,6 +19,9 @@ void on_cursor_motion_absolute(wl_listener* listener, void* data);
 void on_cursor_button(wl_listener* listener, void* data);
 void on_cursor_axis(wl_listener* listener, void* data);
 void on_cursor_frame(wl_listener* listener, void* data);
+void on_seat_request_cursor(wl_listener* listener, void* data);
+void on_seat_request_set_selection(wl_listener* listener, void* data);
+void on_cursor_request_set_shape(wl_listener* listener, void* data);
 
 // toplevel.cpp
 void on_new_toplevel(wl_listener* listener, void* data);

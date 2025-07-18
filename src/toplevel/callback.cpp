@@ -32,11 +32,11 @@ void on_new_toplevel(wl_listener* listener, void* data) {
   // // notify scale
   wlr_fractional_scale_v1_notify_scale(
     xdg_toplevel->base->surface,
-    server->config->scale
+    server->current_output()->output->scale
   );
   wlr_surface_set_preferred_buffer_scale(
     xdg_toplevel->base->surface,
-    server->config->scale
+    server->current_output()->output->scale
   );
 
   // register callback
@@ -107,8 +107,8 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   auto output = server->current_output();
+  auto scale = server->current_output()->output->scale;
   auto mode = output->output->current_mode;
-  auto scale = server->config->scale;
   auto width = mode->width / scale;
   auto height = mode->height / scale;
 
@@ -131,7 +131,8 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
   }
 
   // else auto tiling
-  auto gap = server->config->gap;
+  auto outer = server->config->outer_gap;
+  auto inner = server->config->inner_gap;
   auto& toplevels = server->current_output()->current_workspace->toplevels;
   // find mapped toplevel number
   int sum = 0;
@@ -150,11 +151,10 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
       break;
   }
   auto gaps = sum - 1;
-  auto inner_gap = 10;
-  auto w = (width - 2 * gap - inner_gap * gaps) / sum;
-  auto h = height - 2 * gap;
-  auto x = gap + (w + inner_gap) * i;
-  auto y = gap;
+  auto w = (width - 2 * outer - inner * gaps) / sum;
+  auto h = height - 2 * outer;
+  auto x = outer + (w + inner) * i;
+  auto y = outer;
   // check value
   if (w < 0 || h < 0 || w > width || h > height)
     return;

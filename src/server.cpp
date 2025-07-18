@@ -141,6 +141,15 @@ void UraServer::setup_cursor() {
 
   this->runtime
     ->register_callback(&this->cursor->events.frame, on_cursor_frame, nullptr);
+
+  this->cursor_shape_manager =
+    wlr_cursor_shape_manager_v1_create(this->display, 1);
+
+  this->runtime->register_callback(
+    &this->cursor_shape_manager->events.request_set_shape,
+    on_cursor_request_set_shape,
+    nullptr
+  );
 }
 
 void UraServer::setup_input() {
@@ -225,7 +234,6 @@ void UraServer::run() {
 
 void UraServer::destroy() {
   wl_display_destroy_clients(this->display);
-  wlr_scene_node_destroy(&this->scene->tree.node);
   wlr_xcursor_manager_destroy(this->cursor_mgr);
   wlr_cursor_destroy(this->cursor);
   wlr_allocator_destroy(this->allocator);
@@ -291,6 +299,7 @@ void UraServer::terminate() {
   for (auto toplevel : this->runtime->toplevels) {
     toplevel->close();
   }
+  wl_display_flush_clients(this->display);
   wl_display_terminate(this->display);
 }
 

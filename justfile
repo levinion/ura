@@ -19,6 +19,7 @@ init:
   wayland-scanner server-header ./protocols/xdg-shell.xml include/protocols/xdg-shell-protocol.h
   wayland-scanner server-header ./protocols/wlr-layer-shell-unstable-v1.xml include/protocols/wlr-layer-shell-unstable-v1-protocol.h
   wayland-scanner server-header ./protocols/wlr-output-power-management-unstable-v1.xml include/protocols/wlr-output-power-management-unstable-v1-protocol.h
+  wayland-scanner server-header ./protocols/cursor-shape-v1.xml include/protocols/cursor-shape-v1-protocol.h
   cmake -B build
 
 build:

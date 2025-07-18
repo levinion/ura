@@ -1,6 +1,5 @@
 #include <wayland-server-protocol.h>
 #include "ura/server.hpp"
-#include "ura/output.hpp"
 #include "ura/toplevel.hpp"
 #include "ura/ura.hpp"
 
@@ -82,6 +81,7 @@ void UraServer::process_cursor_motion(uint32_t time_msec) {
   wlr_surface* surface = nullptr;
   auto toplevel = this->foreground_toplevel(&surface, &sx, &sy);
 
+  // applications will set cursor by themselves, so we only need to set xcursor when there's no focused toplevel
   if (!toplevel) {
     wlr_cursor_set_xcursor(this->cursor, this->cursor_mgr, "default");
   }
@@ -95,4 +95,43 @@ void UraServer::process_cursor_motion(uint32_t time_msec) {
   }
 }
 
+// prefer using cursor_shape_v1 to set cursor
+void on_seat_request_cursor(wl_listener* listener, void* data) {
+  auto server = UraServer::get_instance();
+  auto event = static_cast<wlr_seat_pointer_request_set_cursor_event*>(data);
+
+  auto focused_client = server->seat->pointer_state.focused_client;
+  if (focused_client == event->seat_client) {
+    wlr_cursor_set_surface(
+      server->cursor,
+      event->surface,
+      event->hotspot_x,
+      event->hotspot_y
+    );
+  }
+}
+
+void on_seat_request_set_selection(wl_listener* listener, void* data) {
+  auto server = UraServer::get_instance();
+  auto event = static_cast<wlr_seat_request_set_selection_event*>(data);
+
+  auto focused_client = server->seat->pointer_state.focused_client;
+  wlr_seat_set_selection(server->seat, event->source, event->serial);
+}
+
+void on_cursor_request_set_shape(wl_listener* listener, void* data) {
+  auto event =
+    static_cast<wlr_cursor_shape_manager_v1_request_set_shape_event*>(data);
+
+  auto server = UraServer::get_instance();
+  auto focused_client = server->seat->pointer_state.focused_client;
+  if (focused_client == event->seat_client) {
+    auto cursor_shape_name = wlr_cursor_shape_v1_name(event->shape);
+    wlr_cursor_set_xcursor(
+      server->cursor,
+      server->cursor_mgr,
+      cursor_shape_name
+    );
+  }
+}
 } // namespace ura
