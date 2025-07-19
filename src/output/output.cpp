@@ -7,8 +7,84 @@
 #include "ura/layer_shell.hpp"
 #include "ura/workspace.hpp"
 #include "ura/runtime.hpp"
+#include "ura/callback.hpp"
 
 namespace ura {
+
+void UraOutput::init(wlr_output* _wlr_output) {
+  auto server = UraServer::get_instance();
+  // bind render and allocator to this output
+  wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
+
+  // enable output so it can receive commit event
+  wlr_output_state state;
+  wlr_output_state_init(&state);
+  wlr_output_state_set_enabled(&state, true);
+
+  auto mode = wlr_output_preferred_mode(_wlr_output);
+  if (mode) {
+    wlr_output_state_set_mode(&state, mode);
+  }
+
+  wlr_output_commit_state(_wlr_output, &state);
+  wlr_output_state_finish(&state);
+
+  // create ura output object from _wlr_output
+  this->output = _wlr_output;
+  this->current_workspace = this->create_workspace();
+  this->switch_workspace(this->current_workspace);
+
+  // create scene tree
+  this->background = wlr_scene_tree_create(&server->scene->tree);
+  this->bottom = wlr_scene_tree_create(&server->scene->tree);
+  this->top = wlr_scene_tree_create(&server->scene->tree);
+  this->overlay = wlr_scene_tree_create(&server->scene->tree);
+  this->normal = wlr_scene_tree_create(&server->scene->tree);
+  this->floating = wlr_scene_tree_create(&server->scene->tree);
+  this->fullscreen = wlr_scene_tree_create(&server->scene->tree);
+
+  // register callback
+  server->runtime
+    ->register_callback(&this->output->events.frame, on_output_frame, this);
+  server->runtime->register_callback(
+    &this->output->events.request_state,
+    on_output_request_state,
+    this
+  );
+  server->runtime
+    ->register_callback(&this->output->events.destroy, on_output_destroy, this);
+
+  // order of layers
+  wlr_scene_node_raise_to_top(&this->background->node);
+  wlr_scene_node_raise_to_top(&this->bottom->node);
+  wlr_scene_node_raise_to_top(&this->normal->node);
+  wlr_scene_node_raise_to_top(&this->floating->node);
+  wlr_scene_node_raise_to_top(&this->top->node);
+  wlr_scene_node_raise_to_top(&this->fullscreen->node);
+  wlr_scene_node_raise_to_top(&this->overlay->node);
+
+  // set usable area to full area
+  this->usable_area.x = 0;
+  this->usable_area.y = 0;
+  wlr_output_effective_resolution(
+    this->output,
+    &this->usable_area.width,
+    &this->usable_area.height
+  );
+
+  // add this output to scene layout
+  auto output_layout_output =
+    wlr_output_layout_add_auto(server->output_layout, this->output);
+
+  auto scene_output = wlr_scene_output_create(server->scene, this->output);
+  wlr_scene_output_layout_add_output(
+    server->scene_layout,
+    output_layout_output,
+    scene_output
+  );
+
+  server->runtime->outputs.push_back(this);
+}
 
 UraOutput* UraOutput::from(wlr_output* output) {
   auto outputs = UraServer::get_instance()->runtime->outputs;
@@ -71,14 +147,19 @@ void UraOutput::configure_layer(
   wlr_scene_tree* layer,
   std::list<UraLayerShell*>& list,
   wlr_box* full_area,
-  wlr_box* usable_area
+  wlr_box* usable_area,
+  bool exclusive
 ) {
   auto server = UraServer::get_instance();
   if (server->current_output() != this)
     return;
-  auto scene_output = wlr_scene_get_scene_output(server->scene, this->output);
-  wlr_scene_node_set_position(&layer->node, scene_output->x, scene_output->y);
+  // auto scene_output = wlr_scene_get_scene_output(server->scene, this->output);
+  // wlr_scene_node_set_position(&layer->node, scene_output->x, scene_output->y);
   for (auto layer_shell : list) {
+    if (!layer_shell->layer_surface || !layer_shell->layer_surface->initialized
+        || (layer_shell->layer_surface->current.exclusive_zone > 0)
+          != exclusive)
+      continue;
     wlr_scene_layer_surface_v1_configure(
       layer_shell->scene_surface,
       full_area,
@@ -88,32 +169,66 @@ void UraOutput::configure_layer(
 }
 
 void UraOutput::configure_layers() {
-  wlr_box usable_area;
+  wlr_box full_area;
+  full_area.x = 0;
+  full_area.y = 0;
   wlr_output_effective_resolution(
     this->output,
-    &usable_area.width,
-    &usable_area.height
+    &full_area.width,
+    &full_area.height
   );
-  auto full_area = usable_area;
-  this->configure_layer(
-    this->background,
-    this->background_surfaces,
-    &full_area,
-    &usable_area
+  auto usable_area = full_area;
+  for (auto exclusive : { true, false }) {
+    // background
+    this->configure_layer(
+      this->background,
+      this->background_surfaces,
+      &full_area,
+      &usable_area,
+      exclusive
+    );
+    wlr_log(WLR_DEBUG, "bottom surfaces: %ld", this->bottom_surfaces.size());
+    // bottom
+    this->configure_layer(
+      this->bottom,
+      this->bottom_surfaces,
+      &full_area,
+      &usable_area,
+      exclusive
+    );
+    // top
+    this->configure_layer(
+      this->top,
+      this->top_surfaces,
+      &full_area,
+      &usable_area,
+      exclusive
+    );
+    // overlay
+    this->configure_layer(
+      this->overlay,
+      this->overlay_surfaces,
+      &full_area,
+      &usable_area,
+      exclusive
+    );
+  }
+  wlr_log(
+    WLR_DEBUG,
+    "full_area: width: %d, height: %d, x: %d, y: %d",
+    full_area.width,
+    full_area.height,
+    full_area.x,
+    full_area.y
   );
-  this->configure_layer(
-    this->bottom,
-    this->bottom_surfaces,
-    &full_area,
-    &usable_area
+  wlr_log(
+    WLR_DEBUG,
+    "usable: width: %d, height: %d, x: %d, y: %d",
+    usable_area.width,
+    usable_area.height,
+    usable_area.x,
+    usable_area.y
   );
-  this
-    ->configure_layer(this->top, this->top_surfaces, &full_area, &usable_area);
-  this->configure_layer(
-    this->overlay,
-    this->overlay_surfaces,
-    &full_area,
-    &usable_area
-  );
+  this->usable_area = usable_area;
 }
 } // namespace ura

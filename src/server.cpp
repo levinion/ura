@@ -259,35 +259,31 @@ UraServer::~UraServer() {
 // returns the topmost toplevel under current cursor coordination
 UraToplevel*
 UraServer::foreground_toplevel(wlr_surface** surface, double* sx, double* sy) {
+  auto output = this->current_output();
   auto node = wlr_scene_node_at(
-    &this->scene->tree.node,
+    &output->normal->node,
     this->cursor->x,
     this->cursor->y,
     sx,
     sy
   );
-
   // check validity
   if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
     return nullptr;
   }
-
   auto scene_buffer = wlr_scene_buffer_from_node(node);
   auto scene_surface = wlr_scene_surface_try_from_buffer(scene_buffer);
-
   if (!scene_surface) {
     return nullptr;
   }
-
   *surface = scene_surface->surface;
-
   auto tree = node->parent;
+  // get a parent node that has data
   while (tree && !tree->node.data) {
     tree = tree->node.parent;
   }
   if (!tree)
     return nullptr;
-
   return static_cast<UraToplevel*>(tree->node.data);
 }
 
@@ -306,9 +302,10 @@ UraKeyboard* UraServer::current_keyboard() {
 }
 
 void UraServer::terminate() {
-  for (auto toplevel : this->runtime->toplevels) {
-    toplevel->close();
-  }
+  for (auto output : this->runtime->outputs)
+    for (auto& workspace : output->workspaces)
+      for (auto toplevel : workspace->toplevels) toplevel->close();
+
   wl_display_flush_clients(this->display);
   wl_display_terminate(this->display);
 }

@@ -18,7 +18,8 @@ public:
   wlr_xdg_toplevel_decoration_v1* decoration;
   UraWorkSpace* workspace;
 
-  static UraToplevel* from(wlr_xdg_toplevel* toplevel);
+  void init(wlr_xdg_toplevel* xdg_toplevel);
+  static UraToplevel* from(wlr_xdg_toplevel* xdg_toplevel);
 
   void focus();
 
@@ -73,6 +74,13 @@ public:
 
   inline void set_title(std::string title) {
     this->xdg_toplevel->title = title.data();
+  }
+
+  inline bool is_normal() {
+    return (
+      this->mapped && !this->fullscreen()
+      // a 1x1 window is not considered to be a normal toplevel
+    );
   }
 
   int move_to_workspace(int index);

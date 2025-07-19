@@ -15,12 +15,7 @@ void on_layer_shell_new_surface(wl_listener* listener, void* data) {
     auto output = server->current_output();
     layer_surface->output = output->output;
   }
-
-  auto outputs = server->runtime->outputs;
-  auto output = *std::find_if(outputs.begin(), outputs.end(), [&](auto i) {
-    return i->output == layer_surface->output;
-  });
-
+  auto output = server->current_output();
   auto scene_tree = output->get_layer_by_type(layer_surface->pending.layer);
   auto scene_surface =
     wlr_scene_layer_surface_v1_create(scene_tree, layer_surface);
@@ -71,7 +66,7 @@ void on_layer_shell_new_surface(wl_listener* listener, void* data) {
   // );
 
   // add this shell to output's layer
-  auto list =
+  auto& list =
     layer_shell->output->get_layer_list_by_type(layer_surface->pending.layer);
   list.push_back(layer_shell);
 }
@@ -116,7 +111,7 @@ void on_layer_shell_surface_destroy(wl_listener* listener, void* data) {
 
   server->runtime->remove(layer_shell);
   // remove from output's layer
-  auto list = layer_shell->output->get_layer_list_by_type(
+  auto& list = layer_shell->output->get_layer_list_by_type(
     layer_shell->layer_surface->pending.layer
   );
   list.remove(layer_shell);

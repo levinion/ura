@@ -25,25 +25,13 @@ UraWorkSpace* UraOutput::create_workspace() {
 int UraOutput::switch_workspace(int index) {
   if (index < 0)
     return -1;
-
-  auto current = get_workspace_at(index);
-
+  auto target = get_workspace_at(index);
   // if there is no such workspace, then create one
-  if (!current) {
+  if (!target) {
     this->create_workspace();
-    current = this->workspaces.back().get();
+    target = this->workspaces.back().get();
   }
-
-  if (this->current_workspace)
-    this->current_workspace->enable(false);
-  this->current_workspace = current;
-  this->current_workspace->enable(true);
-
-  // focus toplevel
-  if (!this->current_workspace->toplevels.empty())
-    this->current_workspace->toplevels.front()->focus();
-
-  return this->current_workspace->index();
+  return this->switch_workspace(target);
 }
 
 int UraOutput::switch_workspace(UraWorkSpace* workspace) {

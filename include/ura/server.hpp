@@ -34,6 +34,9 @@ public:
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;
 
+  UraToplevel* focused_toplevel;
+  UraToplevel* prev_focused_toplevel;
+
   // Get the global instance of server
   static UraServer* get_instance();
   UraServer* init();
@@ -44,7 +47,6 @@ public:
 
   UraToplevel*
   foreground_toplevel(wlr_surface** surface, double* sx, double* sy);
-  UraToplevel* focused_toplevel;
   UraOutput* current_output();
   UraKeyboard* current_keyboard();
 

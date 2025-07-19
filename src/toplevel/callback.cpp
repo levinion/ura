@@ -12,82 +12,8 @@ namespace ura {
 void on_new_toplevel(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto xdg_toplevel = static_cast<wlr_xdg_toplevel*>(data);
-
-  // setup ura toplevel
   auto toplevel = new UraToplevel {};
-  toplevel->xdg_toplevel = xdg_toplevel;
-  toplevel->scene_tree = wlr_scene_xdg_surface_create(
-    &UraServer::get_instance()->scene->tree,
-    xdg_toplevel->base
-  );
-  toplevel->output = server->current_output();
-  server->runtime->toplevels.push_back(toplevel);
-  toplevel->workspace = toplevel->output->current_workspace;
-  toplevel->workspace->toplevels.push_back(toplevel);
-
-  // this is needed to get top most toplevel
-  toplevel->scene_tree->node.data = toplevel;
-  // this is needed to create popup surface
-  xdg_toplevel->base->data = toplevel->scene_tree;
-
-  // // notify scale
-  wlr_fractional_scale_v1_notify_scale(
-    xdg_toplevel->base->surface,
-    server->current_output()->output->scale
-  );
-  wlr_surface_set_preferred_buffer_scale(
-    xdg_toplevel->base->surface,
-    server->current_output()->output->scale
-  );
-
-  // register callback
-  server->runtime->register_callback(
-    &xdg_toplevel->base->surface->events.map,
-    on_toplevel_map,
-    toplevel
-  );
-
-  server->runtime->register_callback(
-    &xdg_toplevel->base->surface->events.unmap,
-    on_toplevel_unmap,
-    toplevel
-  );
-
-  server->runtime->register_callback(
-    &xdg_toplevel->base->surface->events.commit,
-    on_toplevel_commit,
-    toplevel
-  );
-
-  server->runtime->register_callback(
-    &xdg_toplevel->events.destroy,
-    on_toplevel_destroy,
-    toplevel
-  );
-
-  // server->runtime->register_callback(
-  //   &xdg_toplevel->events.request_move,
-  //   on_toplevel_request_move,
-  //   toplevel
-  // );
-  //
-  // server->runtime->register_callback(
-  //   &xdg_toplevel->events.request_resize,
-  //   on_toplevel_request_resize,
-  //   toplevel
-  // );
-
-  server->runtime->register_callback(
-    &xdg_toplevel->events.request_maximize,
-    on_toplevel_request_maximize,
-    toplevel
-  );
-
-  server->runtime->register_callback(
-    &xdg_toplevel->events.request_fullscreen,
-    on_toplevel_request_fullscreen,
-    toplevel
-  );
+  toplevel->init(xdg_toplevel);
 }
 
 void on_toplevel_map(wl_listener* listener, void* data) {
@@ -109,23 +35,17 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   auto output = server->current_output();
 
-  // cannot get any output, may be in another tty
-  if (!output) {
+  if (!output || !toplevel->mapped || !toplevel->initialized()) {
     return;
   }
 
   auto scale = server->current_output()->output->scale;
   auto mode = output->output->current_mode;
-  auto width = mode->width / scale;
-  auto height = mode->height / scale;
-
-  if (!toplevel->mapped)
-    return;
 
   // handle fullscreen toplevel window
   if (toplevel->fullscreen()) {
     toplevel->focus();
-    toplevel->resize(width, height);
+    toplevel->resize(mode->width / scale, mode->height / scale);
     toplevel->move(0, 0);
     return;
   }
@@ -137,20 +57,26 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
     );
   }
 
-  // else auto tiling
+  output->configure_layers();
+  auto usable_area = output->usable_area;
+  // auto width = mode->width / scale;
+  // auto height = mode->height / scale;
+  auto width = usable_area.width;
+  auto height = usable_area.height;
+
   auto outer = server->config->outer_gap;
   auto inner = server->config->inner_gap;
   auto& toplevels = server->current_output()->current_workspace->toplevels;
   // find mapped toplevel number
   int sum = 0;
   for (auto toplevel : toplevels) {
-    if (toplevel->mapped && !toplevel->fullscreen())
+    if (toplevel->is_normal())
       sum += 1;
   }
   // find this toplevel index
   int i = 0;
   for (auto window : toplevels) {
-    if (!window->mapped || window->fullscreen())
+    if (!window->is_normal())
       continue;
     if (window != toplevel)
       i++;
@@ -160,8 +86,8 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
   auto gaps = sum - 1;
   auto w = (width - 2 * outer - inner * gaps) / sum;
   auto h = height - 2 * outer;
-  auto x = outer + (w + inner) * i;
-  auto y = outer;
+  auto x = usable_area.x + outer + (w + inner) * i;
+  auto y = usable_area.y + outer;
   // check value
   if (w < 0 || h < 0 || w > width || h > height)
     return;
@@ -171,16 +97,27 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
 
 void on_toplevel_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  server->focused_toplevel = nullptr;
+  auto output = server->current_output();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  server->runtime->toplevels.remove(toplevel);
+  auto workspace = toplevel->workspace;
+
+  // destroy this toplevel
   server->runtime->remove(toplevel);
   toplevel->output->current_workspace->toplevels.remove(toplevel);
   delete toplevel;
 
-  if (!server->runtime->toplevels.empty()) {
-    auto new_toplevel = server->runtime->toplevels.back();
-    new_toplevel->focus();
+  /* switch focus to another toplevel */
+  // if prev focused toplevel exists and in the same workspace, focus it
+  if (server->prev_focused_toplevel
+      && server->prev_focused_toplevel->workspace == workspace) {
+    server->prev_focused_toplevel->focus();
+    server->prev_focused_toplevel = nullptr;
+  } else if (!output->current_workspace->toplevels.empty()) {
+    // else focus a toplevel in the same workspace if any
+    output->current_workspace->toplevels.back()->focus();
+  } else {
+    // else let it empty
+    server->focused_toplevel = nullptr;
   }
 }
 

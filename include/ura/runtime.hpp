@@ -43,7 +43,6 @@ public:
     this->listeners.erase(data);
   }
 
-  std::list<UraToplevel*> toplevels;
   std::list<UraOutput*> outputs;
   std::list<UraKeyboard*> keyboards;
 
