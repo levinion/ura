@@ -10,9 +10,17 @@ void on_new_popup(wl_listener* listener, void* data) {
   auto popup = new UraPopup {};
   popup->xdg_popup = xdg_popup;
 
-  // TODO: handle firefox popup crash issue
+  if (!xdg_popup->parent)
+    return;
+
   auto parent = wlr_xdg_surface_try_from_wlr_surface(xdg_popup->parent);
+  if (!parent)
+    return;
+
   auto parent_tree = static_cast<wlr_scene_tree*>(parent->data);
+  if (!parent_tree)
+    return;
+
   xdg_popup->base->data =
     wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base);
 

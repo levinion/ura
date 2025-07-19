@@ -7,6 +7,7 @@
 namespace ura {
 
 class UraOutput;
+class UraWorkSpace;
 
 class UraToplevel {
 public:
@@ -15,6 +16,7 @@ public:
   UraOutput* output;
   bool mapped = true;
   wlr_xdg_toplevel_decoration_v1* decoration;
+  UraWorkSpace* workspace;
 
   static UraToplevel* from(wlr_xdg_toplevel* toplevel);
 
@@ -22,6 +24,10 @@ public:
 
   inline bool initialized() {
     return this->xdg_toplevel->base->initialized;
+  }
+
+  inline bool initial_commit() {
+    return this->xdg_toplevel->base->initial_commit;
   }
 
   inline void move(int x, int y) {
@@ -33,7 +39,8 @@ public:
   }
 
   inline void set_fullscreen(bool flag) {
-    wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, flag);
+    if (this->xdg_toplevel->base->initialized)
+      wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, flag);
   }
 
   inline bool fullscreen() {
@@ -67,6 +74,8 @@ public:
   inline void set_title(std::string title) {
     this->xdg_toplevel->title = title.data();
   }
+
+  int move_to_workspace(int index);
 };
 
 } // namespace ura

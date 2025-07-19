@@ -15,7 +15,6 @@ public:
   static std::unique_ptr<UraWorkSpace> init();
   void enable(bool enabled);
   int index();
-  void add(UraToplevel* toplevel);
 };
 
 } // namespace ura

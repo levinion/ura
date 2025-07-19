@@ -9,6 +9,7 @@ void on_new_output(wl_listener* listener, void* data);
 void on_output_frame(wl_listener* listener, void* data);
 void on_output_request_state(wl_listener* listener, void* data);
 void on_output_destroy(wl_listener* listener, void* data);
+void on_output_manager_apply(wl_listener* listener, void* data);
 
 // input.cpp
 void on_new_input(wl_listener* listener, void* data);

@@ -30,8 +30,4 @@ int UraWorkSpace::index() {
   std::unreachable();
 }
 
-void UraWorkSpace::add(UraToplevel* toplevel) {
-  this->toplevels.push_back(toplevel);
-}
-
 } // namespace ura

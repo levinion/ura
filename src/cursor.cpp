@@ -90,7 +90,7 @@ void UraServer::process_cursor_motion(uint32_t time_msec) {
   if (surface) {
     wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
     wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
-    if (this->config->focus_follow_mouse)
+    if (this->config->focus_follow_mouse && toplevel)
       toplevel->focus();
   }
 }

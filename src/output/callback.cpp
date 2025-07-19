@@ -30,7 +30,8 @@ void on_new_output(wl_listener* listener, void* data) {
   // create ura output object from _wlr_output
   auto output = new UraOutput {};
   output->output = _wlr_output;
-  output->create_workspace();
+  output->current_workspace = output->create_workspace();
+  output->switch_workspace(output->current_workspace);
 
   // create scene tree
   output->background = wlr_scene_tree_create(&server->scene->tree);

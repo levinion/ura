@@ -94,7 +94,8 @@ void on_layer_shell_surface_commit(wl_listener* listener, void* data) {
   // configure size
   auto width = layer_shell->layer_surface->pending.desired_width;
   auto height = layer_shell->layer_surface->pending.desired_height;
-  auto scale = server->config->scale;
+  auto scale = output->output->scale;
+
   if (width == 0) {
     width = output->output->current_mode->width / scale;
   }
@@ -102,7 +103,6 @@ void on_layer_shell_surface_commit(wl_listener* listener, void* data) {
     height = output->output->current_mode->height / scale;
   }
 
-  wlr_log(WLR_DEBUG, "layer_shell size: %d:%d", width, height);
   wlr_layer_surface_v1_configure(layer_shell->layer_surface, width, height);
   output->configure_layers();
 }

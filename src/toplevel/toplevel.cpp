@@ -1,6 +1,7 @@
 #include "ura/toplevel.hpp"
 #include "ura/runtime.hpp"
 #include "ura/server.hpp"
+#include "ura/output.hpp"
 #include "ura/ura.hpp"
 
 namespace ura {
@@ -48,6 +49,16 @@ UraToplevel* UraToplevel::from(wlr_xdg_toplevel* toplevel) {
   return *std::find_if(toplevels.begin(), toplevels.end(), [&](auto i) {
     return i->xdg_toplevel == toplevel;
   });
+}
+
+int UraToplevel::move_to_workspace(int index) {
+  auto server = UraServer::get_instance();
+  auto output = server->current_output();
+  auto target = output->get_workspace_at(index);
+  this->workspace->toplevels.remove(this);
+  target->toplevels.push_back(this);
+  this->workspace = target;
+  return this->workspace->index();
 }
 
 } // namespace ura

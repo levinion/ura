@@ -84,7 +84,12 @@ void set_output_scale(float scale) {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
   output->output->scale = scale;
-  server->config->scale = scale;
+}
+
+void set_output_refresh(int refresh) {
+  auto server = UraServer::get_instance();
+  auto output = server->current_output();
+  output->output->refresh = refresh;
 }
 
 void reload() {
@@ -113,21 +118,25 @@ void env(std::string name, std::string value) {
 void switch_workspace(int index) {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
-  output->switch_workspace(index);
+  wlr_log(WLR_DEBUG, "switch to workspace %d", index);
+  index = output->switch_workspace(index);
 }
 
-void next_workspace() {
+void move_to_workspace(int index) {
   auto server = UraServer::get_instance();
-  auto output = server->current_output();
-  auto index = output->current_workspace->index();
-  output->switch_workspace(index + 1);
+  auto toplevel = server->focused_toplevel;
+  auto output = toplevel->output;
+  if (index >= output->workspaces.size())
+    output->create_workspace();
+  index = toplevel->move_to_workspace(index);
+  index = output->switch_workspace(index);
+  wlr_log(WLR_DEBUG, "move to workspace %d", index);
 }
 
-void prev_workspace() {
+int current_workspace() {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
-  auto index = output->current_workspace->index();
-  output->switch_workspace(index - 1);
+  return output->current_workspace->index();
 }
 
 void hook(std::string name, sol::protected_function f) {
@@ -139,6 +148,14 @@ void tiling_gap(float outer, float inner) {
   auto& config = UraServer::get_instance()->config;
   config->outer_gap = outer;
   config->inner_gap = inner;
+}
+
+void cursor_theme(std::string theme, int size) {
+  auto server = UraServer::get_instance();
+  // recreate xcursor manager with given values
+  wlr_xcursor_manager_destroy(server->cursor_mgr);
+  server->cursor_mgr =
+    wlr_xcursor_manager_create(theme.empty() ? NULL : theme.data(), size);
 }
 
 } // namespace ura

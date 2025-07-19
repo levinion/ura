@@ -45,12 +45,15 @@ function M.switch_workspace(index)
   _ura.switch_workspace(index)
 end
 
-function M.prev_workspace()
-  _ura.prev_workspace();
+---@param index number
+function M.move_to_workspace(index)
+  _ura.move_to_workspace(index)
 end
 
-function M.next_workspace()
-  _ura.next_workspace();
+---workspace index starts with 0
+---@return number
+function M.current_workspace()
+  return _ura.current_workspace()
 end
 
 ---@param name string
@@ -63,6 +66,18 @@ end
 ---@param inner number
 function M.tiling_gap(outer, inner)
   _ura.tiling_gap(outer, inner)
+end
+
+---if theme is empty, then fallback to default
+---@param theme string
+---@param size number
+function M.cursor_theme(theme, size)
+  _ura.cursor_theme(theme, size)
+end
+
+---@param refresh number
+function M.set_output_refresh(refresh)
+  _ura.set_output_refresh(refresh)
 end
 
 return M

@@ -25,7 +25,7 @@ public:
   std::list<UraLayerShell*> overlay_surfaces;
   std::list<std::unique_ptr<UraWorkSpace>> workspaces;
 
-  static UraOutput* get_instance(wlr_output* output);
+  static UraOutput* from(wlr_output* output);
   void commit_frame();
   void configure_layers();
   void configure_layer(
@@ -38,8 +38,11 @@ public:
   std::list<UraLayerShell*>&
   get_layer_list_by_type(zwlr_layer_shell_v1_layer type);
 
-  void create_workspace();
-  void switch_workspace(int index);
+  /* Workspace */
+  UraWorkSpace* create_workspace();
+  int switch_workspace(int index);
+  int switch_workspace(UraWorkSpace* workspace);
+  UraWorkSpace* get_workspace_at(int index);
   UraWorkSpace* current_workspace;
 };
 

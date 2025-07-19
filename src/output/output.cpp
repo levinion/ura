@@ -1,7 +1,6 @@
 #include "ura/layer_shell.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
-#include <iterator>
 #include <list>
 #include <utility>
 #include "ura/ura.hpp"
@@ -11,7 +10,7 @@
 
 namespace ura {
 
-UraOutput* UraOutput::get_instance(wlr_output* output) {
+UraOutput* UraOutput::from(wlr_output* output) {
   auto outputs = UraServer::get_instance()->runtime->outputs;
   return *std::find_if(outputs.begin(), outputs.end(), [&](auto i) {
     return i->output == output;
@@ -75,6 +74,8 @@ void UraOutput::configure_layer(
   wlr_box* usable_area
 ) {
   auto server = UraServer::get_instance();
+  if (server->current_output() != this)
+    return;
   auto scene_output = wlr_scene_get_scene_output(server->scene, this->output);
   wlr_scene_node_set_position(&layer->node, scene_output->x, scene_output->y);
   for (auto layer_shell : list) {
@@ -115,35 +116,4 @@ void UraOutput::configure_layers() {
     &usable_area
   );
 }
-
-void UraOutput::create_workspace() {
-  auto workspace = UraWorkSpace::init();
-  workspace->output = this;
-  auto p = workspace.get();
-  this->workspaces.push_back(std::move(workspace));
-  this->switch_workspace(p->index());
-}
-
-void UraOutput::switch_workspace(int index) {
-  if (index < 0)
-    return;
-
-  // if there is no such workspace, then create one
-  if (index >= this->workspaces.size()) {
-    this->create_workspace();
-    return;
-  }
-
-  auto it = this->workspaces.begin();
-  std::advance(it, index);
-  if (this->current_workspace)
-    this->current_workspace->enable(false);
-  this->current_workspace = it->get();
-  this->current_workspace->enable(true);
-
-  // focus toplevel
-  if (!this->current_workspace->toplevels.empty())
-    this->current_workspace->toplevels.front()->focus();
-}
-
 } // namespace ura

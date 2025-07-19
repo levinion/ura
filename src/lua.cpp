@@ -26,10 +26,11 @@ void Lua::register_function() {
   this->table.set_function("focus_follow_mouse", focus_follow_mouse);
   this->table.set_function("env", env);
   this->table.set_function("switch_workspace", switch_workspace);
-  this->table.set_function("prev_workspace", prev_workspace);
-  this->table.set_function("next_workspace", next_workspace);
+  this->table.set_function("move_to_workspace", move_to_workspace);
+  this->table.set_function("current_workspace", current_workspace);
   this->table.set_function("hook", hook);
   this->table.set_function("tiling_gap", tiling_gap);
+  this->table.set_function("cursor_theme", cursor_theme);
 }
 
 // TODO: unsafe lua scripts

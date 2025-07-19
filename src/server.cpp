@@ -6,8 +6,6 @@
 #include "ura/keyboard.hpp"
 #include "ura/toplevel.hpp"
 #include "ura/ura.hpp"
-#include "wlr/types/wlr_output_power_management_v1.h"
-#include "wlr/types/wlr_xdg_decoration_v1.h"
 
 namespace ura {
 
@@ -23,8 +21,11 @@ UraServer* UraServer::get_instance() {
 UraServer* UraServer::init() {
   wlr_log_init(WLR_DEBUG, NULL);
   this->runtime = UraRuntime::init();
+
   this->config = UraConfig::init();
   this->lua = Lua::init();
+  this->config->load();
+
   this->setup_base();
   this->setup_compositor();
   this->setup_output();
@@ -63,9 +64,6 @@ void UraServer::setup_compositor() {
   wlr_data_device_manager_create(this->display);
   wlr_linux_dmabuf_v1_create_with_renderer(this->display, 4, this->renderer);
   wlr_shm_create_with_renderer(this->display, 2, this->renderer);
-  // TODO: register event
-  wlr_output_manager_v1_create(this->display);
-  wlr_output_power_manager_v1_create(this->display);
   wlr_fractional_scale_manager_v1_create(this->display, 1);
   wlr_viewporter_create(this->display);
   wlr_single_pixel_buffer_manager_v1_create(this->display);
@@ -88,6 +86,17 @@ void UraServer::setup_output() {
   this->scene = wlr_scene_create();
   this->scene_layout =
     wlr_scene_attach_output_layout(this->scene, this->output_layout);
+
+  wlr_xdg_output_manager_v1_create(this->display, this->output_layout);
+
+  this->output_manager = wlr_output_manager_v1_create(this->display);
+
+  this->runtime->register_callback(
+    &this->output_manager->events.apply,
+    on_output_manager_apply,
+    nullptr
+  );
+  wlr_output_power_manager_v1_create(this->display);
 }
 
 void UraServer::setup_toplevel() {
@@ -224,8 +233,6 @@ void UraServer::run() {
   setenv("WAYLAND_DISPLAY", socket, true);
   wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s", socket);
 
-  // load config
-  this->config->load();
   this->lua->try_execute_hook("startup");
 
   // run event loop
@@ -277,6 +284,8 @@ UraServer::foreground_toplevel(wlr_surface** surface, double* sx, double* sy) {
   while (tree && !tree->node.data) {
     tree = tree->node.parent;
   }
+  if (!tree)
+    return nullptr;
 
   return static_cast<UraToplevel*>(tree->node.data);
 }
@@ -287,7 +296,7 @@ UraOutput* UraServer::current_output() {
     this->cursor->x,
     this->cursor->y
   );
-  return UraOutput::get_instance(output);
+  return UraOutput::from(output);
 }
 
 UraKeyboard* UraServer::current_keyboard() {

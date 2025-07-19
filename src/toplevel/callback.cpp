@@ -22,7 +22,8 @@ void on_new_toplevel(wl_listener* listener, void* data) {
   );
   toplevel->output = server->current_output();
   server->runtime->toplevels.push_back(toplevel);
-  toplevel->output->current_workspace->add(toplevel);
+  toplevel->workspace = toplevel->output->current_workspace;
+  toplevel->workspace->toplevels.push_back(toplevel);
 
   // this is needed to get top most toplevel
   toplevel->scene_tree->node.data = toplevel;
@@ -107,6 +108,12 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   auto output = server->current_output();
+
+  // cannot get any output, may be in another tty
+  if (!output) {
+    return;
+  }
+
   auto scale = server->current_output()->output->scale;
   auto mode = output->output->current_mode;
   auto width = mode->width / scale;
