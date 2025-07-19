@@ -144,9 +144,18 @@ void hook(std::string name, sol::protected_function f) {
   config->hooks[name] = f;
 }
 
-void tiling_gap(float outer, float inner) {
+void tiling_gap(
+  float inner,
+  float outer_l,
+  float outer_r,
+  float outer_t,
+  float outer_b
+) {
   auto& config = UraServer::get_instance()->config;
-  config->outer_gap = outer;
+  config->outer_gap_bottom = outer_b;
+  config->outer_gap_top = outer_t;
+  config->outer_gap_left = outer_l;
+  config->outer_gap_right = outer_r;
   config->inner_gap = inner;
 }
 

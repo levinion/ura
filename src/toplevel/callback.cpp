@@ -57,14 +57,14 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
     );
   }
 
-  output->configure_layers();
   auto usable_area = output->usable_area;
-  // auto width = mode->width / scale;
-  // auto height = mode->height / scale;
   auto width = usable_area.width;
   auto height = usable_area.height;
 
-  auto outer = server->config->outer_gap;
+  auto outer_l = server->config->outer_gap_left;
+  auto outer_r = server->config->outer_gap_right;
+  auto outer_t = server->config->outer_gap_top;
+  auto outer_b = server->config->outer_gap_bottom;
   auto inner = server->config->inner_gap;
   auto& toplevels = server->current_output()->current_workspace->toplevels;
   // find mapped toplevel number
@@ -84,10 +84,10 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
       break;
   }
   auto gaps = sum - 1;
-  auto w = (width - 2 * outer - inner * gaps) / sum;
-  auto h = height - 2 * outer;
-  auto x = usable_area.x + outer + (w + inner) * i;
-  auto y = usable_area.y + outer;
+  auto w = (width - (outer_r + outer_l) - inner * gaps) / sum;
+  auto h = height - (outer_t + outer_b);
+  auto x = usable_area.x + outer_l + (w + inner) * i;
+  auto y = usable_area.y + outer_t;
   // check value
   if (w < 0 || h < 0 || w > width || h > height)
     return;

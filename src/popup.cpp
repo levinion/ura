@@ -43,7 +43,7 @@ void on_popup_commit(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto popup = server->runtime->fetch<UraPopup*>(listener);
 
-  if (popup->xdg_popup->base->initial_commit) {
+  if (popup->xdg_popup && popup->xdg_popup->base->initial_commit) {
     // TODO: do some work
     wlr_xdg_surface_schedule_configure(popup->xdg_popup->base);
   }

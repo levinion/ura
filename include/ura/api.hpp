@@ -20,7 +20,13 @@ int switch_workspace(int index);
 int move_to_workspace(int index);
 int current_workspace();
 void hook(std::string, sol::protected_function f);
-void tiling_gap(float outer, float inner);
+void tiling_gap(
+  float inner,
+  float outer_l,
+  float outer_r,
+  float outer_t,
+  float outer_b
+);
 void cursor_theme(std::string theme, int size);
 int current_toplevel();
 bool focus(int index);

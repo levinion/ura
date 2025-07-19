@@ -187,7 +187,6 @@ void UraOutput::configure_layers() {
       &usable_area,
       exclusive
     );
-    wlr_log(WLR_DEBUG, "bottom surfaces: %ld", this->bottom_surfaces.size());
     // bottom
     this->configure_layer(
       this->bottom,
@@ -213,22 +212,6 @@ void UraOutput::configure_layers() {
       exclusive
     );
   }
-  wlr_log(
-    WLR_DEBUG,
-    "full_area: width: %d, height: %d, x: %d, y: %d",
-    full_area.width,
-    full_area.height,
-    full_area.x,
-    full_area.y
-  );
-  wlr_log(
-    WLR_DEBUG,
-    "usable: width: %d, height: %d, x: %d, y: %d",
-    usable_area.width,
-    usable_area.height,
-    usable_area.x,
-    usable_area.y
-  );
   this->usable_area = usable_area;
 }
 } // namespace ura

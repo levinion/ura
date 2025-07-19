@@ -64,10 +64,15 @@ function M.hook(name, f)
   _ura.hook(name, f);
 end
 
----@param outer number
----@param inner number
-function M.tiling_gap(outer, inner)
-  _ura.tiling_gap(outer, inner)
+---@param options {inner: number, outer_l: number, outer_r: number, outer_t: number, outer_b: number}
+function M.tiling_gap(options)
+  _ura.tiling_gap(
+    options.inner or 10,
+    options.outer_l or 10,
+    options.outer_r or 10,
+    options.outer_t or 10,
+    options.outer_b or 10
+  )
 end
 
 ---if theme is empty, then fallback to default
