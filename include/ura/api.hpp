@@ -16,11 +16,13 @@ void reload();
 void set_keyboard_repeat(int rate, int delay);
 void focus_follow_mouse(bool flag);
 void env(std::string name, std::string value);
-void switch_workspace(int index);
-void move_to_workspace(int index);
+int switch_workspace(int index);
+int move_to_workspace(int index);
 int current_workspace();
 void hook(std::string, sol::protected_function f);
 void tiling_gap(float outer, float inner);
 void cursor_theme(std::string theme, int size);
+int current_toplevel();
+bool focus(int index);
 
 } // namespace ura

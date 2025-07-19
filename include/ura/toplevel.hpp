@@ -76,6 +76,8 @@ public:
   }
 
   int move_to_workspace(int index);
+
+  int index();
 };
 
 } // namespace ura

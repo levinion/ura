@@ -115,14 +115,14 @@ void env(std::string name, std::string value) {
   setenv(name.data(), value.data(), true);
 }
 
-void switch_workspace(int index) {
+int switch_workspace(int index) {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
-  wlr_log(WLR_DEBUG, "switch to workspace %d", index);
   index = output->switch_workspace(index);
+  return index;
 }
 
-void move_to_workspace(int index) {
+int move_to_workspace(int index) {
   auto server = UraServer::get_instance();
   auto toplevel = server->focused_toplevel;
   auto output = toplevel->output;
@@ -130,7 +130,7 @@ void move_to_workspace(int index) {
     output->create_workspace();
   index = toplevel->move_to_workspace(index);
   index = output->switch_workspace(index);
-  wlr_log(WLR_DEBUG, "move to workspace %d", index);
+  return index;
 }
 
 int current_workspace() {
@@ -156,6 +156,22 @@ void cursor_theme(std::string theme, int size) {
   wlr_xcursor_manager_destroy(server->cursor_mgr);
   server->cursor_mgr =
     wlr_xcursor_manager_create(theme.empty() ? NULL : theme.data(), size);
+}
+
+int current_toplevel() {
+  auto server = UraServer::get_instance();
+  return server->focused_toplevel->index();
+}
+
+bool focus(int index) {
+  auto server = UraServer::get_instance();
+  if (index < 0
+      || index >= server->current_output()->current_workspace->toplevels.size())
+    return false;
+  auto it = server->current_output()->current_workspace->toplevels.begin();
+  std::advance(it, index);
+  (*it)->focus();
+  return true;
 }
 
 } // namespace ura

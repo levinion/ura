@@ -1,4 +1,5 @@
 #include "ura/toplevel.hpp"
+#include <utility>
 #include "ura/runtime.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
@@ -59,6 +60,18 @@ int UraToplevel::move_to_workspace(int index) {
   target->toplevels.push_back(this);
   this->workspace = target;
   return this->workspace->index();
+}
+
+int UraToplevel::index() {
+  auto server = UraServer::get_instance();
+  auto output = server->current_output();
+  int index = 0;
+  for (auto toplevel : output->current_workspace->toplevels) {
+    if (toplevel == this)
+      return index;
+    index++;
+  }
+  std::unreachable();
 }
 
 } // namespace ura

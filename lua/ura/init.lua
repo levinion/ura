@@ -41,13 +41,15 @@ function M.set_keyboard_repeat(rate, delay)
 end
 
 ---@param index number
+---@return number
 function M.switch_workspace(index)
-  _ura.switch_workspace(index)
+  return _ura.switch_workspace(index)
 end
 
 ---@param index number
+---@return number
 function M.move_to_workspace(index)
-  _ura.move_to_workspace(index)
+  return _ura.move_to_workspace(index)
 end
 
 ---workspace index starts with 0
@@ -78,6 +80,17 @@ end
 ---@param refresh number
 function M.set_output_refresh(refresh)
   _ura.set_output_refresh(refresh)
+end
+
+---@return number
+function M.current_toplevel()
+  return _ura.current_toplevel()
+end
+
+---@param index number
+---@return boolean
+function M.focus(index)
+  return _ura.focus(index)
 end
 
 return M

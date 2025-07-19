@@ -31,6 +31,8 @@ void Lua::register_function() {
   this->table.set_function("hook", hook);
   this->table.set_function("tiling_gap", tiling_gap);
   this->table.set_function("cursor_theme", cursor_theme);
+  this->table.set_function("focus", focus);
+  this->table.set_function("current_toplevel", current_toplevel);
 }
 
 // TODO: unsafe lua scripts

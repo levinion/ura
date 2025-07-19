@@ -70,6 +70,7 @@ void UraServer::setup_compositor() {
   auto foreign_registry = wlr_xdg_foreign_registry_create(this->display);
   wlr_xdg_foreign_v1_create(this->display, foreign_registry);
   wlr_xdg_foreign_v2_create(this->display, foreign_registry);
+  wlr_screencopy_manager_v1_create(this->display);
 }
 
 void UraServer::setup_output() {
