@@ -21,11 +21,9 @@ UraServer* UraServer::get_instance() {
 UraServer* UraServer::init() {
   wlr_log_init(WLR_DEBUG, NULL);
   this->runtime = UraRuntime::init();
-
   this->config = UraConfig::init();
   this->lua = Lua::init();
   this->config->load();
-
   this->setup_base();
   this->setup_compositor();
   this->setup_output();
@@ -71,6 +69,7 @@ void UraServer::setup_compositor() {
   wlr_xdg_foreign_v1_create(this->display, foreign_registry);
   wlr_xdg_foreign_v2_create(this->display, foreign_registry);
   wlr_screencopy_manager_v1_create(this->display);
+  wlr_data_control_manager_v1_create(this->display);
 }
 
 void UraServer::setup_output() {
@@ -308,6 +307,15 @@ void UraServer::terminate() {
 
   wl_display_flush_clients(this->display);
   wl_display_terminate(this->display);
+}
+
+/* Ouput Manager */
+void UraServer::update_output_configuration() {
+  auto configuration = wlr_output_configuration_v1_create();
+  for (auto output : this->runtime->outputs) {
+    wlr_output_configuration_head_v1_create(configuration, output->output);
+  }
+  wlr_output_manager_v1_set_configuration(this->output_manager, configuration);
 }
 
 } // namespace ura

@@ -80,18 +80,6 @@ void fullscreen() {
   toplevel->toggle_fullscreen();
 }
 
-void set_output_scale(float scale) {
-  auto server = UraServer::get_instance();
-  auto output = server->current_output();
-  output->output->scale = scale;
-}
-
-void set_output_refresh(int refresh) {
-  auto server = UraServer::get_instance();
-  auto output = server->current_output();
-  output->output->refresh = refresh;
-}
-
 void reload() {
   auto server = UraServer::get_instance();
   // reset config

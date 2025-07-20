@@ -12,25 +12,15 @@
 namespace ura {
 
 void UraOutput::init(wlr_output* _wlr_output) {
+  this->output = _wlr_output;
   auto server = UraServer::get_instance();
   // bind render and allocator to this output
   wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
 
-  // enable output so it can receive commit event
-  wlr_output_state state;
-  wlr_output_state_init(&state);
-  wlr_output_state_set_enabled(&state, true);
-
-  auto mode = wlr_output_preferred_mode(_wlr_output);
-  if (mode) {
-    wlr_output_state_set_mode(&state, mode);
-  }
-
-  wlr_output_commit_state(_wlr_output, &state);
-  wlr_output_state_finish(&state);
+  auto prefered_mode = wlr_output_preferred_mode(this->output);
+  this->set_mode(prefered_mode);
 
   // create ura output object from _wlr_output
-  this->output = _wlr_output;
   this->current_workspace = this->create_workspace();
   this->switch_workspace(this->current_workspace);
 
@@ -84,6 +74,7 @@ void UraOutput::init(wlr_output* _wlr_output) {
   );
 
   server->runtime->outputs.push_back(this);
+  server->update_output_configuration();
 }
 
 UraOutput* UraOutput::from(wlr_output* output) {
@@ -213,5 +204,15 @@ void UraOutput::configure_layers() {
     );
   }
   this->usable_area = usable_area;
+}
+
+void UraOutput::set_mode(wlr_output_mode* mode) {
+  wlr_output_state state;
+  wlr_output_state_init(&state);
+  wlr_output_state_set_enabled(&state, true);
+  if (mode)
+    wlr_output_state_set_mode(&state, mode);
+  wlr_output_commit_state(this->output, &state);
+  wlr_output_state_finish(&state);
 }
 } // namespace ura

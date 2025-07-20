@@ -16,6 +16,7 @@ public:
   void init(wlr_output* output);
   static UraOutput* from(wlr_output* output);
   void commit_frame();
+  void set_mode(wlr_output_mode* mode);
 
   /* Surfaces */
   std::list<UraLayerShell*> bottom_surfaces;

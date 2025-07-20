@@ -53,6 +53,8 @@ public:
   void process_cursor_motion(uint32_t time_msec);
   void terminate();
 
+  void update_output_configuration();
+
 private:
   static UraServer* instance;
 

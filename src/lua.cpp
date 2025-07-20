@@ -20,7 +20,6 @@ void Lua::register_function() {
   this->table.set_function("terminate", terminate);
   this->table.set_function("close_window", close_window);
   this->table.set_function("fullscreen", fullscreen);
-  this->table.set_function("set_output_scale", set_output_scale);
   this->table.set_function("reload", reload);
   this->table.set_function("set_keyboard_repeat", set_keyboard_repeat);
   this->table.set_function("focus_follow_mouse", focus_follow_mouse);

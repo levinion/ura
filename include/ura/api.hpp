@@ -10,8 +10,6 @@ void map(std::string modifiers, std::string key, sol::protected_function f);
 void terminate();
 void close_window();
 void fullscreen();
-void set_output_scale(float scale);
-void set_output_refresh(int refresh);
 void reload();
 void set_keyboard_repeat(int rate, int delay);
 void focus_follow_mouse(bool flag);
