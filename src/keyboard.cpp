@@ -76,8 +76,6 @@ bool UraKeyboard::process_key(wlr_keyboard_key_event* event) {
 
     // exec keybinding
     auto id = (static_cast<uint64_t>(modifiers) << 32) | sym;
-
-    wlr_log(WLR_DEBUG, "get: modifiers:%d; sym:%d", modifiers, sym);
     if (server->config->keybinding.contains(id)) {
       server->config->keybinding[id]();
       return true;

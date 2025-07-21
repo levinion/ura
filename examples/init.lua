@@ -64,15 +64,17 @@ ura.map("super", "p", function()
 end)
 
 local function everytime()
-  ura.set_output_scale(2)
+  os.execute("wlr-randr --output DP-5 --mode 3840x2160@119.879997Hz --scale 2 &")
   ura.set_keyboard_repeat(40, 300)
   ura.cursor_theme("", 18)
-  ura.tiling_gap(10, 10);
-  ura.set_output_refresh(120)
+  ura.tiling_gap { outer_t = 0 };
 end
 
 ura.hook("startup", function()
+  os.execute("swaybg -i ~/.config/i3/assets/bg.jpg &")
   os.execute("waybar &")
+  os.execute("openrgb --startminimized -p default &")
+  os.execute("mygo -p 4611 $HOME/.config/i3/assets/catppuccin-homepage &")
   everytime()
 end)
 

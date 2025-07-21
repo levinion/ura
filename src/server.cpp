@@ -6,6 +6,7 @@
 #include "ura/keyboard.hpp"
 #include "ura/toplevel.hpp"
 #include "ura/ura.hpp"
+#include "ura/layer_shell.hpp"
 
 namespace ura {
 
@@ -122,38 +123,30 @@ void UraServer::setup_cursor() {
   // create cursor
   this->cursor = wlr_cursor_create();
   wlr_cursor_attach_output_layout(this->cursor, this->output_layout);
-
   // create cursor manager with cursor size
   this->cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
-
   // register callbacks
   this->runtime->register_callback(
     &this->cursor->events.motion,
     on_cursor_motion,
     nullptr
   );
-
   this->runtime->register_callback(
     &this->cursor->events.motion_absolute,
     on_cursor_motion_absolute,
     nullptr
   );
-
   this->runtime->register_callback(
     &this->cursor->events.button,
     on_cursor_button,
     nullptr
   );
-
   this->runtime
     ->register_callback(&this->cursor->events.axis, on_cursor_axis, nullptr);
-
   this->runtime
     ->register_callback(&this->cursor->events.frame, on_cursor_frame, nullptr);
-
   this->cursor_shape_manager =
     wlr_cursor_shape_manager_v1_create(this->display, 1);
-
   this->runtime->register_callback(
     &this->cursor_shape_manager->events.request_set_shape,
     on_cursor_request_set_shape,
@@ -162,26 +155,36 @@ void UraServer::setup_cursor() {
 }
 
 void UraServer::setup_input() {
-  // new input callback
-
+  // create seat with name seat0
+  this->seat = wlr_seat_create(this->display, "seat0");
   this->runtime->register_callback(
     &this->backend->events.new_input,
     on_new_input,
     nullptr
   );
-
-  // create seat with name seat0
-  this->seat = wlr_seat_create(this->display, "seat0");
-
-  this->runtime->register_callback(
-    &this->seat->events.request_set_cursor,
-    on_seat_request_cursor,
-    nullptr
-  );
-
+  // this->runtime->register_callback(
+  //   &this->seat->events.request_set_cursor,
+  //   on_seat_request_cursor,
+  //   nullptr
+  // );
   this->runtime->register_callback(
     &this->seat->events.request_set_selection,
     on_seat_request_set_selection,
+    nullptr
+  );
+  this->runtime->register_callback(
+    &this->seat->events.request_set_primary_selection,
+    on_seat_request_set_primary_selection,
+    nullptr
+  );
+  this->runtime->register_callback(
+    &this->seat->events.request_start_drag,
+    on_seat_request_start_drag,
+    nullptr
+  );
+  this->runtime->register_callback(
+    &this->seat->events.start_drag,
+    on_seat_start_drag,
     nullptr
   );
 }
@@ -256,17 +259,14 @@ UraServer::~UraServer() {
 }
 
 // returns the topmost toplevel under current cursor coordination
-UraToplevel*
-UraServer::foreground_toplevel(wlr_surface** surface, double* sx, double* sy) {
-  auto output = this->current_output();
+UraToplevel* UraServer::foreground_toplevel(double* sx, double* sy) {
   auto node = wlr_scene_node_at(
-    &output->normal->node,
+    &this->scene->tree.node,
     this->cursor->x,
     this->cursor->y,
     sx,
     sy
   );
-  // check validity
   if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
     return nullptr;
   }
@@ -275,15 +275,55 @@ UraServer::foreground_toplevel(wlr_surface** surface, double* sx, double* sy) {
   if (!scene_surface) {
     return nullptr;
   }
-  *surface = scene_surface->surface;
-  auto tree = node->parent;
-  // get a parent node that has data
-  while (tree && !tree->node.data) {
-    tree = tree->node.parent;
-  }
-  if (!tree)
+  auto toplevel = wlr_xdg_toplevel_try_from_wlr_surface(scene_surface->surface);
+  if (!toplevel)
     return nullptr;
-  return static_cast<UraToplevel*>(tree->node.data);
+  return UraToplevel::from(toplevel);
+}
+
+UraLayerShell* UraServer::foreground_layer_shell(double* sx, double* sy) {
+  auto node = wlr_scene_node_at(
+    &this->scene->tree.node,
+    this->cursor->x,
+    this->cursor->y,
+    sx,
+    sy
+  );
+  if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
+    return nullptr;
+  }
+  auto scene_buffer = wlr_scene_buffer_from_node(node);
+  auto scene_surface = wlr_scene_surface_try_from_buffer(scene_buffer);
+  if (!scene_surface) {
+    return nullptr;
+  }
+  auto layer_surface =
+    wlr_layer_surface_v1_try_from_wlr_surface(scene_surface->surface);
+  if (!layer_surface)
+    return nullptr;
+  return UraLayerShell::from(layer_surface);
+}
+
+wlr_xdg_popup* UraServer::foreground_popup(double* sx, double* sy) {
+  auto node = wlr_scene_node_at(
+    &this->scene->tree.node,
+    this->cursor->x,
+    this->cursor->y,
+    sx,
+    sy
+  );
+  if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
+    return nullptr;
+  }
+  auto scene_buffer = wlr_scene_buffer_from_node(node);
+  auto scene_surface = wlr_scene_surface_try_from_buffer(scene_buffer);
+  if (!scene_surface) {
+    return nullptr;
+  }
+  auto popup = wlr_xdg_popup_try_from_wlr_surface(scene_surface->surface);
+  if (!popup)
+    return nullptr;
+  return popup;
 }
 
 UraOutput* UraServer::current_output() {

@@ -23,6 +23,9 @@ void on_cursor_frame(wl_listener* listener, void* data);
 void on_seat_request_cursor(wl_listener* listener, void* data);
 void on_seat_request_set_selection(wl_listener* listener, void* data);
 void on_cursor_request_set_shape(wl_listener* listener, void* data);
+void on_seat_request_set_primary_selection(wl_listener* listener, void* data);
+void on_seat_request_start_drag(wl_listener* listener, void* data);
+void on_seat_start_drag(wl_listener* listener, void* data);
 
 // toplevel.cpp
 void on_new_toplevel(wl_listener* listener, void* data);
@@ -30,9 +33,10 @@ void on_toplevel_map(wl_listener* listener, void* data);
 void on_toplevel_unmap(wl_listener* listener, void* data);
 void on_toplevel_commit(wl_listener* listener, void* data);
 void on_toplevel_destroy(wl_listener* listener, void* data);
-void on_toplevel_request_move(wl_listener* listener, void* data);
-void on_toplevel_request_resize(wl_listener* listener, void* data);
-void on_toplevel_request_maximize(wl_listener* listener, void* data);
+// TODO:
+// void on_toplevel_request_move(wl_listener* listener, void* data);
+// void on_toplevel_request_resize(wl_listener* listener, void* data);
+// void on_toplevel_request_maximize(wl_listener* listener, void* data);
 void on_toplevel_request_fullscreen(wl_listener* listener, void* data);
 
 // popup.cpp
@@ -56,6 +60,5 @@ void on_layer_shell_surface_commit(wl_listener* listener, void* data);
 void on_layer_shell_surface_destroy(wl_listener* listener, void* data);
 void on_layer_shell_surface_map(wl_listener* listener, void* data);
 void on_layer_shell_surface_unmap(wl_listener* listener, void* data);
-void on_layer_shell_new_popup(wl_listener* listener, void* data);
 
 } // namespace ura

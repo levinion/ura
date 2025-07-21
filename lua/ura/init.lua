@@ -29,11 +29,6 @@ function M.close_window()
   _ura.close_window()
 end
 
----@param scale number
-function M.set_output_scale(scale)
-  _ura.set_output_scale(scale)
-end
-
 ---@param rate number
 ---@param delay number
 function M.set_keyboard_repeat(rate, delay)
@@ -80,11 +75,6 @@ end
 ---@param size number
 function M.cursor_theme(theme, size)
   _ura.cursor_theme(theme, size)
-end
-
----@param refresh number
-function M.set_output_refresh(refresh)
-  _ura.set_output_refresh(refresh)
 end
 
 ---@return number

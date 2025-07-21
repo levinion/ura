@@ -31,11 +31,11 @@ keypair_id_from_string(std::string& modifiers_str, std::string& key_str) {
   auto modifiers = split(modifiers_str);
   uint32_t mod = 0;
   for (auto m : modifiers) {
-    if (m == "super" || m == "mod") {
+    if (m == "super" || m == "mod" || m == "cmd" || m == "command") {
       mod |= WLR_MODIFIER_LOGO;
     } else if (m == "alt" || m == "opt") {
       mod |= WLR_MODIFIER_ALT;
-    } else if (m == "ctrl") {
+    } else if (m == "ctrl" || m == "control") {
       mod |= WLR_MODIFIER_CTRL;
     } else if (m == "shift") {
       mod |= WLR_MODIFIER_SHIFT;
@@ -48,9 +48,6 @@ keypair_id_from_string(std::string& modifiers_str, std::string& key_str) {
   if (mod & WLR_MODIFIER_SHIFT && sym >= XKB_KEY_a && sym <= XKB_KEY_z) {
     sym -= (XKB_KEY_a - XKB_KEY_A);
   }
-
-  wlr_log(WLR_DEBUG, "bind: modifiers: %d; keysym: %d", mod, sym);
-
   return (static_cast<uint64_t>(mod) << 32) | sym;
 }
 

@@ -20,8 +20,6 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   this->workspace = this->output->current_workspace;
   this->workspace->toplevels.push_back(this);
 
-  // this is needed to get top most toplevel
-  this->scene_tree->node.data = this;
   // this is needed to create popup surface
   xdg_toplevel->base->data = this->scene_tree;
 
@@ -68,11 +66,11 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     //   on_toplevel_request_resize,
     //   toplevel
     // );
-    server->runtime->register_callback(
-      &xdg_toplevel->events.request_maximize,
-      on_toplevel_request_maximize,
-      this
-    );
+    // server->runtime->register_callback(
+    //   &xdg_toplevel->events.request_maximize,
+    //   on_toplevel_request_maximize,
+    //   this
+    // );
     server->runtime->register_callback(
       &xdg_toplevel->events.request_fullscreen,
       on_toplevel_request_fullscreen,
@@ -85,6 +83,8 @@ void UraToplevel::focus() {
   auto server = UraServer::get_instance();
   auto seat = server->seat;
   auto prev_surface = seat->keyboard_state.focused_surface;
+  if (!this->xdg_toplevel)
+    return;
   auto surface = this->xdg_toplevel->base->surface;
   if (prev_surface) {
     // should only focus once
@@ -105,7 +105,6 @@ void UraToplevel::focus() {
   // activate this toplevel
   wlr_xdg_toplevel_set_activated(this->xdg_toplevel, true);
   // set cursor
-  wlr_cursor_set_xcursor(server->cursor, server->cursor_mgr, "left_ptr");
   // keyboard focus
   auto keyboard = wlr_seat_get_keyboard(seat);
   if (keyboard) {

@@ -20,7 +20,6 @@ void on_output_manager_apply(wl_listener* listener, void* data) {
   } else {
     wlr_output_configuration_v1_send_failed(config);
     wlr_output_configuration_v1_destroy(config);
-    return;
   }
   delete states;
 }

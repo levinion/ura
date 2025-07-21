@@ -5,6 +5,7 @@
 #include <list>
 #include "ura/workspace.hpp"
 #include "ura/toplevel.hpp"
+#include "ura/popup.hpp"
 
 namespace ura {
 
@@ -23,6 +24,7 @@ public:
   std::list<UraLayerShell*> background_surfaces;
   std::list<UraLayerShell*> top_surfaces;
   std::list<UraLayerShell*> overlay_surfaces;
+  std::list<UraPopup*> popups;
 
   /* Layers */
   wlr_scene_tree* background;
@@ -30,6 +32,7 @@ public:
   wlr_scene_tree* normal;
   wlr_scene_tree* floating;
   wlr_scene_tree* top;
+  wlr_scene_tree* popup;
   wlr_scene_tree* fullscreen;
   wlr_scene_tree* overlay;
   wlr_box usable_area;

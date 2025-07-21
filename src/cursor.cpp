@@ -1,4 +1,5 @@
 #include <wayland-server-protocol.h>
+#include "ura/callback.hpp"
 #include "ura/server.hpp"
 #include "ura/toplevel.hpp"
 #include "ura/ura.hpp"
@@ -49,8 +50,7 @@ void on_cursor_button(wl_listener* listener, void* data) {
       && event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
     // focus client
     double sx, sy;
-    wlr_surface* surface = nullptr;
-    auto toplevel = server->foreground_toplevel(&surface, &sx, &sy);
+    auto toplevel = server->foreground_toplevel(&sx, &sy);
     if (toplevel != nullptr)
       toplevel->focus();
   }
@@ -78,46 +78,93 @@ void on_cursor_frame(wl_listener* listener, void* data) {
 
 void UraServer::process_cursor_motion(uint32_t time_msec) {
   double sx, sy;
-  wlr_surface* surface = nullptr;
-  auto toplevel = this->foreground_toplevel(&surface, &sx, &sy);
-
-  // applications will set cursor by themselves, so we only need to set xcursor when there's no focused toplevel
-  if (!toplevel) {
-    wlr_cursor_set_xcursor(this->cursor, this->cursor_mgr, "default");
-  }
-
   auto seat = this->seat;
-  if (surface) {
+
+  // try toplevel
+  auto toplevel = this->foreground_toplevel(&sx, &sy);
+  if (toplevel && toplevel->xdg_toplevel && toplevel->xdg_toplevel->base
+      && toplevel->xdg_toplevel->base->surface) {
+    auto surface = toplevel->xdg_toplevel->base->surface;
+    if (!surface)
+      return;
     wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
     wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
-    if (this->config->focus_follow_mouse && toplevel)
+    if (this->config->focus_follow_mouse) {
       toplevel->focus();
+    }
+    return;
   }
+
+  // try layer_shell
+  auto layer_shell = this->foreground_layer_shell(&sx, &sy);
+  if (layer_shell && layer_shell->layer_surface
+      && layer_shell->layer_surface->surface) {
+    auto surface = layer_shell->layer_surface->surface;
+    if (!surface)
+      return;
+    wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
+    wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
+    if (this->config->focus_follow_mouse) {
+      layer_shell->focus();
+    }
+    return;
+  }
+
+  auto popup = this->foreground_popup(&sx, &sy);
+  if (popup && popup->base->surface) {
+    auto surface = popup->base->surface;
+    if (!surface)
+      return;
+    wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
+    wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
+    return;
+  }
+
+  wlr_cursor_set_xcursor(this->cursor, this->cursor_mgr, "left_ptr");
 }
 
 // prefer using cursor_shape_v1 to set cursor
-void on_seat_request_cursor(wl_listener* listener, void* data) {
-  auto server = UraServer::get_instance();
-  auto event = static_cast<wlr_seat_pointer_request_set_cursor_event*>(data);
-
-  auto focused_client = server->seat->pointer_state.focused_client;
-  if (focused_client == event->seat_client) {
-    wlr_cursor_set_surface(
-      server->cursor,
-      event->surface,
-      event->hotspot_x,
-      event->hotspot_y
-    );
-  }
-}
+// void on_seat_request_cursor(wl_listener* listener, void* data) {
+//   auto server = UraServer::get_instance();
+//   auto event = static_cast<wlr_seat_pointer_request_set_cursor_event*>(data);
+//
+//   auto focused_client = server->seat->pointer_state.focused_client;
+//   if (focused_client == event->seat_client) {
+//     wlr_cursor_set_surface(
+//       server->cursor,
+//       event->surface,
+//       event->hotspot_x,
+//       event->hotspot_y
+//     );
+//   }
+// }
 
 void on_seat_request_set_selection(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto event = static_cast<wlr_seat_request_set_selection_event*>(data);
-
-  auto focused_client = server->seat->pointer_state.focused_client;
   wlr_seat_set_selection(server->seat, event->source, event->serial);
 }
+
+void on_seat_request_set_primary_selection(wl_listener* listener, void* data) {
+  auto server = UraServer::get_instance();
+  auto event = static_cast<wlr_seat_request_set_primary_selection_event*>(data);
+  wlr_seat_set_primary_selection(server->seat, event->source, event->serial);
+}
+
+void on_seat_request_start_drag(wl_listener* listener, void* data) {
+  auto server = UraServer::get_instance();
+  auto event = static_cast<wlr_seat_request_start_drag_event*>(data);
+  if (wlr_seat_validate_pointer_grab_serial(
+        server->seat,
+        event->origin,
+        event->serial
+      ))
+    wlr_seat_start_pointer_drag(server->seat, event->drag, event->serial);
+  else
+    wlr_data_source_destroy(event->drag->source);
+}
+
+void on_seat_start_drag(wl_listener* listener, void* data) {}
 
 void on_cursor_request_set_shape(wl_listener* listener, void* data) {
   auto event =

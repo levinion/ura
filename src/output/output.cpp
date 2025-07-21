@@ -27,11 +27,12 @@ void UraOutput::init(wlr_output* _wlr_output) {
   // create scene tree
   this->background = wlr_scene_tree_create(&server->scene->tree);
   this->bottom = wlr_scene_tree_create(&server->scene->tree);
-  this->top = wlr_scene_tree_create(&server->scene->tree);
-  this->overlay = wlr_scene_tree_create(&server->scene->tree);
   this->normal = wlr_scene_tree_create(&server->scene->tree);
   this->floating = wlr_scene_tree_create(&server->scene->tree);
+  this->top = wlr_scene_tree_create(&server->scene->tree);
+  this->popup = wlr_scene_tree_create(&server->scene->tree);
   this->fullscreen = wlr_scene_tree_create(&server->scene->tree);
+  this->overlay = wlr_scene_tree_create(&server->scene->tree);
 
   // register callback
   server->runtime
@@ -50,6 +51,7 @@ void UraOutput::init(wlr_output* _wlr_output) {
   wlr_scene_node_raise_to_top(&this->normal->node);
   wlr_scene_node_raise_to_top(&this->floating->node);
   wlr_scene_node_raise_to_top(&this->top->node);
+  wlr_scene_node_raise_to_top(&this->popup->node);
   wlr_scene_node_raise_to_top(&this->fullscreen->node);
   wlr_scene_node_raise_to_top(&this->overlay->node);
 

@@ -106,6 +106,9 @@ void on_toplevel_destroy(wl_listener* listener, void* data) {
   toplevel->output->current_workspace->toplevels.remove(toplevel);
   delete toplevel;
 
+  wlr_seat_pointer_clear_focus(server->seat);
+  wlr_seat_keyboard_clear_focus(server->seat);
+
   /* switch focus to another toplevel */
   // if prev focused toplevel exists and in the same workspace, focus it
   if (server->prev_focused_toplevel
@@ -134,12 +137,12 @@ void on_toplevel_destroy(wl_listener* listener, void* data) {
 //   toplevel->resize(event->edges);
 // }
 
-void on_toplevel_request_maximize(wl_listener* listener, void* data) {
-  auto server = UraServer::get_instance();
-  auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  // equal to fullscreen
-  toplevel->toggle_fullscreen();
-}
+// void on_toplevel_request_maximize(wl_listener* listener, void* data) {
+//   auto server = UraServer::get_instance();
+//   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
+//   // equal to fullscreen
+//   toplevel->toggle_fullscreen();
+// }
 
 void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();

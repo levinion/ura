@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ura/config.hpp"
+#include "ura/layer_shell.hpp"
 #include "ura/ura.hpp"
 #include "ura/lua.hpp"
 
@@ -45,8 +46,9 @@ public:
   void destroy();
   ~UraServer();
 
-  UraToplevel*
-  foreground_toplevel(wlr_surface** surface, double* sx, double* sy);
+  UraToplevel* foreground_toplevel(double* sx, double* sy);
+  UraLayerShell* foreground_layer_shell(double* sx, double* sy);
+  wlr_xdg_popup* foreground_popup(double* sx, double* sy);
   UraOutput* current_output();
   UraKeyboard* current_keyboard();
 
