@@ -99,20 +99,11 @@ void on_toplevel_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  auto workspace = toplevel->workspace;
-
-  // destroy this toplevel
-  server->runtime->remove(toplevel);
-  toplevel->output->current_workspace->toplevels.remove(toplevel);
-  delete toplevel;
-
-  wlr_seat_pointer_clear_focus(server->seat);
-  wlr_seat_keyboard_clear_focus(server->seat);
 
   /* switch focus to another toplevel */
   // if prev focused toplevel exists and in the same workspace, focus it
-  if (server->prev_focused_toplevel
-      && server->prev_focused_toplevel->workspace == workspace) {
+  if (server->prev_focused_toplevel && server->prev_focused_toplevel != toplevel
+      && server->prev_focused_toplevel->workspace == toplevel->workspace) {
     server->prev_focused_toplevel->focus();
     server->prev_focused_toplevel = nullptr;
   } else if (!output->current_workspace->toplevels.empty()) {
@@ -122,6 +113,10 @@ void on_toplevel_destroy(wl_listener* listener, void* data) {
     // else let it empty
     server->focused_toplevel = nullptr;
   }
+
+  server->runtime->remove(toplevel);
+  toplevel->output->current_workspace->toplevels.remove(toplevel);
+  delete toplevel;
 }
 
 // void on_toplevel_request_move(wl_listener* listener, void* data) {

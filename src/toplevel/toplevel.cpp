@@ -83,8 +83,7 @@ void UraToplevel::focus() {
   auto server = UraServer::get_instance();
   auto seat = server->seat;
   auto prev_surface = seat->keyboard_state.focused_surface;
-  if (!this->xdg_toplevel && !this->xdg_toplevel && !this->xdg_toplevel->base
-      && !this->xdg_toplevel->base->surface)
+  if (!this->xdg_toplevel)
     return;
   auto surface = this->xdg_toplevel->base->surface;
   if (prev_surface) {
