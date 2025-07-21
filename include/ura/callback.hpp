@@ -61,4 +61,7 @@ void on_layer_shell_surface_destroy(wl_listener* listener, void* data);
 void on_layer_shell_surface_map(wl_listener* listener, void* data);
 void on_layer_shell_surface_unmap(wl_listener* listener, void* data);
 
+// activation.cpp
+void on_activation_request_activate(wl_listener* listener, void* data);
+
 } // namespace ura

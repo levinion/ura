@@ -30,6 +30,7 @@ public:
   wlr_layer_shell_v1* layer_shell;
   wlr_cursor_shape_manager_v1* cursor_shape_manager;
   wlr_output_manager_v1* output_manager;
+  wlr_xdg_activation_v1* activation;
 
   std::unique_ptr<UraConfig> config;
   std::unique_ptr<UraRuntime> runtime;
@@ -69,6 +70,7 @@ private:
   void setup_base();
   void setup_decoration();
   void setup_layer_shell();
+  void setup_activation();
 };
 
 } // namespace ura

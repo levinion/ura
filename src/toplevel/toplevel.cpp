@@ -83,7 +83,8 @@ void UraToplevel::focus() {
   auto server = UraServer::get_instance();
   auto seat = server->seat;
   auto prev_surface = seat->keyboard_state.focused_surface;
-  if (!this->xdg_toplevel)
+  if (!this->xdg_toplevel && !this->xdg_toplevel && !this->xdg_toplevel->base
+      && !this->xdg_toplevel->base->surface)
     return;
   auto surface = this->xdg_toplevel->base->surface;
   if (prev_surface) {
@@ -99,6 +100,8 @@ void UraToplevel::focus() {
       wlr_xdg_toplevel_set_activated(prev_wlr_toplevel, false);
     }
   }
+  if (!this->mapped)
+    this->map();
   server->focused_toplevel = this;
   // move scene to top
   wlr_scene_node_raise_to_top(&this->scene_tree->node);

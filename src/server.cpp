@@ -34,6 +34,7 @@ UraServer* UraServer::init() {
   this->setup_input();
   this->setup_decoration();
   this->setup_layer_shell();
+  this->setup_activation();
   return this;
 }
 
@@ -213,6 +214,15 @@ void UraServer::setup_layer_shell() {
   this->runtime->register_callback(
     &this->layer_shell->events.new_surface,
     on_layer_shell_new_surface,
+    nullptr
+  );
+}
+
+void UraServer::setup_activation() {
+  this->activation = wlr_xdg_activation_v1_create(this->display);
+  this->runtime->register_callback(
+    &this->activation->events.request_activate,
+    on_activation_request_activate,
     nullptr
   );
 }
