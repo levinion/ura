@@ -53,6 +53,8 @@ void on_keyboard_destroy(wl_listener* listener, void* data);
 void on_new_toplevel_decoration(wl_listener* listener, void* data);
 void on_toplevel_decoration_destroy(wl_listener* listener, void* data);
 void on_toplevel_decoration_request_mode(wl_listener* listener, void* data);
+void on_new_server_decoration(wl_listener* listener, void* data);
+void on_server_decoration_mode(wl_listener* listener, void* data);
 
 // layer_shell/callback.cpp
 void on_layer_shell_new_surface(wl_listener* listener, void* data);

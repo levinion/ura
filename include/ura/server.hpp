@@ -26,12 +26,14 @@ public:
   wlr_cursor* cursor;
   wlr_xcursor_manager* cursor_mgr;
   wlr_seat* seat;
+  wlr_server_decoration_manager* server_decoration_manager;
   wlr_xdg_decoration_manager_v1* decoration_manager;
   wlr_layer_shell_v1* layer_shell;
   wlr_cursor_shape_manager_v1* cursor_shape_manager;
   wlr_output_manager_v1* output_manager;
   wlr_xdg_activation_v1* activation;
   wlr_foreign_toplevel_manager_v1* foreign_manager;
+  wlr_text_input_manager_v3* text_input_manager;
 
   std::unique_ptr<UraConfig> config;
   std::unique_ptr<UraRuntime> runtime;
@@ -73,6 +75,8 @@ private:
   void setup_layer_shell();
   void setup_activation();
   void setup_foreign();
+  void setup_drm();
+  void setup_text_input();
 };
 
 } // namespace ura

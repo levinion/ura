@@ -13,6 +13,7 @@ UraServer* UraServer::init() {
   this->lua = Lua::init();
   this->config->load();
   this->setup_base();
+  this->setup_drm();
   this->setup_compositor();
   this->setup_output();
   this->setup_toplevel();
@@ -23,6 +24,7 @@ UraServer* UraServer::init() {
   this->setup_layer_shell();
   this->setup_activation();
   this->setup_foreign();
+  this->setup_text_input();
   return this;
 }
 
@@ -57,6 +59,14 @@ void UraServer::setup_compositor() {
   wlr_single_pixel_buffer_manager_v1_create(this->display);
   wlr_screencopy_manager_v1_create(this->display);
   wlr_data_control_manager_v1_create(this->display);
+  wlr_presentation_create(this->display, this->backend, 2);
+}
+
+void UraServer::setup_drm() {
+  wlr_drm_lease_v1_manager_create(this->display, this->backend);
+  auto drm_fd = wlr_renderer_get_drm_fd(this->renderer);
+  if (drm_fd > 0)
+    wlr_linux_drm_syncobj_manager_v1_create(this->display, 1, drm_fd);
 }
 
 void UraServer::setup_output() {
@@ -176,17 +186,20 @@ void UraServer::setup_input() {
 }
 
 void UraServer::setup_decoration() {
-  auto server_decoration_manager =
+  this->server_decoration_manager =
     wlr_server_decoration_manager_create(this->display);
 
   wlr_server_decoration_manager_set_default_mode(
     server_decoration_manager,
     WLR_SERVER_DECORATION_MANAGER_MODE_SERVER
   );
-
+  this->runtime->register_callback(
+    &this->server_decoration_manager->events.new_decoration,
+    on_new_server_decoration,
+    nullptr
+  );
   this->decoration_manager =
     wlr_xdg_decoration_manager_v1_create(this->display);
-
   this->runtime->register_callback(
     &this->decoration_manager->events.new_toplevel_decoration,
     on_new_toplevel_decoration,
@@ -217,6 +230,11 @@ void UraServer::setup_foreign() {
   wlr_xdg_foreign_v1_create(this->display, foreign_registry);
   wlr_xdg_foreign_v2_create(this->display, foreign_registry);
   this->foreign_manager = wlr_foreign_toplevel_manager_v1_create(this->display);
+}
+
+void UraServer::setup_text_input() {
+  // TODO: impl this
+  this->text_input_manager = wlr_text_input_manager_v3_create(this->display);
 }
 
 void UraServer::run() {

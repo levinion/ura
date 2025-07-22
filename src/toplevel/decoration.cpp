@@ -1,7 +1,8 @@
 #include "ura/server.hpp"
 #include "ura/callback.hpp"
 #include "ura/toplevel.hpp"
-#include <cassert>
+#include "ura/ura.hpp"
+#include "ura/runtime.hpp"
 
 namespace ura {
 
@@ -17,6 +18,20 @@ void on_new_toplevel_decoration(wl_listener* listener, void* data) {
       WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
     );
   }
+}
+
+void on_new_server_decoration(wl_listener* listener, void* data) {
+  auto server_decoration = static_cast<wlr_server_decoration*>(data);
+  auto server = UraServer::get_instance();
+  // server->runtime->register_callback(
+  //   &server_decoration->events.mode,
+  //   on_server_decoration_mode,
+  //   nullptr
+  // );
+}
+
+void on_server_decoration_mode(wl_listener* listener, void* data) {
+  // TODO: impl this
 }
 
 } // namespace ura
