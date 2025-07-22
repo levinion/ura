@@ -14,7 +14,7 @@ public:
   UraOutput* output;
 
   void init(wlr_layer_surface_v1* layer_surface);
-  static UraLayerShell* from(wlr_layer_surface_v1* layer_surface);
+  static UraLayerShell* from(wlr_surface* surface);
   void focus();
 };
 

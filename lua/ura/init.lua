@@ -1,3 +1,6 @@
+local home_dir = os.getenv("HOME")
+package.path = package.path .. ";" .. home_dir .. "/.config/ura/lua/?.lua"
+
 local M = {}
 
 ---@param modifiers string

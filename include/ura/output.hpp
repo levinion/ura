@@ -16,7 +16,7 @@ public:
   wlr_output* output;
   void init(wlr_output* output);
   static UraOutput* from(wlr_output* output);
-  void commit_frame();
+  void fresh_screen();
   void set_mode(wlr_output_mode* mode);
 
   /* Surfaces */

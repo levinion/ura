@@ -1,5 +1,4 @@
 #include "ura/layer_shell.hpp"
-#include <utility>
 #include "ura/server.hpp"
 #include "ura/output.hpp"
 #include "ura/ura.hpp"
@@ -28,7 +27,7 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
   this->scene_surface = scene_surface;
   this->output = output;
   this->scene_tree = scene_surface->tree;
-  layer_surface->surface->data = this->scene_tree;
+  layer_surface->surface->data = this;
 
   // notify scale
   wlr_fractional_scale_v1_notify_scale(
@@ -67,18 +66,8 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
   list.push_back(this);
 }
 
-UraLayerShell* UraLayerShell::from(wlr_layer_surface_v1* layer_surface) {
-  auto server = UraServer::get_instance();
-  for (auto output : server->runtime->outputs)
-    for (auto surfaces : { output->overlay_surfaces,
-                           output->top_surfaces,
-                           output->bottom_surfaces,
-                           output->background_surfaces })
-      for (auto layer_shell : surfaces) {
-        if (layer_shell->layer_surface == layer_surface)
-          return layer_shell;
-      }
-  std::unreachable();
+UraLayerShell* UraLayerShell::from(wlr_surface* surface) {
+  return static_cast<UraLayerShell*>(surface->data);
 }
 
 void UraLayerShell::focus() {

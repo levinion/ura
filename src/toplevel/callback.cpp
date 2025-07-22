@@ -35,7 +35,8 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   auto output = server->current_output();
 
-  if (!output || !toplevel->mapped || !toplevel->initialized()) {
+  if (!output || !toplevel->mapped
+      || !toplevel->xdg_toplevel->base->initialized) {
     return;
   }
 
@@ -66,7 +67,7 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
   auto outer_t = server->config->outer_gap_top;
   auto outer_b = server->config->outer_gap_bottom;
   auto inner = server->config->inner_gap;
-  auto& toplevels = server->current_output()->current_workspace->toplevels;
+  auto& toplevels = output->current_workspace->toplevels;
   // find mapped toplevel number
   int sum = 0;
   for (auto toplevel : toplevels) {
@@ -101,8 +102,18 @@ void on_toplevel_destroy(wl_listener* listener, void* data) {
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
 
   /* switch focus to another toplevel */
+  if (server->prev_focused_toplevel
+      && server->prev_focused_toplevel == toplevel) {
+    server->prev_focused_toplevel = nullptr;
+    wlr_seat_keyboard_clear_focus(server->seat);
+    wlr_seat_pointer_clear_focus(server->seat);
+  }
+
+  server->runtime->remove(toplevel);
+  toplevel->output->current_workspace->toplevels.remove(toplevel);
+
   // if prev focused toplevel exists and in the same workspace, focus it
-  if (server->prev_focused_toplevel && server->prev_focused_toplevel != toplevel
+  if (server->prev_focused_toplevel
       && server->prev_focused_toplevel->workspace == toplevel->workspace) {
     server->prev_focused_toplevel->focus();
     server->prev_focused_toplevel = nullptr;
@@ -114,10 +125,10 @@ void on_toplevel_destroy(wl_listener* listener, void* data) {
     server->focused_toplevel = nullptr;
   }
 
-  server->runtime->remove(toplevel);
-  toplevel->output->current_workspace->toplevels.remove(toplevel);
   delete toplevel;
 }
+
+// TODO: handle floating toplevels
 
 // void on_toplevel_request_move(wl_listener* listener, void* data) {
 //   auto server = UraServer::get_instance();

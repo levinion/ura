@@ -1,0 +1,72 @@
+#include <utility>
+#include "ura/layer_shell.hpp"
+#include "ura/toplevel.hpp"
+#include "ura/runtime.hpp"
+#include "ura/server.hpp"
+#include "ura/output.hpp"
+#include "ura/ura.hpp"
+#include "ura/callback.hpp"
+#include "ura/surface.hpp"
+
+namespace ura {
+
+void UraPopup::init(wlr_xdg_popup* xdg_popup) {
+  auto server = UraServer::get_instance();
+  this->xdg_popup = xdg_popup;
+  this->xdg_popup->base->surface->data = this;
+
+  if (xdg_popup->parent) {
+    auto parent = xdg_popup->parent;
+    if (!parent) {
+      delete this;
+      return;
+    }
+    auto surface_type = get_surface_type(xdg_popup->parent);
+    switch (surface_type) {
+      case UraSurfaceType::Toplevel: {
+        auto toplevel = UraToplevel::from(xdg_popup->parent);
+        auto parent_tree = toplevel->scene_tree;
+        if (!parent_tree) {
+          delete this;
+          return;
+        }
+        xdg_popup->base->data =
+          wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base);
+        break;
+      }
+      case UraSurfaceType::LayerShell: {
+        auto layer_shell = UraLayerShell::from(xdg_popup->parent);
+        auto parent_tree = layer_shell->scene_tree;
+        if (!parent_tree) {
+          delete this;
+          return;
+        }
+        xdg_popup->base->data =
+          wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base);
+        break;
+      }
+      default:
+        std::unreachable();
+    }
+  } else {
+    // this happens when a popup has no parent
+    // then send them to current output's popup layer
+    auto output = server->current_output();
+    xdg_popup->base->data =
+      wlr_scene_xdg_surface_create(output->popup, xdg_popup->base);
+    output->popups.push_back(this);
+  }
+
+  // callbacks
+  server->runtime->register_callback(
+    &xdg_popup->base->surface->events.commit,
+    on_popup_commit,
+    this
+  );
+  server->runtime->register_callback(
+    &xdg_popup->base->surface->events.destroy,
+    on_popup_destroy,
+    this
+  );
+}
+} // namespace ura

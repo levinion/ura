@@ -13,6 +13,7 @@ namespace ura {
 
 void UraOutput::init(wlr_output* _wlr_output) {
   this->output = _wlr_output;
+  this->output->data = this;
   auto server = UraServer::get_instance();
   // bind render and allocator to this output
   wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
@@ -80,13 +81,10 @@ void UraOutput::init(wlr_output* _wlr_output) {
 }
 
 UraOutput* UraOutput::from(wlr_output* output) {
-  auto outputs = UraServer::get_instance()->runtime->outputs;
-  return *std::find_if(outputs.begin(), outputs.end(), [&](auto i) {
-    return i->output == output;
-  });
+  return static_cast<UraOutput*>(output->data);
 }
 
-void UraOutput::commit_frame() {
+void UraOutput::fresh_screen() {
   auto server = UraServer::get_instance();
   auto scene = server->scene;
   auto scene_output = wlr_scene_get_scene_output(scene, this->output);

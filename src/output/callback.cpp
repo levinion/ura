@@ -17,7 +17,7 @@ void on_new_output(wl_listener* listener, void* data) {
 void on_output_frame(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto output = server->runtime->fetch<UraOutput*>(listener);
-  output->commit_frame();
+  output->fresh_screen();
 }
 
 void on_output_request_state(wl_listener* listener, void* data) {

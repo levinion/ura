@@ -11,81 +11,32 @@ class UraWorkSpace;
 
 class UraToplevel {
 public:
+  bool mapped = true;
+  bool floating = false;
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
   UraOutput* output;
-  bool mapped = true;
-  wlr_xdg_toplevel_decoration_v1* decoration;
   UraWorkSpace* workspace;
+  wlr_xdg_toplevel_decoration_v1* decoration;
+  wlr_foreign_toplevel_handle_v1* foreign_handle;
 
+  static UraToplevel* from(wlr_surface* surface);
   void init(wlr_xdg_toplevel* xdg_toplevel);
-  static UraToplevel* from(wlr_xdg_toplevel* xdg_toplevel);
-
   void focus();
-
-  inline bool initialized() {
-    return this->xdg_toplevel->base->initialized;
-  }
-
-  inline bool initial_commit() {
-    return this->xdg_toplevel->base->initial_commit;
-  }
-
-  inline void move(int x, int y) {
-    wlr_scene_node_set_position(&this->scene_tree->node, x, y);
-  }
-
-  inline void resize(int width, int height) {
-    wlr_xdg_toplevel_set_size(this->xdg_toplevel, width, height);
-  }
-
-  inline void set_fullscreen(bool flag) {
-    if (this->xdg_toplevel->base->initialized)
-      wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, flag);
-  }
-
-  inline bool fullscreen() {
-    if (!this->xdg_toplevel)
-      return false;
-    return this->xdg_toplevel->pending.fullscreen;
-  }
-
-  inline void toggle_fullscreen() {
-    this->set_fullscreen(!this->fullscreen());
-  }
-
-  inline void close() {
-    wlr_xdg_toplevel_send_close(this->xdg_toplevel);
-  }
-
-  inline void map() {
-    this->mapped = true;
-    wlr_scene_node_set_enabled(&this->scene_tree->node, true);
-  }
-
-  inline void unmap() {
-    this->mapped = false;
-    wlr_scene_node_set_enabled(&this->scene_tree->node, false);
-  }
-
-  inline std::string title() {
-    return this->xdg_toplevel->title;
-  }
-
-  inline void set_title(std::string title) {
-    this->xdg_toplevel->title = title.data();
-  }
-
-  inline bool is_normal() {
-    return (
-      this->mapped && !this->fullscreen()
-      // a 1x1 window is not considered to be a normal toplevel
-    );
-  }
-
+  void move(int x, int y);
+  void resize(int width, int height);
+  void set_fullscreen(bool flag);
+  bool fullscreen();
+  void toggle_fullscreen();
+  void close();
+  void map();
+  void unmap();
+  std::string title();
+  void set_title(std::string title);
+  bool is_normal();
   int move_to_workspace(int index);
-
   int index();
+  void activate();
 };
 
 } // namespace ura

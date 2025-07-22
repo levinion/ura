@@ -12,7 +12,7 @@ run:
 debug:
   cmake -B build -DCMAKE_BUILD_TYPE=Debug
   just build
-  gdb -q ./build/$(cat build/CMakeCache.txt | grep CMAKE_PROJECT_NAME | awk -F '=' '{print $2}')
+  sudo install -Dm755 ./build/ura /usr/bin/
 
 init:
   mkdir -p include/protocols
