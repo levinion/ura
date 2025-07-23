@@ -63,18 +63,24 @@ void terminate() {
 
 void close_window() {
   auto server = UraServer::get_instance();
-  auto toplevel = server->focused_toplevel;
-  if (!toplevel)
-    return;
-  toplevel->close();
+  auto workspace = server->current_output()->current_workspace;
+  auto client = workspace->focus_stack.top();
+  if (client) {
+    auto toplevel = client.value().transform<UraToplevel>();
+    if (toplevel)
+      toplevel->close();
+  }
 }
 
 void fullscreen() {
   auto server = UraServer::get_instance();
-  auto toplevel = server->focused_toplevel;
-  if (!toplevel)
-    return;
-  toplevel->toggle_fullscreen();
+  auto workspace = server->current_output()->current_workspace;
+  auto client = workspace->focus_stack.top();
+  if (client) {
+    auto toplevel = client.value().transform<UraToplevel>();
+    if (toplevel)
+      toplevel->toggle_fullscreen();
+  }
 }
 
 void reload() {
@@ -109,13 +115,20 @@ int switch_workspace(int index) {
 
 int move_to_workspace(int index) {
   auto server = UraServer::get_instance();
-  auto toplevel = server->focused_toplevel;
-  auto output = toplevel->output;
-  if (index >= output->workspaces.size())
-    output->create_workspace();
-  index = toplevel->move_to_workspace(index);
-  index = output->switch_workspace(index);
-  return index;
+  auto output = server->current_output();
+  auto workspace = output->current_workspace;
+  auto client = workspace->focus_stack.top();
+  if (client) {
+    auto toplevel = client.value().transform<UraToplevel>();
+    if (!toplevel)
+      return -1;
+    if (index >= output->workspaces.size())
+      output->create_workspace();
+    index = toplevel->move_to_workspace(index);
+    index = output->switch_workspace(index);
+    return index;
+  }
+  return -1;
 }
 
 int current_workspace() {
@@ -154,7 +167,15 @@ void cursor_theme(std::string theme, int size) {
 
 int current_toplevel() {
   auto server = UraServer::get_instance();
-  return server->focused_toplevel->index();
+  auto workspace = server->current_output()->current_workspace;
+  auto client = workspace->focus_stack.top();
+  if (client) {
+    auto toplevel = client.value().transform<UraToplevel>();
+    if (!toplevel)
+      return -1;
+    return toplevel->index();
+  }
+  return -1;
 }
 
 bool focus(int index) {

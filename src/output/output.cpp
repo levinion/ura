@@ -57,13 +57,7 @@ void UraOutput::init(wlr_output* _wlr_output) {
   wlr_scene_node_raise_to_top(&this->overlay->node);
 
   // set usable area to full area
-  this->usable_area.x = 0;
-  this->usable_area.y = 0;
-  wlr_output_effective_resolution(
-    this->output,
-    &this->usable_area.width,
-    &this->usable_area.height
-  );
+  this->usable_area = this->logical_geometry();
 
   // add this output to scene layout
   auto output_layout_output =
@@ -160,14 +154,7 @@ void UraOutput::configure_layer(
 }
 
 void UraOutput::configure_layers() {
-  wlr_box full_area;
-  full_area.x = 0;
-  full_area.y = 0;
-  wlr_output_effective_resolution(
-    this->output,
-    &full_area.width,
-    &full_area.height
-  );
+  auto full_area = this->logical_geometry();
   auto usable_area = full_area;
   for (auto exclusive : { true, false }) {
     // background
@@ -206,6 +193,7 @@ void UraOutput::configure_layers() {
   this->usable_area = usable_area;
 }
 
+// internal method
 void UraOutput::set_mode(wlr_output_mode* mode) {
   wlr_output_state state;
   wlr_output_state_init(&state);
@@ -214,5 +202,15 @@ void UraOutput::set_mode(wlr_output_mode* mode) {
     wlr_output_state_set_mode(&state, mode);
   wlr_output_commit_state(this->output, &state);
   wlr_output_state_finish(&state);
+}
+
+wlr_box UraOutput::physical_geometry() {
+  return { 0, 0, this->output->width, this->output->height };
+}
+
+wlr_box UraOutput::logical_geometry() {
+  int width, height;
+  wlr_output_effective_resolution(this->output, &width, &height);
+  return { 0, 0, width, height };
 }
 } // namespace ura

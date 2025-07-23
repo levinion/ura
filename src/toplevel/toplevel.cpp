@@ -1,5 +1,6 @@
 #include "ura/toplevel.hpp"
 #include <utility>
+#include "ura/client.hpp"
 #include "ura/runtime.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
@@ -19,6 +20,7 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   this->output = output;
   this->workspace = this->output->current_workspace;
   this->workspace->toplevels.push_back(this);
+  this->workspace->focus_stack.push(this);
   xdg_toplevel->base->surface->data = this;
 
   // // notify scale
@@ -96,19 +98,96 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   );
 }
 
+void UraToplevel::destroy() {
+  auto server = UraServer::get_instance();
+  auto workspace = this->workspace;
+  auto is_top = workspace->focus_stack.is_top(this);
+  workspace->focus_stack.remove(this);
+  auto top = workspace->focus_stack.top();
+  if (is_top && top) {
+    top.value().focus();
+  }
+  server->runtime->remove(this);
+  workspace->toplevels.remove(this);
+}
+
+void UraToplevel::commit() {
+  auto server = UraServer::get_instance();
+  if (!this->mapped || !this->xdg_toplevel->base->initialized) {
+    return;
+  }
+  auto mode = this->output->logical_geometry();
+
+  // handle fullscreen toplevel window
+  if (this->fullscreen()) {
+    this->resize(mode.width, mode.height);
+    this->move(mode.x, mode.y);
+    return;
+  }
+
+  if (this->xdg_toplevel->base->initial_commit && this->decoration) {
+    wlr_xdg_toplevel_decoration_v1_set_mode(
+      this->decoration,
+      WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
+    );
+  }
+
+  auto usable_area = output->usable_area;
+  auto width = usable_area.width;
+  auto height = usable_area.height;
+
+  auto outer_l = server->config->outer_gap_left;
+  auto outer_r = server->config->outer_gap_right;
+  auto outer_t = server->config->outer_gap_top;
+  auto outer_b = server->config->outer_gap_bottom;
+  auto inner = server->config->inner_gap;
+  auto& toplevels = output->current_workspace->toplevels;
+  // find mapped toplevel number
+  int sum = 0;
+  for (auto toplevel : toplevels) {
+    if (toplevel->is_normal())
+      sum += 1;
+  }
+  // find this toplevel index
+  int i = 0;
+  for (auto window : toplevels) {
+    if (!window->is_normal())
+      continue;
+    if (window != this)
+      i++;
+    else
+      break;
+  }
+  auto gaps = sum - 1;
+  auto w = (width - (outer_r + outer_l) - inner * gaps) / sum;
+  auto h = height - (outer_t + outer_b);
+  auto x = usable_area.x + outer_l + (w + inner) * i;
+  auto y = usable_area.y + outer_t;
+  // check value
+  if (w < 0 || h < 0 || x + w > width || y + h > height)
+    return;
+  this->resize(w, h);
+  this->move(x, y);
+}
+
 void UraToplevel::focus() {
   auto server = UraServer::get_instance();
   auto seat = server->seat;
   auto surface = this->xdg_toplevel->base->surface;
-  if (server->focused_toplevel) {
-    server->prev_focused_toplevel = server->focused_toplevel;
-    wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
-    wlr_xdg_toplevel_set_activated(
-      server->focused_toplevel->xdg_toplevel,
-      false
-    );
+  auto workspace = this->workspace;
+  // if not on top of focus stack, then unfocus the current top
+  if (!workspace->focus_stack.is_top(this)) {
+    auto prev = workspace->focus_stack.top().value();
+    if (prev.type == UraSurfaceType::Toplevel) {
+      wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
+      wlr_xdg_toplevel_set_activated(
+        prev.transform<UraToplevel>()->xdg_toplevel,
+        false
+      );
+    }
   }
-  server->focused_toplevel = this;
+  // move to top of stack and focus this
+  workspace->focus_stack.move_to_top(this);
   if (!this->mapped)
     this->map();
   wlr_scene_node_raise_to_top(&this->scene_tree->node);
@@ -138,8 +217,10 @@ int UraToplevel::move_to_workspace(int index) {
   if (!target)
     return -1;
   this->workspace->toplevels.remove(this);
+  this->workspace->focus_stack.remove(this);
   target->toplevels.push_back(this);
   this->workspace = target;
+  this->workspace->focus_stack.push(this);
   return this->workspace->index();
 }
 
@@ -217,5 +298,14 @@ void UraToplevel::set_title(std::string title) {
 
 bool UraToplevel::is_normal() {
   return (this->mapped && !this->fullscreen() && !this->floating);
+}
+
+wlr_box UraToplevel::logical_geometry() {
+  int lx, ly;
+  wlr_scene_node_coords(&this->scene_tree->node, &lx, &ly);
+  return { lx,
+           ly,
+           this->xdg_toplevel->current.width,
+           this->xdg_toplevel->current.height };
 }
 } // namespace ura

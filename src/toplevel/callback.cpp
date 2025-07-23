@@ -1,11 +1,8 @@
-
 #include "ura/toplevel.hpp"
 #include "ura/runtime.hpp"
-#include "ura/output.hpp"
 #include "ura/server.hpp"
 #include "ura/ura.hpp"
 #include "ura/callback.hpp"
-#include "ura/workspace.hpp"
 
 namespace ura {
 // create a new toplevel
@@ -33,98 +30,14 @@ void on_toplevel_unmap(wl_listener* listener, void* data) {
 void on_toplevel_commit(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  auto output = server->current_output();
-
-  if (!output || !toplevel->mapped
-      || !toplevel->xdg_toplevel->base->initialized) {
-    return;
-  }
-
-  auto scale = server->current_output()->output->scale;
-  auto mode = output->output->current_mode;
-
-  // handle fullscreen toplevel window
-  if (toplevel->fullscreen()) {
-    toplevel->focus();
-    toplevel->resize(mode->width / scale, mode->height / scale);
-    toplevel->move(0, 0);
-    return;
-  }
-
-  if (toplevel->xdg_toplevel->base->initial_commit && toplevel->decoration) {
-    wlr_xdg_toplevel_decoration_v1_set_mode(
-      toplevel->decoration,
-      WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
-    );
-  }
-
-  auto usable_area = output->usable_area;
-  auto width = usable_area.width;
-  auto height = usable_area.height;
-
-  auto outer_l = server->config->outer_gap_left;
-  auto outer_r = server->config->outer_gap_right;
-  auto outer_t = server->config->outer_gap_top;
-  auto outer_b = server->config->outer_gap_bottom;
-  auto inner = server->config->inner_gap;
-  auto& toplevels = output->current_workspace->toplevels;
-  // find mapped toplevel number
-  int sum = 0;
-  for (auto toplevel : toplevels) {
-    if (toplevel->is_normal())
-      sum += 1;
-  }
-  // find this toplevel index
-  int i = 0;
-  for (auto window : toplevels) {
-    if (!window->is_normal())
-      continue;
-    if (window != toplevel)
-      i++;
-    else
-      break;
-  }
-  auto gaps = sum - 1;
-  auto w = (width - (outer_r + outer_l) - inner * gaps) / sum;
-  auto h = height - (outer_t + outer_b);
-  auto x = usable_area.x + outer_l + (w + inner) * i;
-  auto y = usable_area.y + outer_t;
-  // check value
-  if (w < 0 || h < 0 || w > width || h > height)
-    return;
-  toplevel->resize(w, h);
-  toplevel->move(x, y);
+  toplevel->commit();
 }
 
 void on_toplevel_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-
-  /* switch focus to another toplevel */
-  if (server->prev_focused_toplevel
-      && server->prev_focused_toplevel == toplevel) {
-    server->prev_focused_toplevel = nullptr;
-    wlr_seat_keyboard_clear_focus(server->seat);
-    wlr_seat_pointer_clear_focus(server->seat);
-  }
-
-  server->runtime->remove(toplevel);
-  toplevel->output->current_workspace->toplevels.remove(toplevel);
-
-  // if prev focused toplevel exists and in the same workspace, focus it
-  if (server->prev_focused_toplevel
-      && server->prev_focused_toplevel->workspace == toplevel->workspace) {
-    server->prev_focused_toplevel->focus();
-    server->prev_focused_toplevel = nullptr;
-  } else if (!output->current_workspace->toplevels.empty()) {
-    // else focus a toplevel in the same workspace if any
-    output->current_workspace->toplevels.back()->focus();
-  } else {
-    // else let it empty
-    server->focused_toplevel = nullptr;
-  }
-
+  toplevel->destroy();
   delete toplevel;
 }
 

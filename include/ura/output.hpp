@@ -17,7 +17,8 @@ public:
   void init(wlr_output* output);
   static UraOutput* from(wlr_output* output);
   void fresh_screen();
-  void set_mode(wlr_output_mode* mode);
+  wlr_box physical_geometry();
+  wlr_box logical_geometry();
 
   /* Surfaces */
   std::list<UraLayerShell*> bottom_surfaces;
@@ -56,6 +57,9 @@ public:
   int switch_workspace(int index);
   int switch_workspace(UraWorkSpace* workspace);
   UraWorkSpace* get_workspace_at(int index);
+
+private:
+  void set_mode(wlr_output_mode* mode);
 };
 
 } // namespace ura

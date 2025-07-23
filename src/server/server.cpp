@@ -1,5 +1,7 @@
 
 #include "ura/server.hpp"
+#include <optional>
+#include "ura/client.hpp"
 #include "ura/config.hpp"
 #include "ura/output.hpp"
 #include "ura/runtime.hpp"
@@ -20,7 +22,7 @@ UraServer* UraServer::get_instance() {
 }
 
 // returns the topmost toplevel under current cursor coordination
-UraToplevel* UraServer::foreground_toplevel(double* sx, double* sy) {
+std::optional<UraClient> UraServer::foreground_client(double* sx, double* sy) {
   auto node = wlr_scene_node_at(
     &this->scene->tree.node,
     this->cursor->x,
@@ -29,62 +31,14 @@ UraToplevel* UraServer::foreground_toplevel(double* sx, double* sy) {
     sy
   );
   if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
-    return nullptr;
+    return {};
   }
   auto scene_buffer = wlr_scene_buffer_from_node(node);
   auto scene_surface = wlr_scene_surface_try_from_buffer(scene_buffer);
   if (!scene_surface) {
-    return nullptr;
+    return {};
   }
-  auto toplevel = wlr_xdg_toplevel_try_from_wlr_surface(scene_surface->surface);
-  if (!toplevel)
-    return nullptr;
-  return UraToplevel::from(toplevel->base->surface);
-}
-
-UraLayerShell* UraServer::foreground_layer_shell(double* sx, double* sy) {
-  auto node = wlr_scene_node_at(
-    &this->scene->tree.node,
-    this->cursor->x,
-    this->cursor->y,
-    sx,
-    sy
-  );
-  if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
-    return nullptr;
-  }
-  auto scene_buffer = wlr_scene_buffer_from_node(node);
-  auto scene_surface = wlr_scene_surface_try_from_buffer(scene_buffer);
-  if (!scene_surface) {
-    return nullptr;
-  }
-  auto layer_surface =
-    wlr_layer_surface_v1_try_from_wlr_surface(scene_surface->surface);
-  if (!layer_surface)
-    return nullptr;
-  return UraLayerShell::from(layer_surface->surface);
-}
-
-wlr_xdg_popup* UraServer::foreground_popup(double* sx, double* sy) {
-  auto node = wlr_scene_node_at(
-    &this->scene->tree.node,
-    this->cursor->x,
-    this->cursor->y,
-    sx,
-    sy
-  );
-  if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
-    return nullptr;
-  }
-  auto scene_buffer = wlr_scene_buffer_from_node(node);
-  auto scene_surface = wlr_scene_surface_try_from_buffer(scene_buffer);
-  if (!scene_surface) {
-    return nullptr;
-  }
-  auto popup = wlr_xdg_popup_try_from_wlr_surface(scene_surface->surface);
-  if (!popup)
-    return nullptr;
-  return popup;
+  return UraClient::from(scene_surface->surface);
 }
 
 UraOutput* UraServer::current_output() {

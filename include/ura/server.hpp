@@ -4,6 +4,7 @@
 #include "ura/layer_shell.hpp"
 #include "ura/ura.hpp"
 #include "ura/lua.hpp"
+#include "ura/client.hpp"
 
 namespace ura {
 // extern
@@ -39,9 +40,6 @@ public:
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;
 
-  UraToplevel* focused_toplevel;
-  UraToplevel* prev_focused_toplevel;
-
   // Get the global instance of server
   static UraServer* get_instance();
   UraServer* init();
@@ -50,9 +48,7 @@ public:
   void destroy();
   ~UraServer();
 
-  UraToplevel* foreground_toplevel(double* sx, double* sy);
-  UraLayerShell* foreground_layer_shell(double* sx, double* sy);
-  wlr_xdg_popup* foreground_popup(double* sx, double* sy);
+  std::optional<UraClient> foreground_client(double* sx, double* sy);
   UraOutput* current_output();
   UraKeyboard* current_keyboard();
 

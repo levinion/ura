@@ -1,8 +1,9 @@
 #include <wayland-server-protocol.h>
 #include "ura/callback.hpp"
+#include "ura/client.hpp"
 #include "ura/server.hpp"
-#include "ura/toplevel.hpp"
 #include "ura/ura.hpp"
+#include "ura/output.hpp"
 
 namespace ura {
 
@@ -50,9 +51,9 @@ void on_cursor_button(wl_listener* listener, void* data) {
       && event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
     // focus client
     double sx, sy;
-    auto toplevel = server->foreground_toplevel(&sx, &sy);
-    if (toplevel != nullptr)
-      toplevel->focus();
+    auto client = server->foreground_client(&sx, &sy);
+    if (client)
+      client->focus();
   }
 }
 
@@ -77,50 +78,22 @@ void on_cursor_frame(wl_listener* listener, void* data) {
 }
 
 void UraServer::process_cursor_motion(uint32_t time_msec) {
+  auto server = UraServer::get_instance();
   double sx, sy;
   auto seat = this->seat;
-
-  // try toplevel
-  auto toplevel = this->foreground_toplevel(&sx, &sy);
-  if (toplevel && toplevel->xdg_toplevel && toplevel->xdg_toplevel->base
-      && toplevel->xdg_toplevel->base->surface) {
-    auto surface = toplevel->xdg_toplevel->base->surface;
-    if (!surface)
-      return;
-    wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
-    wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
-    if (this->config->focus_follow_mouse) {
-      toplevel->focus();
-    }
+  auto client = this->foreground_client(&sx, &sy);
+  if (!client || !client.value().surface)
     return;
+  auto surface = client.value().surface;
+  wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
+  wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
+  if (this->config->focus_follow_mouse
+      && !server->current_output()->current_workspace->focus_stack.is_top(
+        client
+      )) {
+    wlr_cursor_set_xcursor(this->cursor, this->cursor_mgr, "left_ptr");
+    client->focus();
   }
-
-  // try layer_shell
-  auto layer_shell = this->foreground_layer_shell(&sx, &sy);
-  if (layer_shell && layer_shell->layer_surface
-      && layer_shell->layer_surface->surface) {
-    auto surface = layer_shell->layer_surface->surface;
-    if (!surface)
-      return;
-    wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
-    wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
-    if (this->config->focus_follow_mouse) {
-      layer_shell->focus();
-    }
-    return;
-  }
-
-  auto popup = this->foreground_popup(&sx, &sy);
-  if (popup && popup->base->surface) {
-    auto surface = popup->base->surface;
-    if (!surface)
-      return;
-    wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
-    wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
-    return;
-  }
-
-  wlr_cursor_set_xcursor(this->cursor, this->cursor_mgr, "left_ptr");
 }
 
 // prefer using cursor_shape_v1 to set cursor

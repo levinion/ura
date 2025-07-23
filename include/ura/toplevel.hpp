@@ -22,6 +22,10 @@ public:
 
   static UraToplevel* from(wlr_surface* surface);
   void init(wlr_xdg_toplevel* xdg_toplevel);
+  void destroy();
+  void commit();
+  wlr_box physical_geometry();
+  wlr_box logical_geometry();
   void focus();
   void move(int x, int y);
   void resize(int width, int height);

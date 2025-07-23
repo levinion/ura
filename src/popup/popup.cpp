@@ -1,3 +1,4 @@
+#include "ura/popup.hpp"
 #include <utility>
 #include "ura/layer_shell.hpp"
 #include "ura/toplevel.hpp"
@@ -6,7 +7,7 @@
 #include "ura/output.hpp"
 #include "ura/ura.hpp"
 #include "ura/callback.hpp"
-#include "ura/surface.hpp"
+#include "ura/client.hpp"
 
 namespace ura {
 
@@ -21,10 +22,10 @@ void UraPopup::init(wlr_xdg_popup* xdg_popup) {
       delete this;
       return;
     }
-    auto surface_type = get_surface_type(xdg_popup->parent);
-    switch (surface_type) {
+    auto client = UraClient::from(xdg_popup->parent);
+    switch (client.type) {
       case UraSurfaceType::Toplevel: {
-        auto toplevel = UraToplevel::from(xdg_popup->parent);
+        auto toplevel = client.transform<UraToplevel>();
         auto parent_tree = toplevel->scene_tree;
         if (!parent_tree) {
           delete this;
@@ -35,7 +36,7 @@ void UraPopup::init(wlr_xdg_popup* xdg_popup) {
         break;
       }
       case UraSurfaceType::LayerShell: {
-        auto layer_shell = UraLayerShell::from(xdg_popup->parent);
+        auto layer_shell = client.transform<UraLayerShell>();
         auto parent_tree = layer_shell->scene_tree;
         if (!parent_tree) {
           delete this;
@@ -68,5 +69,24 @@ void UraPopup::init(wlr_xdg_popup* xdg_popup) {
     on_popup_destroy,
     this
   );
+}
+
+UraPopup* UraPopup::from(wlr_surface* surface) {
+  return static_cast<UraPopup*>(surface->data);
+}
+
+void UraPopup::focus() {
+  auto server = UraServer::get_instance();
+  auto seat = server->seat;
+  auto keyboard = wlr_seat_get_keyboard(seat);
+  if (keyboard) {
+    wlr_seat_keyboard_notify_enter(
+      seat,
+      this->xdg_popup->base->surface,
+      keyboard->keycodes,
+      keyboard->num_keycodes,
+      &keyboard->modifiers
+    );
+  }
 }
 } // namespace ura
