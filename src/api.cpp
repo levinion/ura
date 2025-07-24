@@ -72,7 +72,7 @@ void close_window() {
   }
 }
 
-void fullscreen() {
+void toggle_fullscreen() {
   auto server = UraServer::get_instance();
   auto workspace = server->current_output()->current_workspace;
   auto client = workspace->focus_stack.top();
@@ -209,6 +209,23 @@ void cursor_relative_move(int delta_x, int delta_y) {
 void set_cursor_shape(std::string name) {
   auto server = UraServer::get_instance();
   server->cursor->set_xcursor(name);
+}
+
+void toggle_float() {
+  auto server = UraServer::get_instance();
+  auto focused = server->current_output()->current_workspace->focus_stack.top();
+  if (focused) {
+    auto toplevel = focused->transform<UraToplevel>();
+    if (toplevel) {
+      toplevel->set_float(!toplevel->floating);
+    }
+  }
+}
+
+void set_default_floating_size(int width, int height) {
+  auto server = UraServer::get_instance();
+  server->config->default_width = width;
+  server->config->default_height = height;
 }
 
 } // namespace ura

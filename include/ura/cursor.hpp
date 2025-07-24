@@ -17,8 +17,8 @@ public:
   std::string xcursor_name = "left_ptr";
   void init();
   void attach_device(wlr_input_device* device);
-  void relative_move(int delta_x, int delta_y);
-  void absolute_move(int x, int y);
+  void relative_move(double delta_x, double delta_y);
+  void absolute_move(double x, double y);
   void process_motion(uint32_t time_msec);
   void set_xcursor(std::string name);
   void hide();

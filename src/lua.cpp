@@ -19,7 +19,7 @@ void Lua::register_function() {
   this->table.set_function("map", map);
   this->table.set_function("terminate", terminate);
   this->table.set_function("close_window", close_window);
-  this->table.set_function("fullscreen", fullscreen);
+  this->table.set_function("toggle_fullscreen", toggle_fullscreen);
   this->table.set_function("reload", reload);
   this->table.set_function("set_keyboard_repeat", set_keyboard_repeat);
   this->table.set_function("focus_follow_mouse", focus_follow_mouse);
@@ -37,6 +37,11 @@ void Lua::register_function() {
   this->table.set_function("cursor_absolute_move", cursor_absolute_move);
   this->table.set_function("cursor_relative_move", cursor_relative_move);
   this->table.set_function("set_cursor_shape", set_cursor_shape);
+  this->table.set_function("toggle_float", toggle_float);
+  this->table.set_function(
+    "set_default_floating_size",
+    set_default_floating_size
+  );
 }
 
 void Lua::execute(std::string script) {

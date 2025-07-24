@@ -9,7 +9,7 @@ namespace ura {
 void map(std::string modifiers, std::string key, sol::protected_function f);
 void terminate();
 void close_window();
-void fullscreen();
+void toggle_fullscreen();
 void reload();
 void set_keyboard_repeat(int rate, int delay);
 void focus_follow_mouse(bool flag);
@@ -33,5 +33,6 @@ void cursor_relative_move(int delta_x, int delta_y);
 void set_cursor_shape(std::string name);
 int current_toplevel();
 bool focus(int index);
-
+void toggle_float();
+void set_default_floating_size(int width, int height);
 } // namespace ura

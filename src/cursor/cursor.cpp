@@ -44,11 +44,11 @@ void UraCursor::init() {
   );
 }
 
-void UraCursor::relative_move(int delta_x, int delta_y) {
+void UraCursor::relative_move(double delta_x, double delta_y) {
   wlr_cursor_move(this->cursor, this->device, delta_x, delta_y);
 }
 
-void UraCursor::absolute_move(int x, int y) {
+void UraCursor::absolute_move(double x, double y) {
   wlr_cursor_warp_absolute(this->cursor, this->device, x, y);
 }
 

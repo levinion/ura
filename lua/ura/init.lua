@@ -16,8 +16,8 @@ function M.env(name, value)
   _ura.env(name, value)
 end
 
-function M.fullscreen()
-  _ura.fullscreen()
+function M.toggle_fullscreen()
+  _ura.toggle_fullscreen()
 end
 
 function M.terminate()
@@ -96,16 +96,26 @@ function M.set_cursor_shape(name)
   _ura.set_cursor_shape(name)
 end
 
----@param x integer
----@param y integer
+---@param x number
+---@param y number
 function M.cursor_relative_move(x, y)
   _ura.cursor_relative_move(x, y)
 end
 
----@param x integer
----@param y integer
+---@param x number
+---@param y number
 function M.cursor_absolute_move(x, y)
   _ura.cursor_absolute_move(x, y)
+end
+
+function M.toggle_float()
+  _ura.toggle_float()
+end
+
+---@param width integer
+---@param height integer
+function M.set_default_floating_size(width, height)
+  _ura.set_default_floating_size(width, height)
 end
 
 return M

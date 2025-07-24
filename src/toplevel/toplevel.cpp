@@ -133,9 +133,21 @@ void UraToplevel::commit() {
   }
 
   auto usable_area = output->usable_area;
+
+  if (this->floating) {
+    auto sx = usable_area.x;
+    auto sw = usable_area.width;
+    auto sy = usable_area.y;
+    auto sh = usable_area.height;
+    auto tw = server->config->default_width;
+    auto th = server->config->default_height;
+    this->resize(tw, th);
+    this->move(sx + (sw - tw) / 2, sy + (sh - th) / 2);
+    return;
+  }
+
   auto width = usable_area.width;
   auto height = usable_area.height;
-
   auto outer_l = server->config->outer_gap_left;
   auto outer_r = server->config->outer_gap_right;
   auto outer_t = server->config->outer_gap_top;
@@ -304,5 +316,17 @@ wlr_box UraToplevel::logical_geometry() {
            ly,
            this->xdg_toplevel->current.width,
            this->xdg_toplevel->current.height };
+}
+
+void UraToplevel::set_float(bool flag) {
+  if (flag && !this->floating) {
+    this->floating = true;
+    wlr_scene_node_reparent(&this->scene_tree->node, this->output->floating);
+    return;
+  }
+  if (!flag && this->floating) {
+    this->floating = false;
+    wlr_scene_node_reparent(&this->scene_tree->node, this->output->normal);
+  }
 }
 } // namespace ura

@@ -24,7 +24,6 @@ public:
   void init(wlr_xdg_toplevel* xdg_toplevel);
   void destroy();
   void commit();
-  wlr_box physical_geometry();
   wlr_box logical_geometry();
   void focus();
   void move(int x, int y);
@@ -41,6 +40,7 @@ public:
   int move_to_workspace(int index);
   int index();
   void activate();
+  void set_float(bool flag);
 };
 
 } // namespace ura
