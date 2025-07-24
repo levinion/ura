@@ -1,5 +1,4 @@
 #include "ura/client.hpp"
-#include <utility>
 
 namespace ura {
 
@@ -21,11 +20,8 @@ void UraClient::focus() {
     case ura::UraSurfaceType::LayerShell:
       this->transform<UraLayerShell>()->focus();
       break;
-    case ura::UraSurfaceType::Popup:
-      this->transform<UraPopup>()->focus();
-      break;
     default:
-      std::unreachable();
+      break;
   }
 }
 } // namespace ura

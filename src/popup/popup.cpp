@@ -74,19 +74,4 @@ void UraPopup::init(wlr_xdg_popup* xdg_popup) {
 UraPopup* UraPopup::from(wlr_surface* surface) {
   return static_cast<UraPopup*>(surface->data);
 }
-
-void UraPopup::focus() {
-  auto server = UraServer::get_instance();
-  auto seat = server->seat;
-  auto keyboard = wlr_seat_get_keyboard(seat);
-  if (keyboard) {
-    wlr_seat_keyboard_notify_enter(
-      seat,
-      this->xdg_popup->base->surface,
-      keyboard->keycodes,
-      keyboard->num_keycodes,
-      &keyboard->modifiers
-    );
-  }
-}
 } // namespace ura
