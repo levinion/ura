@@ -29,20 +29,23 @@ void Lua::register_function() {
   this->table.set_function("current_workspace", current_workspace);
   this->table.set_function("hook", hook);
   this->table.set_function("tiling_gap", tiling_gap);
-  this->table.set_function("cursor_theme", cursor_theme);
+  this->table.set_function("set_cursor_theme", set_cursor_theme);
   this->table.set_function("focus", focus);
   this->table.set_function("current_toplevel", current_toplevel);
+  this->table.set_function("hide_cursor", hide_cursor);
+  this->table.set_function("show_cursor", show_cursor);
+  this->table.set_function("cursor_absolute_move", cursor_absolute_move);
+  this->table.set_function("cursor_relative_move", cursor_relative_move);
+  this->table.set_function("set_cursor_shape", set_cursor_shape);
 }
 
-// TODO: unsafe lua scripts
-
 void Lua::execute(std::string script) {
-  this->state.script(script);
+  this->state.safe_script(script);
 }
 
 void Lua::execute_file(std::filesystem::path path) {
   if (std::filesystem::is_regular_file(path))
-    this->state.script_file(path);
+    this->state.safe_script_file(path);
 }
 
 void Lua::try_execute_hook(std::string name) {

@@ -25,7 +25,12 @@ void tiling_gap(
   float outer_t,
   float outer_b
 );
-void cursor_theme(std::string theme, int size);
+void set_cursor_theme(std::string theme, int size);
+void hide_cursor();
+void show_cursor();
+void cursor_absolute_move(int x, int y);
+void cursor_relative_move(int delta_x, int delta_y);
+void set_cursor_shape(std::string name);
 int current_toplevel();
 bool focus(int index);
 

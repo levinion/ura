@@ -5,7 +5,7 @@ local M = {}
 
 ---@param modifiers string
 ---@param key string
----@param f function
+---@param f fun()
 function M.map(modifiers, key, f)
   _ura.map(modifiers, key, f)
 end
@@ -32,26 +32,26 @@ function M.close_window()
   _ura.close_window()
 end
 
----@param rate number
+---@param rate integer
 ---@param delay number
 function M.set_keyboard_repeat(rate, delay)
   _ura.set_keyboard_repeat(rate, delay)
 end
 
----@param index number
+---@param index integer
 ---@return number
 function M.switch_workspace(index)
   return _ura.switch_workspace(index)
 end
 
----@param index number
+---@param index integer
 ---@return number
 function M.move_to_workspace(index)
   return _ura.move_to_workspace(index)
 end
 
 ---workspace index starts with 0
----@return number
+---@return integer
 function M.current_workspace()
   return _ura.current_workspace()
 end
@@ -75,9 +75,9 @@ end
 
 ---if theme is empty, then fallback to default
 ---@param theme string
----@param size number
-function M.cursor_theme(theme, size)
-  _ura.cursor_theme(theme, size)
+---@param size integer
+function M.set_cursor_theme(theme, size)
+  _ura.set_cursor_theme(theme, size)
 end
 
 ---@return number
@@ -85,10 +85,27 @@ function M.current_toplevel()
   return _ura.current_toplevel()
 end
 
----@param index number
+---@param index integer
 ---@return boolean
 function M.focus(index)
   return _ura.focus(index)
+end
+
+---@param name string
+function M.set_cursor_shape(name)
+  _ura.set_cursor_shape(name)
+end
+
+---@param x integer
+---@param y integer
+function M.cursor_relative_move(x, y)
+  _ura.cursor_relative_move(x, y)
+end
+
+---@param x integer
+---@param y integer
+function M.cursor_absolute_move(x, y)
+  _ura.cursor_absolute_move(x, y)
 end
 
 return M

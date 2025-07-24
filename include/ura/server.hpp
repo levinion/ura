@@ -1,6 +1,8 @@
 #pragma once
 
+#include <memory>
 #include "ura/config.hpp"
+#include "ura/cursor.hpp"
 #include "ura/layer_shell.hpp"
 #include "ura/ura.hpp"
 #include "ura/lua.hpp"
@@ -24,8 +26,6 @@ public:
   wlr_scene_output_layout* scene_layout;
   wlr_output_layout* output_layout;
   wlr_xdg_shell* xdg_shell;
-  wlr_cursor* cursor;
-  wlr_xcursor_manager* cursor_mgr;
   wlr_seat* seat;
   wlr_server_decoration_manager* server_decoration_manager;
   wlr_xdg_decoration_manager_v1* decoration_manager;
@@ -39,6 +39,7 @@ public:
   std::unique_ptr<UraConfig> config;
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;
+  std::unique_ptr<UraCursor> cursor;
 
   // Get the global instance of server
   static UraServer* get_instance();

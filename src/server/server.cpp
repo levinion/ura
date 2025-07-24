@@ -23,13 +23,8 @@ UraServer* UraServer::get_instance() {
 
 // returns the topmost toplevel under current cursor coordination
 std::optional<UraClient> UraServer::foreground_client(double* sx, double* sy) {
-  auto node = wlr_scene_node_at(
-    &this->scene->tree.node,
-    this->cursor->x,
-    this->cursor->y,
-    sx,
-    sy
-  );
+  auto pos = this->cursor->position();
+  auto node = wlr_scene_node_at(&this->scene->tree.node, pos.x, pos.y, sx, sy);
   if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
     return {};
   }
@@ -42,11 +37,8 @@ std::optional<UraClient> UraServer::foreground_client(double* sx, double* sy) {
 }
 
 UraOutput* UraServer::current_output() {
-  auto output = wlr_output_layout_output_at(
-    this->output_layout,
-    this->cursor->x,
-    this->cursor->y
-  );
+  auto pos = this->cursor->position();
+  auto output = wlr_output_layout_output_at(this->output_layout, pos.x, pos.y);
   return UraOutput::from(output);
 }
 

@@ -163,9 +163,6 @@ void UraToplevel::commit() {
   auto h = height - (outer_t + outer_b);
   auto x = usable_area.x + outer_l + (w + inner) * i;
   auto y = usable_area.y + outer_t;
-  // check value
-  if (w < 0 || h < 0 || x + w > width || y + h > height)
-    return;
   this->resize(w, h);
   this->move(x, y);
 }
@@ -228,7 +225,7 @@ int UraToplevel::index() {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
   int index = 0;
-  for (auto toplevel : output->current_workspace->toplevels) {
+  for (auto toplevel : this->workspace->toplevels) {
     if (toplevel == this)
       return index;
     index++;

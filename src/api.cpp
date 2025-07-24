@@ -157,12 +157,9 @@ void tiling_gap(
   config->inner_gap = inner;
 }
 
-void cursor_theme(std::string theme, int size) {
+void set_cursor_theme(std::string theme, int size) {
   auto server = UraServer::get_instance();
-  // recreate xcursor manager with given values
-  wlr_xcursor_manager_destroy(server->cursor_mgr);
-  server->cursor_mgr =
-    wlr_xcursor_manager_create(theme.empty() ? NULL : theme.data(), size);
+  server->cursor->set_theme(theme, size);
 }
 
 int current_toplevel() {
@@ -187,6 +184,31 @@ bool focus(int index) {
   std::advance(it, index);
   (*it)->focus();
   return true;
+}
+
+void hide_cursor() {
+  auto server = UraServer::get_instance();
+  server->cursor->hide();
+}
+
+void show_cursor() {
+  auto server = UraServer::get_instance();
+  server->cursor->show();
+}
+
+void cursor_absolute_move(int x, int y) {
+  auto server = UraServer::get_instance();
+  server->cursor->absolute_move(x, y);
+}
+
+void cursor_relative_move(int delta_x, int delta_y) {
+  auto server = UraServer::get_instance();
+  server->cursor->relative_move(delta_x, delta_y);
+}
+
+void set_cursor_shape(std::string name) {
+  auto server = UraServer::get_instance();
+  server->cursor->set_xcursor(name);
 }
 
 } // namespace ura

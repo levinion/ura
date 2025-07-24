@@ -13,7 +13,7 @@ void on_new_input(wl_listener* listener, void* data) {
       break;
     }
     case WLR_INPUT_DEVICE_POINTER: {
-      wlr_cursor_attach_input_device(server->cursor, device);
+      server->cursor->attach_device(device);
       break;
     }
     default:

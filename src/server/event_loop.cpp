@@ -1,3 +1,5 @@
+#include <memory>
+#include "ura/cursor.hpp"
 #include "ura/server.hpp"
 #include "ura/callback.hpp"
 #include "ura/config.hpp"
@@ -12,6 +14,7 @@ UraServer* UraServer::init() {
   this->config = UraConfig::init();
   this->lua = Lua::init();
   this->config->load();
+  this->lua->try_execute_hook("prepare");
   this->setup_base();
   this->setup_drm();
   this->setup_compositor();
@@ -116,38 +119,8 @@ void UraServer::setup_popup() {
 }
 
 void UraServer::setup_cursor() {
-  // create cursor
-  this->cursor = wlr_cursor_create();
-  wlr_cursor_attach_output_layout(this->cursor, this->output_layout);
-  // create cursor manager with cursor size
-  this->cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
-  // register callbacks
-  this->runtime->register_callback(
-    &this->cursor->events.motion,
-    on_cursor_motion,
-    nullptr
-  );
-  this->runtime->register_callback(
-    &this->cursor->events.motion_absolute,
-    on_cursor_motion_absolute,
-    nullptr
-  );
-  this->runtime->register_callback(
-    &this->cursor->events.button,
-    on_cursor_button,
-    nullptr
-  );
-  this->runtime
-    ->register_callback(&this->cursor->events.axis, on_cursor_axis, nullptr);
-  this->runtime
-    ->register_callback(&this->cursor->events.frame, on_cursor_frame, nullptr);
-  this->cursor_shape_manager =
-    wlr_cursor_shape_manager_v1_create(this->display, 1);
-  this->runtime->register_callback(
-    &this->cursor_shape_manager->events.request_set_shape,
-    on_cursor_request_set_shape,
-    nullptr
-  );
+  this->cursor = std::make_unique<UraCursor>();
+  this->cursor->init();
 }
 
 void UraServer::setup_input() {
@@ -256,7 +229,7 @@ void UraServer::run() {
   setenv("WAYLAND_DISPLAY", socket, true);
   wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s", socket);
 
-  this->lua->try_execute_hook("startup");
+  this->lua->try_execute_hook("ready");
 
   // run event loop
   wl_display_run(this->display);
@@ -264,8 +237,7 @@ void UraServer::run() {
 
 void UraServer::destroy() {
   wl_display_destroy_clients(this->display);
-  wlr_xcursor_manager_destroy(this->cursor_mgr);
-  wlr_cursor_destroy(this->cursor);
+  this->cursor->destroy();
   wlr_allocator_destroy(this->allocator);
   wlr_renderer_destroy(this->renderer);
   wlr_backend_destroy(this->backend);
