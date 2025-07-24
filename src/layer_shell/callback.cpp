@@ -40,8 +40,11 @@ void on_layer_shell_surface_commit(wl_listener* listener, void* data) {
     height = output->output->current_mode->height / scale;
   }
 
-  wlr_layer_surface_v1_configure(layer_shell->layer_surface, width, height);
-  output->configure_layers();
+  if (width != layer_shell->layer_surface->current.actual_width
+      || height != layer_shell->layer_surface->current.actual_height) {
+    wlr_layer_surface_v1_configure(layer_shell->layer_surface, width, height);
+    output->configure_layers();
+  }
 }
 
 void on_layer_shell_surface_destroy(wl_listener* listener, void* data) {

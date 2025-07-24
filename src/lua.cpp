@@ -42,6 +42,8 @@ void Lua::register_function() {
     "set_default_floating_size",
     set_default_floating_size
   );
+  // this->table.set_function("set_floating_size", set_floating_size);
+  // this->table.set_function("get_floating_size", get_floating_size);
 }
 
 void Lua::execute(std::string script) {

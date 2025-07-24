@@ -1,4 +1,5 @@
 #include "ura/api.hpp"
+#include "ura/cursor.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
 #include "ura/toplevel.hpp"
@@ -227,5 +228,13 @@ void set_default_floating_size(int width, int height) {
   server->config->default_width = width;
   server->config->default_height = height;
 }
+
+// void set_floating_size(int width, int height) {
+//   auto server = UraServer::get_instance();
+//   server->config->default_width = width;
+//   server->config->default_height = height;
+// }
+
+// Size get_floating_size() {}
 
 } // namespace ura

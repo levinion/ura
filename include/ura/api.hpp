@@ -35,4 +35,6 @@ int current_toplevel();
 bool focus(int index);
 void toggle_float();
 void set_default_floating_size(int width, int height);
+// void set_floating_size(int width, int height);
+// get_floating_size();
 } // namespace ura

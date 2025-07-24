@@ -20,6 +20,8 @@ public:
   wlr_xdg_toplevel_decoration_v1* decoration;
   wlr_foreign_toplevel_handle_v1* foreign_handle;
 
+  int floating_width, floating_height;
+
   static UraToplevel* from(wlr_surface* surface);
   void init(wlr_xdg_toplevel* xdg_toplevel);
   void destroy();

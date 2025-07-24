@@ -22,6 +22,8 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   this->workspace->toplevels.push_back(this);
   this->workspace->focus_stack.push(this);
   xdg_toplevel->base->surface->data = this;
+  this->floating_width = server->config->default_width;
+  this->floating_height = server->config->default_height;
 
   // // notify scale
   wlr_fractional_scale_v1_notify_scale(
@@ -139,8 +141,8 @@ void UraToplevel::commit() {
     auto sw = usable_area.width;
     auto sy = usable_area.y;
     auto sh = usable_area.height;
-    auto tw = server->config->default_width;
-    auto th = server->config->default_height;
+    auto tw = this->floating_width;
+    auto th = this->floating_height;
     this->resize(tw, th);
     this->move(sx + (sw - tw) / 2, sy + (sh - th) / 2);
     return;
