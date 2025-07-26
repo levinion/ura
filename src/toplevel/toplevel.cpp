@@ -22,8 +22,10 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   this->workspace->toplevels.push_back(this);
   this->workspace->focus_stack.push(this);
   xdg_toplevel->base->surface->data = this;
-  this->floating_width = server->config->default_width;
-  this->floating_height = server->config->default_height;
+  this->floating_width =
+    server->lua->fetch<int>("layout.floating.default.width").value_or(800);
+  this->floating_height =
+    server->lua->fetch<int>("layout.floating.default.height").value_or(600);
 
   // // notify scale
   wlr_fractional_scale_v1_notify_scale(
@@ -150,11 +152,15 @@ void UraToplevel::commit() {
 
   auto width = usable_area.width;
   auto height = usable_area.height;
-  auto outer_l = server->config->outer_gap_left;
-  auto outer_r = server->config->outer_gap_right;
-  auto outer_t = server->config->outer_gap_top;
-  auto outer_b = server->config->outer_gap_bottom;
-  auto inner = server->config->inner_gap;
+  auto outer_l =
+    server->lua->fetch<int>("layout.tilling.gap.outer.left").value_or(10);
+  auto outer_r =
+    server->lua->fetch<int>("layout.tilling.gap.outer.right").value_or(10);
+  auto outer_t =
+    server->lua->fetch<int>("layout.tilling.gap.outer.top").value_or(10);
+  auto outer_b =
+    server->lua->fetch<int>("layout.tilling.gap.outer.bottom").value_or(10);
+  auto inner = server->lua->fetch<int>("layout.tilling.gap.inner").value_or(10);
   auto& toplevels = output->current_workspace->toplevels;
   // find mapped toplevel number
   int sum = 0;

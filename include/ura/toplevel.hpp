@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ura/ura.hpp"
-#include <cassert>
 #include <string>
 
 namespace ura {

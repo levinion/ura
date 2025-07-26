@@ -2,7 +2,6 @@
 #include "ura/server.hpp"
 #include <optional>
 #include "ura/client.hpp"
-#include "ura/config.hpp"
 #include "ura/output.hpp"
 #include "ura/runtime.hpp"
 #include "ura/keyboard.hpp"

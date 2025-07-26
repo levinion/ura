@@ -36,8 +36,9 @@ void on_cursor_button(wl_listener* listener, void* data) {
   );
 
   // focus pressed toplevel if focus_follow_mouse is not enabled
-  if (!server->config->focus_follow_mouse
-      && event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
+  auto cursor_follow_mouse =
+    server->lua->fetch<bool>("input.cursor.focus_follow_mouse").value_or(true);
+  if (!cursor_follow_mouse && event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
     // focus client
     double sx, sy;
     auto client = server->foreground_client(&sx, &sy);

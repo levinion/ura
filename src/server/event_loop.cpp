@@ -1,8 +1,8 @@
+#include <cassert>
 #include <memory>
 #include "ura/cursor.hpp"
 #include "ura/server.hpp"
 #include "ura/callback.hpp"
-#include "ura/config.hpp"
 #include "ura/runtime.hpp"
 #include "ura/ura.hpp"
 
@@ -11,9 +11,8 @@ namespace ura {
 UraServer* UraServer::init() {
   wlr_log_init(WLR_DEBUG, NULL);
   this->runtime = UraRuntime::init();
-  this->config = UraConfig::init();
   this->lua = Lua::init();
-  this->config->load();
+  assert(this->lua->try_execute_init());
   this->lua->try_execute_hook("prepare");
   this->setup_base();
   this->setup_drm();

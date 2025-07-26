@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include "ura/config.hpp"
 #include "ura/cursor.hpp"
 #include "ura/layer_shell.hpp"
 #include "ura/ura.hpp"
@@ -36,7 +35,6 @@ public:
   wlr_foreign_toplevel_manager_v1* foreign_manager;
   wlr_text_input_manager_v3* text_input_manager;
 
-  std::unique_ptr<UraConfig> config;
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;
   std::unique_ptr<UraCursor> cursor;

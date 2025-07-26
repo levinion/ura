@@ -1,7 +1,6 @@
 #include "ura/keyboard.hpp"
 #include <wayland-server-core.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
-#include "ura/config.hpp"
 #include "ura/server.hpp"
 #include "ura/callback.hpp"
 #include "ura/runtime.hpp"
@@ -73,13 +72,10 @@ bool UraKeyboard::process_key(wlr_keyboard_key_event* event) {
       wlr_session_change_vt(server->session, vt);
       return true;
     }
-
     // exec keybinding
     auto id = (static_cast<uint64_t>(modifiers) << 32) | sym;
-    if (server->config->keybinding.contains(id)) {
-      server->config->keybinding[id]();
+    if (server->lua->try_execute_keybinding(id))
       return true;
-    };
   }
 
   return false;
