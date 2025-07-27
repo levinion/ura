@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wayland-server-core.h>
+#include <wayland-server.h>
 
 #define static
 #define class class_

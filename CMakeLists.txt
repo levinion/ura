@@ -44,3 +44,9 @@ target_include_directories(${name} PUBLIC ${sol2_INCLUDE_DIRS})
 pkg_check_modules(luajit REQUIRED luajit)
 target_link_libraries(${name} PUBLIC ${luajit_LIBRARIES})
 target_include_directories(${name} PUBLIC ${luajit_INCLUDE_DIRS})
+
+pkg_check_modules(nlohmann_json REQUIRED nlohmann_json)
+target_link_libraries(${name} PUBLIC ${nlohmann_json_LIBRARIES})
+target_include_directories(${name} PUBLIC ${nlohmann_json_INCLUDE_DIRS})
+
+

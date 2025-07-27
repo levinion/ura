@@ -1,6 +1,7 @@
 #include "ura/lua.hpp"
 #include "ura/api.hpp"
 #include "ura/server.hpp"
+#include <expected>
 #include <filesystem>
 #include <format>
 #include <memory>
@@ -77,15 +78,34 @@ void Lua::setup() {
   // global
   this->set("g.hooks", sol::table {});
   this->set("g.keymaps", sol::table {});
+
+  // override
+  this->state.set("print", api::lua_print);
 }
 
-void Lua::execute(std::string script) {
-  this->state.script(script);
+std::expected<std::string, std::string> Lua::execute(std::string script) {
+  this->lua_stdout.clear();
+  auto result = this->state.script(script);
+  if (result.valid()) {
+    return this->lua_stdout;
+  }
+  sol::error err = result;
+  return std::unexpected(err.what());
 }
 
-void Lua::execute_file(std::filesystem::path path) {
-  if (std::filesystem::is_regular_file(path))
-    this->state.script_file(path);
+std::expected<std::string, std::string>
+Lua::execute_file(std::filesystem::path path) {
+  this->lua_stdout.clear();
+  if (!std::filesystem::is_regular_file(path))
+    return std::unexpected(
+      std::format("[ura] path not exists or invalid: {}", path.string())
+    );
+  auto result = this->state.script_file(path);
+  if (result.valid()) {
+    return this->lua_stdout;
+  }
+  sol::error err = result;
+  return std::unexpected(err.what());
 }
 
 bool Lua::try_execute_hook(std::string name) {
@@ -125,7 +145,8 @@ std::optional<std::filesystem::path> Lua::find_init_path() {
 bool Lua::try_execute_init() {
   auto path = this->find_init_path();
   if (path) {
-    this->execute_file(path.value());
+    // TODO: handle error
+    auto _ = this->execute_file(path.value());
     return true;
   }
   return false;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <expected>
 #include <memory>
 #include <sol/sol.hpp>
 #include <filesystem>
@@ -8,9 +9,12 @@
 namespace ura {
 class Lua {
 public:
+  sol::state state;
+  sol::table ura;
+  std::string lua_stdout;
   static std::unique_ptr<Lua> init();
-  void execute(std::string script);
-  void execute_file(std::filesystem::path);
+  std::expected<std::string, std::string> execute(std::string script);
+  std::expected<std::string, std::string> execute_file(std::filesystem::path);
   bool try_execute_hook(std::string name);
   bool try_execute_keybinding(uint64_t id);
   std::optional<std::filesystem::path> find_init_path();
@@ -44,9 +48,6 @@ public:
   }
 
 private:
-  sol::state state;
-
-  sol::table ura;
   void setup();
 };
 } // namespace ura

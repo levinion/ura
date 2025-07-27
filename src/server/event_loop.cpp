@@ -1,10 +1,12 @@
 #include <cassert>
 #include <memory>
 #include "ura/cursor.hpp"
+#include "ura/ipc.hpp"
 #include "ura/server.hpp"
 #include "ura/callback.hpp"
 #include "ura/runtime.hpp"
 #include "ura/ura.hpp"
+#include <sys/epoll.h>
 
 namespace ura {
 
@@ -224,14 +226,55 @@ void UraServer::run() {
     exit(1);
   }
 
+  // run ipc
+  auto ipc = UraIPC::init();
+
   // set env
   setenv("WAYLAND_DISPLAY", socket, true);
   wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s", socket);
 
-  this->lua->try_execute_hook("ready");
-
   // run event loop
-  wl_display_run(this->display);
+  auto event_loop = wl_display_get_event_loop(this->display);
+  auto wl_fd = wl_event_loop_get_fd(event_loop);
+  auto ipc_fd = ipc->fd;
+
+  int epoll_fd = epoll_create1(0);
+  assert(epoll_fd != -1);
+
+  int ret;
+  epoll_event event;
+  event.events = EPOLLIN;
+  event.data.fd = wl_fd;
+  ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, wl_fd, &event);
+  assert(ret != -1);
+  event.events = EPOLLIN;
+  event.data.fd = ipc_fd;
+  ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, ipc_fd, &event);
+  assert(ret != -1);
+  epoll_event events[10];
+
+  assert(this->lua->try_execute_hook("ready"));
+
+  while (!this->quit) {
+    int nfds = epoll_wait(epoll_fd, events, 10, -1);
+    if (nfds == -1) {
+      if (errno == EINTR) {
+        continue;
+      }
+      break;
+    }
+    for (int i = 0; i < nfds; i++) {
+      auto current_fd = events[i].data.fd;
+      if (current_fd == wl_fd) {
+        if (wl_event_loop_dispatch(event_loop, 0) == -1)
+          return;
+        wl_display_flush_clients(this->display);
+      } else if (current_fd == ipc_fd) {
+        wlr_log(WLR_DEBUG, "call ipc try_handle");
+        ipc->try_handle();
+      }
+    }
+  }
 }
 
 void UraServer::destroy() {

@@ -39,6 +39,8 @@ public:
   std::unique_ptr<Lua> lua;
   std::unique_ptr<UraCursor> cursor;
 
+  bool quit = false;
+
   // Get the global instance of server
   static UraServer* get_instance();
   UraServer* init();

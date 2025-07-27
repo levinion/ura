@@ -47,6 +47,7 @@ UraKeyboard* UraServer::current_keyboard() {
 }
 
 void UraServer::terminate() {
+  this->quit = true;
   for (auto output : this->runtime->outputs)
     for (auto& workspace : output->workspaces)
       for (auto toplevel : workspace->toplevels) toplevel->close();

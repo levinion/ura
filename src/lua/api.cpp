@@ -212,4 +212,16 @@ bool is_window_floating() {
   return false;
 }
 
+// redirect print result to buffer
+void lua_print(sol::variadic_args args) {
+  auto server = UraServer::get_instance();
+  auto& state = server->lua->state;
+  std::string r;
+  for (auto arg : args) {
+    r += state["tostring"](arg).get<std::string>();
+  }
+  r.push_back('\n');
+  server->lua->lua_stdout += r;
+}
+
 } // namespace ura::api

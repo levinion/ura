@@ -31,4 +31,5 @@ bool focus_window(int index);
 void set_window_floating(bool flag);
 bool is_window_fullscreen();
 bool is_window_floating();
+void lua_print(sol::variadic_args va);
 } // namespace ura::api
