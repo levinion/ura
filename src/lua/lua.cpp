@@ -7,6 +7,7 @@
 #include <memory>
 #include <sol/forward.hpp>
 #include <sol/property.hpp>
+#include <sol/state_handling.hpp>
 #include <string>
 
 namespace ura {
@@ -85,7 +86,7 @@ void Lua::setup() {
 
 std::expected<std::string, std::string> Lua::execute(std::string script) {
   this->lua_stdout.clear();
-  auto result = this->state.script(script);
+  auto result = this->state.safe_script(script, sol::script_pass_on_error);
   if (result.valid()) {
     return this->lua_stdout;
   }
@@ -100,7 +101,7 @@ Lua::execute_file(std::filesystem::path path) {
     return std::unexpected(
       std::format("[ura] path not exists or invalid: {}", path.string())
     );
-  auto result = this->state.script_file(path);
+  auto result = this->state.safe_script_file(path, sol::script_pass_on_error);
   if (result.valid()) {
     return this->lua_stdout;
   }

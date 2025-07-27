@@ -24,7 +24,7 @@ fn main() -> Result<()> {
     if socket_path.exists() {
         std::fs::remove_file(&socket_path)?;
     }
-    let socket = UnixDatagram::bind(socket_path)?;
+    let socket = UnixDatagram::bind(&socket_path)?;
     socket.connect(server_socket_path)?;
     socket.set_read_timeout(Some(Duration::from_secs(5)))?;
     socket.set_write_timeout(Some(Duration::from_secs(5)))?;
@@ -37,18 +37,21 @@ fn main() -> Result<()> {
     };
     socket.send(serde_json::to_string(&request)?.as_bytes())?;
     let mut buf = [0; 4096];
-    match socket.recv(&mut buf) {
+    let result = match socket.recv(&mut buf) {
         Ok(len) => {
             let reply: UraIPCReplyMessage = serde_json::from_slice(&buf[..len])?;
             if reply.status == "success" {
-                println!("{}", reply.body);
+                Ok(reply.body)
             } else {
-                eprintln!("{}", reply.body);
+                Err(reply.body)
             }
         }
-        Err(err) => {
-            return Err(anyhow!(err));
-        }
+        Err(err) => Err(err.to_string()),
+    };
+    match result {
+        Ok(message) => println!("{}", message),
+        Err(err) => eprintln!("{}", err),
     }
+    std::fs::remove_file(socket_path)?;
     Ok(())
 }
