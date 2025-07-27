@@ -36,7 +36,10 @@ ura = {
     move_to_workspace = function(index) end,
     --- Gets the index of the current top-level window.
     --- @return integer The index of the current top-level window.
-    get_index = function() end,
+    index = function() end,
+    --- Gets the number of windows on current workspace.
+    --- @return integer The number of windows on current workspace.
+    size = function() end,
   },
 
   --- Input device management.
@@ -85,7 +88,12 @@ ura = {
     --- Gets the index of the current workspace.
     --- Workspace index starts with 0.
     --- @return integer The index of the current workspace.
-    get_index = function() end,
+    index = function() end,
+    --- @return integer The size of workspaces in current output.
+    size = function() end,
+    --- Destroy a specified workspace(only workspace without toplevels can be destroyed).
+    --- @param index integer The index of the workspace to destroy (0-based).
+    destroy = function(index) end
   },
 
   --- Layout management functions.

@@ -224,4 +224,23 @@ void lua_print(sol::variadic_args args) {
   server->lua->lua_stdout += r;
 }
 
+int get_workspace_number() {
+  auto server = UraServer::get_instance();
+  auto output = server->current_output();
+  return output->workspaces.size();
+}
+
+int get_window_number() {
+  auto server = UraServer::get_instance();
+  auto output = server->current_output();
+  auto workspace = output->current_workspace;
+  return workspace->toplevels.size();
+}
+
+void destroy_workspace(int index) {
+  auto server = UraServer::get_instance();
+  auto output = server->current_output();
+  output->destroy_workspace(index);
+}
+
 } // namespace ura::api

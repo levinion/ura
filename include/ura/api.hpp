@@ -14,12 +14,15 @@ void set_keymap(
 void terminate();
 void close_window();
 void set_window_fullscreen(bool flag);
+int get_window_number();
 void reload();
 void set_keyboard_repeat(int rate, int delay);
 void set_env(std::string name, std::string value);
 int switch_workspace(int index);
+void destroy_workspace(int index);
 int move_window_to_workspace(int index);
 int get_current_workspace_index();
+int get_workspace_number();
 void set_hook(std::string, sol::protected_function f);
 void set_cursor_theme(std::string theme, int size);
 void set_cursor_visible(bool flag);

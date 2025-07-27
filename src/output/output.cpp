@@ -213,4 +213,15 @@ wlr_box UraOutput::logical_geometry() {
   wlr_output_effective_resolution(this->output, &width, &height);
   return { 0, 0, width, height };
 }
+
+void UraOutput::destroy_workspace(int index) {
+  auto workspace = this->get_workspace_at(index);
+  if (!workspace)
+    return;
+  if (!workspace->toplevels.empty())
+    return;
+  auto it = workspaces.begin();
+  std::advance(it, index);
+  this->workspaces.erase(it);
+}
 } // namespace ura
