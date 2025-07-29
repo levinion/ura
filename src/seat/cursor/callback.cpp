@@ -3,6 +3,7 @@
 #include "ura/client.hpp"
 #include "ura/server.hpp"
 #include "ura/ura.hpp"
+#include "ura/seat.hpp"
 
 namespace ura {
 
@@ -10,16 +11,16 @@ namespace ura {
 void on_cursor_motion(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto event = static_cast<wlr_pointer_motion_event*>(data);
-  server->cursor->relative_move(event->delta_x, event->delta_y);
-  server->cursor->process_motion(event->time_msec);
+  server->seat->cursor->relative_move(event->delta_x, event->delta_y);
+  server->seat->cursor->process_motion(event->time_msec);
 }
 
 // callback on cursor moves absolutely
 void on_cursor_motion_absolute(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto event = static_cast<wlr_pointer_motion_absolute_event*>(data);
-  server->cursor->absolute_move(event->x, event->y);
-  server->cursor->process_motion(event->time_msec);
+  server->seat->cursor->absolute_move(event->x, event->y);
+  server->seat->cursor->process_motion(event->time_msec);
 }
 
 // this sends the click/press event
@@ -29,7 +30,7 @@ void on_cursor_button(wl_listener* listener, void* data) {
 
   // notify focused client with button pressed event
   wlr_seat_pointer_notify_button(
-    server->seat,
+    server->seat->seat,
     event->time_msec,
     event->button,
     event->state
@@ -52,7 +53,7 @@ void on_cursor_axis(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto event = static_cast<wlr_pointer_axis_event*>(data);
   wlr_seat_pointer_notify_axis(
-    server->seat,
+    server->seat->seat,
     event->time_msec,
     event->orientation,
     event->delta,
@@ -64,7 +65,7 @@ void on_cursor_axis(wl_listener* listener, void* data) {
 
 void on_cursor_frame(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  wlr_seat_pointer_notify_frame(server->seat);
+  wlr_seat_pointer_notify_frame(server->seat->seat);
 }
 
 // prefer using cursor_shape_v1 to set cursor
@@ -86,24 +87,28 @@ void on_cursor_frame(wl_listener* listener, void* data) {
 void on_seat_request_set_selection(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto event = static_cast<wlr_seat_request_set_selection_event*>(data);
-  wlr_seat_set_selection(server->seat, event->source, event->serial);
+  wlr_seat_set_selection(server->seat->seat, event->source, event->serial);
 }
 
 void on_seat_request_set_primary_selection(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto event = static_cast<wlr_seat_request_set_primary_selection_event*>(data);
-  wlr_seat_set_primary_selection(server->seat, event->source, event->serial);
+  wlr_seat_set_primary_selection(
+    server->seat->seat,
+    event->source,
+    event->serial
+  );
 }
 
 void on_seat_request_start_drag(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto event = static_cast<wlr_seat_request_start_drag_event*>(data);
   if (wlr_seat_validate_pointer_grab_serial(
-        server->seat,
+        server->seat->seat,
         event->origin,
         event->serial
       ))
-    wlr_seat_start_pointer_drag(server->seat, event->drag, event->serial);
+    wlr_seat_start_pointer_drag(server->seat->seat, event->drag, event->serial);
   else
     wlr_data_source_destroy(event->drag->source);
 }
@@ -114,10 +119,10 @@ void on_cursor_request_set_shape(wl_listener* listener, void* data) {
   auto event =
     static_cast<wlr_cursor_shape_manager_v1_request_set_shape_event*>(data);
   auto server = UraServer::get_instance();
-  auto focused_client = server->seat->pointer_state.focused_client;
+  auto focused_client = server->seat->seat->pointer_state.focused_client;
   if (focused_client == event->seat_client) {
     auto cursor_shape_name = wlr_cursor_shape_v1_name(event->shape);
-    server->cursor->set_xcursor(cursor_shape_name);
+    server->seat->cursor->set_xcursor(cursor_shape_name);
   }
 }
 } // namespace ura

@@ -1,3 +1,4 @@
+#include "ura/client.hpp"
 #include "ura/layer_shell.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
@@ -215,13 +216,22 @@ wlr_box UraOutput::logical_geometry() {
 }
 
 void UraOutput::destroy_workspace(int index) {
+  if (this->workspaces.size() == 1)
+    return;
   auto workspace = this->get_workspace_at(index);
   if (!workspace)
     return;
   if (!workspace->toplevels.empty())
     return;
+  if (workspace == this->current_workspace)
+    return;
+
   auto it = workspaces.begin();
   std::advance(it, index);
   this->workspaces.erase(it);
+}
+
+std::optional<UraClient> UraOutput::get_focused_client() {
+  return this->current_workspace->focus_stack.top();
 }
 } // namespace ura

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ura/client.hpp"
 #include "ura/ura.hpp"
 #include "ura/server.hpp"
 #include <list>
@@ -51,13 +52,14 @@ public:
   get_layer_list_by_type(zwlr_layer_shell_v1_layer type);
 
   /* Workspaces */
-  UraWorkSpace* current_workspace;
+  UraWorkSpace* current_workspace = nullptr;
   std::list<std::unique_ptr<UraWorkSpace>> workspaces;
   UraWorkSpace* create_workspace();
   int switch_workspace(int index);
   int switch_workspace(UraWorkSpace* workspace);
   void destroy_workspace(int index);
   UraWorkSpace* get_workspace_at(int index);
+  std::optional<UraClient> get_focused_client();
 
 private:
   void set_mode(wlr_output_mode* mode);

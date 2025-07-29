@@ -2,6 +2,7 @@
 #include <memory>
 #include "ura/cursor.hpp"
 #include "ura/ipc.hpp"
+#include "ura/seat.hpp"
 #include "ura/server.hpp"
 #include "ura/callback.hpp"
 #include "ura/runtime.hpp"
@@ -22,10 +23,9 @@ UraServer* UraServer::init() {
   this->setup_output();
   this->setup_toplevel();
   this->setup_popup();
-  this->setup_cursor();
-  this->setup_input();
   this->setup_decoration();
   this->setup_layer_shell();
+  this->setup_seat();
   this->setup_activation();
   this->setup_foreign();
   this->setup_text_input();
@@ -119,44 +119,9 @@ void UraServer::setup_popup() {
   );
 }
 
-void UraServer::setup_cursor() {
-  this->cursor = std::make_unique<UraCursor>();
-  this->cursor->init();
-}
-
-void UraServer::setup_input() {
-  // create seat with name seat0
-  this->seat = wlr_seat_create(this->display, "seat0");
-  this->runtime->register_callback(
-    &this->backend->events.new_input,
-    on_new_input,
-    nullptr
-  );
-  // this->runtime->register_callback(
-  //   &this->seat->events.request_set_cursor,
-  //   on_seat_request_cursor,
-  //   nullptr
-  // );
-  this->runtime->register_callback(
-    &this->seat->events.request_set_selection,
-    on_seat_request_set_selection,
-    nullptr
-  );
-  this->runtime->register_callback(
-    &this->seat->events.request_set_primary_selection,
-    on_seat_request_set_primary_selection,
-    nullptr
-  );
-  this->runtime->register_callback(
-    &this->seat->events.request_start_drag,
-    on_seat_request_start_drag,
-    nullptr
-  );
-  this->runtime->register_callback(
-    &this->seat->events.start_drag,
-    on_seat_start_drag,
-    nullptr
-  );
+void UraServer::setup_seat() {
+  this->seat = std::make_unique<UraSeat>();
+  this->seat->init();
 }
 
 void UraServer::setup_decoration() {
@@ -207,8 +172,28 @@ void UraServer::setup_foreign() {
 }
 
 void UraServer::setup_text_input() {
-  // TODO: impl this
   this->text_input_manager = wlr_text_input_manager_v3_create(this->display);
+  this->runtime->register_callback(
+    &this->text_input_manager->events.text_input,
+    on_new_text_input,
+    nullptr
+  );
+
+  this->input_method_manager =
+    wlr_input_method_manager_v2_create(this->display);
+  this->runtime->register_callback(
+    &this->input_method_manager->events.input_method,
+    on_new_input_method,
+    nullptr
+  );
+
+  this->virtual_keyboard_manager =
+    wlr_virtual_keyboard_manager_v1_create(this->display);
+  this->runtime->register_callback(
+    &this->virtual_keyboard_manager->events.new_virtual_keyboard,
+    on_new_virtual_keyboard,
+    nullptr
+  );
 }
 
 void UraServer::run() {
@@ -279,7 +264,7 @@ void UraServer::run() {
 
 void UraServer::destroy() {
   wl_display_destroy_clients(this->display);
-  this->cursor->destroy();
+  this->seat->cursor->destroy();
   wlr_allocator_destroy(this->allocator);
   wlr_renderer_destroy(this->renderer);
   wlr_backend_destroy(this->backend);

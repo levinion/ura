@@ -12,6 +12,7 @@ public:
   sol::state state;
   sol::table ura;
   std::string lua_stdout;
+  bool reset = false;
   static std::unique_ptr<Lua> init();
   std::expected<std::string, std::string> execute(std::string script);
   std::expected<std::string, std::string> execute_file(std::filesystem::path);
@@ -47,7 +48,7 @@ public:
     return current_table.get<std::optional<T>>(keys.back());
   }
 
-private:
   void setup();
 };
+
 } // namespace ura

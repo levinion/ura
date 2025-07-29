@@ -5,6 +5,7 @@
 #define static
 #define class class_
 #define namespace namespace_
+#define delete delete_
 extern "C" {
 #include <wlr/backend.h>
 #include <wlr/backend/session.h>
@@ -47,10 +48,13 @@ extern "C" {
 #include <wlr/types/wlr_linux_drm_syncobj_v1.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_text_input_v3.h>
+#include <wlr/types/wlr_input_method_v2.h>
 #include <wlr/types/wlr_presentation_time.h>
+#include <wlr/types/wlr_virtual_keyboard_v1.h>
 #include <wlr/util/log.h>
 #include <xkbcommon/xkbcommon.h>
 }
 #undef static
 #undef class
 #undef namespace
+#undef delete

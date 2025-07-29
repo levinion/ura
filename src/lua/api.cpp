@@ -1,6 +1,6 @@
 #include "ura/api.hpp"
 #include <format>
-#include "ura/cursor.hpp"
+#include "ura/lua.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
 #include "ura/toplevel.hpp"
@@ -8,6 +8,7 @@
 #include "ura/keyboard.hpp"
 #include "ura/workspace.hpp"
 #include "ura/util.hpp"
+#include "ura/seat.hpp"
 
 namespace ura::api {
 
@@ -75,8 +76,7 @@ void set_window_fullscreen(bool flag) {
 
 void reload() {
   auto server = UraServer::get_instance();
-  // TODO: reset lua VM
-  server->lua->try_execute_hook("reload");
+  server->lua->reset = true;
 }
 
 void set_keyboard_repeat(int rate, int delay) {
@@ -127,30 +127,30 @@ void set_hook(std::string name, sol::protected_function f) {
 
 void set_cursor_theme(std::string theme, int size) {
   auto server = UraServer::get_instance();
-  server->cursor->set_theme(theme, size);
+  server->seat->cursor->set_theme(theme, size);
 }
 
 void set_cursor_visible(bool flag) {
   auto server = UraServer::get_instance();
   if (!flag)
-    server->cursor->hide();
+    server->seat->cursor->hide();
   else
-    server->cursor->show();
+    server->seat->cursor->show();
 }
 
 void cursor_absolute_move(double x, double y) {
   auto server = UraServer::get_instance();
-  server->cursor->absolute_move(x, y);
+  server->seat->cursor->absolute_move(x, y);
 }
 
 void cursor_relative_move(double delta_x, double delta_y) {
   auto server = UraServer::get_instance();
-  server->cursor->relative_move(delta_x, delta_y);
+  server->seat->cursor->relative_move(delta_x, delta_y);
 }
 
 void set_cursor_shape(std::string name) {
   auto server = UraServer::get_instance();
-  server->cursor->set_xcursor(name);
+  server->seat->cursor->set_xcursor(name);
 }
 
 int get_current_window_index() {

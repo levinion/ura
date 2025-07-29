@@ -50,10 +50,6 @@ void on_layer_shell_surface_commit(wl_listener* listener, void* data) {
 void on_layer_shell_surface_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto layer_shell = server->runtime->fetch<UraLayerShell*>(listener);
-
-  // this will destroy scene node so there's no need to destroy again
-  // wlr_layer_surface_v1_destroy(layer_shell->layer_surface);
-
   server->runtime->remove(layer_shell);
   // remove from output's layer
   auto& list = layer_shell->output->get_layer_list_by_type(

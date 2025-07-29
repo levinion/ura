@@ -14,14 +14,14 @@ At the heart of this integration are `ura`'s IPC (Inter-Process Communication) c
   This command returns the numerical index of your currently active workspace.
   
   ```shell
-  uracil 'print(ura.ws.index())'
+  uracil -c 'print(ura.ws.index())'
   ```
 
 * **Get the total number of workspaces:**
   This command provides the total count of active workspaces.
   
   ```shell
-  uracil 'print(ura.ws.size())'
+  uracil -c 'print(ura.ws.size())'
   ```
 
 ## Crafting the Waybar Workspace Script
@@ -40,12 +40,12 @@ def main():
     inactive = ""
     index = int(
         subprocess.check_output(
-            "uracil 'print(ura.ws.index())'", shell=True, text=True
+            "uracil -c 'print(ura.ws.index())'", shell=True, text=True
         ).strip()
     )
     number = int(
         subprocess.check_output(
-            "uracil 'print(ura.ws.size())'", shell=True, text=True
+            "uracil -c 'print(ura.ws.size())'", shell=True, text=True
         ).strip()
     )
     workspaces = [inactive] * number

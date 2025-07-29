@@ -6,6 +6,7 @@
 #include "ura/output.hpp"
 #include "ura/ura.hpp"
 #include "ura/callback.hpp"
+#include "ura/seat.hpp"
 
 namespace ura {
 
@@ -121,11 +122,14 @@ void UraToplevel::commit() {
     return;
   }
   auto mode = this->output->logical_geometry();
+  auto geo = this->logical_geometry();
 
   // handle fullscreen toplevel window
   if (this->fullscreen()) {
-    this->resize(mode.width, mode.height);
-    this->move(mode.x, mode.y);
+    if (geo.width != mode.width || geo.height != mode.height)
+      this->resize(mode.width, mode.height);
+    if (geo.x != mode.x || geo.y != mode.y)
+      this->move(mode.x, mode.y);
     return;
   }
 
@@ -145,8 +149,12 @@ void UraToplevel::commit() {
     auto sh = usable_area.height;
     auto tw = this->floating_width;
     auto th = this->floating_height;
-    this->resize(tw, th);
-    this->move(sx + (sw - tw) / 2, sy + (sh - th) / 2);
+    if (geo.width != tw || geo.height != th)
+      this->resize(tw, th);
+    auto x = sx + (sw - tw) / 2;
+    auto y = sy + (sh - th) / 2;
+    if (geo.x != x || geo.y != y)
+      this->move(x, y);
     return;
   }
 
@@ -183,13 +191,16 @@ void UraToplevel::commit() {
   auto h = height - (outer_t + outer_b);
   auto x = usable_area.x + outer_l + (w + inner) * i;
   auto y = usable_area.y + outer_t;
-  this->resize(w, h);
-  this->move(x, y);
+
+  if (geo.width != w || geo.height != h)
+    this->resize(w, h);
+  if (geo.x != x || geo.y != y)
+    this->move(x, y);
 }
 
 void UraToplevel::focus() {
   auto server = UraServer::get_instance();
-  auto seat = server->seat;
+  auto seat = server->seat->seat;
   auto surface = this->xdg_toplevel->base->surface;
   auto workspace = this->workspace;
   // if not on top of focus stack, then unfocus the current top
@@ -201,6 +212,7 @@ void UraToplevel::focus() {
         prev.transform<UraToplevel>()->xdg_toplevel,
         false
       );
+      server->seat->text_input->set_text_input_focus(surface, false);
     }
   }
   // move to top of stack and focus this
@@ -210,6 +222,7 @@ void UraToplevel::focus() {
   wlr_scene_node_raise_to_top(&this->scene_tree->node);
   wlr_xdg_toplevel_set_activated(this->xdg_toplevel, true);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
+  server->seat->text_input->set_text_input_focus(surface, true);
   auto keyboard = wlr_seat_get_keyboard(seat);
   if (keyboard) {
     wlr_seat_keyboard_notify_enter(
@@ -233,10 +246,12 @@ int UraToplevel::move_to_workspace(int index) {
   auto target = output->get_workspace_at(index);
   if (!target)
     return -1;
-  this->workspace->toplevels.remove(this);
-  this->workspace->focus_stack.remove(this);
-  target->toplevels.push_back(this);
+  if (this->workspace) {
+    this->workspace->toplevels.remove(this);
+    this->workspace->focus_stack.remove(this);
+  }
   this->workspace = target;
+  this->workspace->toplevels.push_back(this);
   this->workspace->focus_stack.push(this);
   return this->workspace->index();
 }
@@ -256,7 +271,9 @@ int UraToplevel::index() {
 void UraToplevel::activate() {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
-  this->move_to_workspace(output->current_workspace->index());
+  if (this->workspace->index() != output->current_workspace->index()) {
+    this->move_to_workspace(output->current_workspace->index());
+  }
   this->focus();
   output->fresh_screen();
 }

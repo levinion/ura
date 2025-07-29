@@ -4,6 +4,7 @@
 #include "ura/ura.hpp"
 #include "ura/runtime.hpp"
 #include "ura/callback.hpp"
+#include "ura/seat.hpp"
 
 namespace ura {
 
@@ -72,7 +73,7 @@ UraLayerShell* UraLayerShell::from(wlr_surface* surface) {
 
 void UraLayerShell::focus() {
   auto server = UraServer::get_instance();
-  auto seat = server->seat;
+  auto seat = server->seat->seat;
   auto keyboard = wlr_seat_get_keyboard(seat);
   if (keyboard) {
     wlr_seat_keyboard_notify_enter(

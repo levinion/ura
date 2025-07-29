@@ -89,7 +89,6 @@ void UraIPC::try_handle() {
     return;
   auto code = request->body;
   auto server = UraServer::get_instance();
-  // TODO: get execute result
   auto reply = UraIPCReplyMessage {};
   auto result = server->lua->execute(code);
   if (result) {

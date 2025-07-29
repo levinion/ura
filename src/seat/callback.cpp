@@ -1,6 +1,6 @@
 #include "ura/server.hpp"
 #include "ura/keyboard.hpp"
-#include "ura/runtime.hpp"
+#include "ura/seat.hpp"
 
 namespace ura {
 void on_new_input(wl_listener* listener, void* data) {
@@ -13,7 +13,7 @@ void on_new_input(wl_listener* listener, void* data) {
       break;
     }
     case WLR_INPUT_DEVICE_POINTER: {
-      server->cursor->attach_device(device);
+      server->seat->cursor->attach_device(device);
       break;
     }
     default:
@@ -23,11 +23,11 @@ void on_new_input(wl_listener* listener, void* data) {
   // info clients with capabilities
   uint32_t caps = WL_SEAT_CAPABILITY_POINTER;
 
-  if (!server->runtime->keyboards.empty()) {
+  if (!server->seat->keyboards.empty()) {
     caps |= WL_SEAT_CAPABILITY_KEYBOARD;
   }
 
-  wlr_seat_set_capabilities(server->seat, caps);
+  wlr_seat_set_capabilities(server->seat->seat, caps);
 }
 
 } // namespace ura

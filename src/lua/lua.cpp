@@ -12,6 +12,16 @@
 
 namespace ura {
 
+void check_reset() {
+  auto server = UraServer::get_instance();
+  if (server->lua->reset) {
+    server->lua = Lua::init();
+    server->lua->setup();
+    server->lua->try_execute_init();
+    server->lua->try_execute_hook("reload");
+  }
+}
+
 std::unique_ptr<Lua> Lua::init() {
   auto lua = std::make_unique<Lua>();
   lua->state.open_libraries(
@@ -91,7 +101,9 @@ std::expected<std::string, std::string> Lua::execute(std::string script) {
   this->lua_stdout.clear();
   auto result = this->state.safe_script(script, sol::script_pass_on_error);
   if (result.valid()) {
-    return this->lua_stdout;
+    auto out = this->lua_stdout;
+    check_reset();
+    return out;
   }
   sol::error err = result;
   return std::unexpected(err.what());
@@ -106,7 +118,9 @@ Lua::execute_file(std::filesystem::path path) {
     );
   auto result = this->state.safe_script_file(path, sol::script_pass_on_error);
   if (result.valid()) {
-    return this->lua_stdout;
+    auto out = this->lua_stdout;
+    check_reset();
+    return out;
   }
   sol::error err = result;
   return std::unexpected(err.what());
@@ -155,4 +169,5 @@ bool Lua::try_execute_init() {
   }
   return false;
 }
+
 } // namespace ura

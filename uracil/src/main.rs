@@ -1,57 +1,70 @@
-use std::{env::args, os::unix::net::UnixDatagram, path::PathBuf, time::Duration};
+mod client;
 
-use anyhow::{Result, anyhow};
+use std::io::{self, Write};
 
-#[derive(serde::Serialize)]
-struct UraIPCRequestMessage {
-    method: String,
-    body: String,
+use anyhow::Result;
+use clap::Parser;
+
+#[derive(Parser)]
+struct Cli {
+    #[arg(short = 'c', long)]
+    code: Option<String>,
 }
 
-#[derive(serde::Deserialize)]
-struct UraIPCReplyMessage {
-    status: String,
-    body: String,
+fn shell_mode() -> Result<()> {
+    let client = client::UraIPCClient::new()?;
+    loop {
+        print!("> ");
+        io::stdout().flush()?;
+        let mut input = String::new();
+        match io::stdin().read_line(&mut input) {
+            Ok(bytes_read) => {
+                if bytes_read == 0 {
+                    break;
+                }
+                let input = input.trim();
+                if input.is_empty() {
+                    continue;
+                }
+                if input == "exit" {
+                    break;
+                }
+                let request = client::UraIPCRequestMessage {
+                    method: "execute".to_string(),
+                    body: input.to_string(),
+                };
+                match client.send(&request) {
+                    Ok(reply) => reply.print(),
+                    Err(err) => eprintln!("{}", err),
+                }
+            }
+            Err(err) => {
+                eprintln!("{:?}", err);
+                break;
+            }
+        }
+    }
+    client.destroy()?;
+    Ok(())
 }
 
-fn main() -> Result<()> {
-    let server_socket_path = PathBuf::from("/tmp/ura-socket");
-    if !server_socket_path.exists() {
-        return Err(anyhow!("Server socket not exists"));
-    }
-    let socket_path = format!("/tmp/ura-client-{}.sock", uuid::Uuid::new_v4());
-    let socket_path = PathBuf::from(socket_path);
-    if socket_path.exists() {
-        std::fs::remove_file(&socket_path)?;
-    }
-    let socket = UnixDatagram::bind(&socket_path)?;
-    socket.connect(server_socket_path)?;
-    socket.set_read_timeout(Some(Duration::from_secs(5)))?;
-    socket.set_write_timeout(Some(Duration::from_secs(5)))?;
-
-    let code = args().nth(1).expect("uracil expects 1 argument");
-
-    let request = UraIPCRequestMessage {
+fn oneshot(code: String) -> Result<()> {
+    let client = client::UraIPCClient::new()?;
+    let request = client::UraIPCRequestMessage {
         method: "execute".to_string(),
         body: code,
     };
-    socket.send(serde_json::to_string(&request)?.as_bytes())?;
-    let mut buf = [0; 4096];
-    let result = match socket.recv(&mut buf) {
-        Ok(len) => {
-            let reply: UraIPCReplyMessage = serde_json::from_slice(&buf[..len])?;
-            if reply.status == "success" {
-                Ok(reply.body)
-            } else {
-                Err(reply.body)
-            }
-        }
-        Err(err) => Err(err.to_string()),
-    };
-    match result {
-        Ok(message) => println!("{}", message),
-        Err(err) => eprintln!("{}", err),
+    let reply = client.send(&request)?;
+    reply.print();
+    client.destroy()?;
+    Ok(())
+}
+
+fn main() -> Result<()> {
+    let cli = Cli::parse();
+    match cli.code {
+        Some(code) => oneshot(code)?,
+        None => shell_mode()?,
     }
-    std::fs::remove_file(socket_path)?;
     Ok(())
 }

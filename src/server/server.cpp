@@ -1,4 +1,3 @@
-
 #include "ura/server.hpp"
 #include <optional>
 #include "ura/client.hpp"
@@ -8,6 +7,7 @@
 #include "ura/toplevel.hpp"
 #include "ura/ura.hpp"
 #include "ura/layer_shell.hpp"
+#include "ura/seat.hpp"
 
 namespace ura {
 
@@ -22,7 +22,7 @@ UraServer* UraServer::get_instance() {
 
 // returns the topmost toplevel under current cursor coordination
 std::optional<UraClient> UraServer::foreground_client(double* sx, double* sy) {
-  auto pos = this->cursor->position();
+  auto pos = this->seat->cursor->position();
   auto node = wlr_scene_node_at(&this->scene->tree.node, pos.x, pos.y, sx, sy);
   if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
     return {};
@@ -36,13 +36,13 @@ std::optional<UraClient> UraServer::foreground_client(double* sx, double* sy) {
 }
 
 UraOutput* UraServer::current_output() {
-  auto pos = this->cursor->position();
+  auto pos = this->seat->cursor->position();
   auto output = wlr_output_layout_output_at(this->output_layout, pos.x, pos.y);
   return UraOutput::from(output);
 }
 
 UraKeyboard* UraServer::current_keyboard() {
-  auto keyboard = this->seat->keyboard_state.keyboard;
+  auto keyboard = this->seat->seat->keyboard_state.keyboard;
   return UraKeyboard::from(keyboard);
 }
 

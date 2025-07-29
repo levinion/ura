@@ -47,9 +47,8 @@ int UraOutput::switch_workspace(UraWorkSpace* workspace) {
   this->current_workspace = workspace;
   this->current_workspace->enable(true);
 
-  // focus toplevel
-  if (!this->current_workspace->toplevels.empty())
-    this->current_workspace->toplevels.front()->focus();
+  if (this->current_workspace->focus_stack.size() != 0)
+    this->current_workspace->focus_stack.top()->focus();
 
   return this->current_workspace->index();
 }

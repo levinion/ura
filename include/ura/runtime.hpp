@@ -44,7 +44,6 @@ public:
   }
 
   std::list<UraOutput*> outputs;
-  std::list<UraKeyboard*> keyboards;
 
 private:
   // listener to data
