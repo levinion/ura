@@ -1,5 +1,6 @@
 #include "ura/api.hpp"
 #include <format>
+#include "ura/client.hpp"
 #include "ura/lua.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
@@ -60,17 +61,6 @@ void close_window() {
     auto toplevel = client.value().transform<UraToplevel>();
     if (toplevel)
       toplevel->close();
-  }
-}
-
-void set_window_fullscreen(bool flag) {
-  auto server = UraServer::get_instance();
-  auto workspace = server->current_output()->current_workspace;
-  auto client = workspace->focus_stack.top();
-  if (client) {
-    auto toplevel = client.value().transform<UraToplevel>();
-    if (toplevel && toplevel->fullscreen() != flag)
-      toplevel->set_fullscreen(flag);
   }
 }
 
@@ -177,22 +167,41 @@ bool focus_window(int index) {
   return true;
 }
 
+void set_window_fullscreen(bool flag) {
+  auto server = UraServer::get_instance();
+  auto client = server->current_output()->get_focused_client();
+  if (client) {
+    if (client->type != UraSurfaceType::Toplevel)
+      return;
+    auto toplevel = client.value().transform<UraToplevel>();
+    if (toplevel && toplevel->fullscreen() != flag) {
+      toplevel->set_fullscreen(flag);
+      toplevel->request_commit();
+    }
+  }
+}
+
 void set_window_floating(bool flag) {
   auto server = UraServer::get_instance();
-  auto focused = server->current_output()->current_workspace->focus_stack.top();
-  if (focused) {
-    auto toplevel = focused->transform<UraToplevel>();
+  auto client = server->current_output()->get_focused_client();
+  if (client) {
+    if (client->type != UraSurfaceType::Toplevel)
+      return;
+    auto toplevel = client->transform<UraToplevel>();
     if (toplevel) {
       toplevel->set_float(flag);
+      toplevel->request_commit();
     }
   }
 }
 
 bool is_window_fullscreen() {
   auto server = UraServer::get_instance();
-  auto focused = server->current_output()->current_workspace->focus_stack.top();
-  if (focused) {
-    auto toplevel = focused->transform<UraToplevel>();
+  auto client = server->current_output()->get_focused_client();
+  if (client) {
+    if (client->type != UraSurfaceType::Toplevel)
+      return false;
+    auto toplevel = client->transform<UraToplevel>();
     if (toplevel) {
       return toplevel->fullscreen();
     }
@@ -202,9 +211,11 @@ bool is_window_fullscreen() {
 
 bool is_window_floating() {
   auto server = UraServer::get_instance();
-  auto focused = server->current_output()->current_workspace->focus_stack.top();
-  if (focused) {
-    auto toplevel = focused->transform<UraToplevel>();
+  auto client = server->current_output()->get_focused_client();
+  if (client) {
+    if (client->type != UraSurfaceType::Toplevel)
+      return false;
+    auto toplevel = client->transform<UraToplevel>();
     if (toplevel) {
       return toplevel->floating;
     }

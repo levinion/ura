@@ -133,7 +133,7 @@ void UraToplevel::commit() {
       || this->commit_normal()) {
     for (auto toplevel : this->workspace->toplevels)
       if (toplevel != this)
-        wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
+        toplevel->request_commit();
   }
 }
 
@@ -142,23 +142,25 @@ bool UraToplevel::commit_fullscreen() {
   if (!this->fullscreen())
     return false;
   this->set_layer(this->output->fullscreen);
+  auto changed = false;
   auto mode = this->output->logical_geometry();
   auto geo = this->logical_geometry();
   if (geo.width != mode.width || geo.height != mode.height) {
     this->resize(mode.width, mode.height);
-    return true;
+    changed = true;
   }
   if (geo.x != mode.x || geo.y != mode.y) {
     this->move(mode.x, mode.y);
-    return true;
+    changed = true;
   }
-  return false;
+  return changed;
 }
 
 bool UraToplevel::commit_floating() {
   if (!this->floating)
     return false;
   this->set_layer(this->output->floating);
+  auto changed = false;
   auto geo = this->logical_geometry();
   auto usable_area = this->output->usable_area;
   auto sx = usable_area.x;
@@ -169,21 +171,22 @@ bool UraToplevel::commit_floating() {
   auto th = this->floating_height;
   if (geo.width != tw || geo.height != th) {
     this->resize(tw, th);
-    return true;
+    changed = true;
   }
   auto x = sx + (sw - tw) / 2;
   auto y = sy + (sh - th) / 2;
   if (geo.x != x || geo.y != y) {
     this->move(x, y);
-    return true;
+    changed = true;
   }
-  return false;
+  return changed;
 }
 
 bool UraToplevel::commit_normal() {
   if (!this->is_normal())
     return false;
   this->set_layer(this->output->normal);
+  auto changed = false;
   auto server = UraServer::get_instance();
   auto geo = this->logical_geometry();
   auto usable_area = this->output->usable_area;
@@ -223,13 +226,13 @@ bool UraToplevel::commit_normal() {
 
   if (geo.width != w || geo.height != h) {
     this->resize(w, h);
-    return true;
+    changed = true;
   }
   if (geo.x != x || geo.y != y) {
     this->move(x, y);
-    return true;
+    changed = true;
   }
-  return false;
+  return changed;
 }
 
 void UraToplevel::focus() {
@@ -403,5 +406,10 @@ void UraToplevel::set_layer(wlr_scene_tree* layer) {
     wlr_scene_node_reparent(&this->scene_tree->node, layer);
     this->layer = layer;
   }
+}
+
+// request the toplevel to send a commit request now
+void UraToplevel::request_commit() {
+  wlr_xdg_surface_schedule_configure(this->xdg_toplevel->base);
 }
 } // namespace ura

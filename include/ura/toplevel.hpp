@@ -44,6 +44,7 @@ public:
   void activate();
   void set_float(bool flag);
   void set_layer(wlr_scene_tree* layer);
+  void request_commit();
 
 private:
   bool commit_fullscreen();
