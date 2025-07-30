@@ -4,7 +4,9 @@
 
 namespace ura {
 
-void UraTextInput::set_text_input_focus(wlr_surface* surface, bool focus) {
+void UraTextInput::focus_text_input(wlr_surface* surface) {
+  // unfocus prev text_input if any
+  this->unfocus_active_text_input();
   auto it = std::find_if(
     this->text_inputs.begin(),
     this->text_inputs.end(),
@@ -15,18 +17,15 @@ void UraTextInput::set_text_input_focus(wlr_surface* surface, bool focus) {
   );
   if (it != this->text_inputs.end()) {
     auto text_input = *it;
-    if (focus) {
-      auto active_text_input = this->get_active_text_input();
-      if (active_text_input)
-        return;
-      wlr_text_input_v3_send_enter(text_input, surface);
-    } else {
-      auto active_text_input = this->get_active_text_input();
-      if (!active_text_input || active_text_input != text_input)
-        return;
-      wlr_text_input_v3_send_leave(active_text_input);
-    }
+    wlr_text_input_v3_send_enter(text_input, surface);
   }
+}
+
+void UraTextInput::unfocus_active_text_input() {
+  auto active_text_input = this->get_active_text_input();
+  if (!active_text_input)
+    return;
+  wlr_text_input_v3_send_leave(active_text_input);
 }
 
 wlr_text_input_v3* UraTextInput::get_active_text_input() {
@@ -60,6 +59,6 @@ void UraTextInput::send_state(wlr_text_input_v3* text_input) {
     text_input->current.content_type.hint,
     text_input->current.content_type.purpose
   );
-  wlr_text_input_v3_send_done(text_input);
+  wlr_input_method_v2_send_done(input_method);
 }
 } // namespace ura

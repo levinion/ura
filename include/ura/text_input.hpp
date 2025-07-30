@@ -16,9 +16,12 @@ public:
   wlr_input_method_v2* input_method = nullptr;
   std::list<UraInputPopup*> popups;
 
-  void set_text_input_focus(wlr_surface* surface, bool focus);
+  void focus_text_input(wlr_surface* surface);
   wlr_text_input_v3* get_active_text_input();
   void send_state(wlr_text_input_v3* text_input);
+
+private:
+  void unfocus_active_text_input();
 };
 
 } // namespace ura

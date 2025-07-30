@@ -42,6 +42,11 @@ public:
   int index();
   void activate();
   void set_float(bool flag);
+
+private:
+  bool commit_fullscreen();
+  bool commit_floating();
+  bool commit_normal();
 };
 
 } // namespace ura

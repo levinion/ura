@@ -121,27 +121,38 @@ void UraToplevel::commit() {
   if (!this->mapped || !this->xdg_toplevel->base->initialized) {
     return;
   }
-  auto mode = this->output->logical_geometry();
-  auto geo = this->logical_geometry();
-
-  // handle fullscreen toplevel window
-  if (this->fullscreen()) {
-    if (geo.width != mode.width || geo.height != mode.height)
-      this->resize(mode.width, mode.height);
-    if (geo.x != mode.x || geo.y != mode.y)
-      this->move(mode.x, mode.y);
-    return;
-  }
-
   if (this->xdg_toplevel->base->initial_commit && this->decoration) {
     wlr_xdg_toplevel_decoration_v1_set_mode(
       this->decoration,
       WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
     );
   }
+  if (this->commit_fullscreen() || this->commit_floating()
+      || this->commit_normal()) {
+    this->output->fresh_screen();
+  }
+}
 
-  auto usable_area = output->usable_area;
+bool UraToplevel::commit_fullscreen() {
+  // handle fullscreen toplevel window
+  auto mode = this->output->logical_geometry();
+  auto geo = this->logical_geometry();
+  if (this->fullscreen()) {
+    if (geo.width != mode.width || geo.height != mode.height) {
+      this->resize(mode.width, mode.height);
+      return true;
+    }
+    if (geo.x != mode.x || geo.y != mode.y) {
+      this->move(mode.x, mode.y);
+      return true;
+    }
+  }
+  return false;
+}
 
+bool UraToplevel::commit_floating() {
+  auto geo = this->logical_geometry();
+  auto usable_area = this->output->usable_area;
   if (this->floating) {
     auto sx = usable_area.x;
     auto sw = usable_area.width;
@@ -149,15 +160,26 @@ void UraToplevel::commit() {
     auto sh = usable_area.height;
     auto tw = this->floating_width;
     auto th = this->floating_height;
-    if (geo.width != tw || geo.height != th)
+    if (geo.width != tw || geo.height != th) {
       this->resize(tw, th);
+      return true;
+    }
     auto x = sx + (sw - tw) / 2;
     auto y = sy + (sh - th) / 2;
-    if (geo.x != x || geo.y != y)
+    if (geo.x != x || geo.y != y) {
       this->move(x, y);
-    return;
+      return true;
+    }
   }
+  return false;
+}
 
+bool UraToplevel::commit_normal() {
+  if (!this->is_normal())
+    return false;
+  auto server = UraServer::get_instance();
+  auto geo = this->logical_geometry();
+  auto usable_area = this->output->usable_area;
   auto width = usable_area.width;
   auto height = usable_area.height;
   auto outer_l =
@@ -192,10 +214,15 @@ void UraToplevel::commit() {
   auto x = usable_area.x + outer_l + (w + inner) * i;
   auto y = usable_area.y + outer_t;
 
-  if (geo.width != w || geo.height != h)
+  if (geo.width != w || geo.height != h) {
     this->resize(w, h);
-  if (geo.x != x || geo.y != y)
+    return true;
+  }
+  if (geo.x != x || geo.y != y) {
     this->move(x, y);
+    return true;
+  }
+  return false;
 }
 
 void UraToplevel::focus() {
@@ -212,7 +239,6 @@ void UraToplevel::focus() {
         prev.transform<UraToplevel>()->xdg_toplevel,
         false
       );
-      server->seat->text_input->set_text_input_focus(surface, false);
     }
   }
   // move to top of stack and focus this
@@ -222,7 +248,7 @@ void UraToplevel::focus() {
   wlr_scene_node_raise_to_top(&this->scene_tree->node);
   wlr_xdg_toplevel_set_activated(this->xdg_toplevel, true);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
-  server->seat->text_input->set_text_input_focus(surface, true);
+  server->seat->text_input->focus_text_input(surface);
   auto keyboard = wlr_seat_get_keyboard(seat);
   if (keyboard) {
     wlr_seat_keyboard_notify_enter(

@@ -13,7 +13,6 @@ namespace ura {
 /* Text Input V3 Callbacks */
 
 void on_new_text_input(wl_listener* listener, void* data) {
-  wlr_log(WLR_DEBUG, "enter new_text_input");
   auto server = UraServer::get_instance();
   auto text_input = static_cast<wlr_text_input_v3*>(data);
   server->seat->text_input->text_inputs.push_back(text_input);
@@ -40,7 +39,6 @@ void on_new_text_input(wl_listener* listener, void* data) {
 }
 
 void on_text_input_enable(wl_listener* listener, void* data) {
-  wlr_log(WLR_DEBUG, "enter text_input_enable");
   auto server = UraServer::get_instance();
   auto text_input = static_cast<wlr_text_input_v3*>(data);
   auto input_method = server->seat->text_input->input_method;
@@ -51,7 +49,6 @@ void on_text_input_enable(wl_listener* listener, void* data) {
 }
 
 void on_text_input_disable(wl_listener* listener, void* data) {
-  wlr_log(WLR_DEBUG, "enter text_input_disable");
   auto server = UraServer::get_instance();
   auto text_input = static_cast<wlr_text_input_v3*>(data);
   auto input_method = server->seat->text_input->input_method;
@@ -80,7 +77,6 @@ void on_text_input_destroy(wl_listener* listener, void* data) {
 /* Input Method V2 Callbacks */
 
 void on_new_input_method(wl_listener* listener, void* data) {
-  wlr_log(WLR_DEBUG, "enter new_input_method");
   auto server = UraServer::get_instance();
   auto input_method = static_cast<wlr_input_method_v2*>(data);
   server->seat->text_input->input_method = input_method;
@@ -120,7 +116,6 @@ void on_input_method_destroy(wl_listener* listener, void* data) {
 }
 
 void on_input_method_commit(wl_listener* listener, void* data) {
-  wlr_log(WLR_DEBUG, "enter input_method_commit");
   auto server = UraServer::get_instance();
   auto input_method = static_cast<wlr_input_method_v2*>(data);
   auto active_text_input = server->seat->text_input->get_active_text_input();
@@ -143,7 +138,6 @@ void on_input_method_commit(wl_listener* listener, void* data) {
 }
 
 void on_input_method_grab_keyboard(wl_listener* listener, void* data) {
-  wlr_log(WLR_DEBUG, "enter input_method_grab_keyboard");
   auto server = UraServer::get_instance();
   auto keyboard_grab = static_cast<wlr_input_method_keyboard_grab_v2*>(data);
   auto keyboard = server->seat->seat->keyboard_state.keyboard;
@@ -156,7 +150,6 @@ void on_input_method_grab_keyboard(wl_listener* listener, void* data) {
 }
 
 void on_input_method_grab_keyboard_destroy(wl_listener* listener, void* data) {
-  wlr_log(WLR_DEBUG, "enter input_method_grab_keyboard_destroy");
   auto server = UraServer::get_instance();
   auto keyboard_grab = static_cast<wlr_input_method_keyboard_grab_v2*>(data);
   auto seat = server->seat->seat;
@@ -167,10 +160,10 @@ void on_input_method_grab_keyboard_destroy(wl_listener* listener, void* data) {
       &keyboard_grab->keyboard->modifiers
     );
   }
+  server->runtime->remove(keyboard_grab);
 }
 
 void on_input_method_new_popup_surface(wl_listener* listener, void* data) {
-  wlr_log(WLR_DEBUG, "enter input_method_new_popup");
   auto server = UraServer::get_instance();
   auto popup_surface = static_cast<wlr_input_popup_surface_v2*>(data);
   auto popup = new UraInputPopup {};
@@ -236,9 +229,11 @@ void on_input_method_popup_surface_map(wl_listener* listener, void* data) {
   }
   if (!parent_scene_tree)
     return;
+  auto active_text_input = server->seat->text_input->get_active_text_input();
+  if (!active_text_input)
+    return;
   wlr_scene_node_reparent(&input_popup->scene_tree->node, parent_scene_tree);
-  auto cursor_rect =
-    server->seat->text_input->get_active_text_input()->current.cursor_rectangle;
+  auto cursor_rect = active_text_input->current.cursor_rectangle;
   wlr_input_popup_surface_v2_send_text_input_rectangle(
     input_popup->popup_surface,
     &cursor_rect
@@ -262,8 +257,10 @@ void on_input_method_popup_surface_commit(wl_listener* listener, void* data) {
   auto input_popup = server->runtime->fetch<UraInputPopup*>(listener);
   if (!input_popup->scene_tree || !input_popup->scene_tree->node.enabled)
     return;
-  auto cursor_rect =
-    server->seat->text_input->get_active_text_input()->current.cursor_rectangle;
+  auto active_text_input = server->seat->text_input->get_active_text_input();
+  if (!active_text_input)
+    return;
+  auto cursor_rect = active_text_input->current.cursor_rectangle;
   wlr_input_popup_surface_v2_send_text_input_rectangle(
     input_popup->popup_surface,
     &cursor_rect
