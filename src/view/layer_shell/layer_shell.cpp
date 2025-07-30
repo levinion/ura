@@ -86,4 +86,52 @@ void UraLayerShell::focus() {
   }
 }
 
+void UraLayerShell::map() {
+  wlr_scene_node_set_enabled(&this->scene_surface->tree->node, true);
+  this->output->configure_layers();
+}
+
+void UraLayerShell::unmap() {
+  wlr_scene_node_set_enabled(&this->scene_surface->tree->node, false);
+  this->output->configure_layers();
+}
+
+void UraLayerShell::commit() {
+  auto output = this->output;
+  if (this->layer_surface->initialized
+      && this->layer_surface->current.committed
+        & WLR_LAYER_SURFACE_V1_STATE_LAYER) {
+    auto layer_type = this->layer_surface->current.layer;
+    auto layer = output->get_layer_by_type(layer_type);
+    // put the surface under proper layer
+    wlr_scene_node_reparent(&this->scene_tree->node, layer);
+  }
+  // configure size
+  auto width = this->layer_surface->pending.desired_width;
+  auto height = this->layer_surface->pending.desired_height;
+  auto scale = output->output->scale;
+
+  if (width == 0) {
+    width = output->output->current_mode->width / scale;
+  }
+  if (height == 0) {
+    height = output->output->current_mode->height / scale;
+  }
+
+  if (width != this->layer_surface->current.actual_width
+      || height != this->layer_surface->current.actual_height) {
+    wlr_layer_surface_v1_configure(this->layer_surface, width, height);
+    output->configure_layers();
+  }
+}
+
+void UraLayerShell::destroy() {
+  auto server = UraServer::get_instance();
+  server->runtime->remove(this);
+  // remove from output's layer
+  auto& layer =
+    this->output->get_layer_list_by_type(this->layer_surface->pending.layer);
+  layer.remove(this);
+}
+
 } // namespace ura

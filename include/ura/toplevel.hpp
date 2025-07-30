@@ -14,6 +14,7 @@ public:
   bool floating = false;
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
+  wlr_scene_tree* layer;
   UraOutput* output;
   UraWorkSpace* workspace;
   wlr_xdg_toplevel_decoration_v1* decoration;
@@ -42,6 +43,7 @@ public:
   int index();
   void activate();
   void set_float(bool flag);
+  void set_layer(wlr_scene_tree* layer);
 
 private:
   bool commit_fullscreen();

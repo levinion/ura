@@ -16,6 +16,10 @@ public:
   void init(wlr_layer_surface_v1* layer_surface);
   static UraLayerShell* from(wlr_surface* surface);
   void focus();
+  void map();
+  void unmap();
+  void commit();
+  void destroy();
 };
 
 } // namespace ura

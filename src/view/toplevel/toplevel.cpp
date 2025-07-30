@@ -1,4 +1,5 @@
 #include "ura/toplevel.hpp"
+#include <wayland-server-core.h>
 #include <utility>
 #include "ura/client.hpp"
 #include "ura/runtime.hpp"
@@ -18,6 +19,7 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   // add to output's normal layer
   this->scene_tree =
     wlr_scene_xdg_surface_create(output->normal, xdg_toplevel->base);
+  this->layer = output->normal;
   this->output = output;
   this->workspace = this->output->current_workspace;
   this->workspace->toplevels.push_back(this);
@@ -128,46 +130,52 @@ void UraToplevel::commit() {
     );
   }
   if (this->commit_fullscreen() || this->commit_floating()
-      || this->commit_normal()) {}
+      || this->commit_normal()) {
+    for (auto toplevel : this->workspace->toplevels)
+      if (toplevel != this)
+        wlr_xdg_surface_schedule_configure(toplevel->xdg_toplevel->base);
+  }
 }
 
+// handle fullscreen toplevel window
 bool UraToplevel::commit_fullscreen() {
-  // handle fullscreen toplevel window
-  if (this->fullscreen()) {
-    auto mode = this->output->logical_geometry();
-    auto geo = this->logical_geometry();
-    if (geo.width != mode.width || geo.height != mode.height) {
-      this->resize(mode.width, mode.height);
-      return true;
-    }
-    if (geo.x != mode.x || geo.y != mode.y) {
-      this->move(mode.x, mode.y);
-      return true;
-    }
+  if (!this->fullscreen())
+    return false;
+  this->set_layer(this->output->fullscreen);
+  auto mode = this->output->logical_geometry();
+  auto geo = this->logical_geometry();
+  if (geo.width != mode.width || geo.height != mode.height) {
+    this->resize(mode.width, mode.height);
+    return true;
+  }
+  if (geo.x != mode.x || geo.y != mode.y) {
+    this->move(mode.x, mode.y);
+    return true;
   }
   return false;
 }
 
 bool UraToplevel::commit_floating() {
-  if (this->floating) {
-    auto geo = this->logical_geometry();
-    auto usable_area = this->output->usable_area;
-    auto sx = usable_area.x;
-    auto sw = usable_area.width;
-    auto sy = usable_area.y;
-    auto sh = usable_area.height;
-    auto tw = this->floating_width;
-    auto th = this->floating_height;
-    if (geo.width != tw || geo.height != th) {
-      this->resize(tw, th);
-      return true;
-    }
-    auto x = sx + (sw - tw) / 2;
-    auto y = sy + (sh - th) / 2;
-    if (geo.x != x || geo.y != y) {
-      this->move(x, y);
-      return true;
-    }
+  if (!this->floating)
+    return false;
+  this->set_layer(this->output->floating);
+  auto geo = this->logical_geometry();
+  auto usable_area = this->output->usable_area;
+  auto sx = usable_area.x;
+  auto sw = usable_area.width;
+  auto sy = usable_area.y;
+  auto sh = usable_area.height;
+  auto tw = this->floating_width;
+  auto th = this->floating_height;
+  if (geo.width != tw || geo.height != th) {
+    this->resize(tw, th);
+    return true;
+  }
+  auto x = sx + (sw - tw) / 2;
+  auto y = sy + (sh - th) / 2;
+  if (geo.x != x || geo.y != y) {
+    this->move(x, y);
+    return true;
   }
   return false;
 }
@@ -175,6 +183,7 @@ bool UraToplevel::commit_floating() {
 bool UraToplevel::commit_normal() {
   if (!this->is_normal())
     return false;
+  this->set_layer(this->output->normal);
   auto server = UraServer::get_instance();
   auto geo = this->logical_geometry();
   auto usable_area = this->output->usable_area;
@@ -338,11 +347,21 @@ void UraToplevel::close() {
 void UraToplevel::map() {
   this->mapped = true;
   wlr_scene_node_set_enabled(&this->scene_tree->node, true);
+  wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
+  wlr_foreign_toplevel_handle_v1_set_title(
+    this->foreign_handle,
+    this->xdg_toplevel->title
+  );
+  wlr_foreign_toplevel_handle_v1_set_app_id(
+    this->foreign_handle,
+    this->xdg_toplevel->app_id
+  );
 }
 
 void UraToplevel::unmap() {
   this->mapped = false;
   wlr_scene_node_set_enabled(&this->scene_tree->node, false);
+  wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
 }
 
 std::string UraToplevel::title() {
@@ -376,6 +395,13 @@ void UraToplevel::set_float(bool flag) {
   if (!flag && this->floating) {
     this->floating = false;
     wlr_scene_node_reparent(&this->scene_tree->node, this->output->normal);
+  }
+}
+
+void UraToplevel::set_layer(wlr_scene_tree* layer) {
+  if (this->layer != layer) {
+    wlr_scene_node_reparent(&this->scene_tree->node, layer);
+    this->layer = layer;
   }
 }
 } // namespace ura
