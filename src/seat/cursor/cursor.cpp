@@ -87,17 +87,19 @@ void UraCursor::process_motion(uint32_t time_msec) {
     return;
   }
   auto surface = client.value().surface;
-  if (surface != server->seat->seat->pointer_state.focused_surface)
+  if (surface != server->seat->seat->pointer_state.focused_surface) {
     wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
-  wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
-  auto cursor_follow_mouse =
-    server->lua->fetch<bool>("input.cursor.focus_follow_mouse").value_or(true);
-  if (cursor_follow_mouse
-      && !server->current_output()->current_workspace->focus_stack.is_top(
-        client
-      )) {
-    client->focus();
+    auto cursor_follow_mouse =
+      server->lua->fetch<bool>("input.cursor.focus_follow_mouse")
+        .value_or(true);
+    if (cursor_follow_mouse
+        && !server->current_output()->current_workspace->focus_stack.is_top(
+          client
+        )) {
+      client->focus();
+    }
   }
+  wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
 }
 
 void UraCursor::destroy() {

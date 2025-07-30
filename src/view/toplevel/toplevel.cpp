@@ -128,16 +128,14 @@ void UraToplevel::commit() {
     );
   }
   if (this->commit_fullscreen() || this->commit_floating()
-      || this->commit_normal()) {
-    this->output->fresh_screen();
-  }
+      || this->commit_normal()) {}
 }
 
 bool UraToplevel::commit_fullscreen() {
   // handle fullscreen toplevel window
-  auto mode = this->output->logical_geometry();
-  auto geo = this->logical_geometry();
   if (this->fullscreen()) {
+    auto mode = this->output->logical_geometry();
+    auto geo = this->logical_geometry();
     if (geo.width != mode.width || geo.height != mode.height) {
       this->resize(mode.width, mode.height);
       return true;
@@ -151,9 +149,9 @@ bool UraToplevel::commit_fullscreen() {
 }
 
 bool UraToplevel::commit_floating() {
-  auto geo = this->logical_geometry();
-  auto usable_area = this->output->usable_area;
   if (this->floating) {
+    auto geo = this->logical_geometry();
+    auto usable_area = this->output->usable_area;
     auto sx = usable_area.x;
     auto sw = usable_area.width;
     auto sy = usable_area.y;
