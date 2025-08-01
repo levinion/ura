@@ -54,6 +54,8 @@ void UraCursor::absolute_move(double x, double y) {
 }
 
 void UraCursor::set_xcursor(std::string name) {
+  if (name.contains("resize"))
+    return;
   wlr_cursor_set_xcursor(this->cursor, this->cursor_mgr, name.data());
   this->xcursor_name = name;
 }
@@ -82,8 +84,12 @@ void UraCursor::process_motion(uint32_t time_msec) {
   double sx, sy;
   auto seat = server->seat->seat;
   auto client = server->foreground_client(&sx, &sy);
-  if (!client || !client.value().surface) {
+  if (!client
+      || !client.value().surface
+        && server->seat->seat->pointer_state.focused_surface) {
     this->set_xcursor("left_ptr");
+    wlr_seat_keyboard_notify_clear_focus(seat);
+    wlr_seat_pointer_notify_clear_focus(seat);
     return;
   }
   auto surface = client.value().surface;

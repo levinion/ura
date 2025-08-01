@@ -328,7 +328,10 @@ int UraToplevel::index() {
 void UraToplevel::activate() {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
-  if (this->workspace->index() != output->current_workspace->index()) {
+  auto current_workspace = output->current_workspace->index();
+  if (server->scratchpad.get() == this->workspace) {
+    this->move_to_workspace(current_workspace);
+  } else if (this->workspace->index() != current_workspace) {
     output->switch_workspace(this->workspace);
   }
   this->focus();

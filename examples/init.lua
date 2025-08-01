@@ -66,6 +66,9 @@ local function set_keymap()
   ura.keymap.set("alt", "a", function()
     os.execute('grim -g "$(slurp)" - | wl-copy &')
   end)
+  ura.keymap.set("super+shift", "m", function()
+    ura.win.move_to_scratchpad()
+  end)
 end
 
 
@@ -76,25 +79,13 @@ local function everytime()
   ura.input.keyboard.set_repeat(40, 300)
   ura.input.cursor.set_theme("", 18)
   ura.layout.tilling.gap.outer.top = 0
-  ura.layout.tilling.gap.outer.left = 10
-  ura.layout.tilling.gap.outer.bottom = 10
-  ura.layout.tilling.gap.outer.right = 10
 end
 
 ura.hook.set("prepare", function()
-  ura.fn.set_env("WLR_RENDERER", "vulkan")
+  ura.fn.set_env("WLR_RENDERER", "gles2")
   ura.fn.set_env("WLR_NO_HARDWARE_CURSORS", "1")
   ura.fn.set_env("LIBVA_DRIVER_NAME", "nvidia")
   ura.fn.set_env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
-  ura.fn.set_env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
-  ura.fn.set_env("XCURSOR_SIZE", "24")
-  ura.fn.set_env("GDK_DPI_SCALE", "1")
-  ura.fn.set_env("GDK_SCALE", "1")
-  ura.fn.set_env("XCURSOR_SIZE", "32")
-  ura.fn.set_env("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
-  ura.fn.set_env("QT_ENABLE_HIGHDPI_SCALING", "0")
-  ura.fn.set_env("QT_SCALE_FACTOR", "1")
-  ura.fn.set_env("QT_STYLE_OVERRIDE", "kvantum")
 end)
 
 ura.hook.set("ready", function()
@@ -106,9 +97,15 @@ ura.hook.set("ready", function()
   os.execute("sudo sing-box run -c $HOME/.config/sing-box/config.yaml -D $HOME/.config/sing-box &")
   os.execute("mygo -p 4611 $HOME/.config/i3/assets/catppuccin-homepage &")
   os.execute("dunst &")
+  os.execute("otd-daemon &")
+  os.execute("fcitx5 -rd &")
   everytime()
 end)
 
 ura.hook.set("reload", function()
   everytime()
+end)
+
+ura.hook.set("activate", function()
+  os.execute("pkill -SIGRTMIN+8 waybar &")
 end)
