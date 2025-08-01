@@ -133,14 +133,16 @@ void UraToplevel::commit() {
       this->foreign_handle,
       this->output->output
     );
-    wlr_foreign_toplevel_handle_v1_set_title(
-      this->foreign_handle,
-      this->xdg_toplevel->title
-    );
-    wlr_foreign_toplevel_handle_v1_set_app_id(
-      this->foreign_handle,
-      this->xdg_toplevel->app_id
-    );
+    if (this->xdg_toplevel->title)
+      wlr_foreign_toplevel_handle_v1_set_title(
+        this->foreign_handle,
+        this->xdg_toplevel->title
+      );
+    if (this->xdg_toplevel->app_id)
+      wlr_foreign_toplevel_handle_v1_set_app_id(
+        this->foreign_handle,
+        this->xdg_toplevel->app_id
+      );
     this->focus();
   }
 
