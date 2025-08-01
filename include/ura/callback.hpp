@@ -31,6 +31,7 @@ void on_seat_start_drag(wl_listener* listener, void* data);
 void on_keyboard_modifiers(wl_listener* listener, void* data);
 void on_keyboard_key(wl_listener* listener, void* data);
 void on_keyboard_destroy(wl_listener* listener, void* data);
+void on_new_virtual_keyboard(wl_listener* listener, void* data);
 
 // view/toplevel/callback.cpp
 void on_new_toplevel(wl_listener* listener, void* data);
@@ -94,6 +95,9 @@ void on_input_method_popup_surface_map(wl_listener* listener, void* data);
 void on_input_method_popup_surface_unmap(wl_listener* listener, void* data);
 void on_input_method_popup_surface_commit(wl_listener* listener, void* data);
 
-void on_new_virtual_keyboard(wl_listener* listener, void* data);
+// view/surface.cpp
+void on_new_surface(wl_listener* listener, void* data);
+void on_surface_commit(wl_listener* listener, void* data);
+void on_surface_destroy(wl_listener* listener, void* data);
 
 } // namespace ura

@@ -59,8 +59,12 @@ void Lua::setup() {
   this->set("win.set_fullscreen", api::set_window_fullscreen);
   this->set("win.is_fullscreen", api::is_window_fullscreen);
   this->set("win.move_to_workspace", api::move_window_to_workspace);
+  this->set("win.move_to_scratchpad", api::move_window_to_scratchpad);
   this->set("win.index", api::get_current_window_index);
   this->set("win.size", api::get_window_number);
+  this->set("win.border.width", 1);
+  this->set("win.border.active_color", "#89b4fa");
+  this->set("win.border.inactive_color", "#00000000");
   // input
   this->set("input.keyboard.set_repeat", api::set_keyboard_repeat);
   this->set("input.cursor.focus_follow_mouse", true);
@@ -69,7 +73,6 @@ void Lua::setup() {
   this->set("input.cursor.absolute_move", api::cursor_absolute_move);
   this->set("input.cursor.relative_move", api::cursor_relative_move);
   this->set("input.cursor.set_shape", api::set_cursor_shape);
-
   // workspace
   this->set("ws.switch", api::switch_workspace);
   this->set("ws.destroy", api::destroy_workspace);

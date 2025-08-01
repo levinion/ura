@@ -5,6 +5,7 @@
 #include "ura/ura.hpp"
 #include "ura/lua.hpp"
 #include "ura/client.hpp"
+#include "ura/workspace.hpp"
 
 namespace ura {
 // extern
@@ -39,6 +40,7 @@ public:
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;
   std::unique_ptr<UraSeat> seat;
+  std::unique_ptr<UraWorkSpace> scratchpad;
 
   bool quit = false;
 
@@ -71,6 +73,8 @@ private:
   void setup_foreign();
   void setup_drm();
   void setup_text_input();
+  void setup_scratchpad();
+  void setup_others();
 };
 
 } // namespace ura

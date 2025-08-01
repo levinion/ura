@@ -7,6 +7,7 @@
 #include "ura/callback.hpp"
 #include "ura/runtime.hpp"
 #include "ura/ura.hpp"
+#include "ura/workspace.hpp"
 #include <sys/epoll.h>
 
 namespace ura {
@@ -29,6 +30,8 @@ UraServer* UraServer::init() {
   this->setup_activation();
   this->setup_foreign();
   this->setup_text_input();
+  this->setup_scratchpad();
+  this->setup_others();
   return this;
 }
 
@@ -55,15 +58,6 @@ void UraServer::setup_base() {
 void UraServer::setup_compositor() {
   wlr_compositor_create(this->display, 5, this->renderer);
   wlr_subcompositor_create(this->display);
-  wlr_data_device_manager_create(this->display);
-  wlr_linux_dmabuf_v1_create_with_renderer(this->display, 4, this->renderer);
-  wlr_shm_create_with_renderer(this->display, 2, this->renderer);
-  wlr_fractional_scale_manager_v1_create(this->display, 1);
-  wlr_viewporter_create(this->display);
-  wlr_single_pixel_buffer_manager_v1_create(this->display);
-  wlr_screencopy_manager_v1_create(this->display);
-  wlr_data_control_manager_v1_create(this->display);
-  wlr_presentation_create(this->display, this->backend, 2);
 }
 
 void UraServer::setup_drm() {
@@ -194,6 +188,24 @@ void UraServer::setup_text_input() {
     on_new_virtual_keyboard,
     nullptr
   );
+}
+
+// scratchpad is a special workspace that cannot be switch to
+void UraServer::setup_scratchpad() {
+  this->scratchpad = UraWorkSpace::init();
+  this->scratchpad->output = nullptr;
+}
+
+void UraServer::setup_others() {
+  wlr_data_device_manager_create(this->display);
+  wlr_linux_dmabuf_v1_create_with_renderer(this->display, 4, this->renderer);
+  wlr_shm_create_with_renderer(this->display, 2, this->renderer);
+  wlr_fractional_scale_manager_v1_create(this->display, 1);
+  wlr_viewporter_create(this->display);
+  wlr_single_pixel_buffer_manager_v1_create(this->display);
+  wlr_screencopy_manager_v1_create(this->display);
+  wlr_data_control_manager_v1_create(this->display);
+  wlr_presentation_create(this->display, this->backend, 2);
 }
 
 void UraServer::run() {

@@ -254,4 +254,18 @@ void destroy_workspace(int index) {
   output->destroy_workspace(index);
 }
 
+void move_window_to_scratchpad() {
+  auto server = UraServer::get_instance();
+  auto output = server->current_output();
+  auto workspace = output->current_workspace;
+  auto client = workspace->focus_stack.top();
+  if (client) {
+    auto toplevel = client.value().transform<UraToplevel>();
+    if (!toplevel)
+      return;
+    toplevel->move_to_scratchpad();
+    toplevel->unmap();
+  }
+}
+
 } // namespace ura::api

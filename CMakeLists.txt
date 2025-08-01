@@ -5,7 +5,6 @@ project(${name} CXX)
 
 # clang setting
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-# set(CMAKE_CXX_COMPILER "/usr/bin/clang++" CACHE STRING "C++ compiler" FORCE)
 set(CMAKE_CXX_STANDARD 26)
 
 # src
@@ -19,10 +18,6 @@ target_link_options(${name} PRIVATE -static-libgcc -static-libstdc++)
 # include header
 target_include_directories(${name} PUBLIC include/)
 target_include_directories(${name} PUBLIC include/protocols/)
-
-# add third party dependencies here
-# add_subdirectory(./vendor/hierro2d-cpp)
-# target_link_libraries(${name} PUBLIC hierro)
 
 find_package(PkgConfig REQUIRED)
 
@@ -48,5 +43,3 @@ target_include_directories(${name} PUBLIC ${luajit_INCLUDE_DIRS})
 pkg_check_modules(nlohmann_json REQUIRED nlohmann_json)
 target_link_libraries(${name} PUBLIC ${nlohmann_json_LIBRARIES})
 target_include_directories(${name} PUBLIC ${nlohmann_json_INCLUDE_DIRS})
-
-

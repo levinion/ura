@@ -34,12 +34,23 @@ ura = {
     --- Moves the focused window to a specified workspace.
     --- @param index integer The index of the target workspace (0-based).
     move_to_workspace = function(index) end,
+    --- Moves the focused window to scratchpad.
+    move_to_scratchpad = function() end,
     --- Gets the index of the current top-level window.
     --- @return integer The index of the current top-level window.
     index = function() end,
     --- Gets the number of windows on current workspace.
     --- @return integer The number of windows on current workspace.
     size = function() end,
+    --- @class ura.win.border: table
+    border = {
+      --- @type string
+      active_color = "#89b4fa",
+      --- @type string
+      inactive_color = "#00000000",
+      --- @type integer
+      width = 1,
+    }
   },
 
   --- Input device management.
