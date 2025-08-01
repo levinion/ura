@@ -90,6 +90,7 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   this->foreign_handle =
     wlr_foreign_toplevel_handle_v1_create(server->foreign_manager);
   this->foreign_handle->data = this;
+
   server->runtime->register_callback(
     &this->foreign_handle->events.request_fullscreen,
     on_foreign_toplevel_handle_request_fullscreen,
@@ -99,10 +100,6 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     &this->foreign_handle->events.request_activate,
     on_foreign_toplevel_handle_request_activate,
     this
-  );
-  wlr_foreign_toplevel_handle_v1_output_enter(
-    this->foreign_handle,
-    this->output->output
   );
 }
 
@@ -117,6 +114,7 @@ void UraToplevel::destroy() {
   }
   server->runtime->remove(this);
   workspace->toplevels.remove(this);
+  wlr_foreign_toplevel_handle_v1_destroy(this->foreign_handle);
 }
 
 void UraToplevel::commit() {
@@ -124,14 +122,28 @@ void UraToplevel::commit() {
   if (!this->mapped || !this->xdg_toplevel->base->initialized) {
     return;
   }
+  // first commit
   if (this->xdg_toplevel->base->initial_commit) {
     if (this->decoration)
       wlr_xdg_toplevel_decoration_v1_set_mode(
         this->decoration,
         WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
       );
+    wlr_foreign_toplevel_handle_v1_output_enter(
+      this->foreign_handle,
+      this->output->output
+    );
+    wlr_foreign_toplevel_handle_v1_set_title(
+      this->foreign_handle,
+      this->xdg_toplevel->title
+    );
+    wlr_foreign_toplevel_handle_v1_set_app_id(
+      this->foreign_handle,
+      this->xdg_toplevel->app_id
+    );
     this->focus();
   }
+
   if (this->commit_fullscreen() || this->commit_floating()
       || this->commit_normal()) {
     for (auto toplevel : this->workspace->toplevels)
@@ -317,10 +329,10 @@ void UraToplevel::activate() {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
   if (this->workspace->index() != output->current_workspace->index()) {
-    this->move_to_workspace(output->current_workspace->index());
+    output->switch_workspace(this->workspace);
   }
   this->focus();
-  output->fresh_screen();
+  server->lua->try_execute_hook("activate");
 }
 
 void UraToplevel::move(int x, int y) {
