@@ -494,6 +494,9 @@ void UraToplevel::move_to_scratchpad() {
   this->workspace = scratchpad.get();
   this->workspace->toplevels.push_back(this);
   for (auto toplevel : prev_workspace->toplevels) toplevel->request_commit();
+  if (prev_workspace->focus_stack.size()) {
+    prev_workspace->focus_stack.top()->focus();
+  }
 }
 
 void UraToplevel::create_borders() {
