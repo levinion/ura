@@ -71,14 +71,11 @@ void UraPopup::commit() {
   if (!this->xdg_popup || !this->xdg_popup->base || !this->xdg_popup->parent)
     return;
 
-  auto server = UraServer::get_instance();
-  auto output = server->current_output();
-
-  if (std::find(output->popups.begin(), output->popups.end(), this)
-      == output->popups.end())
-    return;
   if (!this->xdg_popup->base->initial_commit)
     return;
+
+  auto server = UraServer::get_instance();
+  auto output = server->current_output();
 
   auto client = UraClient::from(this->xdg_popup->parent);
   auto box = output->logical_geometry();

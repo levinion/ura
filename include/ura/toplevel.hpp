@@ -34,6 +34,7 @@ public:
   void destroy();
   void commit();
   void focus();
+  void unfocus();
   void move(int x, int y);
   void resize(int width, int height);
   void set_fullscreen(bool flag);

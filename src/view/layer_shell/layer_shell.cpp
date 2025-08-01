@@ -1,4 +1,5 @@
 #include "ura/layer_shell.hpp"
+#include "ura/client.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
 #include "ura/ura.hpp"
@@ -75,6 +76,12 @@ void UraLayerShell::focus() {
   auto server = UraServer::get_instance();
   auto seat = server->seat->seat;
   auto keyboard = wlr_seat_get_keyboard(seat);
+  auto client = this->output->get_focused_client();
+  if (client && client->type == UraSurfaceType::Toplevel) {
+    auto toplevel = client->transform<UraToplevel>();
+    if (toplevel->is_active())
+      toplevel->unfocus();
+  }
   if (keyboard) {
     wlr_seat_keyboard_notify_enter(
       seat,
@@ -106,6 +113,7 @@ void UraLayerShell::commit() {
     // put the surface under proper layer
     wlr_scene_node_reparent(&this->scene_tree->node, layer);
   }
+
   // configure size
   auto width = this->layer_surface->pending.desired_width;
   auto height = this->layer_surface->pending.desired_height;
@@ -123,6 +131,10 @@ void UraLayerShell::commit() {
     wlr_layer_surface_v1_configure(this->layer_surface, width, height);
     output->configure_layers();
   }
+
+  if (this->layer_surface->initial_commit) {
+    this->focus();
+  }
 }
 
 void UraLayerShell::destroy() {
@@ -132,6 +144,9 @@ void UraLayerShell::destroy() {
   auto& layer =
     this->output->get_layer_list_by_type(this->layer_surface->pending.layer);
   layer.remove(this);
+  auto client = this->output->get_focused_client();
+  if (client)
+    client->focus();
 }
 
 } // namespace ura

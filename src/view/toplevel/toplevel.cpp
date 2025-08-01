@@ -250,12 +250,7 @@ void UraToplevel::focus() {
     auto prev = workspace->focus_stack.top().value();
     if (prev.type == UraSurfaceType::Toplevel) {
       auto toplevel = prev.transform<UraToplevel>();
-      toplevel->set_border_color(this->inactive_border_color);
-      wlr_foreign_toplevel_handle_v1_set_activated(
-        toplevel->foreign_handle,
-        false
-      );
-      wlr_xdg_toplevel_set_activated(toplevel->xdg_toplevel, false);
+      toplevel->unfocus();
     }
   }
   // move to top of stack and focus this
@@ -277,6 +272,12 @@ void UraToplevel::focus() {
       &keyboard->modifiers
     );
   }
+}
+
+void UraToplevel::unfocus() {
+  this->set_border_color(this->inactive_border_color);
+  wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
+  wlr_xdg_toplevel_set_activated(this->xdg_toplevel, false);
 }
 
 // get toplevel instance from wlr_surface
