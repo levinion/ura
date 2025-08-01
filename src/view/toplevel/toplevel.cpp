@@ -486,12 +486,12 @@ void UraToplevel::request_commit() {
 void UraToplevel::move_to_scratchpad() {
   auto server = UraServer::get_instance();
   auto& scratchpad = server->scratchpad;
-  if (this->workspace) {
-    this->workspace->toplevels.remove(this);
-    this->workspace->focus_stack.remove(this);
-  }
+  this->workspace->toplevels.remove(this);
+  this->workspace->focus_stack.remove(this);
+  auto prev_workspace = this->workspace;
   this->workspace = scratchpad.get();
   this->workspace->toplevels.push_back(this);
+  for (auto toplevel : prev_workspace->toplevels) toplevel->request_commit();
 }
 
 void UraToplevel::create_borders() {
