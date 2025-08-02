@@ -3,6 +3,7 @@
 #include "ura/ura.hpp"
 #include <array>
 #include <string>
+#include <sol/sol.hpp>
 
 namespace ura {
 
@@ -44,9 +45,10 @@ public:
   void map();
   void unmap();
   std::string title();
+  std::string app_id();
   void set_title(std::string title);
   bool is_normal();
-  int move_to_workspace(int index);
+  bool move_to_workspace(int index);
   void move_to_scratchpad();
   int index();
   void activate();
@@ -54,6 +56,7 @@ public:
   void set_layer(wlr_scene_tree* layer);
   void request_commit();
   bool is_active();
+  sol::table to_lua_table();
 
 private:
   bool commit_fullscreen();

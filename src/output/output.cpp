@@ -250,34 +250,26 @@ UraWorkSpace* UraOutput::create_workspace() {
   return this->workspaces.back().get();
 }
 
-int UraOutput::switch_workspace(int index) {
+bool UraOutput::switch_workspace(int index) {
   if (index < 0)
-    return -1;
+    return false;
   auto target = get_workspace_at(index);
   if (target == this->current_workspace)
-    return index;
-  // if there is no such workspace, then create one
-  if (!target) {
-    this->create_workspace();
-    target = this->workspaces.back().get();
-  }
+    return true;
   return this->switch_workspace(target);
 }
 
-int UraOutput::switch_workspace(UraWorkSpace* workspace) {
+bool UraOutput::switch_workspace(UraWorkSpace* workspace) {
   if (!workspace)
-    return -1;
+    return false;
   if (workspace == this->current_workspace)
-    return workspace->index();
-
+    return true;
   if (this->current_workspace)
     this->current_workspace->enable(false);
   this->current_workspace = workspace;
   this->current_workspace->enable(true);
-
   if (this->current_workspace->focus_stack.size() != 0)
     this->current_workspace->focus_stack.top()->focus();
-
-  return this->current_workspace->index();
+  return true;
 }
 } // namespace ura

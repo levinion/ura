@@ -24,6 +24,7 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   this->output = output;
   this->workspace = this->output->current_workspace;
   this->workspace->toplevels.push_back(this);
+  this->workspace->focus_stack.push(this);
   xdg_toplevel->base->surface->data = this;
   this->floating_width =
     server->lua->fetch<int>("layout.floating.default.width").value_or(800);
@@ -258,14 +259,18 @@ void UraToplevel::focus() {
   auto seat = server->seat->seat;
   auto surface = this->xdg_toplevel->base->surface;
   auto workspace = this->workspace;
-  // if not on top of focus stack, then unfocus the current top
-  if (workspace->focus_stack.size() != 0
-      && !workspace->focus_stack.is_top(this)) {
-    auto prev = workspace->focus_stack.top().value();
-    if (prev.type == UraSurfaceType::Toplevel) {
-      auto toplevel = prev.transform<UraToplevel>();
-      toplevel->unfocus();
-    }
+
+  if (this->is_active())
+    return;
+
+  // make sure this is on stack
+  if (!workspace->focus_stack.contains(UraClient::from(this)))
+    workspace->focus_stack.push(this);
+
+  auto prev = workspace->focus_stack.find_prev(UraClient::from(this));
+  if (prev && prev->type == UraSurfaceType::Toplevel) {
+    auto toplevel = prev->transform<UraToplevel>();
+    toplevel->unfocus();
   }
   // move to top of stack and focus this
   workspace->focus_stack.move_to_top(this);
@@ -299,12 +304,12 @@ UraToplevel* UraToplevel::from(wlr_surface* surface) {
   return static_cast<UraToplevel*>(surface->data);
 }
 
-int UraToplevel::move_to_workspace(int index) {
+bool UraToplevel::move_to_workspace(int index) {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
   auto target = output->get_workspace_at(index);
   if (!target)
-    return -1;
+    return false;
   if (this->workspace) {
     this->workspace->toplevels.remove(this);
     this->workspace->focus_stack.remove(this);
@@ -312,7 +317,7 @@ int UraToplevel::move_to_workspace(int index) {
   this->workspace = target;
   this->workspace->toplevels.push_back(this);
   this->workspace->focus_stack.push(this);
-  return this->workspace->index();
+  return true;
 }
 
 int UraToplevel::index() {
@@ -449,7 +454,11 @@ void UraToplevel::unmap() {
 }
 
 std::string UraToplevel::title() {
-  return this->xdg_toplevel->title;
+  return this->xdg_toplevel->title ? this->xdg_toplevel->title : "";
+}
+
+std::string UraToplevel::app_id() {
+  return this->xdg_toplevel->app_id ? this->xdg_toplevel->app_id : "";
 }
 
 void UraToplevel::set_title(std::string title) {
@@ -487,11 +496,13 @@ void UraToplevel::request_commit() {
 
 void UraToplevel::move_to_scratchpad() {
   auto server = UraServer::get_instance();
-  auto& scratchpad = server->scratchpad;
+  this->unfocus();
+  this->unmap();
+  auto scratchpad = server->scratchpad.get();
   this->workspace->toplevels.remove(this);
   this->workspace->focus_stack.remove(this);
   auto prev_workspace = this->workspace;
-  this->workspace = scratchpad.get();
+  this->workspace = scratchpad;
   this->workspace->toplevels.push_back(this);
   for (auto toplevel : prev_workspace->toplevels) toplevel->request_commit();
   if (prev_workspace->focus_stack.size()) {
@@ -502,13 +513,13 @@ void UraToplevel::move_to_scratchpad() {
 void UraToplevel::create_borders() {
   auto server = UraServer::get_instance();
   auto active_border_color =
-    server->lua->fetch<std::string>("win.border.active_color")
+    server->lua->fetch<std::string>("opt.active_border_color")
       .value_or("#89b4fa");
   auto inactive_border_color =
-    server->lua->fetch<std::string>("win.border.inactive_color")
+    server->lua->fetch<std::string>("opt.inactive_border_color")
       .value_or("#00000000");
 
-  this->border_width = server->lua->fetch<uint>("win.border.width").value_or(1);
+  this->border_width = server->lua->fetch<uint>("opt.border_width").value_or(1);
   this->active_border_color =
     hex2rgba(active_border_color)
       .value_or({ 137.f / 255.f, 180.f / 255.f, 250.f / 255.f, 1.f });
@@ -533,5 +544,18 @@ void UraToplevel::set_border_color(std::array<float, 4>& color) {
   for (auto border : this->borders) {
     wlr_scene_rect_set_color(border, color.data());
   }
+}
+
+sol::table UraToplevel::to_lua_table() {
+  auto server = UraServer::get_instance();
+  auto table = server->lua->state.create_table();
+  table["index"] = this->index();
+  table["workspace_index"] =
+    this->workspace != server->scratchpad.get() ? this->workspace->index() : -1;
+  table["app_id"] = this->app_id();
+  table["title"] = this->title();
+  table["floating"] = this->floating;
+  table["fullscreen"] = this->fullscreen();
+  return table;
 }
 } // namespace ura

@@ -14,7 +14,7 @@ At the heart of this integration are `ura`'s IPC (Inter-Process Communication) c
   This command returns the numerical index of your currently active workspace.
   
   ```shell
-  uracil -c 'print(ura.ws.index())'
+  uracil -c 'print(ura.ws.get_current().index)'
   ```
 
 * **Get the total number of workspaces:**
@@ -40,7 +40,7 @@ def main():
     inactive = ""
     index = int(
         subprocess.check_output(
-            "uracil -c 'print(ura.ws.index())'", shell=True, text=True
+            "uracil -c 'print(ura.ws.get_current().index)'", shell=True, text=True
         ).strip()
     )
     number = int(
@@ -93,25 +93,29 @@ To make the Waybar module responsive to your workspace changes, you need to conf
 
 ```lua
   ura.keymap.set("ctrl", "left", function()
-    local index = ura.ws.index()
+    local index = ura.ws.get_current().index()
     ura.ws.switch(index - 1)
     ura.ws.destroy(index)
     os.execute("pkill -SIGRTMIN+8 waybar &")
   end)
   ura.keymap.set("ctrl", "right", function()
-    local index = ura.ws.index()
+    local index = ura.ws.get_current().index()
     ura.ws.switch(index + 1)
     os.execute("pkill -SIGRTMIN+8 waybar &")
   end)
   ura.keymap.set("ctrl+shift", "left", function()
-    local index = ura.ws.index()
-    ura.win.move_to_workspace(index - 1)
-    ura.ws.destroy(index)
+    local ws = ura.ws.get_current()
+    local win = ura.win.get_current()
+    if not win then return end
+    ura.win.move_to_workspace(win.index, ws.index - 1)
+    ura.ws.destroy(ws.index)
     os.execute("pkill -SIGRTMIN+8 waybar &")
   end)
   ura.keymap.set("ctrl+shift", "right", function()
-    local index = ura.ws.index()
-    ura.win.move_to_workspace(index + 1)
+    local ws = ura.ws.get_current()
+    local win = ura.win.get_current()
+    if not win then return end
+    ura.win.move_to_workspace(win.index, ws.index + 1)
     os.execute("pkill -SIGRTMIN+8 waybar &")
   end)
 ```

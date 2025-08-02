@@ -55,8 +55,8 @@ public:
   UraWorkSpace* current_workspace = nullptr;
   std::list<std::unique_ptr<UraWorkSpace>> workspaces;
   UraWorkSpace* create_workspace();
-  int switch_workspace(int index);
-  int switch_workspace(UraWorkSpace* workspace);
+  bool switch_workspace(int index);
+  bool switch_workspace(UraWorkSpace* workspace);
   void destroy_workspace(int index);
   UraWorkSpace* get_workspace_at(int index);
   std::optional<UraClient> get_focused_client();

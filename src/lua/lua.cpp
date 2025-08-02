@@ -54,30 +54,27 @@ void Lua::setup() {
   // window
   this->set("win.focus", api::focus_window);
   this->set("win.close", api::close_window);
-  this->set("win.set_floating", api::set_window_floating);
-  this->set("win.is_floating", api::is_window_floating);
-  this->set("win.set_fullscreen", api::set_window_fullscreen);
-  this->set("win.is_fullscreen", api::is_window_fullscreen);
   this->set("win.move_to_workspace", api::move_window_to_workspace);
-  this->set("win.move_to_scratchpad", api::move_window_to_scratchpad);
-  this->set("win.index", api::get_current_window_index);
   this->set("win.size", api::get_window_number);
-  this->set("win.border.width", 1);
-  this->set("win.border.active_color", "#89b4fa");
-  this->set("win.border.inactive_color", "#00000000");
+  this->set("win.get_current", api::get_current_window);
+  this->set("win.get", api::get_window);
+  this->set("win.activate", api::activate_window);
+  this->set("win.set_fullscreen", api::set_window_fullscreen);
+  this->set("win.set_floating", api::set_window_floating);
   // input
   this->set("input.keyboard.set_repeat", api::set_keyboard_repeat);
-  this->set("input.cursor.focus_follow_mouse", true);
   this->set("input.cursor.set_theme", api::set_cursor_theme);
   this->set("input.cursor.set_visible", api::set_cursor_visible);
+  this->set("input.cursor.is_visible", api::is_cursor_visible);
   this->set("input.cursor.absolute_move", api::cursor_absolute_move);
   this->set("input.cursor.relative_move", api::cursor_relative_move);
   this->set("input.cursor.set_shape", api::set_cursor_shape);
   // workspace
   this->set("ws.switch", api::switch_workspace);
   this->set("ws.destroy", api::destroy_workspace);
-  this->set("ws.index", api::get_current_workspace_index);
   this->set("ws.size", api::get_workspace_number);
+  this->set("ws.get_current", api::get_current_workspace);
+  this->set("ws.get", api::get_workspace);
   // layout
   this->set("layout.tilling.gap.outer.top", 10);
   this->set("layout.tilling.gap.outer.left", 10);
@@ -92,6 +89,11 @@ void Lua::setup() {
   this->set("hook.set", api::set_hook);
   // fn
   this->set("fn.set_env", api::set_env);
+  // opt
+  this->set("opt.border_width", 1);
+  this->set("opt.active_border_color", "#89b4fa");
+  this->set("opt.inactive_border_color", "#00000000");
+  this->set("opt.focus_follow_mouse", true);
   // global
   this->set("g.hooks", sol::table {});
   this->set("g.keymaps", sol::table {});

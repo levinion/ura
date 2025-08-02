@@ -4,6 +4,7 @@
 #include <list>
 #include <memory>
 #include <optional>
+#include <sol/table.hpp>
 
 namespace ura {
 
@@ -52,6 +53,10 @@ public:
     return this->size() == 0 ? false : this->top().value() == cl;
   }
 
+  bool contains(UraClient);
+
+  std::optional<UraClient> find_prev(UraClient client);
+
 private:
   std::list<UraClient> stack;
 };
@@ -64,6 +69,8 @@ public:
   static std::unique_ptr<UraWorkSpace> init();
   void enable(bool enabled);
   int index();
+  std::optional<UraToplevel*> get_toplevel_at(int index);
+  sol::table to_lua_table();
 };
 
 } // namespace ura

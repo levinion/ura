@@ -5,7 +5,6 @@
 #include "ura/server.hpp"
 #include "ura/output.hpp"
 #include "ura/toplevel.hpp"
-#include "ura/ura.hpp"
 #include "ura/keyboard.hpp"
 #include "ura/workspace.hpp"
 #include "ura/util.hpp"
@@ -13,52 +12,23 @@
 
 namespace ura::api {
 
-uint64_t
-keypair_id_from_string(std::string& modifiers_str, std::string& key_str) {
-  // modifiers str to modifiers bit
-  auto modifiers = split(modifiers_str, '+');
-  uint32_t mod = 0;
-  for (auto m : modifiers) {
-    if (m == "super" || m == "mod" || m == "cmd" || m == "command") {
-      mod |= WLR_MODIFIER_LOGO;
-    } else if (m == "alt" || m == "opt") {
-      mod |= WLR_MODIFIER_ALT;
-    } else if (m == "ctrl" || m == "control") {
-      mod |= WLR_MODIFIER_CTRL;
-    } else if (m == "shift") {
-      mod |= WLR_MODIFIER_SHIFT;
-    }
-  }
-  xkb_keysym_t sym =
-    xkb_keysym_from_name(key_str.c_str(), XKB_KEYSYM_CASE_INSENSITIVE);
-
-  // if shift is pressed, then upper sym should be binded
-  if (mod & WLR_MODIFIER_SHIFT && sym >= XKB_KEY_a && sym <= XKB_KEY_z) {
-    sym -= (XKB_KEY_a - XKB_KEY_A);
-  }
-  return (static_cast<uint64_t>(mod) << 32) | sym;
-}
-
-void set_keymap(
-  std::string modifiers,
-  std::string key,
-  sol::protected_function f
-) {
+void set_keymap(std::string pattern, sol::protected_function f) {
   auto server = UraServer::get_instance();
-  auto id = keypair_id_from_string(modifiers, key);
-  server->lua->set(std::format("g.keymaps.{}", id), f);
+  auto id = parse_keymap(pattern);
+  if (id)
+    server->lua->set(std::format("g.keymaps.{}", id.value()), f);
 }
 
 void terminate() {
   UraServer::get_instance()->terminate();
 }
 
-void close_window() {
+void close_window(int index) {
   auto server = UraServer::get_instance();
   auto workspace = server->current_output()->current_workspace;
-  auto client = workspace->focus_stack.top();
+  auto client = workspace->get_toplevel_at(index);
   if (client) {
-    auto toplevel = client.value().transform<UraToplevel>();
+    auto toplevel = client.value();
     if (toplevel)
       toplevel->close();
   }
@@ -79,29 +49,36 @@ void set_env(std::string name, std::string value) {
   setenv(name.data(), value.data(), true);
 }
 
-int switch_workspace(int index) {
+// switch to certain workspace, if not exists then create one
+void switch_workspace(int index) {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
-  index = output->switch_workspace(index);
-  return index;
+  if (index >= output->workspaces.size())
+    index = output->create_workspace()->index();
+  output->switch_workspace(index);
 }
 
-int move_window_to_workspace(int index) {
+void move_window_to_workspace(int window_index, int workspace_index) {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
   auto workspace = output->current_workspace;
-  auto client = workspace->focus_stack.top();
+  auto client = workspace->get_toplevel_at(window_index);
   if (client) {
-    auto toplevel = client.value().transform<UraToplevel>();
-    if (!toplevel)
-      return -1;
-    if (index >= output->workspaces.size())
-      output->create_workspace();
-    index = toplevel->move_to_workspace(index);
-    index = output->switch_workspace(index);
-    return index;
+    auto toplevel = client.value();
+    if (workspace_index < -1)
+      return;
+    // workspace_index -1 always means scratchpad
+    if (workspace_index == -1) {
+      toplevel->move_to_scratchpad();
+      return;
+    }
+    // create if not exists
+    if (workspace_index >= output->workspaces.size())
+      workspace_index = output->create_workspace()->index();
+    workspace_index = toplevel->move_to_workspace(workspace_index);
+    output->switch_workspace(workspace_index);
+    return;
   }
-  return -1;
 }
 
 int get_current_workspace_index() {
@@ -143,19 +120,6 @@ void set_cursor_shape(std::string name) {
   server->seat->cursor->set_xcursor(name);
 }
 
-int get_current_window_index() {
-  auto server = UraServer::get_instance();
-  auto workspace = server->current_output()->current_workspace;
-  auto client = workspace->focus_stack.top();
-  if (client) {
-    auto toplevel = client.value().transform<UraToplevel>();
-    if (!toplevel)
-      return -1;
-    return toplevel->index();
-  }
-  return -1;
-}
-
 bool focus_window(int index) {
   auto server = UraServer::get_instance();
   if (index < 0
@@ -167,13 +131,12 @@ bool focus_window(int index) {
   return true;
 }
 
-void set_window_fullscreen(bool flag) {
+void set_window_fullscreen(int index, bool flag) {
   auto server = UraServer::get_instance();
-  auto client = server->current_output()->get_focused_client();
+  auto client =
+    server->current_output()->current_workspace->get_toplevel_at(index);
   if (client) {
-    if (client->type != UraSurfaceType::Toplevel)
-      return;
-    auto toplevel = client.value().transform<UraToplevel>();
+    auto toplevel = client.value();
     if (toplevel && toplevel->fullscreen() != flag) {
       toplevel->set_fullscreen(flag);
       toplevel->request_commit();
@@ -181,46 +144,17 @@ void set_window_fullscreen(bool flag) {
   }
 }
 
-void set_window_floating(bool flag) {
+void set_window_floating(int index, bool flag) {
   auto server = UraServer::get_instance();
-  auto client = server->current_output()->get_focused_client();
+  auto client =
+    server->current_output()->current_workspace->get_toplevel_at(index);
   if (client) {
-    if (client->type != UraSurfaceType::Toplevel)
-      return;
-    auto toplevel = client->transform<UraToplevel>();
-    if (toplevel) {
+    auto toplevel = client.value();
+    if (toplevel && toplevel->floating != flag) {
       toplevel->set_float(flag);
       toplevel->request_commit();
     }
   }
-}
-
-bool is_window_fullscreen() {
-  auto server = UraServer::get_instance();
-  auto client = server->current_output()->get_focused_client();
-  if (client) {
-    if (client->type != UraSurfaceType::Toplevel)
-      return false;
-    auto toplevel = client->transform<UraToplevel>();
-    if (toplevel) {
-      return toplevel->fullscreen();
-    }
-  }
-  return false;
-}
-
-bool is_window_floating() {
-  auto server = UraServer::get_instance();
-  auto client = server->current_output()->get_focused_client();
-  if (client) {
-    if (client->type != UraSurfaceType::Toplevel)
-      return false;
-    auto toplevel = client->transform<UraToplevel>();
-    if (toplevel) {
-      return toplevel->floating;
-    }
-  }
-  return false;
 }
 
 // redirect print result to buffer
@@ -228,9 +162,10 @@ void lua_print(sol::variadic_args args) {
   auto server = UraServer::get_instance();
   auto& state = server->lua->state;
   std::string r;
-  for (auto arg : args) {
-    r += state["tostring"](arg).get<std::string>();
+  for (int i = 0; i < args.size() - 1; i++) {
+    r += state["tostring"](args[i]).get<std::string>() + ' ';
   }
+  r += state["tostring"](args[args.size() - 1]).get<std::string>();
   r.push_back('\n');
   server->lua->lua_stdout += r;
 }
@@ -254,18 +189,62 @@ void destroy_workspace(int index) {
   output->destroy_workspace(index);
 }
 
-void move_window_to_scratchpad() {
+std::optional<sol::table> get_current_window() {
   auto server = UraServer::get_instance();
-  auto output = server->current_output();
-  auto workspace = output->current_workspace;
-  auto client = workspace->focus_stack.top();
-  if (client) {
-    auto toplevel = client.value().transform<UraToplevel>();
-    if (!toplevel)
-      return;
-    toplevel->move_to_scratchpad();
-    toplevel->unmap();
-  }
+  auto client = server->current_output()->get_focused_client();
+  if (!client || client->type != UraSurfaceType::Toplevel)
+    return {};
+  auto toplevel = client->transform<UraToplevel>();
+  return toplevel->to_lua_table();
+}
+
+bool is_cursor_visible() {
+  auto server = UraServer::get_instance();
+  return server->seat->cursor->visible;
+}
+
+sol::table get_current_workspace() {
+  auto server = UraServer::get_instance();
+  auto workspace = server->current_output()->current_workspace;
+  return workspace->to_lua_table();
+}
+
+std::optional<sol::table> get_window(int index) {
+  auto server = UraServer::get_instance();
+  auto client =
+    server->current_output()->current_workspace->get_toplevel_at(index);
+  if (!client)
+    return {};
+  auto toplevel = client.value();
+  return toplevel->to_lua_table();
+}
+
+// index == -1 means scratchpad
+std::optional<sol::table> get_workspace(int index) {
+  auto server = UraServer::get_instance();
+  if (index == -1)
+    return server->scratchpad->to_lua_table();
+  if (index < -1)
+    return {};
+  auto workspace = server->current_output()->get_workspace_at(index);
+  if (!workspace)
+    return {};
+  return workspace->to_lua_table();
+}
+
+void activate_window(int workspace_index, int window_index) {
+  auto server = UraServer::get_instance();
+  UraWorkSpace* workspace = nullptr;
+  if (workspace_index == -1)
+    workspace = server->scratchpad.get();
+  else
+    workspace = server->current_output()->get_workspace_at(workspace_index);
+  if (!workspace)
+    return;
+  auto toplevel = workspace->get_toplevel_at(window_index);
+  if (!toplevel)
+    return;
+  toplevel.value()->activate();
 }
 
 } // namespace ura::api
