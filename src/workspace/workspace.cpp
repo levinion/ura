@@ -17,6 +17,14 @@ void UraWorkSpace::enable(bool enabled) {
     else
       toplevel->unmap();
   }
+  if (enabled) {
+    if (this->focus_stack.size() != 0)
+      this->focus_stack.top().value()->focus();
+  } else {
+    auto toplevel = this->focus_stack.find_active();
+    if (toplevel)
+      toplevel.value()->unfocus();
+  }
 }
 
 int UraWorkSpace::index() {

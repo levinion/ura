@@ -97,10 +97,7 @@ void UraCursor::process_motion(uint32_t time_msec) {
     wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
     auto cursor_follow_mouse =
       server->lua->fetch<bool>("opt.focus_follow_mouse").value_or(true);
-    if (cursor_follow_mouse
-        && !server->current_output()->current_workspace->focus_stack.is_top(
-          client
-        )) {
+    if (cursor_follow_mouse) {
       client->focus();
     }
   }

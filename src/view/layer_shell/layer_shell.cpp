@@ -76,11 +76,10 @@ void UraLayerShell::focus() {
   auto server = UraServer::get_instance();
   auto seat = server->seat->seat;
   auto keyboard = wlr_seat_get_keyboard(seat);
-  auto client = this->output->get_focused_client();
-  if (client && client->type == UraSurfaceType::Toplevel) {
-    auto toplevel = client->transform<UraToplevel>();
-    if (toplevel->is_active())
-      toplevel->unfocus();
+  auto toplevel = this->output->get_focused_toplevel();
+  if (toplevel) {
+    if (toplevel.value()->is_active())
+      toplevel.value()->unfocus();
   }
   if (keyboard) {
     wlr_seat_keyboard_notify_enter(
@@ -144,9 +143,9 @@ void UraLayerShell::destroy() {
   auto& layer =
     this->output->get_layer_list_by_type(this->layer_surface->pending.layer);
   layer.remove(this);
-  auto client = this->output->get_focused_client();
-  if (client)
-    client->focus();
+  auto toplevel = this->output->get_focused_toplevel();
+  if (toplevel)
+    toplevel.value()->focus();
 }
 
 } // namespace ura

@@ -1,4 +1,3 @@
-#include "ura/client.hpp"
 #include "ura/layer_shell.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
@@ -231,7 +230,7 @@ void UraOutput::destroy_workspace(int index) {
   this->workspaces.erase(it);
 }
 
-std::optional<UraClient> UraOutput::get_focused_client() {
+std::optional<UraToplevel*> UraOutput::get_focused_toplevel() {
   return this->current_workspace->focus_stack.top();
 }
 
@@ -268,8 +267,6 @@ bool UraOutput::switch_workspace(UraWorkSpace* workspace) {
     this->current_workspace->enable(false);
   this->current_workspace = workspace;
   this->current_workspace->enable(true);
-  if (this->current_workspace->focus_stack.size() != 0)
-    this->current_workspace->focus_stack.top()->focus();
   return true;
 }
 } // namespace ura

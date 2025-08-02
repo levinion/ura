@@ -209,24 +209,10 @@ void on_input_method_popup_surface_destroy(wl_listener* listener, void* data) {
 void on_input_method_popup_surface_map(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto input_popup = server->runtime->fetch<UraInputPopup*>(listener);
-  auto client = server->current_output()->get_focused_client();
-  if (!client)
+  auto toplevel = server->current_output()->get_focused_toplevel();
+  if (!toplevel)
     return;
-  wlr_scene_tree* parent_scene_tree = nullptr;
-  switch (client->type) {
-    case UraSurfaceType::Toplevel: {
-      auto toplevel = client->transform<UraToplevel>();
-      parent_scene_tree = toplevel->scene_tree;
-      break;
-    }
-    case UraSurfaceType::LayerShell: {
-      auto layer_shell = client->transform<UraLayerShell>();
-      parent_scene_tree = layer_shell->scene_tree;
-      break;
-    }
-    default:
-      return;
-  }
+  auto parent_scene_tree = toplevel.value()->scene_tree;
   if (!parent_scene_tree)
     return;
   auto active_text_input = server->seat->text_input->get_active_text_input();

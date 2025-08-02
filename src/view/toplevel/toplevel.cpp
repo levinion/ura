@@ -1,7 +1,6 @@
 #include "ura/toplevel.hpp"
 #include <wayland-server-core.h>
 #include <utility>
-#include "ura/client.hpp"
 #include "ura/runtime.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
@@ -111,7 +110,7 @@ void UraToplevel::destroy() {
   workspace->focus_stack.remove(this);
   auto top = workspace->focus_stack.top();
   if (is_top && top) {
-    top.value().focus();
+    top.value()->focus();
   }
   server->runtime->remove(this);
   workspace->toplevels.remove(this);
@@ -264,13 +263,12 @@ void UraToplevel::focus() {
     return;
 
   // make sure this is on stack
-  if (!workspace->focus_stack.contains(UraClient::from(this)))
+  if (!workspace->focus_stack.contains(this))
     workspace->focus_stack.push(this);
 
-  auto prev = workspace->focus_stack.find_prev(UraClient::from(this));
-  if (prev && prev->type == UraSurfaceType::Toplevel) {
-    auto toplevel = prev->transform<UraToplevel>();
-    toplevel->unfocus();
+  auto prev = workspace->focus_stack.find_active();
+  if (prev) {
+    prev.value()->unfocus();
   }
   // move to top of stack and focus this
   workspace->focus_stack.move_to_top(this);
@@ -506,7 +504,7 @@ void UraToplevel::move_to_scratchpad() {
   this->workspace->toplevels.push_back(this);
   for (auto toplevel : prev_workspace->toplevels) toplevel->request_commit();
   if (prev_workspace->focus_stack.size()) {
-    prev_workspace->focus_stack.top()->focus();
+    prev_workspace->focus_stack.top().value()->focus();
   }
 }
 

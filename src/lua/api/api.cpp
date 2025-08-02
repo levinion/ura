@@ -1,6 +1,5 @@
 #include "ura/api.hpp"
 #include <format>
-#include "ura/client.hpp"
 #include "ura/lua.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
@@ -191,11 +190,10 @@ void destroy_workspace(int index) {
 
 std::optional<sol::table> get_current_window() {
   auto server = UraServer::get_instance();
-  auto client = server->current_output()->get_focused_client();
-  if (!client || client->type != UraSurfaceType::Toplevel)
+  auto toplevel = server->current_output()->get_focused_toplevel();
+  if (!toplevel)
     return {};
-  auto toplevel = client->transform<UraToplevel>();
-  return toplevel->to_lua_table();
+  return toplevel.value()->to_lua_table();
 }
 
 bool is_cursor_visible() {

@@ -59,7 +59,7 @@ public:
   bool switch_workspace(UraWorkSpace* workspace);
   void destroy_workspace(int index);
   UraWorkSpace* get_workspace_at(int index);
-  std::optional<UraClient> get_focused_client();
+  std::optional<UraToplevel*> get_focused_toplevel();
 
 private:
   void set_mode(wlr_output_mode* mode);

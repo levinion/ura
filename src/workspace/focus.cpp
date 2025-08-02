@@ -1,11 +1,28 @@
 #include <algorithm>
 #include <optional>
-#include "ura/client.hpp"
+#include "ura/toplevel.hpp"
 #include "ura/workspace.hpp"
 
 namespace ura {
 
-std::optional<UraClient> UraFocusStack::top() {
+void UraFocusStack::push(UraToplevel* toplevel) {
+  this->stack.push_back(toplevel);
+}
+
+void UraFocusStack::move_to_top(UraToplevel* toplevel) {
+  this->remove(toplevel);
+  this->push(toplevel);
+}
+
+bool UraFocusStack::is_top(UraToplevel* toplevel) {
+  return this->size() == 0 ? false : this->top().value() == toplevel;
+}
+
+void UraFocusStack::remove(UraToplevel* toplevel) {
+  this->stack.remove(toplevel);
+}
+
+std::optional<UraToplevel*> UraFocusStack::top() {
   if (this->stack.size() == 0) {
     return {};
   }
@@ -17,26 +34,26 @@ int UraFocusStack::size() {
   return this->stack.size();
 }
 
-std::optional<UraClient> UraFocusStack::pop() {
+std::optional<UraToplevel*> UraFocusStack::pop() {
   if (this->stack.size() == 0) {
     return {};
   }
-  auto client = this->stack.back();
+  auto toplevel = this->stack.back();
   this->stack.pop_back();
-  return client;
+  return toplevel;
 }
 
-bool UraFocusStack::contains(UraClient client) {
+bool UraFocusStack::contains(UraToplevel* client) {
   auto it = std::find_if(this->stack.begin(), this->stack.end(), [=](auto i) {
-    return client.surface == i.surface;
+    return client == i;
   });
   return it != this->stack.end();
 }
 
-std::optional<UraClient> UraFocusStack::find_prev(UraClient client) {
+std::optional<UraToplevel*> UraFocusStack::find_active() {
   // find last of item.surface != client.surface
   for (auto it = this->stack.rbegin(); it != this->stack.rend(); it++) {
-    if (it->surface != client.surface)
+    if ((*it)->is_active())
       return *it;
   }
   return {};
