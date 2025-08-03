@@ -106,7 +106,7 @@ void UraToplevel::destroy() {
   auto server = UraServer::get_instance();
   auto workspace = this->workspace;
   this->destroying = true;
-  if (this->is_active()) {
+  if (server->seat->focused == this || this->is_active()) {
     server->seat->unfocus();
     workspace->remove(this);
     auto top = workspace->focus_stack.top();

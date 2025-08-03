@@ -1,18 +1,16 @@
 # Ura
 
-![ura-icon](/assets/icon.png)
+![ura-icon](../../assets/icon.png)
 
-[中文文档](/docs/zh-cn/README-zh_CN.md)
+Ura 是一个全新的 wayland 合成器，它基于 wlroots，使用 c++ 编写，并引入 lua（luajit）作为配置系统。
 
-**Ura** is a brand-new Wayland compositor built on **wlroots**, written in **C++**, and uses **Lua (LuaJIT)** as its configuration system.
+Ura 的优势在于其高度可定制性。通过 hook 机制，它将一部分窗口管理器的功能公开，从而实现在特定流程中注入代码的能力。
 
-The strength of Ura lies in its high customizability. Through a **hook mechanism**, it exposes part of the window manager’s functionality, allowing you to inject code into specific workflows.
+Lua 是一门通用语言，它被许多编辑器/LSP（如 lua_ls）支持，因此可以为配置文件添加错误提示、语法高亮、自动补全，从而允许以编写代码的方式来编写合成器的配置文件。
 
-Lua is a general-purpose language supported by many editors and LSPs (like `lua_ls`). This enables features such as error checking, syntax highlighting, and auto-completion for configuration files, allowing you to configure the compositor as if you're writing actual code.
+## 安装
 
-## Installation
-
-Dependencies include:
+依赖项包括：
 
 - wayland
 - luajit
@@ -21,7 +19,7 @@ Dependencies include:
 - cmake
 - pkgconf
 - nlohmann-json
-- [just](https://github.com/casey/just) (optional)
+- [just](https://github.com/casey/just)（可选）
 
 ```shell
 git clone https://github.com/levinion/ura.git
@@ -29,7 +27,7 @@ cd ura
 just install
 ```
 
-If you prefer not to use `just`, you can build with CMake directly:
+如果你不想使用 just，可以直接使用 cmake 构建：
 
 ```shell
 git clone https://github.com/levinion/ura.git
@@ -51,11 +49,11 @@ cd uracil
 cargo install --path .
 ```
 
-## Configuration
+## 配置
 
-### Keybindings
+### 快捷键
 
-Define keybindings using the following format: one or more modifier keys (or none) followed by a single key, connected by `"+"`:
+使用以下方式设置快捷键，快捷键的格式为若干修饰键（可以是 0 个）接一个单键，中间以“+”连接：
 
 ```lua
 ura.keymap.set("super+t", function()
@@ -71,13 +69,13 @@ ura.keymap.set("XF86AudioRaiseVolume", function()
 end)
 ```
 
-### Hooks
+### 钩子
 
-Hooks are Ura’s most powerful feature. They allow arbitrary operations to be performed using public APIs during the compositor’s runtime, enabling features that other compositors typically can’t support. Hooks also offer a cleaner way to implement advanced features such as window rules.
+钩子，或 hook，是 Ura 提供的最强大的机制，它可以在合成器的运行流程中利用公开的 API 执行任意操作，因此能完成许多其他合成器做不到的功能。hook 也为一些高级功能，如窗口规则，提供了一个更优雅的实现。
 
-Here are some examples:
+下面给出一些示例：
 
-The `prepare` hook runs after the Lua module is initialized, but before compositor resources are created. You can use this hook to set global environment variables:
+`prepare` 钩子运行于 Lua 模块初始化之后，此时尚未创建合成器运行所需的各种资源，因此可以在此设置全局环境变量：
 
 ```lua
 ura.hook.set("prepare", function()
@@ -88,7 +86,7 @@ ura.hook.set("prepare", function()
 end)
 ```
 
-Use the `ready` hook (note: hook names may change across versions) to execute `wlr-randr` and configure display modes just before the compositor starts running. This is also a good place to start background applications:
+在 Wayland 建立 Socket，合成器开始运行前，通过 `ready` 钩子（钩子名称可能随版本发生变化，下同）执行 wlr-randr 以设置显示器模式。另外，此处也是创建自启应用的好时机：
 
 ```lua
 ura.hook.set("ready", function()
@@ -96,7 +94,7 @@ ura.hook.set("ready", function()
 end)
 ```
 
-The `focus-change` and `workspace-change` hooks are triggered when focus or workspace changes. You can notify desktop components (e.g., custom modules in waybar) to update:
+`focus-change` 和 `workspace-change` 分别发生于焦点和工作区发生变化，此时可以通知桌面组件，如 waybar 自定义模块，进行更新：
 
 ```lua
 ura.hook.set("focus-change", function()
@@ -108,7 +106,7 @@ ura.hook.set("workspace-change", function()
 end)
 ```
 
-The `window-new` hook is triggered when a new top-level window is created and focused. You can use it to apply window-specific styling:
+`window-new` 发生于新的顶级窗口创建和聚焦后，此时可以设置窗口样式：
 
 ```lua
 ura.hook.set("window-new", function()
@@ -122,8 +120,8 @@ ura.hook.set("window-new", function()
 end)
 ```
 
-More examples are available at: [examples](/examples/)
+更多示例可以参见：[examples](../../examples/)。
 
-## License
+## 许可证
 
-This project is licensed under the terms of the [GPLv3](/LICENSE).
+本项目许可证采用 [GPLv3](../../LICENSE)。
