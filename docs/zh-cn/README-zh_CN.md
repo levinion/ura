@@ -28,7 +28,7 @@ just install
 
 cd uracil 
 cargo build --release
-install -Dm755 target/release/uracil /usr/bin/uracil"
+install -Dm755 target/release/uracil /usr/bin/uracil
 ```
 
 如果你不想使用 just，可以直接使用 cmake 构建：
@@ -52,7 +52,7 @@ sudo cp -r "lua/ura" "/usr/share/lua/5.1/"
 
 cd uracil 
 cargo build --release
-install -Dm755 target/release/uracil /usr/bin/uracil"
+install -Dm755 target/release/uracil /usr/bin/uracil
 ```
 
 ## 配置

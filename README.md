@@ -30,7 +30,7 @@ just install
 
 cd uracil 
 cargo build --release
-install -Dm755 target/release/uracil /usr/bin/uracil"
+install -Dm755 target/release/uracil /usr/bin/uracil
 ```
 
 If you prefer not to use `just`, you can build with CMake directly:
@@ -54,7 +54,7 @@ sudo cp -r "lua/ura" "/usr/share/lua/5.1/"
 
 cd uracil 
 cargo build --release
-install -Dm755 target/release/uracil /usr/bin/uracil"
+install -Dm755 target/release/uracil /usr/bin/uracil
 ```
 
 ## Configuration
