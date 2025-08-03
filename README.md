@@ -45,6 +45,7 @@ cmake --build build -j$(nproc)
 sudo install -Dm755 "build/ura" "/usr/bin/ura"
 sudo install -Dm644 "LICENSE" "/usr/share/licenses/ura/LICENSE"
 sudo install -Dm644 "assets/ura.desktop" "/usr/share/wayland-sessions/ura.desktop"
+sudo install -d "/usr/share/lua/5.1"
 sudo cp -r "lua/ura" "/usr/share/lua/5.1/"
 
 cd uracil
