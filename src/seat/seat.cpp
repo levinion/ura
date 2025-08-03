@@ -50,7 +50,8 @@ void UraSeat::init() {
 void UraSeat::unfocus() {
   auto server = UraServer::get_instance();
   if (this->focused) {
-    this->focused->unfocus();
+    if (!this->focused->destroying)
+      this->focused->unfocus();
     this->focused = nullptr;
     wlr_seat_keyboard_notify_clear_focus(seat);
     wlr_seat_pointer_notify_clear_focus(seat);

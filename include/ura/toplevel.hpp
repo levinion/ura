@@ -14,6 +14,7 @@ class UraToplevel {
 public:
   bool mapped = true;
   bool floating = false;
+  bool destroying = false;
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
   wlr_scene_tree* layer;

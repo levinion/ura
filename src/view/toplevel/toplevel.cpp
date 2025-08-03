@@ -105,12 +105,15 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
 void UraToplevel::destroy() {
   auto server = UraServer::get_instance();
   auto workspace = this->workspace;
+  this->destroying = true;
   if (this->is_active()) {
     server->seat->unfocus();
     workspace->remove(this);
     auto top = workspace->focus_stack.top();
     if (top)
       server->seat->focus(top.value());
+  } else {
+    workspace->remove(this);
   }
   server->runtime->remove(this);
   wlr_foreign_toplevel_handle_v1_destroy(this->foreign_handle);
@@ -434,7 +437,7 @@ void UraToplevel::set_fullscreen(bool flag) {
 bool UraToplevel::fullscreen() {
   if (!this->xdg_toplevel)
     return false;
-  return this->xdg_toplevel->pending.fullscreen;
+  return this->xdg_toplevel->current.fullscreen;
 }
 
 void UraToplevel::toggle_fullscreen() {
