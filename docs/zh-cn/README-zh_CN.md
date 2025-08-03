@@ -25,6 +25,10 @@ Lua 是一门通用语言，它被许多编辑器/LSP（如 lua_ls）支持，�
 git clone https://github.com/levinion/ura.git
 cd ura
 just install
+
+cd uracil 
+cargo build --release
+install -Dm755 target/release/uracil /usr/bin/uracil"
 ```
 
 如果你不想使用 just，可以直接使用 cmake 构建：
@@ -46,8 +50,9 @@ sudo install -Dm644 "assets/ura.desktop" "/usr/share/wayland-sessions/ura.deskto
 sudo install -d "/usr/share/lua/5.1"
 sudo cp -r "lua/ura" "/usr/share/lua/5.1/"
 
-cd uracil
-cargo install --path .
+cd uracil 
+cargo build --release
+install -Dm755 target/release/uracil /usr/bin/uracil"
 ```
 
 ## 配置
