@@ -20,6 +20,7 @@ public:
   bool is_top(UraToplevel* toplevel);
   bool contains(UraToplevel* toplevel);
   std::optional<UraToplevel*> find_active();
+  void unfocus_all();
 
 private:
   std::list<UraToplevel*> stack;
@@ -31,10 +32,13 @@ public:
   UraOutput* output;
   UraFocusStack focus_stack;
   static std::unique_ptr<UraWorkSpace> init();
-  void enable(bool enabled);
+  void enable();
+  void disable();
   int index();
   std::optional<UraToplevel*> get_toplevel_at(int index);
   sol::table to_lua_table();
+  void add(UraToplevel* toplevel);
+  void remove(UraToplevel* toplevel);
 };
 
 } // namespace ura

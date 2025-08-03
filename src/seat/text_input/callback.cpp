@@ -1,5 +1,4 @@
 #include "ura/callback.hpp"
-#include "ura/client.hpp"
 #include "ura/layer_shell.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
@@ -209,10 +208,10 @@ void on_input_method_popup_surface_destroy(wl_listener* listener, void* data) {
 void on_input_method_popup_surface_map(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto input_popup = server->runtime->fetch<UraInputPopup*>(listener);
-  auto toplevel = server->current_output()->get_focused_toplevel();
+  auto toplevel = server->seat->focused;
   if (!toplevel)
     return;
-  auto parent_scene_tree = toplevel.value()->scene_tree;
+  auto parent_scene_tree = toplevel->scene_tree;
   if (!parent_scene_tree)
     return;
   auto active_text_input = server->seat->text_input->get_active_text_input();

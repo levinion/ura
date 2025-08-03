@@ -75,6 +75,7 @@ void Lua::setup() {
   this->set("ws.size", api::get_workspace_number);
   this->set("ws.get_current", api::get_current_workspace);
   this->set("ws.get", api::get_workspace);
+  this->set("ws.list", api::list_workspaces);
   // layout
   this->set("layout.tilling.gap.outer.top", 10);
   this->set("layout.tilling.gap.outer.left", 10);

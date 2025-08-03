@@ -1,11 +1,11 @@
 #include "ura/layer_shell.hpp"
-#include "ura/client.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
 #include "ura/ura.hpp"
 #include "ura/runtime.hpp"
 #include "ura/callback.hpp"
 #include "ura/seat.hpp"
+#include "wlr-layer-shell-unstable-v1-protocol.h"
 
 namespace ura {
 
@@ -74,16 +74,10 @@ UraLayerShell* UraLayerShell::from(wlr_surface* surface) {
 
 void UraLayerShell::focus() {
   auto server = UraServer::get_instance();
-  auto seat = server->seat->seat;
-  auto keyboard = wlr_seat_get_keyboard(seat);
-  auto toplevel = this->output->get_focused_toplevel();
-  if (toplevel) {
-    if (toplevel.value()->is_active())
-      toplevel.value()->unfocus();
-  }
+  auto keyboard = wlr_seat_get_keyboard(server->seat->seat);
   if (keyboard) {
     wlr_seat_keyboard_notify_enter(
-      seat,
+      server->seat->seat,
       this->layer_surface->surface,
       keyboard->keycodes,
       keyboard->num_keycodes,
@@ -103,6 +97,7 @@ void UraLayerShell::unmap() {
 }
 
 void UraLayerShell::commit() {
+  auto server = UraServer::get_instance();
   auto output = this->output;
   if (this->layer_surface->initialized
       && this->layer_surface->current.committed
@@ -131,8 +126,10 @@ void UraLayerShell::commit() {
     output->configure_layers();
   }
 
-  if (this->layer_surface->initial_commit) {
-    this->focus();
+  if (this->layer_surface->initial_commit
+      && this->layer_surface->current.keyboard_interactive
+        != ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE) {
+    server->seat->focus(this);
   }
 }
 
@@ -143,9 +140,11 @@ void UraLayerShell::destroy() {
   auto& layer =
     this->output->get_layer_list_by_type(this->layer_surface->pending.layer);
   layer.remove(this);
-  auto toplevel = this->output->get_focused_toplevel();
-  if (toplevel)
-    toplevel.value()->focus();
+  auto toplevel = this->output->current_workspace->focus_stack.top();
+  if (toplevel
+      && this->layer_surface->current.keyboard_interactive
+        != ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE)
+    server->seat->focus(toplevel.value());
 }
 
 } // namespace ura

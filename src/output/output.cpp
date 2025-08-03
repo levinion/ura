@@ -230,10 +230,6 @@ void UraOutput::destroy_workspace(int index) {
   this->workspaces.erase(it);
 }
 
-std::optional<UraToplevel*> UraOutput::get_focused_toplevel() {
-  return this->current_workspace->focus_stack.top();
-}
-
 UraWorkSpace* UraOutput::get_workspace_at(int index) {
   if (index < 0 || index >= this->workspaces.size())
     return nullptr;
@@ -252,7 +248,7 @@ UraWorkSpace* UraOutput::create_workspace() {
 bool UraOutput::switch_workspace(int index) {
   if (index < 0)
     return false;
-  auto target = get_workspace_at(index);
+  auto target = this->get_workspace_at(index);
   if (target == this->current_workspace)
     return true;
   return this->switch_workspace(target);
@@ -263,10 +259,12 @@ bool UraOutput::switch_workspace(UraWorkSpace* workspace) {
     return false;
   if (workspace == this->current_workspace)
     return true;
-  if (this->current_workspace)
-    this->current_workspace->enable(false);
+  auto server = UraServer::get_instance();
+  assert(workspace != server->scratchpad.get());
+  this->current_workspace->disable();
   this->current_workspace = workspace;
-  this->current_workspace->enable(true);
+  this->current_workspace->enable();
+  server->lua->try_execute_hook("workspace-change");
   return true;
 }
 } // namespace ura

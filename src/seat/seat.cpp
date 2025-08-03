@@ -1,8 +1,10 @@
 #include "ura/seat.hpp"
 #include <memory>
+#include "ura/client.hpp"
 #include "ura/server.hpp"
 #include "ura/runtime.hpp"
 #include "ura/callback.hpp"
+#include "ura/toplevel.hpp"
 #include "ura/ura.hpp"
 #include "ura/text_input.hpp"
 
@@ -43,5 +45,39 @@ void UraSeat::init() {
   this->cursor = std::make_unique<UraCursor>();
   this->cursor->init();
   this->text_input = std::make_unique<UraTextInput>();
+}
+
+void UraSeat::unfocus() {
+  auto server = UraServer::get_instance();
+  if (this->focused) {
+    this->focused->unfocus();
+    this->focused = nullptr;
+    wlr_seat_keyboard_notify_clear_focus(seat);
+    wlr_seat_pointer_notify_clear_focus(seat);
+    this->cursor->set_xcursor("left_ptr");
+    server->lua->try_execute_hook("focus-change");
+  }
+}
+
+void UraSeat::focus(UraClient client) {
+  auto server = UraServer::get_instance();
+  if (!client.surface
+      || this->seat->keyboard_state.focused_surface == client.surface)
+    return;
+  if (client.type == UraSurfaceType::Toplevel) {
+    if (this->focused)
+      this->focused->unfocus();
+    this->focused = client.transform<UraToplevel>();
+  }
+  client.focus();
+  server->lua->try_execute_hook("focus-change");
+}
+
+void UraSeat::focus(UraToplevel* toplevel) {
+  this->focus(UraClient::from(toplevel));
+}
+
+void UraSeat::focus(UraLayerShell* layer_shell) {
+  this->focus(UraClient::from(layer_shell));
 }
 } // namespace ura

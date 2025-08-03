@@ -18,7 +18,6 @@ void on_toplevel_map(wl_listener* listener, void* data) {
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   if (!toplevel->mapped)
     toplevel->map();
-  toplevel->focus();
 }
 
 void on_toplevel_unmap(wl_listener* listener, void* data) {

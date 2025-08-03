@@ -43,8 +43,12 @@ void on_cursor_button(wl_listener* listener, void* data) {
     // focus client
     double sx, sy;
     auto client = server->foreground_client(&sx, &sy);
+    if ((!client || !client.value().surface) && server->seat->focused) {
+      server->seat->unfocus();
+      return;
+    }
     if (client)
-      client->focus();
+      server->seat->focus(client.value());
   }
 }
 

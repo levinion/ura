@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 #include "ura/server.hpp"
+#include "ura/seat.hpp"
 
 namespace ura {
 
@@ -10,21 +11,17 @@ std::unique_ptr<UraWorkSpace> UraWorkSpace::init() {
   return std::make_unique<UraWorkSpace>();
 }
 
-void UraWorkSpace::enable(bool enabled) {
-  for (auto toplevel : this->toplevels) {
-    if (enabled)
-      toplevel->map();
-    else
-      toplevel->unmap();
-  }
-  if (enabled) {
-    if (this->focus_stack.size() != 0)
-      this->focus_stack.top().value()->focus();
-  } else {
-    auto toplevel = this->focus_stack.find_active();
-    if (toplevel)
-      toplevel.value()->unfocus();
-  }
+void UraWorkSpace::enable() {
+  auto server = UraServer::get_instance();
+  for (auto toplevel : this->toplevels) toplevel->map();
+  if (this->focus_stack.size() != 0)
+    server->seat->focus(this->focus_stack.top().value());
+}
+
+void UraWorkSpace::disable() {
+  auto server = UraServer::get_instance();
+  for (auto toplevel : this->toplevels) toplevel->unmap();
+  server->seat->unfocus();
 }
 
 int UraWorkSpace::index() {
@@ -59,6 +56,16 @@ sol::table UraWorkSpace::to_lua_table() {
   table["index"] = this->index();
   table["windows"] = toplevels;
   return table;
+}
+
+void UraWorkSpace::add(UraToplevel* toplevel) {
+  this->toplevels.push_back(toplevel);
+  this->focus_stack.push(toplevel);
+}
+
+void UraWorkSpace::remove(UraToplevel* toplevel) {
+  this->toplevels.remove(toplevel);
+  this->focus_stack.remove(toplevel);
 }
 
 } // namespace ura

@@ -48,7 +48,7 @@ public:
   std::string app_id();
   void set_title(std::string title);
   bool is_normal();
-  bool move_to_workspace(int index);
+  std::optional<int> move_to_workspace(int index);
   void move_to_scratchpad();
   int index();
   void activate();

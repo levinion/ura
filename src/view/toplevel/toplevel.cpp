@@ -22,8 +22,7 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   this->layer = output->normal;
   this->output = output;
   this->workspace = this->output->current_workspace;
-  this->workspace->toplevels.push_back(this);
-  this->workspace->focus_stack.push(this);
+  this->workspace->add(this);
   xdg_toplevel->base->surface->data = this;
   this->floating_width =
     server->lua->fetch<int>("layout.floating.default.width").value_or(800);
@@ -106,14 +105,14 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
 void UraToplevel::destroy() {
   auto server = UraServer::get_instance();
   auto workspace = this->workspace;
-  auto is_top = workspace->focus_stack.is_top(this);
-  workspace->focus_stack.remove(this);
-  auto top = workspace->focus_stack.top();
-  if (is_top && top) {
-    top.value()->focus();
+  if (this->is_active()) {
+    server->seat->unfocus();
+    workspace->remove(this);
+    auto top = workspace->focus_stack.top();
+    if (top)
+      server->seat->focus(top.value());
   }
   server->runtime->remove(this);
-  workspace->toplevels.remove(this);
   wlr_foreign_toplevel_handle_v1_destroy(this->foreign_handle);
 }
 
@@ -143,7 +142,7 @@ void UraToplevel::commit() {
         this->foreign_handle,
         this->xdg_toplevel->app_id
       );
-    this->focus();
+    server->seat->focus(this);
   }
 
   if (this->commit_fullscreen() || this->commit_floating()
@@ -225,7 +224,10 @@ bool UraToplevel::commit_normal() {
     if (toplevel->is_normal())
       sum += 1;
   }
-  // find this toplevel index
+  // no toplevel to arrage
+  if (sum == 0)
+    return false;
+  // find this toplevel's index
   int i = 0;
   for (auto window : toplevels) {
     if (!window->is_normal())
@@ -266,10 +268,6 @@ void UraToplevel::focus() {
   if (!workspace->focus_stack.contains(this))
     workspace->focus_stack.push(this);
 
-  auto prev = workspace->focus_stack.find_active();
-  if (prev) {
-    prev.value()->unfocus();
-  }
   // move to top of stack and focus this
   workspace->focus_stack.move_to_top(this);
   if (!this->mapped)
@@ -302,20 +300,40 @@ UraToplevel* UraToplevel::from(wlr_surface* surface) {
   return static_cast<UraToplevel*>(surface->data);
 }
 
-bool UraToplevel::move_to_workspace(int index) {
+void UraToplevel::move_to_scratchpad() {
+  auto server = UraServer::get_instance();
+  if (this->is_active())
+    server->seat->unfocus();
+  this->unmap();
+  auto scratchpad = server->scratchpad.get();
+  this->workspace->toplevels.remove(this);
+  this->workspace->focus_stack.remove(this);
+  auto prev_workspace = this->workspace;
+  this->workspace = scratchpad;
+  this->workspace->toplevels.push_back(this);
+  for (auto toplevel : prev_workspace->toplevels) toplevel->request_commit();
+  if (prev_workspace->focus_stack.size()) {
+    server->seat->focus(prev_workspace->focus_stack.top().value());
+  }
+}
+
+std::optional<int> UraToplevel::move_to_workspace(int index) {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
   auto target = output->get_workspace_at(index);
   if (!target)
-    return false;
-  if (this->workspace) {
-    this->workspace->toplevels.remove(this);
-    this->workspace->focus_stack.remove(this);
-  }
+    return {};
+  if (target == this->workspace)
+    return index;
+  // switch focus
+  if (this->is_active())
+    server->seat->unfocus();
+  this->workspace->remove(this);
+  if (this->workspace->focus_stack.top())
+    server->seat->focus(this->workspace->focus_stack.top().value());
   this->workspace = target;
-  this->workspace->toplevels.push_back(this);
-  this->workspace->focus_stack.push(this);
-  return true;
+  this->workspace->add(this);
+  return this->workspace->index();
 }
 
 int UraToplevel::index() {
@@ -339,7 +357,7 @@ void UraToplevel::activate() {
   } else if (this->workspace->index() != current_workspace) {
     output->switch_workspace(this->workspace);
   }
-  this->focus();
+  server->seat->focus(this);
   server->lua->try_execute_hook("activate");
 }
 
@@ -492,22 +510,6 @@ void UraToplevel::request_commit() {
   wlr_xdg_surface_schedule_configure(this->xdg_toplevel->base);
 }
 
-void UraToplevel::move_to_scratchpad() {
-  auto server = UraServer::get_instance();
-  this->unfocus();
-  this->unmap();
-  auto scratchpad = server->scratchpad.get();
-  this->workspace->toplevels.remove(this);
-  this->workspace->focus_stack.remove(this);
-  auto prev_workspace = this->workspace;
-  this->workspace = scratchpad;
-  this->workspace->toplevels.push_back(this);
-  for (auto toplevel : prev_workspace->toplevels) toplevel->request_commit();
-  if (prev_workspace->focus_stack.size()) {
-    prev_workspace->focus_stack.top().value()->focus();
-  }
-}
-
 void UraToplevel::create_borders() {
   auto server = UraServer::get_instance();
   auto active_border_color =
@@ -535,7 +537,9 @@ void UraToplevel::create_borders() {
 }
 
 bool UraToplevel::is_active() {
-  return this->xdg_toplevel->current.activated;
+  auto server = UraServer::get_instance();
+  return server->seat->seat->keyboard_state.focused_surface
+    == this->xdg_toplevel->base->surface;
 }
 
 void UraToplevel::set_border_color(std::array<float, 4>& color) {

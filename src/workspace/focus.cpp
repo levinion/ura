@@ -58,4 +58,12 @@ std::optional<UraToplevel*> UraFocusStack::find_active() {
   }
   return {};
 }
+
+void UraFocusStack::unfocus_all() {
+  // find last of item.surface != client.surface
+  for (auto it = this->stack.rbegin(); it != this->stack.rend(); it++) {
+    if ((*it)->is_active())
+      (*it)->unfocus();
+  }
+}
 } // namespace ura

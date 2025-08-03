@@ -52,6 +52,8 @@ void set_env(std::string name, std::string value) {
 void switch_workspace(int index) {
   auto server = UraServer::get_instance();
   auto output = server->current_output();
+  if (index < 0)
+    return;
   if (index >= output->workspaces.size())
     index = output->create_workspace()->index();
   output->switch_workspace(index);
@@ -62,22 +64,23 @@ void move_window_to_workspace(int window_index, int workspace_index) {
   auto output = server->current_output();
   auto workspace = output->current_workspace;
   auto client = workspace->get_toplevel_at(window_index);
-  if (client) {
-    auto toplevel = client.value();
-    if (workspace_index < -1)
-      return;
-    // workspace_index -1 always means scratchpad
-    if (workspace_index == -1) {
-      toplevel->move_to_scratchpad();
-      return;
-    }
-    // create if not exists
-    if (workspace_index >= output->workspaces.size())
-      workspace_index = output->create_workspace()->index();
-    workspace_index = toplevel->move_to_workspace(workspace_index);
-    output->switch_workspace(workspace_index);
+  if (!client)
+    return;
+  auto toplevel = client.value();
+  if (workspace_index < -1)
+    return;
+  // workspace_index -1 always means scratchpad
+  if (workspace_index == -1) {
+    toplevel->move_to_scratchpad();
     return;
   }
+  // create if not exists
+  if (workspace_index >= output->workspaces.size())
+    workspace_index = output->create_workspace()->index();
+  auto result = toplevel->move_to_workspace(workspace_index);
+  if (result)
+    workspace_index = result.value();
+  output->switch_workspace(workspace_index);
 }
 
 int get_current_workspace_index() {
@@ -126,7 +129,7 @@ bool focus_window(int index) {
     return false;
   auto it = server->current_output()->current_workspace->toplevels.begin();
   std::advance(it, index);
-  (*it)->focus();
+  server->seat->focus(*it);
   return true;
 }
 
@@ -160,6 +163,10 @@ void set_window_floating(int index, bool flag) {
 void lua_print(sol::variadic_args args) {
   auto server = UraServer::get_instance();
   auto& state = server->lua->state;
+  if (args.size() == 0) {
+    server->lua->lua_stdout += '\n';
+    return;
+  }
   std::string r;
   for (int i = 0; i < args.size() - 1; i++) {
     r += state["tostring"](args[i]).get<std::string>() + ' ';
@@ -190,10 +197,10 @@ void destroy_workspace(int index) {
 
 std::optional<sol::table> get_current_window() {
   auto server = UraServer::get_instance();
-  auto toplevel = server->current_output()->get_focused_toplevel();
+  auto toplevel = server->seat->focused;
   if (!toplevel)
     return {};
-  return toplevel.value()->to_lua_table();
+  return toplevel->to_lua_table();
 }
 
 bool is_cursor_visible() {
@@ -243,6 +250,16 @@ void activate_window(int workspace_index, int window_index) {
   if (!toplevel)
     return;
   toplevel.value()->activate();
+}
+
+sol::table list_workspaces() {
+  auto server = UraServer::get_instance();
+  auto output = server->current_output();
+  auto table = server->lua->state.create_table();
+  for (auto& workspace : output->workspaces) {
+    table.add(workspace->to_lua_table());
+  }
+  return table;
 }
 
 } // namespace ura::api

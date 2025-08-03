@@ -99,6 +99,8 @@ ura = {
     get_current = function() end,
     --- @return UraWorkspace|nil
     get = function(index) end,
+    --- @return UraWorkspace[]
+    list = function() end
   },
 
   --- @class ura.layout: table

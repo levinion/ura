@@ -1,5 +1,4 @@
 #include "ura/cursor.hpp"
-#include "ura/output.hpp"
 #include "ura/runtime.hpp"
 #include <memory>
 #include "ura/server.hpp"
@@ -84,21 +83,20 @@ void UraCursor::process_motion(uint32_t time_msec) {
   double sx, sy;
   auto seat = server->seat->seat;
   auto client = server->foreground_client(&sx, &sy);
-  if (!client
-      || !client.value().surface
-        && server->seat->seat->pointer_state.focused_surface) {
-    this->set_xcursor("left_ptr");
-    wlr_seat_keyboard_notify_clear_focus(seat);
-    wlr_seat_pointer_notify_clear_focus(seat);
+  if ((!client || !client.value().surface) && server->seat->focused) {
+    server->seat->unfocus();
     return;
   }
+  if (!client || !client.value().surface)
+    return;
   auto surface = client.value().surface;
-  if (surface != server->seat->seat->pointer_state.focused_surface) {
+  if (surface != server->seat->seat->pointer_state.focused_surface)
     wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
+  if (surface != server->seat->seat->keyboard_state.focused_surface) {
     auto cursor_follow_mouse =
       server->lua->fetch<bool>("opt.focus_follow_mouse").value_or(true);
     if (cursor_follow_mouse) {
-      client->focus();
+      server->seat->focus(client.value());
     }
   }
   wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);

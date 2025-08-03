@@ -38,6 +38,7 @@ void destroy_workspace(int index);
 int get_workspace_number();
 sol::table get_current_workspace();
 std::optional<sol::table> get_workspace(int index);
+sol::table list_workspaces();
 // override
 void lua_print(sol::variadic_args va);
 } // namespace ura::api
