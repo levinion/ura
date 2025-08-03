@@ -24,10 +24,10 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   this->workspace = this->output->current_workspace;
   this->workspace->add(this);
   xdg_toplevel->base->surface->data = this;
-  this->floating_width =
-    server->lua->fetch<int>("layout.floating.default.width").value_or(800);
-  this->floating_height =
-    server->lua->fetch<int>("layout.floating.default.height").value_or(600);
+  this->center(
+    server->lua->fetch<int>("layout.floating.default.width").value_or(800),
+    server->lua->fetch<int>("layout.floating.default.height").value_or(600)
+  );
   this->create_borders();
 
   // notify scale
@@ -146,6 +146,7 @@ void UraToplevel::commit() {
         this->xdg_toplevel->app_id
       );
     server->seat->focus(this);
+    server->lua->try_execute_hook("window-new");
   }
 
   if (this->commit_fullscreen() || this->commit_floating()
@@ -176,26 +177,18 @@ bool UraToplevel::commit_fullscreen() {
 }
 
 bool UraToplevel::commit_floating() {
-  if (!this->floating)
+  if (this->fullscreen() || !this->floating)
     return false;
   this->set_layer(this->output->floating);
   auto changed = false;
-  auto geo = this->geometry;
-  auto usable_area = this->output->usable_area;
-  auto sx = usable_area.x;
-  auto sw = usable_area.width;
-  auto sy = usable_area.y;
-  auto sh = usable_area.height;
-  auto tw = this->floating_width;
-  auto th = this->floating_height;
-  if (geo.width != tw || geo.height != th) {
-    this->resize(tw, th);
+  if (this->geometry.x != this->floating_geometry.x
+      || this->geometry.y != this->floating_geometry.y) {
+    this->move(this->floating_geometry.x, this->floating_geometry.y);
     changed = true;
   }
-  auto x = sx + (sw - tw) / 2;
-  auto y = sy + (sh - th) / 2;
-  if (geo.x != x || geo.y != y) {
-    this->move(x, y);
+  if (this->geometry.width != this->floating_geometry.width
+      || this->geometry.height != this->floating_geometry.height) {
+    this->resize(this->floating_geometry.width, this->floating_geometry.height);
     changed = true;
   }
   return changed;
@@ -551,6 +544,24 @@ void UraToplevel::set_border_color(std::array<float, 4>& color) {
   }
 }
 
+// move to center of usable area based on given size
+void UraToplevel::center(int width, int height) {
+  auto geo = this->geometry;
+  auto usable_area = this->output->usable_area;
+  auto sx = usable_area.x;
+  auto sw = usable_area.width;
+  auto sy = usable_area.y;
+  auto sh = usable_area.height;
+  auto tw = width;
+  auto th = height;
+  this->floating_geometry.width = tw;
+  this->floating_geometry.height = th;
+  auto x = sx + (sw - tw) / 2;
+  auto y = sy + (sh - th) / 2;
+  this->floating_geometry.x = x;
+  this->floating_geometry.y = y;
+}
+
 sol::table UraToplevel::to_lua_table() {
   auto server = UraServer::get_instance();
   auto table = server->lua->state.create_table();
@@ -561,6 +572,10 @@ sol::table UraToplevel::to_lua_table() {
   table["title"] = this->title();
   table["floating"] = this->floating;
   table["fullscreen"] = this->fullscreen();
+  table["x"] = this->geometry.x;
+  table["y"] = this->geometry.y;
+  table["width"] = this->geometry.width;
+  table["height"] = this->geometry.height;
   return table;
 }
 } // namespace ura

@@ -14,6 +14,14 @@ local UraWindow = {
   floating = false,
   --- @type boolean
   fullscreen = false,
+  --- @type integer
+  x = 0,
+  --- @type integer
+  y = 0,
+  --- @type integer
+  width = 0,
+  --- @type integer
+  height = 0
 }
 
 --- @class UraWorkspace: table
@@ -56,7 +64,17 @@ ura = {
     get = function(index) end,
     --- @param workspace_index integer
     --- @param window_index integer
-    activate = function(workspace_index, window_index) end
+    activate = function(workspace_index, window_index) end,
+    ---@param index integer
+    ---@param x integer
+    ---@param y integer
+    move = function(index, x, y) end,
+    ---@param index integer
+    ---@param width integer
+    ---@param height integer
+    resize = function(index, width, height) end,
+    ---@param index integer
+    center = function(index) end
   },
 
   --- @class ura.input: table

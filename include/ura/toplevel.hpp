@@ -22,8 +22,8 @@ public:
   UraWorkSpace* workspace;
   wlr_xdg_toplevel_decoration_v1* decoration;
   wlr_foreign_toplevel_handle_v1* foreign_handle;
-  int floating_width, floating_height;
-  wlr_box geometry = { 0, 0, 800, 600 };
+  wlr_box geometry;
+  wlr_box floating_geometry;
 
   // same with css, top > right > bottom > left
   std::array<wlr_scene_rect*, 4> borders;
@@ -39,6 +39,7 @@ public:
   void unfocus();
   void move(int x, int y);
   void resize(int width, int height);
+  void center(int width, int height);
   void set_fullscreen(bool flag);
   bool fullscreen();
   void toggle_fullscreen();

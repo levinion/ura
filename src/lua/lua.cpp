@@ -61,6 +61,9 @@ void Lua::setup() {
   this->set("win.activate", api::activate_window);
   this->set("win.set_fullscreen", api::set_window_fullscreen);
   this->set("win.set_floating", api::set_window_floating);
+  this->set("win.move", api::move_floating_window);
+  this->set("win.resize", api::resize_floating_window);
+  this->set("win.center", api::center_floating_window);
   // input
   this->set("input.keyboard.set_repeat", api::set_keyboard_repeat);
   this->set("input.cursor.set_theme", api::set_cursor_theme);
