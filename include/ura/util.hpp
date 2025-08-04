@@ -26,6 +26,17 @@ inline std::vector<std::string> split(std::string& s, char symbol) {
   return v;
 }
 
+inline std::string join(std::vector<std::string> v, char symbol) {
+  std::string r;
+  if (v.empty())
+    return r;
+  for (int i = 0; i < v.size() - 1; i++) {
+    r += v[i] + symbol;
+  }
+  r += v[v.size() - 1];
+  return r;
+}
+
 inline std::optional<std::array<float, 4>> hex2rgba(std::string hex_str) {
   if (!hex_str.starts_with('#'))
     return {};

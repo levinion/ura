@@ -126,6 +126,15 @@ ura.hook.set("window-new", function()
 end)
 ```
 
+`tiling`，即平铺hook，允许你自定义平铺逻辑。下面是一个简单的平铺算法，仅仅使窗口填满屏幕的可用空间（除去独占组件的屏幕剩余空间）。如果未设置该hook，将回退到一个简单的水平平铺算法。
+
+```lua
+ura.hook.set("tiling", function()
+  local output = ura.output.get_current()
+  return { x = output.usable.x, y = output.usable.y, width = output.usable.width, height = output.usable.height }
+end)
+```
+
 更多示例可以参见：[examples](../../examples/)。
 
 ## 许可证

@@ -2,8 +2,11 @@
 
 #include <expected>
 #include <memory>
+#include <sol/forward.hpp>
 #include <sol/sol.hpp>
 #include <filesystem>
+#include <unordered_map>
+#include "ura/server.hpp"
 #include "ura/util.hpp"
 
 namespace ura {
@@ -13,13 +16,25 @@ public:
   sol::table ura;
   std::string lua_stdout;
   bool reset = false;
+  std::unordered_map<std::string, sol::protected_function> hooks;
+  std::unordered_map<uint64_t, sol::protected_function> keymaps;
   static std::unique_ptr<Lua> init();
   std::expected<std::string, std::string> execute(std::string script);
   std::expected<std::string, std::string> execute_file(std::filesystem::path);
-  bool try_execute_hook(std::string name);
   bool try_execute_keybinding(uint64_t id);
   std::optional<std::filesystem::path> find_init_path();
   bool try_execute_init();
+
+  template<typename... Args>
+  std::optional<sol::object>
+  try_execute_hook(std::string name, Args&&... args) {
+    if (!this->hooks.contains(name))
+      return {};
+    auto result = this->hooks[name](std::forward<Args>(args)...);
+    if (!result.valid())
+      return {};
+    return result.template get<sol::object>();
+  }
 
   template<typename T>
   void set(std::string key, T value) {

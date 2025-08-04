@@ -8,6 +8,7 @@
 #include "ura/ura.hpp"
 #include "ura/layer_shell.hpp"
 #include "ura/seat.hpp"
+#include "ura/lua.hpp"
 
 namespace ura {
 

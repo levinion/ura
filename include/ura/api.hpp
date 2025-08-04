@@ -9,8 +9,6 @@ namespace ura::api {
 
 // api
 void set_keymap(std::string pattern, sol::protected_function f);
-
-void set_env(std::string name, std::string value);
 void terminate();
 void reload();
 void set_hook(std::string, sol::protected_function f);
@@ -42,6 +40,13 @@ int get_workspace_number();
 sol::table get_current_workspace();
 std::optional<sol::table> get_workspace(int index);
 sol::table list_workspaces();
+// output
+sol::table get_current_output();
+// fn
+void set_env(std::string name, std::string value);
+void unset_env(std::string name);
+void append_lua_package_path(std::string path);
+void prepend_lua_package_path(std::string path);
 // override
 void lua_print(sol::variadic_args va);
 } // namespace ura::api

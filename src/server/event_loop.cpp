@@ -8,6 +8,7 @@
 #include "ura/runtime.hpp"
 #include "ura/ura.hpp"
 #include "ura/workspace.hpp"
+#include "ura/lua.hpp"
 #include <sys/epoll.h>
 
 namespace ura {

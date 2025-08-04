@@ -7,6 +7,7 @@
 #include "ura/toplevel.hpp"
 #include "ura/ura.hpp"
 #include "ura/text_input.hpp"
+#include "ura/lua.hpp"
 
 namespace ura {
 void UraSeat::init() {

@@ -2,6 +2,7 @@
 #include "ura/seat.hpp"
 #include "ura/callback.hpp"
 #include "ura/runtime.hpp"
+#include "ura/lua.hpp"
 
 namespace ura {
 

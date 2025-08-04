@@ -128,6 +128,15 @@ ura.hook.set("window-new", function()
 end)
 ```
 
+The `tiling` hook allows you to customize your own tiling logic. The following is a simple tiling algorithm that lays out the window to fill the usable area of the current output. If the hook is not set, it will fallback to a horizontal tiling algorithm.
+
+```lua
+ura.hook.set("tiling", function()
+  local output = ura.output.get_current()
+  return { x = output.usable.x, y = output.usable.y, width = output.usable.width, height = output.usable.height }
+end)
+```
+
 More examples are available at: [examples](/examples/)
 
 ## License

@@ -3,7 +3,6 @@
 #include <memory>
 #include "ura/layer_shell.hpp"
 #include "ura/ura.hpp"
-#include "ura/lua.hpp"
 #include "ura/client.hpp"
 #include "ura/workspace.hpp"
 
@@ -14,6 +13,7 @@ class UraOutput;
 class UraKeyboard;
 class UraRuntime;
 class UraSeat;
+class Lua;
 
 class UraServer {
 public:

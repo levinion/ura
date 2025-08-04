@@ -8,6 +8,7 @@
 #include "ura/workspace.hpp"
 #include "ura/runtime.hpp"
 #include "ura/callback.hpp"
+#include "ura/lua.hpp"
 
 namespace ura {
 
@@ -266,5 +267,29 @@ bool UraOutput::switch_workspace(UraWorkSpace* workspace) {
   this->current_workspace->enable();
   server->lua->try_execute_hook("workspace-change");
   return true;
+}
+
+sol::table UraOutput::to_lua_table() {
+  auto server = UraServer::get_instance();
+  auto table = server->lua->state.create_table();
+
+  auto logical_geometry = this->logical_geometry();
+  auto size = server->lua->state.create_table();
+  size["x"] = logical_geometry.x;
+  size["y"] = logical_geometry.y;
+  size["width"] = logical_geometry.width;
+  size["height"] = logical_geometry.height;
+  table["size"] = size;
+
+  auto usable = server->lua->state.create_table();
+  usable["x"] = this->usable_area.x;
+  usable["y"] = this->usable_area.y;
+  usable["width"] = this->usable_area.width;
+  usable["height"] = this->usable_area.height;
+  table["usable"] = usable;
+
+  table["scale"] = this->output->scale;
+  table["refresh"] = this->output->refresh;
+  return table;
 }
 } // namespace ura

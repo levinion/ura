@@ -58,6 +58,7 @@ public:
   bool switch_workspace(UraWorkSpace* workspace);
   void destroy_workspace(int index);
   UraWorkSpace* get_workspace_at(int index);
+  sol::table to_lua_table();
 
 private:
   void set_mode(wlr_output_mode* mode);

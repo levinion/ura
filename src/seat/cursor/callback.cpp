@@ -4,6 +4,7 @@
 #include "ura/server.hpp"
 #include "ura/ura.hpp"
 #include "ura/seat.hpp"
+#include "ura/lua.hpp"
 
 namespace ura {
 

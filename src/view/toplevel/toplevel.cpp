@@ -8,6 +8,7 @@
 #include "ura/callback.hpp"
 #include "ura/seat.hpp"
 #include "ura/util.hpp"
+#include "ura/lua.hpp"
 
 namespace ura {
 
@@ -165,14 +166,10 @@ bool UraToplevel::commit_fullscreen() {
   auto changed = false;
   auto mode = this->output->logical_geometry();
   auto geo = this->geometry;
-  if (geo.width != mode.width || geo.height != mode.height) {
-    this->resize(mode.width, mode.height);
+  if (this->resize(mode.width, mode.height))
     changed = true;
-  }
-  if (geo.x != mode.x || geo.y != mode.y) {
-    this->move(mode.x, mode.y);
+  if (this->move(mode.x, mode.y))
     changed = true;
-  }
   return changed;
 }
 
@@ -181,16 +178,11 @@ bool UraToplevel::commit_floating() {
     return false;
   this->set_layer(this->output->floating);
   auto changed = false;
-  if (this->geometry.x != this->floating_geometry.x
-      || this->geometry.y != this->floating_geometry.y) {
-    this->move(this->floating_geometry.x, this->floating_geometry.y);
+  if (this->move(this->floating_geometry.x, this->floating_geometry.y))
     changed = true;
-  }
-  if (this->geometry.width != this->floating_geometry.width
-      || this->geometry.height != this->floating_geometry.height) {
-    this->resize(this->floating_geometry.width, this->floating_geometry.height);
+  if (this
+        ->resize(this->floating_geometry.width, this->floating_geometry.height))
     changed = true;
-  }
   return changed;
 }
 
@@ -198,56 +190,73 @@ bool UraToplevel::commit_normal() {
   if (!this->is_normal())
     return false;
   this->set_layer(this->output->normal);
-  auto changed = false;
-  auto server = UraServer::get_instance();
-  auto geo = this->geometry;
-  auto usable_area = this->output->usable_area;
-  auto width = usable_area.width;
-  auto height = usable_area.height;
-  auto outer_l =
-    server->lua->fetch<int>("layout.tilling.gap.outer.left").value_or(10);
-  auto outer_r =
-    server->lua->fetch<int>("layout.tilling.gap.outer.right").value_or(10);
-  auto outer_t =
-    server->lua->fetch<int>("layout.tilling.gap.outer.top").value_or(10);
-  auto outer_b =
-    server->lua->fetch<int>("layout.tilling.gap.outer.bottom").value_or(10);
-  auto inner = server->lua->fetch<int>("layout.tilling.gap.inner").value_or(10);
-  auto& toplevels = output->current_workspace->toplevels;
-  // find mapped toplevel number
-  int sum = 0;
-  for (auto toplevel : toplevels) {
-    if (toplevel->is_normal())
-      sum += 1;
-  }
-  // no toplevel to arrage
-  if (sum == 0)
-    return false;
-  // find this toplevel's index
-  int i = 0;
-  for (auto window : toplevels) {
-    if (!window->is_normal())
-      continue;
-    if (window != this)
-      i++;
-    else
-      break;
-  }
-  auto gaps = sum - 1;
-  auto w = (width - (outer_r + outer_l) - inner * gaps) / sum;
-  auto h = height - (outer_t + outer_b);
-  auto x = usable_area.x + outer_l + (w + inner) * i;
-  auto y = usable_area.y + outer_t;
 
-  if (geo.width != w || geo.height != h) {
-    this->resize(w, h);
-    this->move(x, y);
-    changed = true;
+  int x, y, w, h;
+
+  auto server = UraServer::get_instance();
+  auto obj = server->lua->try_execute_hook("tiling");
+  if (obj) {
+    auto result = obj->as<std::optional<sol::table>>();
+    if (!result)
+      goto FALLBACK;
+    auto tx = result.value().get<std::optional<int>>("x");
+    auto ty = result.value().get<std::optional<int>>("y");
+    auto tw = result.value().get<std::optional<int>>("width");
+    auto th = result.value().get<std::optional<int>>("height");
+    if (!tx || !ty || !tw || !th)
+      goto FALLBACK;
+    x = tx.value();
+    y = ty.value();
+    w = tw.value();
+    h = th.value();
+  } else {
+  FALLBACK:
+    auto geo = this->geometry;
+    auto usable_area = this->output->usable_area;
+    auto width = usable_area.width;
+    auto height = usable_area.height;
+    auto outer_l =
+      server->lua->fetch<int>("layout.tilling.gap.outer.left").value_or(10);
+    auto outer_r =
+      server->lua->fetch<int>("layout.tilling.gap.outer.right").value_or(10);
+    auto outer_t =
+      server->lua->fetch<int>("layout.tilling.gap.outer.top").value_or(10);
+    auto outer_b =
+      server->lua->fetch<int>("layout.tilling.gap.outer.bottom").value_or(10);
+    auto inner =
+      server->lua->fetch<int>("layout.tilling.gap.inner").value_or(10);
+    auto& toplevels = output->current_workspace->toplevels;
+    // find mapped toplevel number
+    int sum = 0;
+    for (auto toplevel : toplevels) {
+      if (toplevel->is_normal())
+        sum += 1;
+    }
+    // no toplevel to arrage
+    if (sum == 0)
+      return false;
+    // find this toplevel's index
+    int i = 0;
+    for (auto window : toplevels) {
+      if (!window->is_normal())
+        continue;
+      if (window != this)
+        i++;
+      else
+        break;
+    }
+    auto gaps = sum - 1;
+    w = (width - (outer_r + outer_l) - inner * gaps) / sum;
+    h = height - (outer_t + outer_b);
+    x = usable_area.x + outer_l + (w + inner) * i;
+    y = usable_area.y + outer_t;
   }
-  if (geo.x != x || geo.y != y) {
-    this->move(x, y);
+
+  auto changed = false;
+  if (this->resize(w, h))
     changed = true;
-  }
+  if (this->move(x, y))
+    changed = true;
   return changed;
 }
 
@@ -357,7 +366,9 @@ void UraToplevel::activate() {
   server->lua->try_execute_hook("activate");
 }
 
-void UraToplevel::move(int x, int y) {
+bool UraToplevel::move(int x, int y) {
+  if (x == this->geometry.x && y == this->geometry.y)
+    return false;
   this->geometry.x = x;
   this->geometry.y = y;
   auto border_width = this->border_width;
@@ -387,9 +398,12 @@ void UraToplevel::move(int x, int y) {
     -border_width,
     -border_width
   );
+  return true;
 }
 
-void UraToplevel::resize(int width, int height) {
+bool UraToplevel::resize(int width, int height) {
+  if (width == this->geometry.width && height == this->geometry.height)
+    return false;
   this->geometry.width = width;
   this->geometry.height = height;
   wlr_xdg_toplevel_set_size(this->xdg_toplevel, width, height);
@@ -418,6 +432,7 @@ void UraToplevel::resize(int width, int height) {
     border_width,
     height + 2 * border_width
   );
+  return true;
 }
 
 void UraToplevel::set_fullscreen(bool flag) {

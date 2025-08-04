@@ -79,6 +79,8 @@ void Lua::setup() {
   this->set("ws.get_current", api::get_current_workspace);
   this->set("ws.get", api::get_workspace);
   this->set("ws.list", api::list_workspaces);
+  // output
+  this->set("output.get_current", api::get_current_output);
   // layout
   this->set("layout.tilling.gap.outer.top", 10);
   this->set("layout.tilling.gap.outer.left", 10);
@@ -93,15 +95,14 @@ void Lua::setup() {
   this->set("hook.set", api::set_hook);
   // fn
   this->set("fn.set_env", api::set_env);
+  this->set("fn.unset_env", api::unset_env);
+  this->set("fn.append_package_path", api::append_lua_package_path);
+  this->set("fn.prepend_package_path", api::prepend_lua_package_path);
   // opt
   this->set("opt.border_width", 1);
   this->set("opt.active_border_color", "#89b4fa");
   this->set("opt.inactive_border_color", "#00000000");
   this->set("opt.focus_follow_mouse", true);
-  // global
-  this->set("g.hooks", sol::table {});
-  this->set("g.keymaps", sol::table {});
-
   // override
   this->state.set("print", api::lua_print);
 }
@@ -135,27 +136,12 @@ Lua::execute_file(std::filesystem::path path) {
   return std::unexpected(err.what());
 }
 
-bool Lua::try_execute_hook(std::string name) {
-  auto server = UraServer::get_instance();
-  auto hook =
-    this->fetch<sol::protected_function>(std::format("g.hooks.{}", name));
-  if (hook) {
-    wlr_log(WLR_DEBUG, "running hook: %s", name.data());
-    hook.value()();
-    return true;
-  }
-  return false;
-}
-
 bool Lua::try_execute_keybinding(uint64_t id) {
   auto server = UraServer::get_instance();
-  auto keybinding =
-    this->fetch<sol::protected_function>(std::format("g.keymaps.{}", id));
-  if (keybinding) {
-    keybinding.value()();
-    return true;
-  }
-  return false;
+  if (!this->keymaps.contains(id))
+    return false;
+  this->keymaps[id]();
+  return true;
 }
 
 std::optional<std::filesystem::path> Lua::find_init_path() {

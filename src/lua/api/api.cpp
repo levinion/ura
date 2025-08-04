@@ -1,5 +1,5 @@
 #include "ura/api.hpp"
-#include <format>
+#include <set>
 #include "ura/lua.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
@@ -15,7 +15,7 @@ void set_keymap(std::string pattern, sol::protected_function f) {
   auto server = UraServer::get_instance();
   auto id = parse_keymap(pattern);
   if (id)
-    server->lua->set(std::format("g.keymaps.{}", id.value()), f);
+    server->lua->keymaps[id.value()] = f;
 }
 
 void terminate() {
@@ -46,6 +46,10 @@ void set_keyboard_repeat(int rate, int delay) {
 
 void set_env(std::string name, std::string value) {
   setenv(name.data(), value.data(), true);
+}
+
+void unset_env(std::string name) {
+  unsetenv(name.data());
 }
 
 // switch to certain workspace, if not exists then create one
@@ -91,7 +95,7 @@ int get_current_workspace_index() {
 
 void set_hook(std::string name, sol::protected_function f) {
   auto server = UraServer::get_instance();
-  server->lua->set(std::format("g.hooks.{}", name), f);
+  server->lua->hooks[name] = f;
 }
 
 void set_cursor_theme(std::string theme, int size) {
@@ -292,6 +296,45 @@ void center_floating_window(int index) {
     toplevel.value()->floating_geometry.width,
     toplevel.value()->floating_geometry.height
   );
+}
+
+sol::table get_current_output() {
+  auto server = UraServer::get_instance();
+  return server->current_output()->to_lua_table();
+}
+
+void append_lua_package_path(std::string path) {
+  auto server = UraServer::get_instance();
+  auto package = server->lua->state.get<std::optional<sol::table>>("package");
+  if (!package)
+    return;
+  auto package_path = package.value().get<std::optional<std::string>>("path");
+  if (!package_path)
+    return;
+  auto paths = split(package_path.value(), ';');
+  auto set = std::set(paths.begin(), paths.end());
+  if (set.contains(path))
+    return;
+  paths.push_back(path);
+  auto result = join(paths, ';');
+  package.value().set("path", result);
+}
+
+void prepend_lua_package_path(std::string path) {
+  auto server = UraServer::get_instance();
+  auto package = server->lua->state.get<std::optional<sol::table>>("package");
+  if (!package)
+    return;
+  auto package_path = package.value().get<std::optional<std::string>>("path");
+  if (!package_path)
+    return;
+  auto paths = split(package_path.value(), ';');
+  auto set = std::set(paths.begin(), paths.end());
+  if (set.contains(path))
+    return;
+  paths.insert(paths.begin(), path);
+  auto result = join(paths, ';');
+  package.value().set("path", result);
 }
 
 } // namespace ura::api

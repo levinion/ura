@@ -32,6 +32,36 @@ local UraWorkspace = {
   windows = {}
 }
 
+--- @class UraOutput: table
+local UraOutput = {
+  --- @class UraOutput.size: table
+  size = {
+    --- @type number
+    x = 0,
+    --- @type number
+    y = 0,
+    --- @type number
+    width = 0,
+    --- @type number
+    height = 0
+  },
+  --- @class UraOutput.usable: table
+  usable = {
+    --- @type number
+    x = 0,
+    --- @type number
+    y = 0,
+    --- @type number
+    width = 0,
+    --- @type number
+    height = 0
+  },
+  ---@type number
+  scale = 0,
+  ---@type number
+  refresh = 0
+}
+
 --- @class ura: table
 ura = {
   --- @class ura.api: table
@@ -121,6 +151,12 @@ ura = {
     list = function() end
   },
 
+  --- @class ura.output: table
+  output = {
+    --- @return UraOutput
+    get_current = function() end
+  },
+
   --- @class ura.layout: table
   layout = {
     --- @class ura.layout.tilling: table
@@ -163,7 +199,7 @@ ura = {
   --- @class ura.hook: table
   hook = {
     --- @param name string
-    --- @param f fun()
+    --- @param f function
     set = function(name, f) end,
   },
 
@@ -172,6 +208,12 @@ ura = {
     --- @param name string The name of the environment variable.
     --- @param value string The value to set for the environment variable.
     set_env = function(name, value) end,
+    --- @param name string
+    unset_env = function(name) end,
+    --- @param path string
+    append_package_path = function(path) end,
+    --- @param path string
+    prepend_package_path = function(path) end,
   },
 
   --- @class ura.opt: table
@@ -184,13 +226,5 @@ ura = {
     border_width = 1,
     --- @type boolean
     focus_follow_mouse = true,
-  },
-
-  --- @class ura.g: table
-  g = {
-    --- @type table<string, fun()> A table for storing user-defined hooks.
-    hooks = {},
-    --- @type table<integer, fun()> A table for storing user-defined keymaps by ID.
-    keymaps = {},
   },
 }
