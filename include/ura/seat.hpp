@@ -15,7 +15,7 @@ public:
   std::unique_ptr<UraTextInput> text_input;
   wlr_seat* seat;
   std::list<UraKeyboard*> keyboards;
-  UraToplevel* focused = nullptr;
+  UraToplevel* focused();
   void init();
   void unfocus();
   void focus(UraClient client);

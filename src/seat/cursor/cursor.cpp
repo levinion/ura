@@ -83,7 +83,7 @@ void UraCursor::process_motion(uint32_t time_msec) {
   double sx, sy;
   auto seat = server->seat->seat;
   auto client = server->foreground_client(&sx, &sy);
-  if ((!client || !client.value().surface) && server->seat->focused) {
+  if (!client || !client.value().surface || (server->seat->focused() && server->seat->focused()->xdg_toplevel->base->surface!=client->surface)) {
     server->seat->unfocus();
     return;
   }

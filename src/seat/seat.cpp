@@ -47,12 +47,21 @@ void UraSeat::init() {
   this->text_input = std::make_unique<UraTextInput>();
 }
 
+UraToplevel* UraSeat::focused() {
+  if (!this->seat->keyboard_state.focused_surface)
+    return nullptr;
+  auto client = UraClient::from(this->seat->keyboard_state.focused_surface);
+  if (client.type == UraSurfaceType::Toplevel)
+    return client.transform<UraToplevel>();
+  return nullptr;
+}
+
 void UraSeat::unfocus() {
   auto server = UraServer::get_instance();
-  if (this->focused) {
-    if (!this->focused->destroying)
-      this->focused->unfocus();
-    this->focused = nullptr;
+  auto focused = this->focused();
+  if (focused) {
+    if (!focused->destroying)
+      focused->unfocus();
     wlr_seat_keyboard_notify_clear_focus(seat);
     wlr_seat_pointer_notify_clear_focus(seat);
     this->cursor->set_xcursor("left_ptr");
@@ -66,9 +75,9 @@ void UraSeat::focus(UraClient client) {
       || this->seat->keyboard_state.focused_surface == client.surface)
     return;
   if (client.type == UraSurfaceType::Toplevel) {
-    if (this->focused)
-      this->focused->unfocus();
-    this->focused = client.transform<UraToplevel>();
+    auto focused = this->focused();
+    if (focused)
+      focused->unfocus();
   }
   client.focus();
   server->lua->try_execute_hook("focus-change");

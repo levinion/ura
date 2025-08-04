@@ -208,7 +208,7 @@ void on_input_method_popup_surface_destroy(wl_listener* listener, void* data) {
 void on_input_method_popup_surface_map(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto input_popup = server->runtime->fetch<UraInputPopup*>(listener);
-  auto toplevel = server->seat->focused;
+  auto toplevel = server->seat->focused();
   if (!toplevel)
     return;
   auto parent_scene_tree = toplevel->scene_tree;
