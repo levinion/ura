@@ -71,14 +71,13 @@ void UraSeat::unfocus() {
 
 void UraSeat::focus(UraClient client) {
   auto server = UraServer::get_instance();
-  if (!client.surface
+  if (!client.surface || client.type == UraSurfaceType::Popup
+      || client.type == UraSurfaceType::Unknown
       || this->seat->keyboard_state.focused_surface == client.surface)
     return;
-  if (client.type == UraSurfaceType::Toplevel) {
-    auto focused = this->focused();
-    if (focused)
-      focused->unfocus();
-  }
+  auto focused = this->focused();
+  if (focused)
+    this->unfocus();
   client.focus();
   server->lua->try_execute_hook("focus-change");
 }
