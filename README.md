@@ -73,7 +73,7 @@ paru/yay -S ura-git
 Ura's configuration files are searched in the following order:
 
 - `$XDG_CONFIG_HOME/ura/init.lua`
-- `$HOME/ura/init.lua`
+- `$HOME/.config/ura/init.lua`
 - `/etc/ura/init.lua`
 
 The [default configuration file](/assets/init.lua) is installed with Ura at `/etc/ura/init.lua`. If you wish to modify it, it's recommended to copy it to your user directory before making changes.

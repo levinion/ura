@@ -10,6 +10,8 @@ Lua 是一门通用语言，它被许多编辑器/LSP（如 lua_ls）支持，�
 
 ## 安装
 
+### 构建
+
 依赖项包括：
 
 - wayland
@@ -69,7 +71,7 @@ paru/yay -S ura-git
 Ura的配置文件按照查找顺序排列，有以下几个路径：
 
 - `$XDG_CONFIG_HOME/ura/init.lua`
-- `$HOME/ura/init.lua`
+- `$HOME/.config/ura/init.lua`
 - `/etc/ura/init.lua`
 
 [默认的配置文件](../../assets/init.lua)会随着ura一同安装到`/etc/ura/init.lua`。若尝试对其进行修改，建议拷贝到用户目录下再进行修改。
