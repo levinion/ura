@@ -58,6 +58,12 @@ cargo build --release
 sudo install -Dm755 target/release/uracil /usr/bin/uracil
 ```
 
+### AUR
+
+```shell
+paru/yay -S ura-git
+```
+
 ## 配置
 
 Ura的配置文件按照查找顺序排列，有以下几个路径：

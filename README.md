@@ -12,6 +12,8 @@ Lua is a general-purpose language supported by many editors and LSPs (like `lua_
 
 ## Installation
 
+### Build
+
 Dependencies include:
 
 - wayland
@@ -58,6 +60,12 @@ sudo cp -r "lua/ura" "/usr/share/lua/5.1/"
 cd uracil 
 cargo build --release
 sudo install -Dm755 target/release/uracil /usr/bin/uracil
+```
+
+### AUR
+
+```shell
+paru/yay -S ura-git
 ```
 
 ## Configuration
