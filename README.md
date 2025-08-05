@@ -49,6 +49,8 @@ cmake --build build -j$(nproc)
 
 sudo install -Dm755 "build/ura" "/usr/bin/ura"
 sudo install -Dm644 "LICENSE" "/usr/share/licenses/ura/LICENSE"
+sudo install -d "/etc/ura"
+sudo install -Dm644 "assets/init.lua" "/etc/ura/"
 sudo install -Dm644 "assets/ura.desktop" "/usr/share/wayland-sessions/ura.desktop"
 sudo install -d "/usr/share/lua/5.1"
 sudo cp -r "lua/ura" "/usr/share/lua/5.1/"
@@ -59,6 +61,16 @@ sudo install -Dm755 target/release/uracil /usr/bin/uracil
 ```
 
 ## Configuration
+
+Ura's configuration files are searched in the following order:
+
+- `$XDG_CONFIG_HOME/ura/init.lua`
+- `$HOME/ura/init.lua`
+- `/etc/ura/init.lua`
+
+The [default configuration file](/assets/init.lua) is installed with Ura at `/etc/ura/init.lua`. If you wish to modify it, it's recommended to copy it to your user directory before making changes.
+
+The default terminal is [alacritty](https://github.com/alacritty/alacritty), which can be launched using the `super+t` shortcut. However, make sure that `alacritty` is installed before starting Ura, or change it to another terminal of your choice.
 
 ### Keybindings
 

@@ -2,6 +2,8 @@ install:
   just build
   sudo install -Dm755 ./build/ura /usr/bin/
   sudo install -Dm644 ./assets/ura.desktop /usr/share/wayland-sessions/
+  sudo install -d /etc/ura
+  sudo install -Dm644 ./assets/init.lua /etc/ura/
   sudo rm -rf /usr/share/lua/5.1/ura
   sudo cp -r lua/ura /usr/share/lua/5.1
 

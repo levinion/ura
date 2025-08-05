@@ -47,6 +47,8 @@ cmake --build build -j$(nproc)
 
 sudo install -Dm755 "build/ura" "/usr/bin/ura"
 sudo install -Dm644 "LICENSE" "/usr/share/licenses/ura/LICENSE"
+sudo install -d "/etc/ura"
+sudo install -Dm644 "assets/init.lua" "/etc/ura/"
 sudo install -Dm644 "assets/ura.desktop" "/usr/share/wayland-sessions/ura.desktop"
 sudo install -d "/usr/share/lua/5.1"
 sudo cp -r "lua/ura" "/usr/share/lua/5.1/"
@@ -57,6 +59,16 @@ sudo install -Dm755 target/release/uracil /usr/bin/uracil
 ```
 
 ## 配置
+
+Ura的配置文件按照查找顺序排列，有以下几个路径：
+
+- `$XDG_CONFIG_HOME/ura/init.lua`
+- `$HOME/ura/init.lua`
+- `/etc/ura/init.lua`
+
+[默认的配置文件](../../assets/init.lua)会随着ura一同安装到`/etc/ura/init.lua`。若尝试对其进行修改，建议拷贝到用户目录下再进行修改。
+
+默认的终端为 [alacritty](https://github.com/alacritty/alacritty)，这可以使用快捷键`super+t`打开。不过，请确保在启动 ura 之前安装了`alacritty`，或者将其修改为其他你想要使用的终端。
 
 ### 快捷键
 

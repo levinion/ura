@@ -152,6 +152,9 @@ std::optional<std::filesystem::path> Lua::find_init_path() {
   auto dotfile = std::filesystem::path(root) / "ura/init.lua";
   if (std::filesystem::is_regular_file(dotfile))
     return dotfile;
+  auto global_dotfile = std::filesystem::path("/etc/ura/init.lua");
+  if (std::filesystem::is_regular_file(global_dotfile))
+    return global_dotfile;
   return {};
 }
 
