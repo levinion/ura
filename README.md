@@ -1,6 +1,6 @@
 # Ura
 
-![ura-icon](/assets/icon.png)
+<img src="/assets/icon.png" style="width:30%">
 
 [中文文档](/docs/zh-cn/README-zh_CN.md)
 
@@ -22,6 +22,7 @@ Dependencies include:
 - pkgconf
 - nlohmann-json
 - [just](https://github.com/casey/just) (optional)
+- cargo
 
 ```shell
 git clone https://github.com/levinion/ura.git
@@ -30,7 +31,7 @@ just install
 
 cd uracil 
 cargo build --release
-install -Dm755 target/release/uracil /usr/bin/uracil
+sudo install -Dm755 target/release/uracil /usr/bin/uracil
 ```
 
 If you prefer not to use `just`, you can build with CMake directly:
@@ -54,7 +55,7 @@ sudo cp -r "lua/ura" "/usr/share/lua/5.1/"
 
 cd uracil 
 cargo build --release
-install -Dm755 target/release/uracil /usr/bin/uracil
+sudo install -Dm755 target/release/uracil /usr/bin/uracil
 ```
 
 ## Configuration
@@ -138,6 +139,8 @@ end)
 ```
 
 More examples are available at: [examples](/examples/)
+
+For more infomation, please visit [Ura Wiki](https://github.com/levinion/ura/wiki)
 
 ## License
 

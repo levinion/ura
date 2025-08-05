@@ -1,6 +1,6 @@
 # Ura
 
-![ura-icon](../../assets/icon.png)
+<img src="/assets/icon.png" style="width:30%">
 
 Ura 是一个全新的 wayland 合成器，它基于 wlroots，使用 c++ 编写，并引入 lua（luajit）作为配置系统。
 
@@ -20,6 +20,7 @@ Lua 是一门通用语言，它被许多编辑器/LSP（如 lua_ls）支持，�
 - pkgconf
 - nlohmann-json
 - [just](https://github.com/casey/just)（可选）
+- cargo
 
 ```shell
 git clone https://github.com/levinion/ura.git
@@ -28,7 +29,7 @@ just install
 
 cd uracil 
 cargo build --release
-install -Dm755 target/release/uracil /usr/bin/uracil
+sudo install -Dm755 target/release/uracil /usr/bin/uracil
 ```
 
 如果你不想使用 just，可以直接使用 cmake 构建：
@@ -52,7 +53,7 @@ sudo cp -r "lua/ura" "/usr/share/lua/5.1/"
 
 cd uracil 
 cargo build --release
-install -Dm755 target/release/uracil /usr/bin/uracil
+sudo install -Dm755 target/release/uracil /usr/bin/uracil
 ```
 
 ## 配置
@@ -136,6 +137,8 @@ end)
 ```
 
 更多示例可以参见：[examples](../../examples/)。
+
+如果想要了解更多信息，请访问 [Ura Wiki](https://github.com/levinion/ura/wiki)
 
 ## 许可证
 

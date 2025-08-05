@@ -1,5 +1,5 @@
 [Desktop Entry]
 Name=Ura
-Comment=A dynamic tiling Wayland compositor
+Comment=A highly customizable Wayland compositor driven by Lua
 Exec=ura
 Type=Application
