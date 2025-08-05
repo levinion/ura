@@ -178,10 +178,10 @@ bool UraToplevel::commit_floating() {
     return false;
   this->set_layer(this->output->floating);
   auto changed = false;
-  if (this->move(this->floating_geometry.x, this->floating_geometry.y))
-    changed = true;
   if (this
         ->resize(this->floating_geometry.width, this->floating_geometry.height))
+    changed = true;
+  if (this->move(this->floating_geometry.x, this->floating_geometry.y))
     changed = true;
   return changed;
 }
@@ -298,6 +298,8 @@ void UraToplevel::unfocus() {
   this->set_border_color(this->inactive_border_color);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
   wlr_xdg_toplevel_set_activated(this->xdg_toplevel, false);
+  auto server = UraServer::get_instance();
+  server->seat->text_input->unfocus_active_text_input();
 }
 
 // get toplevel instance from wlr_surface
