@@ -5,9 +5,10 @@
 #include "ura/popup.hpp"
 #include "ura/toplevel.hpp"
 #include "ura/ura.hpp"
+#include "ura/session_lock.hpp"
 
 namespace ura {
-enum class UraSurfaceType { Toplevel, LayerShell, Popup, Unknown };
+enum class UraSurfaceType { Toplevel, LayerShell, Popup, SessionLock, Unknown };
 
 UraSurfaceType get_surface_type(wlr_surface* surface);
 
@@ -24,6 +25,8 @@ public:
       return UraLayerShell::from(this->surface);
     } else if constexpr (std::is_same_v<T, UraPopup>) {
       return UraPopup::from(this->surface);
+    } else if constexpr (std::is_same_v<T, UraSessionLockSurface>) {
+      return UraSessionLockSurface::from(this->surface);
     }
     std::unreachable();
   }
@@ -44,6 +47,11 @@ public:
     } else if constexpr (std::is_same_v<T, UraPopup*>) {
       client.surface = static_cast<UraPopup*>(t)->xdg_popup->base->surface;
       client.type = UraSurfaceType::Popup;
+    } else if constexpr (std::is_same_v<T, UraSessionLockSurface*>) {
+      client.surface = static_cast<UraSessionLockSurface*>(t)->surface->surface;
+      client.type = UraSurfaceType::SessionLock;
+    } else {
+      std::unreachable();
     }
     return client;
   }

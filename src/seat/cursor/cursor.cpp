@@ -47,10 +47,14 @@ void UraCursor::init() {
 }
 
 void UraCursor::relative_move(double delta_x, double delta_y) {
+  auto server = UraServer::get_instance();
+  server->seat->notify_idle_activity();
   wlr_cursor_move(this->cursor, this->device, delta_x, delta_y);
 }
 
 void UraCursor::absolute_move(double x, double y) {
+  auto server = UraServer::get_instance();
+  server->seat->notify_idle_activity();
   wlr_cursor_warp_absolute(this->cursor, this->device, x, y);
 }
 
@@ -85,10 +89,8 @@ void UraCursor::process_motion(uint32_t time_msec) {
   double sx, sy;
   auto seat = server->seat->seat;
   auto client = server->foreground_client(&sx, &sy);
-  auto focused = server->seat->focused();
   if (!client || !client.value().surface) {
-    if (focused)
-      server->seat->unfocus();
+    server->seat->unfocus();
     return;
   }
   auto surface = client.value().surface;

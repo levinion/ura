@@ -15,12 +15,15 @@ public:
   std::unique_ptr<UraTextInput> text_input;
   wlr_seat* seat;
   std::list<UraKeyboard*> keyboards;
-  UraToplevel* focused();
+  bool locked = false;
+  UraToplevel* focused_toplevel();
+  std::optional<UraClient> focused_client();
   void init();
   void unfocus();
   void focus(UraClient client);
   void focus(UraToplevel* toplevel);
   void focus(UraLayerShell* layer_shell);
+  void notify_idle_activity();
 };
 
 } // namespace ura

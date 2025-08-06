@@ -9,6 +9,8 @@ UraSurfaceType get_surface_type(wlr_surface* surface) {
     return UraSurfaceType::LayerShell;
   if (wlr_xdg_popup_try_from_wlr_surface(surface))
     return UraSurfaceType::Popup;
+  if (wlr_session_lock_surface_v1_try_from_wlr_surface(surface))
+    return UraSurfaceType::SessionLock;
   return UraSurfaceType::Unknown;
 }
 
@@ -19,6 +21,9 @@ void UraClient::focus() {
       break;
     case ura::UraSurfaceType::LayerShell:
       this->transform<UraLayerShell>()->focus();
+      break;
+    case ura::UraSurfaceType::SessionLock:
+      this->transform<UraSessionLockSurface>()->focus();
       break;
     default:
       break;

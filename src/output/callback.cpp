@@ -4,6 +4,7 @@
 #include "ura/callback.hpp"
 #include "ura/ura.hpp"
 #include "ura/runtime.hpp"
+#include "ura/seat.hpp"
 
 namespace ura {
 
@@ -54,5 +55,12 @@ void on_output_manager_apply(wl_listener* listener, void* data) {
     wlr_output_configuration_v1_destroy(config);
   }
   delete states;
+}
+
+void on_output_power_manager_set_mode(wl_listener* listener, void* data) {
+  auto event = static_cast<wlr_output_power_v1_set_mode_event*>(data);
+  wlr_output_state wlr_state = { 0 };
+  wlr_output_state_set_enabled(&wlr_state, event->mode);
+  wlr_output_commit_state(event->output, &wlr_state);
 }
 } // namespace ura

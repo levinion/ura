@@ -10,6 +10,7 @@ void on_output_frame(wl_listener* listener, void* data);
 void on_output_request_state(wl_listener* listener, void* data);
 void on_output_destroy(wl_listener* listener, void* data);
 void on_output_manager_apply(wl_listener* listener, void* data);
+void on_output_power_manager_set_mode(wl_listener* listener, void* data);
 
 // seat/callback.cpp
 void on_new_input(wl_listener* listener, void* data);
@@ -76,6 +77,13 @@ void on_layer_shell_surface_commit(wl_listener* listener, void* data);
 void on_layer_shell_surface_destroy(wl_listener* listener, void* data);
 void on_layer_shell_surface_map(wl_listener* listener, void* data);
 void on_layer_shell_surface_unmap(wl_listener* listener, void* data);
+
+// view/session_lock/callback.cpp
+void on_new_session_lock(wl_listener* listener, void* data);
+void on_session_lock_unlock(wl_listener* listener, void* data);
+void on_session_lock_destroy(wl_listener* listener, void* data);
+void on_session_lock_new_surface(wl_listener* listener, void* data);
+void on_session_lock_surface_destroy(wl_listener* listener, void* data);
 
 // seat/text_input/callback.cpp
 void on_new_text_input(wl_listener* listener, void* data);

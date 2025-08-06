@@ -18,11 +18,11 @@ void UraSeat::init() {
     on_new_input,
     nullptr
   );
-  // this->runtime->register_callback(
-  //   &this->seat->events.request_set_cursor,
-  //   on_seat_request_cursor,
-  //   nullptr
-  // );
+  server->runtime->register_callback(
+    &this->seat->events.request_set_cursor,
+    on_seat_request_cursor,
+    nullptr
+  );
   server->runtime->register_callback(
     &this->seat->events.request_set_selection,
     on_seat_request_set_selection,
@@ -48,7 +48,7 @@ void UraSeat::init() {
   this->text_input = std::make_unique<UraTextInput>();
 }
 
-UraToplevel* UraSeat::focused() {
+UraToplevel* UraSeat::focused_toplevel() {
   if (!this->seat->keyboard_state.focused_surface)
     return nullptr;
   auto client = UraClient::from(this->seat->keyboard_state.focused_surface);
@@ -57,29 +57,40 @@ UraToplevel* UraSeat::focused() {
   return nullptr;
 }
 
+std::optional<UraClient> UraSeat::focused_client() {
+  if (!this->seat->keyboard_state.focused_surface)
+    return {};
+  auto client = UraClient::from(this->seat->keyboard_state.focused_surface);
+  return client;
+}
+
 void UraSeat::unfocus() {
   auto server = UraServer::get_instance();
-  auto focused = this->focused();
-  if (focused) {
-    if (!focused->destroying)
-      focused->unfocus();
+  this->text_input->unfocus_active_text_input();
+  if (this->seat->keyboard_state.focused_surface) {
+    auto toplevel = this->focused_toplevel();
+    if (toplevel)
+      toplevel->unfocus();
     wlr_seat_keyboard_notify_clear_focus(seat);
+  } else if (this->seat->pointer_state.focused_surface) {
     wlr_seat_pointer_notify_clear_focus(seat);
-    this->cursor->set_xcursor("left_ptr");
-    server->lua->try_execute_hook("focus-change");
-  }
+  } else
+    return;
+  this->cursor->set_xcursor("left_ptr");
+  server->lua->try_execute_hook("focus-change");
 }
 
 void UraSeat::focus(UraClient client) {
-  auto server = UraServer::get_instance();
   if (!client.surface || client.type == UraSurfaceType::Popup
+      || client.type == UraSurfaceType::SessionLock
       || client.type == UraSurfaceType::Unknown
       || this->seat->keyboard_state.focused_surface == client.surface)
     return;
-  auto focused = this->focused();
+  auto focused = this->focused_client();
   if (focused)
     this->unfocus();
   client.focus();
+  auto server = UraServer::get_instance();
   server->lua->try_execute_hook("focus-change");
 }
 
@@ -90,4 +101,10 @@ void UraSeat::focus(UraToplevel* toplevel) {
 void UraSeat::focus(UraLayerShell* layer_shell) {
   this->focus(UraClient::from(layer_shell));
 }
+
+void UraSeat::notify_idle_activity() {
+  auto server = UraServer::get_instance();
+  wlr_idle_notifier_v1_notify_activity(server->idle_notifier, this->seat);
+}
+
 } // namespace ura

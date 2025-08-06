@@ -7,6 +7,7 @@ namespace ura {
 class UraKeyboard {
 public:
   wlr_keyboard* keyboard;
+  bool virt = false;
 
   static UraKeyboard* from(wlr_keyboard* keyboard);
   void init(wlr_input_device* device);

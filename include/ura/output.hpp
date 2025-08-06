@@ -1,15 +1,13 @@
 #pragma once
 
-#include "ura/ura.hpp"
 #include "ura/server.hpp"
 #include <list>
-#include "ura/workspace.hpp"
-#include "ura/toplevel.hpp"
-#include "ura/popup.hpp"
 
 namespace ura {
 
 class UraLayerShell;
+class UraSessionLockSurface;
+class UraPopup;
 
 class UraOutput {
 public:
@@ -36,7 +34,10 @@ public:
   wlr_scene_tree* popup;
   wlr_scene_tree* fullscreen;
   wlr_scene_tree* overlay;
+  wlr_scene_tree* lock_screen;
   wlr_box usable_area;
+
+  UraSessionLockSurface* session_lock_surface = nullptr;
 
   void configure_layers();
   void configure_layer(

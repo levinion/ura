@@ -201,7 +201,7 @@ void destroy_workspace(int index) {
 
 std::optional<sol::table> get_current_window() {
   auto server = UraServer::get_instance();
-  auto toplevel = server->seat->focused();
+  auto toplevel = server->seat->focused_toplevel();
   if (!toplevel)
     return {};
   return toplevel->to_lua_table();

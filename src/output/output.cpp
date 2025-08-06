@@ -35,6 +35,7 @@ void UraOutput::init(wlr_output* _wlr_output) {
   this->popup = wlr_scene_tree_create(&server->scene->tree);
   this->fullscreen = wlr_scene_tree_create(&server->scene->tree);
   this->overlay = wlr_scene_tree_create(&server->scene->tree);
+  this->lock_screen = wlr_scene_tree_create(&server->scene->tree);
 
   // register callback
   server->runtime
@@ -56,6 +57,7 @@ void UraOutput::init(wlr_output* _wlr_output) {
   wlr_scene_node_raise_to_top(&this->popup->node);
   wlr_scene_node_raise_to_top(&this->fullscreen->node);
   wlr_scene_node_raise_to_top(&this->overlay->node);
+  wlr_scene_node_raise_to_top(&this->lock_screen->node);
 
   // set usable area to full area
   this->usable_area = this->logical_geometry();

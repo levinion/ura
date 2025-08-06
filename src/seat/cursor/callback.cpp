@@ -44,12 +44,12 @@ void on_cursor_button(wl_listener* listener, void* data) {
     // focus client
     double sx, sy;
     auto client = server->foreground_client(&sx, &sy);
-    if ((!client || !client.value().surface) && server->seat->focused()) {
+    if ((!client || !client.value().surface)
+        && server->seat->focused_client()) {
       server->seat->unfocus();
       return;
     }
-    if (client)
-      server->seat->focus(client.value());
+    server->seat->focus(client.value());
   }
 }
 
@@ -73,21 +73,18 @@ void on_cursor_frame(wl_listener* listener, void* data) {
   wlr_seat_pointer_notify_frame(server->seat->seat);
 }
 
-// prefer using cursor_shape_v1 to set cursor
-// void on_seat_request_cursor(wl_listener* listener, void* data) {
-//   auto server = UraServer::get_instance();
-//   auto event = static_cast<wlr_seat_pointer_request_set_cursor_event*>(data);
-//
-//   auto focused_client = server->seat->pointer_state.focused_client;
-//   if (focused_client == event->seat_client) {
-//     wlr_cursor_set_surface(
-//       server->cursor,
-//       event->surface,
-//       event->hotspot_x,
-//       event->hotspot_y
-//     );
-//   }
-// }
+// prefer using cursor_shape_v1 to set cursor, this only used to hide or show the cursor
+void on_seat_request_cursor(wl_listener* listener, void* data) {
+  auto server = UraServer::get_instance();
+  auto event = static_cast<wlr_seat_pointer_request_set_cursor_event*>(data);
+  auto focused_client = server->seat->seat->pointer_state.focused_client;
+  if (focused_client == event->seat_client) {
+    if (event->surface)
+      server->seat->cursor->set_xcursor("left_ptr");
+    else
+      server->seat->cursor->hide();
+  }
+}
 
 void on_seat_request_set_selection(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();

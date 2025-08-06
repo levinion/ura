@@ -28,6 +28,8 @@ UraServer* UraServer::init() {
   this->setup_decoration();
   this->setup_layer_shell();
   this->setup_seat();
+  this->setup_idle();
+  this->setup_session_lock();
   this->setup_activation();
   this->setup_foreign();
   this->setup_text_input();
@@ -83,16 +85,22 @@ void UraServer::setup_output() {
   this->scene_layout =
     wlr_scene_attach_output_layout(this->scene, this->output_layout);
 
+  // output_manager_v1
   wlr_xdg_output_manager_v1_create(this->display, this->output_layout);
-
   this->output_manager = wlr_output_manager_v1_create(this->display);
-
   this->runtime->register_callback(
     &this->output_manager->events.apply,
     on_output_manager_apply,
     nullptr
   );
-  wlr_output_power_manager_v1_create(this->display);
+  // output_power_manager_v1
+  this->output_power_manager =
+    wlr_output_power_manager_v1_create(this->display);
+  this->runtime->register_callback(
+    &this->output_power_manager->events.set_mode,
+    on_output_power_manager_set_mode,
+    nullptr
+  );
 }
 
 void UraServer::setup_toplevel() {
@@ -191,6 +199,20 @@ void UraServer::setup_text_input() {
   );
 }
 
+void UraServer::setup_idle() {
+  this->idle_notifier = wlr_idle_notifier_v1_create(this->display);
+}
+
+void UraServer::setup_session_lock() {
+  this->session_lock_manager =
+    wlr_session_lock_manager_v1_create(this->display);
+  this->runtime->register_callback(
+    &this->session_lock_manager->events.new_lock,
+    on_new_session_lock,
+    nullptr
+  );
+}
+
 // scratchpad is a special workspace that cannot be switch to
 void UraServer::setup_scratchpad() {
   this->scratchpad = UraWorkSpace::init();
@@ -200,6 +222,8 @@ void UraServer::setup_scratchpad() {
 void UraServer::setup_others() {
   wlr_data_device_manager_create(this->display);
   wlr_linux_dmabuf_v1_create_with_renderer(this->display, 4, this->renderer);
+  wlr_export_dmabuf_manager_v1_create(this->display);
+  wlr_primary_selection_v1_device_manager_create(this->display);
   wlr_shm_create_with_renderer(this->display, 2, this->renderer);
   wlr_fractional_scale_manager_v1_create(this->display, 1);
   wlr_viewporter_create(this->display);
@@ -268,7 +292,6 @@ void UraServer::run() {
           return;
         wl_display_flush_clients(this->display);
       } else if (current_fd == ipc_fd) {
-        wlr_log(WLR_DEBUG, "call ipc try_handle");
         ipc->try_handle();
       }
     }

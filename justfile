@@ -31,4 +31,3 @@ build:
 clean:
   rm -rf build
   rm -rf include/protocols
-  sudo rm -rf /usr/bin/ura ~/.cargo/bin/uracil /usr/share/wayland-sessions/ura.desktop /usr/share/lua/5.1/ura

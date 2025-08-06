@@ -48,15 +48,24 @@ void UraKeyboard::init(wlr_input_device* device) {
 
 void UraKeyboard::process_modifiers() {
   auto server = UraServer::get_instance();
-  // send modifier to im grab
-  auto kb_grab = this->get_im_grab();
-  if (kb_grab) {
-    wlr_input_method_keyboard_grab_v2_set_keyboard(kb_grab, this->keyboard);
-    wlr_input_method_keyboard_grab_v2_send_modifiers(
-      kb_grab,
-      &this->keyboard->modifiers
-    );
+
+  // disable virtual keyboard if seat is locked
+  if (server->seat->locked && this->virt)
     return;
+
+  server->seat->notify_idle_activity();
+
+  if (!server->seat->locked) {
+    // send modifier to im grab
+    auto kb_grab = this->get_im_grab();
+    if (kb_grab) {
+      wlr_input_method_keyboard_grab_v2_set_keyboard(kb_grab, this->keyboard);
+      wlr_input_method_keyboard_grab_v2_send_modifiers(
+        kb_grab,
+        &this->keyboard->modifiers
+      );
+      return;
+    }
   }
   // send modifier to client
   wlr_seat_set_keyboard(server->seat->seat, this->keyboard);
@@ -68,13 +77,21 @@ void UraKeyboard::process_modifiers() {
 
 void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
   auto server = UraServer::get_instance();
-  uint32_t keycode = event->keycode + 8; // xkeycode = libinput keycode + 8
-  auto sym = xkb_state_key_get_one_sym(this->keyboard->xkb_state, keycode);
-  auto modifiers = wlr_keyboard_get_modifiers(this->keyboard);
+
+  // disable virtual keyboard if seat is locked
+  if (server->seat->locked && this->virt)
+    return;
+
+  server->seat->notify_idle_activity();
 
   // order: tty > keybinding > input_method > client
+  // if seat is locked: tty > client
 
   if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+    uint32_t keycode = event->keycode + 8; // xkeycode = libinput keycode + 8
+    auto sym = xkb_state_key_get_one_sym(this->keyboard->xkb_state, keycode);
+    auto modifiers = wlr_keyboard_get_modifiers(this->keyboard);
+
     // switch tty
     if (sym >= XKB_KEY_XF86Switch_VT_1 && sym <= XKB_KEY_XF86Switch_VT_12) {
       auto vt = sym - XKB_KEY_XF86Switch_VT_1 + 1;
@@ -82,22 +99,26 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
       return;
     }
     // exec keybinding
-    auto id = (static_cast<uint64_t>(modifiers) << 32) | sym;
-    if (server->lua->try_execute_keybinding(id))
-      return;
+    if (!server->seat->locked) {
+      auto id = (static_cast<uint64_t>(modifiers) << 32) | sym;
+      if (server->lua->try_execute_keybinding(id))
+        return;
+    }
   }
 
   // handle input method grab
-  auto kb_grab = this->get_im_grab();
-  if (kb_grab) {
-    wlr_input_method_keyboard_grab_v2_set_keyboard(kb_grab, this->keyboard);
-    wlr_input_method_keyboard_grab_v2_send_key(
-      kb_grab,
-      event->time_msec,
-      event->keycode,
-      event->state
-    );
-    return;
+  if (!server->seat->locked) {
+    auto kb_grab = this->get_im_grab();
+    if (kb_grab) {
+      wlr_input_method_keyboard_grab_v2_set_keyboard(kb_grab, this->keyboard);
+      wlr_input_method_keyboard_grab_v2_send_key(
+        kb_grab,
+        event->time_msec,
+        event->keycode,
+        event->state
+      );
+      return;
+    }
   }
 
   // notify client

@@ -33,6 +33,7 @@ void on_new_virtual_keyboard(wl_listener* listener, void* data) {
   auto virtual_keyboard = static_cast<wlr_virtual_keyboard_v1*>(data);
   auto device = &virtual_keyboard->keyboard.base;
   auto keyboard = new UraKeyboard {};
+  keyboard->virt = true;
   keyboard->init(device);
 }
 
