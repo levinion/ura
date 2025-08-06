@@ -297,7 +297,8 @@ void UraToplevel::focus() {
 void UraToplevel::unfocus() {
   this->set_border_color(this->inactive_border_color);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
-  wlr_xdg_toplevel_set_activated(this->xdg_toplevel, false);
+  if (!this->destroying)
+    wlr_xdg_toplevel_set_activated(this->xdg_toplevel, false);
   auto server = UraServer::get_instance();
   server->seat->text_input->unfocus_active_text_input();
 }

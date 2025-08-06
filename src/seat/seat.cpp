@@ -66,16 +66,18 @@ std::optional<UraClient> UraSeat::focused_client() {
 
 void UraSeat::unfocus() {
   auto server = UraServer::get_instance();
-  this->text_input->unfocus_active_text_input();
+  if (!this->seat->keyboard_state.focused_surface
+      && !this->seat->pointer_state.focused_surface)
+    return;
   if (this->seat->keyboard_state.focused_surface) {
     auto toplevel = this->focused_toplevel();
     if (toplevel)
       toplevel->unfocus();
     wlr_seat_keyboard_notify_clear_focus(seat);
-  } else if (this->seat->pointer_state.focused_surface) {
+  }
+  if (this->seat->pointer_state.focused_surface) {
     wlr_seat_pointer_notify_clear_focus(seat);
-  } else
-    return;
+  }
   this->cursor->set_xcursor("left_ptr");
   server->lua->try_execute_hook("focus-change");
 }
