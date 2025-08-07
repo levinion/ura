@@ -56,10 +56,12 @@ local UraOutput = {
     --- @type number
     height = 0
   },
-  ---@type number
+  --- @type number
   scale = 0,
-  ---@type number
-  refresh = 0
+  --- @type number
+  refresh = 0,
+  --- @type boolean
+  dpms = true,
 }
 
 --- @class ura: table
@@ -154,7 +156,10 @@ ura = {
   --- @class ura.output: table
   output = {
     --- @return UraOutput
-    get_current = function() end
+    get_current = function() end,
+    --- @param index integer
+    --- @param flag boolean
+    set_dpms = function(index, flag) end
   },
 
   --- @class ura.layout: table

@@ -12,11 +12,16 @@ class UraPopup;
 class UraOutput {
 public:
   wlr_output* output;
+  bool dpms_on = true;
+
   void init(wlr_output* output);
   static UraOutput* from(wlr_output* output);
   void fresh_screen();
   wlr_box physical_geometry();
   wlr_box logical_geometry();
+
+  /* Power */
+  void set_dpms_mode(bool flag);
 
   /* Surfaces */
   std::list<UraLayerShell*> bottom_surfaces;

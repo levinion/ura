@@ -81,6 +81,7 @@ void Lua::setup() {
   this->set("ws.list", api::list_workspaces);
   // output
   this->set("output.get_current", api::get_current_output);
+  this->set("output.set_dpms", api::set_output_dpms);
   // layout
   this->set("layout.tilling.gap.outer.top", 10);
   this->set("layout.tilling.gap.outer.left", 10);

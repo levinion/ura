@@ -107,6 +107,10 @@ void UraSeat::focus(UraLayerShell* layer_shell) {
 void UraSeat::notify_idle_activity() {
   auto server = UraServer::get_instance();
   wlr_idle_notifier_v1_notify_activity(server->idle_notifier, this->seat);
+  for (auto output : server->runtime->outputs) {
+    if (!output->dpms_on)
+      output->set_dpms_mode(true);
+  }
 }
 
 } // namespace ura

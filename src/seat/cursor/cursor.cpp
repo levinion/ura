@@ -93,6 +93,7 @@ void UraCursor::toggle() {
 // internal method
 void UraCursor::process_motion(uint32_t time_msec) {
   auto server = UraServer::get_instance();
+  server->seat->notify_idle_activity();
 
   if (this->mode != UraCursorMode::Passthrough)
     return;
@@ -119,6 +120,7 @@ void UraCursor::process_motion(uint32_t time_msec) {
 
 void UraCursor::process_button(wlr_pointer_button_event* event) {
   auto server = UraServer::get_instance();
+  server->seat->notify_idle_activity();
 
   // process move window
   if (event->button == 0x110) { // left button

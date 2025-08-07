@@ -292,6 +292,14 @@ sol::table UraOutput::to_lua_table() {
 
   table["scale"] = this->output->scale;
   table["refresh"] = this->output->refresh;
+  table["dpms"] = this->dpms_on;
   return table;
+}
+
+void UraOutput::set_dpms_mode(bool flag) {
+  wlr_output_state wlr_state = { 0 };
+  this->dpms_on = flag;
+  wlr_output_state_set_enabled(&wlr_state, flag);
+  wlr_output_commit_state(this->output, &wlr_state);
 }
 } // namespace ura

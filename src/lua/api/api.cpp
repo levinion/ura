@@ -1,9 +1,10 @@
 #include "ura/api.hpp"
 #include <regex>
-#include <set>
+#include <unordered_set>
 #include "ura/lua.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
+#include "ura/runtime.hpp"
 #include "ura/toplevel.hpp"
 #include "ura/keyboard.hpp"
 #include "ura/workspace.hpp"
@@ -356,7 +357,7 @@ void append_lua_package_path(std::string path) {
   if (!package_path)
     return;
   auto paths = split(package_path.value(), ';');
-  auto set = std::set(paths.begin(), paths.end());
+  auto set = std::unordered_set(paths.begin(), paths.end());
   if (set.contains(path))
     return;
   paths.push_back(path);
@@ -373,7 +374,7 @@ void prepend_lua_package_path(std::string path) {
   if (!package_path)
     return;
   auto paths = split(package_path.value(), ';');
-  auto set = std::set(paths.begin(), paths.end());
+  auto set = std::unordered_set(paths.begin(), paths.end());
   if (set.contains(path))
     return;
   paths.insert(paths.begin(), path);
@@ -390,6 +391,15 @@ std::string expanduser(std::string path) {
     home,
     std::regex_constants::format_first_only
   );
+}
+
+void set_output_dpms(int index, bool flag) {
+  auto server = UraServer::get_instance();
+  if (index < 0 || index >= server->runtime->outputs.size())
+    return;
+  auto it = server->runtime->outputs.begin();
+  std::advance(it, index);
+  (*it)->set_dpms_mode(flag);
 }
 
 } // namespace ura::api

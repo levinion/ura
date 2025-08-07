@@ -201,6 +201,7 @@ void UraServer::setup_text_input() {
 
 void UraServer::setup_idle() {
   this->idle_notifier = wlr_idle_notifier_v1_create(this->display);
+  wlr_idle_inhibit_v1_create(this->display);
 }
 
 void UraServer::setup_session_lock() {

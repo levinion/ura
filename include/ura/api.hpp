@@ -52,6 +52,7 @@ std::optional<sol::table> get_workspace(int index);
 sol::table list_workspaces();
 // output
 sol::table get_current_output();
+void set_output_dpms(int index, bool flag);
 // fn
 void set_env(std::string name, std::string value);
 void unset_env(std::string name);
