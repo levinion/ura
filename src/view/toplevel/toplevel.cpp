@@ -440,6 +440,8 @@ void UraToplevel::set_fullscreen(bool flag) {
   if (this->xdg_toplevel->base->initialized) {
     wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, flag);
     wlr_foreign_toplevel_handle_v1_set_fullscreen(this->foreign_handle, flag);
+    if (this->floating)
+      this->initial_floating_commit = true;
   }
 }
 
