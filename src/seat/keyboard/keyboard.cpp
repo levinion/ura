@@ -1,8 +1,11 @@
 #include "ura/keyboard.hpp"
+#include <wayland-server-protocol.h>
+#include "ura/cursor.hpp"
 #include "ura/seat.hpp"
 #include "ura/callback.hpp"
 #include "ura/runtime.hpp"
 #include "ura/lua.hpp"
+#include "ura/ura.hpp"
 
 namespace ura {
 
@@ -54,6 +57,9 @@ void UraKeyboard::process_modifiers() {
     return;
 
   server->seat->notify_idle_activity();
+  if (server->seat->cursor->mode == UraCursorMode::Move
+      && !(this->get_modifiers() & WLR_MODIFIER_LOGO))
+    server->seat->cursor->reset_mode();
 
   if (!server->seat->locked) {
     // send modifier to im grab
@@ -87,11 +93,11 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
   // order: tty > keybinding > input_method > client
   // if seat is locked: tty > client
 
+  // no repeat event yet...
   if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
     uint32_t keycode = event->keycode + 8; // xkeycode = libinput keycode + 8
     auto sym = xkb_state_key_get_one_sym(this->keyboard->xkb_state, keycode);
-    auto modifiers = wlr_keyboard_get_modifiers(this->keyboard);
-
+    auto modifiers = this->get_modifiers();
     // switch tty
     if (sym >= XKB_KEY_XF86Switch_VT_1 && sym <= XKB_KEY_XF86Switch_VT_12) {
       auto vt = sym - XKB_KEY_XF86Switch_VT_1 + 1;
@@ -142,5 +148,9 @@ wlr_input_method_keyboard_grab_v2* UraKeyboard::get_im_grab() {
     return nullptr;
   }
   return input_method->keyboard_grab;
+}
+
+uint32_t UraKeyboard::get_modifiers() {
+  return wlr_keyboard_get_modifiers(this->keyboard);
 }
 } // namespace ura

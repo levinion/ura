@@ -266,36 +266,34 @@ sol::table list_workspaces() {
   return table;
 }
 
-void move_floating_window(int index, int x, int y) {
+void move_window(int index, int x, int y) {
   auto server = UraServer::get_instance();
   auto workspace = server->current_output()->current_workspace;
   auto toplevel = workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  toplevel.value()->floating_geometry.x = x;
-  toplevel.value()->floating_geometry.y = y;
+  toplevel.value()->move(x, y);
+  toplevel.value()->request_commit();
 }
 
-void resize_floating_window(int index, int width, int height) {
+void resize_window(int index, int width, int height) {
   auto server = UraServer::get_instance();
   auto workspace = server->current_output()->current_workspace;
   auto toplevel = workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  toplevel.value()->floating_geometry.width = width;
-  toplevel.value()->floating_geometry.height = height;
+  toplevel.value()->resize(width, height);
+  toplevel.value()->request_commit();
 }
 
-void center_floating_window(int index) {
+void center_window(int index) {
   auto server = UraServer::get_instance();
   auto workspace = server->current_output()->current_workspace;
   auto toplevel = workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  toplevel.value()->center(
-    toplevel.value()->floating_geometry.width,
-    toplevel.value()->floating_geometry.height
-  );
+  toplevel.value()->center();
+  toplevel.value()->request_commit();
 }
 
 sol::table get_current_output() {

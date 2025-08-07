@@ -1,6 +1,7 @@
 #include <wayland-server-protocol.h>
 #include "ura/callback.hpp"
 #include "ura/client.hpp"
+#include "ura/cursor.hpp"
 #include "ura/server.hpp"
 #include "ura/ura.hpp"
 #include "ura/seat.hpp"
@@ -28,29 +29,7 @@ void on_cursor_motion_absolute(wl_listener* listener, void* data) {
 void on_cursor_button(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto event = static_cast<wlr_pointer_button_event*>(data);
-
-  // notify focused client with button pressed event
-  wlr_seat_pointer_notify_button(
-    server->seat->seat,
-    event->time_msec,
-    event->button,
-    event->state
-  );
-
-  // focus pressed toplevel if focus_follow_mouse is not enabled
-  auto cursor_follow_mouse =
-    server->lua->fetch<bool>("opt.focus_follow_mouse").value_or(true);
-  if (!cursor_follow_mouse && event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
-    // focus client
-    double sx, sy;
-    auto client = server->foreground_client(&sx, &sy);
-    if ((!client || !client.value().surface)
-        && server->seat->focused_client()) {
-      server->seat->unfocus();
-      return;
-    }
-    server->seat->focus(client.value());
-  }
+  server->seat->cursor->process_button(event);
 }
 
 // cursor scroll event

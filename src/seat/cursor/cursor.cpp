@@ -1,4 +1,5 @@
 #include "ura/cursor.hpp"
+#include <wayland-server-protocol.h>
 #include "ura/client.hpp"
 #include "ura/runtime.hpp"
 #include <memory>
@@ -48,14 +49,17 @@ void UraCursor::init() {
 
 void UraCursor::relative_move(double delta_x, double delta_y) {
   auto server = UraServer::get_instance();
-  server->seat->notify_idle_activity();
   wlr_cursor_move(this->cursor, this->device, delta_x, delta_y);
+  if (this->mode == UraCursorMode::Move)
+    this->process_cursor_mode_move();
 }
 
 void UraCursor::absolute_move(double x, double y) {
   auto server = UraServer::get_instance();
-  server->seat->notify_idle_activity();
+
   wlr_cursor_warp_absolute(this->cursor, this->device, x, y);
+  if (this->mode == UraCursorMode::Move)
+    this->process_cursor_mode_move();
 }
 
 void UraCursor::set_xcursor(std::string name) {
@@ -86,6 +90,10 @@ void UraCursor::toggle() {
 // internal method
 void UraCursor::process_motion(uint32_t time_msec) {
   auto server = UraServer::get_instance();
+
+  if (this->mode == UraCursorMode::Move)
+    return;
+
   double sx, sy;
   auto seat = server->seat->seat;
   auto client = server->foreground_client(&sx, &sy);
@@ -106,12 +114,68 @@ void UraCursor::process_motion(uint32_t time_msec) {
   wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
 }
 
+void UraCursor::process_button(wlr_pointer_button_event* event) {
+  auto server = UraServer::get_instance();
+
+  // process move window
+  if (event->button == 0x110) { // left button
+    if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
+      this->reset_mode();
+    else {
+      auto super_pressed = false;
+      for (auto keyboard : server->seat->keyboards) {
+        auto modifiers = keyboard->get_modifiers();
+        if (modifiers & WLR_MODIFIER_LOGO) {
+          super_pressed = true;
+          break;
+        }
+      }
+      if (super_pressed) {
+        // begin grab
+        auto toplevel = server->seat->focused_toplevel();
+        if (toplevel && toplevel->floating) {
+          this->mode = UraCursorMode::Move;
+          this->cursor_grab = this->position();
+          this->toplevel_grab = { (double)toplevel->geometry.x,
+                                  (double)toplevel->geometry.y };
+        }
+      }
+    }
+  }
+
+  if (this->mode == UraCursorMode::Move)
+    return;
+
+  // notify focused client with button pressed event
+  wlr_seat_pointer_notify_button(
+    server->seat->seat,
+    event->time_msec,
+    event->button,
+    event->state
+  );
+
+  // focus pressed toplevel if focus_follow_mouse is not enabled
+  auto cursor_follow_mouse =
+    server->lua->fetch<bool>("opt.focus_follow_mouse").value_or(true);
+  if (!cursor_follow_mouse && event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
+    // focus client
+    double sx, sy;
+    auto client = server->foreground_client(&sx, &sy);
+    if ((!client || !client.value().surface)
+        && server->seat->focused_client()) {
+      server->seat->unfocus();
+      return;
+    }
+    server->seat->focus(client.value());
+  }
+}
+
 void UraCursor::destroy() {
   wlr_xcursor_manager_destroy(this->cursor_mgr);
   wlr_cursor_destroy(this->cursor);
 }
 
-UraPosition<double> UraCursor::position() {
+Vec2<double> UraCursor::position() {
   return { this->cursor->x, this->cursor->y };
 }
 
@@ -128,4 +192,23 @@ void UraCursor::attach_device(wlr_input_device* device) {
   wlr_cursor_attach_input_device(this->cursor, device);
   this->device = device;
 }
+
+void UraCursor::reset_mode() {
+  this->mode = UraCursorMode::Passthrough;
+}
+
+void UraCursor::process_cursor_mode_move() {
+  auto server = UraServer::get_instance();
+  auto toplevel = server->seat->focused_toplevel();
+  if (!toplevel || !toplevel->floating)
+    this->reset_mode();
+  else {
+    toplevel->move(
+      toplevel_grab.x + this->position().x - this->cursor_grab.x,
+      toplevel_grab.y + this->position().y - this->cursor_grab.y
+    );
+    toplevel->request_commit();
+  }
+}
+
 } // namespace ura

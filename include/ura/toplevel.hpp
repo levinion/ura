@@ -23,7 +23,6 @@ public:
   wlr_xdg_toplevel_decoration_v1* decoration;
   wlr_foreign_toplevel_handle_v1* foreign_handle;
   wlr_box geometry;
-  wlr_box floating_geometry;
 
   // same with css, top > right > bottom > left
   std::array<wlr_scene_rect*, 4> borders;
@@ -39,7 +38,7 @@ public:
   void unfocus();
   bool move(int x, int y);
   bool resize(int width, int height);
-  void center(int width, int height);
+  void center();
   void set_fullscreen(bool flag);
   bool fullscreen();
   void toggle_fullscreen();
@@ -61,6 +60,7 @@ public:
   sol::table to_lua_table();
 
 private:
+  bool initial_floating_commit = false;
   bool commit_fullscreen();
   bool commit_floating();
   bool commit_normal();

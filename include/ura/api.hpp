@@ -22,9 +22,9 @@ bool focus_window(int index);
 void set_window_floating(int index, bool flag);
 void set_window_fullscreen(int index, bool flag);
 void activate_window(int workspace_index, int window_index);
-void move_floating_window(int index, int x, int y);
-void resize_floating_window(int index, int width, int height);
-void center_floating_window(int index);
+void move_window(int index, int x, int y);
+void resize_window(int index, int width, int height);
+void center_window(int index);
 // input
 void set_keyboard_repeat(int rate, int delay);
 void set_cursor_theme(std::string theme, int size);

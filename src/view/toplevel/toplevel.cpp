@@ -25,10 +25,6 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   this->workspace = this->output->current_workspace;
   this->workspace->add(this);
   xdg_toplevel->base->surface->data = this;
-  this->center(
-    server->lua->fetch<int>("layout.floating.default.width").value_or(800),
-    server->lua->fetch<int>("layout.floating.default.height").value_or(600)
-  );
   this->create_borders();
 
   // notify scale
@@ -174,16 +170,18 @@ bool UraToplevel::commit_fullscreen() {
 }
 
 bool UraToplevel::commit_floating() {
-  if (this->fullscreen() || !this->floating)
+  // only commit floating state once
+  if (this->fullscreen() || !this->floating || !this->initial_floating_commit)
     return false;
+  this->initial_floating_commit = false;
   this->set_layer(this->output->floating);
-  auto changed = false;
-  if (this
-        ->resize(this->floating_geometry.width, this->floating_geometry.height))
-    changed = true;
-  if (this->move(this->floating_geometry.x, this->floating_geometry.y))
-    changed = true;
-  return changed;
+  auto server = UraServer::get_instance();
+  this->resize(
+    server->lua->fetch<int>("layout.floating.default.width").value_or(800),
+    server->lua->fetch<int>("layout.floating.default.height").value_or(600)
+  );
+  this->center();
+  return true;
 }
 
 bool UraToplevel::commit_normal() {
@@ -503,6 +501,7 @@ bool UraToplevel::is_normal() {
 void UraToplevel::set_float(bool flag) {
   if (flag && !this->floating) {
     this->floating = true;
+    this->initial_floating_commit = true;
     wlr_scene_node_reparent(&this->scene_tree->node, this->output->floating);
     return;
   }
@@ -562,22 +561,13 @@ void UraToplevel::set_border_color(std::array<float, 4>& color) {
   }
 }
 
-// move to center of usable area based on given size
-void UraToplevel::center(int width, int height) {
+// move to center of usable area
+void UraToplevel::center() {
   auto geo = this->geometry;
   auto usable_area = this->output->usable_area;
-  auto sx = usable_area.x;
-  auto sw = usable_area.width;
-  auto sy = usable_area.y;
-  auto sh = usable_area.height;
-  auto tw = width;
-  auto th = height;
-  this->floating_geometry.width = tw;
-  this->floating_geometry.height = th;
-  auto x = sx + (sw - tw) / 2;
-  auto y = sy + (sh - th) / 2;
-  this->floating_geometry.x = x;
-  this->floating_geometry.y = y;
+  auto x = usable_area.x + (usable_area.width - geo.width) / 2;
+  auto y = usable_area.y + (usable_area.height - geo.height) / 2;
+  this->move(x, y);
 }
 
 sol::table UraToplevel::to_lua_table() {

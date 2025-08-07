@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <list>
 #include <memory>
 #include "ura/cursor.hpp"
@@ -16,6 +17,7 @@ public:
   wlr_seat* seat;
   std::list<UraKeyboard*> keyboards;
   bool locked = false;
+
   UraToplevel* focused_toplevel();
   std::optional<UraClient> focused_client();
   void init();
