@@ -367,14 +367,19 @@ void UraToplevel::activate() {
   server->lua->try_execute_hook("activate");
 }
 
-bool UraToplevel::move(int x, int y) {
-  if (x == this->geometry.x && y == this->geometry.y)
+bool UraToplevel::move(int x, int y, bool force_update_border) {
+  if (x != this->geometry.x && y != this->geometry.y) {
+    this->geometry.x = x;
+    this->geometry.y = y;
+    wlr_scene_node_set_position(
+      &this->scene_tree->node,
+      this->geometry.x,
+      this->geometry.y
+    );
+  }
+  if (x == this->geometry.x && y == this->geometry.y && !force_update_border)
     return false;
-  this->geometry.x = x;
-  this->geometry.y = y;
   auto border_width = this->border_width;
-  auto geo = this->geometry;
-  wlr_scene_node_set_position(&this->scene_tree->node, geo.x, geo.y);
   // top border
   wlr_scene_node_set_position(
     &this->borders[0]->node,
@@ -384,14 +389,14 @@ bool UraToplevel::move(int x, int y) {
   // right border
   wlr_scene_node_set_position(
     &this->borders[1]->node,
-    geo.width,
+    this->geometry.width,
     -border_width
   );
   // bottom border
   wlr_scene_node_set_position(
     &this->borders[2]->node,
     -border_width,
-    geo.height
+    this->geometry.height
   );
   // left border
   wlr_scene_node_set_position(
@@ -403,6 +408,10 @@ bool UraToplevel::move(int x, int y) {
 }
 
 bool UraToplevel::resize(int width, int height) {
+  if (width <= 0)
+    width = 1;
+  if (height <= 0)
+    height = 1;
   if (width == this->geometry.width && height == this->geometry.height)
     return false;
   this->geometry.width = width;
@@ -433,6 +442,7 @@ bool UraToplevel::resize(int width, int height) {
     border_width,
     height + 2 * border_width
   );
+  this->move(this->geometry.x, this->geometry.y, true);
   return true;
 }
 

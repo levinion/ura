@@ -52,14 +52,17 @@ void UraCursor::relative_move(double delta_x, double delta_y) {
   wlr_cursor_move(this->cursor, this->device, delta_x, delta_y);
   if (this->mode == UraCursorMode::Move)
     this->process_cursor_mode_move();
+  if (this->mode == UraCursorMode::Resize)
+    this->process_cursor_mode_resize();
 }
 
 void UraCursor::absolute_move(double x, double y) {
   auto server = UraServer::get_instance();
-
   wlr_cursor_warp_absolute(this->cursor, this->device, x, y);
   if (this->mode == UraCursorMode::Move)
     this->process_cursor_mode_move();
+  if (this->mode == UraCursorMode::Resize)
+    this->process_cursor_mode_resize();
 }
 
 void UraCursor::set_xcursor(std::string name) {
@@ -91,7 +94,7 @@ void UraCursor::toggle() {
 void UraCursor::process_motion(uint32_t time_msec) {
   auto server = UraServer::get_instance();
 
-  if (this->mode == UraCursorMode::Move)
+  if (this->mode != UraCursorMode::Passthrough)
     return;
 
   double sx, sy;
@@ -135,15 +138,39 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
         auto toplevel = server->seat->focused_toplevel();
         if (toplevel && toplevel->floating) {
           this->mode = UraCursorMode::Move;
-          this->cursor_grab = this->position();
-          this->toplevel_grab = { (double)toplevel->geometry.x,
-                                  (double)toplevel->geometry.y };
+          this->grab = this->position();
+          this->anchor = toplevel->geometry;
         }
       }
     }
   }
 
-  if (this->mode == UraCursorMode::Move)
+  // process resize window
+  if (event->button == 0x111) { // right button
+    if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
+      this->reset_mode();
+    else {
+      auto super_pressed = false;
+      for (auto keyboard : server->seat->keyboards) {
+        auto modifiers = keyboard->get_modifiers();
+        if (modifiers & WLR_MODIFIER_LOGO) {
+          super_pressed = true;
+          break;
+        }
+      }
+      if (super_pressed) {
+        // begin grab
+        auto toplevel = server->seat->focused_toplevel();
+        if (toplevel && toplevel->floating) {
+          this->mode = UraCursorMode::Resize;
+          this->grab = this->position();
+          this->anchor = toplevel->geometry;
+        }
+      }
+    }
+  }
+
+  if (this->mode != UraCursorMode::Passthrough)
     return;
 
   // notify focused client with button pressed event
@@ -204,11 +231,24 @@ void UraCursor::process_cursor_mode_move() {
     this->reset_mode();
   else {
     toplevel->move(
-      toplevel_grab.x + this->position().x - this->cursor_grab.x,
-      toplevel_grab.y + this->position().y - this->cursor_grab.y
+      this->anchor.x + this->position().x - this->grab.x,
+      this->anchor.y + this->position().y - this->grab.y
     );
     toplevel->request_commit();
   }
 }
 
+void UraCursor::process_cursor_mode_resize() {
+  auto server = UraServer::get_instance();
+  auto toplevel = server->seat->focused_toplevel();
+  if (!toplevel || !toplevel->floating)
+    this->reset_mode();
+  else {
+    toplevel->resize(
+      this->anchor.width + this->position().x - this->grab.x,
+      this->anchor.height + this->position().y - this->grab.y
+    );
+    toplevel->request_commit();
+  }
+}
 } // namespace ura

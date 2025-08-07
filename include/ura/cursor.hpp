@@ -11,14 +11,13 @@ public:
   T y;
 };
 
-enum class UraCursorMode { Passthrough, Move };
+enum class UraCursorMode { Passthrough, Move, Resize };
 
 class UraCursor {
 public:
   bool visible = true;
   std::string xcursor_name = "left_ptr";
   UraCursorMode mode = UraCursorMode::Passthrough;
-  Vec2<double> cursor_grab, toplevel_grab;
   void init();
   void attach_device(wlr_input_device* device);
   void relative_move(double delta_x, double delta_y);
@@ -38,7 +37,10 @@ private:
   wlr_cursor* cursor;
   wlr_xcursor_manager* cursor_mgr;
   wlr_input_device* device = nullptr;
+  Vec2<double> grab; // old cursor postion
+  wlr_box anchor; // old toplevel geometry
   void process_cursor_mode_move();
+  void process_cursor_mode_resize();
 };
 
 } // namespace ura

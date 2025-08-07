@@ -36,7 +36,7 @@ public:
   void commit();
   void focus();
   void unfocus();
-  bool move(int x, int y);
+  bool move(int x, int y, bool force_update_border = false);
   bool resize(int width, int height);
   void center();
   void set_fullscreen(bool flag);

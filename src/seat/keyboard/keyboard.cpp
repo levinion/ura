@@ -57,7 +57,7 @@ void UraKeyboard::process_modifiers() {
     return;
 
   server->seat->notify_idle_activity();
-  if (server->seat->cursor->mode == UraCursorMode::Move
+  if (server->seat->cursor->mode != UraCursorMode::Passthrough
       && !(this->get_modifiers() & WLR_MODIFIER_LOGO))
     server->seat->cursor->reset_mode();
 
