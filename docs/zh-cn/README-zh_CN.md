@@ -8,6 +8,8 @@ Ura 的优势在于其高度可定制性。通过 hook 机制，它将一部分�
 
 Lua 是一门通用语言，它被许多编辑器/LSP（如 lua_ls）支持，因此可以为配置文件添加错误提示、语法高亮、自动补全，从而允许以编写代码的方式来编写合成器的配置文件。
 
+<img src="/assets/show.png" style="width:100%">
+
 ## 安装
 
 ### 构建
@@ -74,7 +76,7 @@ Ura的配置文件按照查找顺序排列，有以下几个路径：
 - `$HOME/.config/ura/init.lua`
 - `/etc/ura/init.lua`
 
-[默认的配置文件](../../assets/init.lua)会随着ura一同安装到`/etc/ura/init.lua`。若尝试对其进行修改，建议拷贝到用户目录下再进行修改。
+[默认的配置文件](/assets/init.lua)会随着ura一同安装到`/etc/ura/init.lua`。若尝试对其进行修改，建议拷贝到用户目录下再进行修改。
 
 默认的终端为 [alacritty](https://github.com/alacritty/alacritty)，这可以使用快捷键`super+t`打开。不过，请确保在启动 ura 之前安装了`alacritty`，或者将其修改为其他你想要使用的终端。
 
@@ -156,10 +158,10 @@ ura.hook.set("tiling", function()
 end)
 ```
 
-更多示例可以参见：[examples](../../examples/)。
+更多示例可以参见：[examples](/examples/)。
 
 如果想要了解更多信息，请访问 [Ura Wiki](https://github.com/levinion/ura/wiki)
 
 ## 许可证
 
-本项目许可证采用 [GPLv3](../../LICENSE)。
+本项目许可证采用 [GPLv3](/LICENSE)。
