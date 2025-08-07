@@ -34,6 +34,8 @@ local UraWorkspace = {
 
 --- @class UraOutput: table
 local UraOutput = {
+  --- @type integer
+  index = 0,
   --- @class UraOutput.size: table
   size = {
     --- @type number

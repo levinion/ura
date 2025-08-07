@@ -290,6 +290,7 @@ sol::table UraOutput::to_lua_table() {
   usable["height"] = this->usable_area.height;
   table["usable"] = usable;
 
+  table["index"] = this->index();
   table["scale"] = this->output->scale;
   table["refresh"] = this->output->refresh;
   table["dpms"] = this->dpms_on;
@@ -301,5 +302,16 @@ void UraOutput::set_dpms_mode(bool flag) {
   this->dpms_on = flag;
   wlr_output_state_set_enabled(&wlr_state, flag);
   wlr_output_commit_state(this->output, &wlr_state);
+}
+
+int UraOutput::index() {
+  auto server = UraServer::get_instance();
+  int index = 0;
+  for (auto output : server->runtime->outputs) {
+    if (output == this)
+      return index;
+    index++;
+  }
+  std::unreachable();
 }
 } // namespace ura

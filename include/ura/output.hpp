@@ -19,6 +19,7 @@ public:
   void fresh_screen();
   wlr_box physical_geometry();
   wlr_box logical_geometry();
+  int index();
 
   /* Power */
   void set_dpms_mode(bool flag);
