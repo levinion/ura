@@ -72,6 +72,7 @@ ura = {
   api = {
     terminate = function() end,
     reload = function() end,
+    notify_idle_activity = function() end
   },
 
   --- @class ura.win: table

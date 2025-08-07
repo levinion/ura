@@ -51,6 +51,7 @@ void Lua::setup() {
   // api
   this->set("api.terminate", api::terminate);
   this->set("api.reload", api::reload);
+  this->set("api.notify_idle_activity", api::notify_idle_activity);
   // window
   this->set("win.focus", api::focus_window);
   this->set("win.close", api::close_window);

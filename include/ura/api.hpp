@@ -11,6 +11,7 @@ namespace ura::api {
 void terminate();
 void reload();
 void set_hook(std::string, sol::protected_function f);
+void notify_idle_activity();
 // keymap
 void keymap_set(std::string pattern, sol::protected_function f);
 void keymap_set_mode(

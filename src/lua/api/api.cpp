@@ -402,4 +402,9 @@ void set_output_dpms(int index, bool flag) {
   (*it)->set_dpms_mode(flag);
 }
 
+void notify_idle_activity() {
+  auto server = UraServer::get_instance();
+  server->seat->notify_idle_activity();
+}
+
 } // namespace ura::api
