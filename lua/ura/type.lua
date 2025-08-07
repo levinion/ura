@@ -229,6 +229,9 @@ ura = {
     append_package_path = function(path) end,
     --- @param path string
     prepend_package_path = function(path) end,
+    --- @param path string
+    --- @return string
+    expanduser = function(path) end,
   },
 
   --- @class ura.opt: table

@@ -1,4 +1,5 @@
 #include "ura/api.hpp"
+#include <regex>
 #include <set>
 #include "ura/lua.hpp"
 #include "ura/server.hpp"
@@ -378,6 +379,17 @@ void prepend_lua_package_path(std::string path) {
   paths.insert(paths.begin(), path);
   auto result = join(paths, ';');
   package.value().set("path", result);
+}
+
+std::string expanduser(std::string path) {
+  auto home = getenv("HOME");
+  assert(home);
+  return std::regex_replace(
+    path,
+    std::regex("~"),
+    home,
+    std::regex_constants::format_first_only
+  );
 }
 
 } // namespace ura::api

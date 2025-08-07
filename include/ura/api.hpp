@@ -57,6 +57,7 @@ void set_env(std::string name, std::string value);
 void unset_env(std::string name);
 void append_lua_package_path(std::string path);
 void prepend_lua_package_path(std::string path);
+std::string expanduser(std::string path);
 // override
 void lua_print(sol::variadic_args va);
 } // namespace ura::api

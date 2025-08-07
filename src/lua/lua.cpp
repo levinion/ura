@@ -103,6 +103,7 @@ void Lua::setup() {
   this->set("fn.unset_env", api::unset_env);
   this->set("fn.append_package_path", api::append_lua_package_path);
   this->set("fn.prepend_package_path", api::prepend_lua_package_path);
+  this->set("fn.expanduser", api::expanduser);
   // opt
   this->set("opt.border_width", 1);
   this->set("opt.active_border_color", "#89b4fa");
