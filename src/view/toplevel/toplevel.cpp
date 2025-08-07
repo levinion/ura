@@ -368,7 +368,7 @@ void UraToplevel::activate() {
 }
 
 bool UraToplevel::move(int x, int y, bool force_update_border) {
-  if (x != this->geometry.x && y != this->geometry.y) {
+  if (x != this->geometry.x || y != this->geometry.y) {
     this->geometry.x = x;
     this->geometry.y = y;
     wlr_scene_node_set_position(

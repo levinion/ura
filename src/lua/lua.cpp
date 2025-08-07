@@ -90,7 +90,12 @@ void Lua::setup() {
   this->set("layout.floating.default.width", 800);
   this->set("layout.floating.default.height", 600);
   // keymap
-  this->set("keymap.set", api::set_keymap);
+  this->set("keymap.set", api::keymap_set);
+  this->set("keymap.set_mode", api::keymap_set_mode);
+  this->set("keymap.unset", api::keymap_unset);
+  this->set("keymap.unset_mode", api::keymap_unset_mode);
+  this->set("keymap.enter_mode", api::keymap_enter_mode);
+  this->set("keymap.get_current_mode", api::keymap_get_current_mode);
   // hook
   this->set("hook.set", api::set_hook);
   // fn
@@ -138,9 +143,11 @@ Lua::execute_file(std::filesystem::path path) {
 
 bool Lua::try_execute_keybinding(uint64_t id) {
   auto server = UraServer::get_instance();
-  if (!this->keymaps.contains(id))
+  if (!this->keymaps.contains(this->mode))
     return false;
-  this->keymaps[id]();
+  if (!this->keymaps[mode].contains(id))
+    return false;
+  this->keymaps[mode][id]();
   return true;
 }
 

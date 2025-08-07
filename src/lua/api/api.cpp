@@ -11,11 +11,56 @@
 
 namespace ura::api {
 
-void set_keymap(std::string pattern, sol::protected_function f) {
+void keymap_set(std::string pattern, sol::protected_function f) {
   auto server = UraServer::get_instance();
   auto id = parse_keymap(pattern);
   if (id)
-    server->lua->keymaps[id.value()] = f;
+    server->lua->keymaps["normal"][id.value()] = f;
+}
+
+void keymap_set_mode(
+  std::string mode,
+  std::string pattern,
+  sol::protected_function f
+) {
+  auto server = UraServer::get_instance();
+  auto id = parse_keymap(pattern);
+  if (id)
+    server->lua->keymaps[mode][id.value()] = f;
+}
+
+void keymap_unset(std::string pattern) {
+  auto server = UraServer::get_instance();
+  auto id = parse_keymap(pattern);
+  if (!id)
+    return;
+  if (!server->lua->keymaps.contains("normal"))
+    return;
+  if (!server->lua->keymaps["normal"].contains(id.value()))
+    return;
+  server->lua->keymaps["normal"].erase(id.value());
+}
+
+void keymap_unset_mode(std::string mode, std::string pattern) {
+  auto server = UraServer::get_instance();
+  auto id = parse_keymap(pattern);
+  if (!id)
+    return;
+  if (!server->lua->keymaps.contains(mode))
+    return;
+  if (!server->lua->keymaps[mode].contains(id.value()))
+    return;
+  server->lua->keymaps[mode].erase(id.value());
+}
+
+void keymap_enter_mode(std::string mode) {
+  auto server = UraServer::get_instance();
+  server->lua->mode = mode;
+}
+
+std::string keymap_get_current_mode() {
+  auto server = UraServer::get_instance();
+  return server->lua->mode;
 }
 
 void terminate() {

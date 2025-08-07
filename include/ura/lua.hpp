@@ -17,7 +17,11 @@ public:
   std::string lua_stdout;
   bool reset = false;
   std::unordered_map<std::string, sol::protected_function> hooks;
-  std::unordered_map<uint64_t, sol::protected_function> keymaps;
+  std::unordered_map<
+    std::string,
+    std::unordered_map<uint64_t, sol::protected_function>>
+    keymaps; // mode -> id -> func
+  std::string mode = "normal";
   static std::unique_ptr<Lua> init();
   std::expected<std::string, std::string> execute(std::string script);
   std::expected<std::string, std::string> execute_file(std::filesystem::path);

@@ -8,10 +8,20 @@
 namespace ura::api {
 
 // api
-void set_keymap(std::string pattern, sol::protected_function f);
 void terminate();
 void reload();
 void set_hook(std::string, sol::protected_function f);
+// keymap
+void keymap_set(std::string pattern, sol::protected_function f);
+void keymap_set_mode(
+  std::string mode,
+  std::string pattern,
+  sol::protected_function f
+);
+void keymap_unset(std::string pattern);
+void keymap_unset_mode(std::string mode, std::string pattern);
+void keymap_enter_mode(std::string mode);
+std::string keymap_get_current_mode();
 // win
 void close_window(int index);
 int get_window_number();
