@@ -310,6 +310,7 @@ sol::table list_workspaces() {
   for (auto& workspace : output->workspaces) {
     table.add(workspace->to_lua_table());
   }
+  table.add(server->scratchpad->to_lua_table());
   return table;
 }
 
