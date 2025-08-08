@@ -17,6 +17,7 @@ Lua 是一门通用语言，它被许多编辑器/LSP（如 lua_ls）支持，�
 依赖项包括：
 
 - wayland
+- wlroots0.19
 - luajit
 - sol2
 - pixman
