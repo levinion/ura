@@ -201,7 +201,12 @@ void UraServer::setup_text_input() {
 
 void UraServer::setup_idle() {
   this->idle_notifier = wlr_idle_notifier_v1_create(this->display);
-  wlr_idle_inhibit_v1_create(this->display);
+  this->idle_inhibit_manager = wlr_idle_inhibit_v1_create(this->display);
+  this->runtime->register_callback(
+    &this->idle_inhibit_manager->events.new_inhibitor,
+    on_new_idle_inhibitor,
+    nullptr
+  );
 }
 
 void UraServer::setup_session_lock() {

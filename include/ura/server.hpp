@@ -33,6 +33,7 @@ public:
   wlr_output_manager_v1* output_manager;
   wlr_output_power_manager_v1* output_power_manager;
   wlr_idle_notifier_v1* idle_notifier;
+  wlr_idle_inhibit_manager_v1* idle_inhibit_manager;
   wlr_xdg_activation_v1* activation;
   wlr_foreign_toplevel_manager_v1* foreign_manager;
   wlr_text_input_manager_v3* text_input_manager;

@@ -26,6 +26,7 @@ public:
   void focus(UraToplevel* toplevel);
   void focus(UraLayerShell* layer_shell);
   void notify_idle_activity();
+  void set_idle_inhibitor(bool flag);
 };
 
 } // namespace ura

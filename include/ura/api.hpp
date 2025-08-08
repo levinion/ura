@@ -12,6 +12,7 @@ void terminate();
 void reload();
 void set_hook(std::string, sol::protected_function f);
 void notify_idle_activity();
+void set_idle_inhibitor(bool flag);
 // keymap
 void keymap_set(std::string pattern, sol::protected_function f);
 void keymap_set_mode(

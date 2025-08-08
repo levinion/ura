@@ -113,4 +113,9 @@ void UraSeat::notify_idle_activity() {
   }
 }
 
+void UraSeat::set_idle_inhibitor(bool flag) {
+  auto server = UraServer::get_instance();
+  wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, flag);
+}
+
 } // namespace ura

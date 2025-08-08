@@ -15,6 +15,10 @@ void on_output_power_manager_set_mode(wl_listener* listener, void* data);
 // seat/callback.cpp
 void on_new_input(wl_listener* listener, void* data);
 
+// seat/idle.cpp
+void on_new_idle_inhibitor(wl_listener* listener, void* data);
+void on_idle_inhibitor_destroy(wl_listener* listener, void* data);
+
 // seat/cursor/callback.cpp
 void on_cursor_motion(wl_listener* listener, void* data);
 void on_cursor_motion_absolute(wl_listener* listener, void* data);

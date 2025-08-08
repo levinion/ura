@@ -407,4 +407,9 @@ void notify_idle_activity() {
   server->seat->notify_idle_activity();
 }
 
+void set_idle_inhibitor(bool flag) {
+  auto server = UraServer::get_instance();
+  server->seat->set_idle_inhibitor(flag);
+}
+
 } // namespace ura::api
