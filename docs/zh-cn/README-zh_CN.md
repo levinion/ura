@@ -150,7 +150,7 @@ ura.hook.set("window-new", function()
 end)
 ```
 
-## Layout
+## 布局
 
 Ura 的 `layout` 模块允许用户自定义布局算法。以下是一个最简单的布局算法，它只是让窗口填满屏幕的可用区域（或称最大化）。
 
