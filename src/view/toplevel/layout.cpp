@@ -11,6 +11,9 @@ std::optional<sol::table> tiling(int index) {
     return {};
   if (toplevel.value()->initial_commit) {
     toplevel.value()->draggable = false;
+    auto layer = toplevel.value()->layer =
+      server->view->try_get_scene_tree(UraSceneLayer::Normal);
+    toplevel.value()->set_layer(layer);
   }
   auto geo = toplevel.value()->geometry;
   auto usable_area = toplevel.value()->output->usable_area;
@@ -68,10 +71,9 @@ std::optional<sol::table> fullscreen(int index) {
     return {};
   if (toplevel.value()->initial_commit) {
     toplevel.value()->draggable = false;
+    auto layer = server->view->try_get_scene_tree(UraSceneLayer::Fullscreen);
+    toplevel.value()->set_layer(layer);
   }
-  auto layer = toplevel.value()->layer =
-    server->view->try_get_scene_tree(UraSceneLayer::Fullscreen);
-  toplevel.value()->set_layer(layer);
 
   auto geo = server->current_output()->logical_geometry();
   auto table = server->lua->state.create_table();
@@ -92,11 +94,10 @@ std::optional<sol::table> floating(int index) {
 
   if (toplevel.value()->initial_commit) {
     toplevel.value()->draggable = true;
+    auto layer = server->view->try_get_scene_tree(UraSceneLayer::Floating);
+    toplevel.value()->set_layer(layer);
   }
 
-  auto layer = toplevel.value()->layer =
-    server->view->try_get_scene_tree(UraSceneLayer::Floating);
-  toplevel.value()->set_layer(layer);
   auto geo = toplevel.value()->geometry;
   auto usable_area = toplevel.value()->output->usable_area;
   int w = geo.width, h = geo.height, x = geo.x, y = geo.y;
