@@ -5,6 +5,7 @@
 #include "ura/ura.hpp"
 #include "ura/output.hpp"
 #include "ura/seat.hpp"
+#include "ura/view.hpp"
 
 namespace ura {
 void on_new_session_lock(wl_listener* listener, void* data) {
@@ -12,8 +13,9 @@ void on_new_session_lock(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto lock = new UraSessionLock;
   lock->lock = session_lock;
-  lock->scene_tree =
-    wlr_scene_tree_create(server->current_output()->lock_screen);
+  lock->scene_tree = wlr_scene_tree_create(
+    server->view->try_get_scene_tree(UraSceneLayer::LockScreen)
+  );
   server->runtime->register_callback(
     &session_lock->events.new_surface,
     on_session_lock_new_surface,

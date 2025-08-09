@@ -13,8 +13,10 @@ class UraWorkSpace;
 class UraToplevel {
 public:
   bool mapped = true;
-  bool floating = false;
   bool destroying = false;
+  bool draggable = false;
+  std::string layout = "tiling";
+  bool initial_commit = true;
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
   wlr_scene_tree* layer;
@@ -22,7 +24,7 @@ public:
   UraWorkSpace* workspace;
   wlr_xdg_toplevel_decoration_v1* decoration;
   wlr_foreign_toplevel_handle_v1* foreign_handle;
-  wlr_box geometry;
+  wlr_box geometry = { 0, 0, 0, 0 };
 
   // same with css, top > right > bottom > left
   std::array<wlr_scene_rect*, 4> borders;
@@ -39,33 +41,26 @@ public:
   bool move(int x, int y, bool force_update_border = false);
   bool resize(int width, int height);
   void center();
-  void set_fullscreen(bool flag);
-  bool fullscreen();
-  void toggle_fullscreen();
   void close();
   void map();
   void unmap();
   std::string title();
   std::string app_id();
   void set_title(std::string title);
-  bool is_normal();
   std::optional<int> move_to_workspace(int index);
   void move_to_scratchpad();
   int index();
   void activate();
-  void set_float(bool flag);
   void set_layer(wlr_scene_tree* layer);
   void request_commit();
   bool is_active();
   sol::table to_lua_table();
+  void set_layout(std::string layout);
 
 private:
-  bool initial_floating_commit = false;
-  bool commit_fullscreen();
-  bool commit_floating();
-  bool commit_normal();
   void create_borders();
   void set_border_color(std::array<float, 4>& color);
+  std::optional<wlr_box> apply_layout();
 };
 
 } // namespace ura

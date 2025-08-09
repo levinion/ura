@@ -24,6 +24,6 @@ void on_foreign_toplevel_handle_request_fullscreen(
     static_cast<wlr_foreign_toplevel_handle_v1_fullscreen_event*>(data);
   auto server = UraServer::get_instance();
   auto toplevel = static_cast<UraToplevel*>(event->toplevel->data);
-  toplevel->toggle_fullscreen();
+  toplevel->set_layout("fullscreen");
 }
 } // namespace ura

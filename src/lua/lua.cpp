@@ -1,5 +1,6 @@
 #include "ura/lua.hpp"
 #include "ura/api.hpp"
+#include "ura/layout.hpp"
 #include "ura/server.hpp"
 #include <expected>
 #include <filesystem>
@@ -61,8 +62,8 @@ void Lua::setup() {
   this->set("win.get_current", api::get_current_window);
   this->set("win.get", api::get_window);
   this->set("win.activate", api::activate_window);
-  this->set("win.set_fullscreen", api::set_window_fullscreen);
-  this->set("win.set_floating", api::set_window_floating);
+  this->set("win.set_layout", api::set_window_layout);
+  this->set("win.set_layer", api::set_window_layer);
   this->set("win.move", api::move_window);
   this->set("win.resize", api::resize_window);
   this->set("win.center", api::center_window);
@@ -85,6 +86,8 @@ void Lua::setup() {
   this->set("output.get_current", api::get_current_output);
   this->set("output.set_dpms", api::set_output_dpms);
   // layout
+  this->set("layout.set", api::set_layout);
+  this->set("layout.unset", api::unset_layout);
   this->set("layout.tilling.gap.outer.top", 10);
   this->set("layout.tilling.gap.outer.left", 10);
   this->set("layout.tilling.gap.outer.bottom", 10);
@@ -114,6 +117,11 @@ void Lua::setup() {
   this->set("opt.focus_follow_mouse", true);
   // override
   this->state.set("print", api::lua_print);
+
+  this->layouts["tiling"] = this->create_protected_function(layout::tiling);
+  this->layouts["fullscreen"] =
+    this->create_protected_function(layout::fullscreen);
+  this->layouts["floating"] = this->create_protected_function(layout::floating);
 }
 
 std::expected<std::string, std::string> Lua::execute(std::string script) {

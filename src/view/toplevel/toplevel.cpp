@@ -1,6 +1,7 @@
 #include "ura/toplevel.hpp"
 #include <wayland-server-core.h>
 #include <utility>
+#include "ura/layout.hpp"
 #include "ura/runtime.hpp"
 #include "ura/server.hpp"
 #include "ura/output.hpp"
@@ -9,6 +10,7 @@
 #include "ura/seat.hpp"
 #include "ura/util.hpp"
 #include "ura/lua.hpp"
+#include "ura/view.hpp"
 
 namespace ura {
 
@@ -18,9 +20,9 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   // setup ura toplevel
   this->xdg_toplevel = xdg_toplevel;
   // add to output's normal layer
+  this->layer = server->view->try_get_scene_tree(UraSceneLayer::Normal);
   this->scene_tree =
-    wlr_scene_xdg_surface_create(output->normal, xdg_toplevel->base);
-  this->layer = output->normal;
+    wlr_scene_xdg_surface_create(this->layer, xdg_toplevel->base);
   this->output = output;
   this->workspace = this->output->current_workspace;
   this->workspace->add(this);
@@ -146,116 +148,22 @@ void UraToplevel::commit() {
     server->lua->try_execute_hook("window-new");
   }
 
-  if (this->commit_fullscreen() || this->commit_floating()
-      || this->commit_normal()) {
+  auto box = this->apply_layout();
+  if (!box)
+    return;
+  auto changed = false;
+  if (this->resize(box->width, box->height))
+    changed = true;
+  if (this->move(box->x, box->y))
+    changed = true;
+
+  if (this->initial_commit)
+    this->initial_commit = false;
+  if (changed) {
     for (auto toplevel : this->workspace->toplevels)
       if (toplevel != this)
         toplevel->request_commit();
   }
-}
-
-// handle fullscreen toplevel window
-bool UraToplevel::commit_fullscreen() {
-  if (!this->fullscreen())
-    return false;
-  this->set_layer(this->output->fullscreen);
-  auto changed = false;
-  auto mode = this->output->logical_geometry();
-  auto geo = this->geometry;
-  if (this->resize(mode.width, mode.height))
-    changed = true;
-  if (this->move(mode.x, mode.y))
-    changed = true;
-  return changed;
-}
-
-bool UraToplevel::commit_floating() {
-  // only commit floating state once
-  if (this->fullscreen() || !this->floating || !this->initial_floating_commit)
-    return false;
-  this->initial_floating_commit = false;
-  this->set_layer(this->output->floating);
-  auto server = UraServer::get_instance();
-  this->resize(
-    server->lua->fetch<int>("layout.floating.default.width").value_or(800),
-    server->lua->fetch<int>("layout.floating.default.height").value_or(600)
-  );
-  this->center();
-  return true;
-}
-
-bool UraToplevel::commit_normal() {
-  if (!this->is_normal())
-    return false;
-  this->set_layer(this->output->normal);
-
-  int x, y, w, h;
-
-  auto server = UraServer::get_instance();
-  auto obj = server->lua->try_execute_hook("tiling");
-  if (obj) {
-    auto result = obj->as<std::optional<sol::table>>();
-    if (!result)
-      goto FALLBACK;
-    auto tx = result.value().get<std::optional<int>>("x");
-    auto ty = result.value().get<std::optional<int>>("y");
-    auto tw = result.value().get<std::optional<int>>("width");
-    auto th = result.value().get<std::optional<int>>("height");
-    if (!tx || !ty || !tw || !th)
-      goto FALLBACK;
-    x = tx.value();
-    y = ty.value();
-    w = tw.value();
-    h = th.value();
-  } else {
-  FALLBACK:
-    auto geo = this->geometry;
-    auto usable_area = this->output->usable_area;
-    auto width = usable_area.width;
-    auto height = usable_area.height;
-    auto outer_l =
-      server->lua->fetch<int>("layout.tilling.gap.outer.left").value_or(10);
-    auto outer_r =
-      server->lua->fetch<int>("layout.tilling.gap.outer.right").value_or(10);
-    auto outer_t =
-      server->lua->fetch<int>("layout.tilling.gap.outer.top").value_or(10);
-    auto outer_b =
-      server->lua->fetch<int>("layout.tilling.gap.outer.bottom").value_or(10);
-    auto inner =
-      server->lua->fetch<int>("layout.tilling.gap.inner").value_or(10);
-    auto& toplevels = output->current_workspace->toplevels;
-    // find mapped toplevel number
-    int sum = 0;
-    for (auto toplevel : toplevels) {
-      if (toplevel->is_normal())
-        sum += 1;
-    }
-    // no toplevel to arrage
-    if (sum == 0)
-      return false;
-    // find this toplevel's index
-    int i = 0;
-    for (auto window : toplevels) {
-      if (!window->is_normal())
-        continue;
-      if (window != this)
-        i++;
-      else
-        break;
-    }
-    auto gaps = sum - 1;
-    w = (width - (outer_r + outer_l) - inner * gaps) / sum;
-    h = height - (outer_t + outer_b);
-    x = usable_area.x + outer_l + (w + inner) * i;
-    y = usable_area.y + outer_t;
-  }
-
-  auto changed = false;
-  if (this->resize(w, h))
-    changed = true;
-  if (this->move(x, y))
-    changed = true;
-  return changed;
 }
 
 void UraToplevel::focus() {
@@ -446,25 +354,6 @@ bool UraToplevel::resize(int width, int height) {
   return true;
 }
 
-void UraToplevel::set_fullscreen(bool flag) {
-  if (this->xdg_toplevel->base->initialized) {
-    wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, flag);
-    wlr_foreign_toplevel_handle_v1_set_fullscreen(this->foreign_handle, flag);
-    if (this->floating)
-      this->initial_floating_commit = true;
-  }
-}
-
-bool UraToplevel::fullscreen() {
-  if (!this->xdg_toplevel)
-    return false;
-  return this->xdg_toplevel->current.fullscreen;
-}
-
-void UraToplevel::toggle_fullscreen() {
-  this->set_fullscreen(!this->fullscreen());
-}
-
 void UraToplevel::close() {
   wlr_xdg_toplevel_send_close(this->xdg_toplevel);
   wlr_foreign_toplevel_handle_v1_output_leave(
@@ -504,23 +393,6 @@ std::string UraToplevel::app_id() {
 void UraToplevel::set_title(std::string title) {
   this->xdg_toplevel->title = title.data();
   wlr_foreign_toplevel_handle_v1_set_title(this->foreign_handle, title.data());
-}
-
-bool UraToplevel::is_normal() {
-  return (this->mapped && !this->fullscreen() && !this->floating);
-}
-
-void UraToplevel::set_float(bool flag) {
-  if (flag && !this->floating) {
-    this->floating = true;
-    this->initial_floating_commit = true;
-    wlr_scene_node_reparent(&this->scene_tree->node, this->output->floating);
-    return;
-  }
-  if (!flag && this->floating) {
-    this->floating = false;
-    wlr_scene_node_reparent(&this->scene_tree->node, this->output->normal);
-  }
 }
 
 void UraToplevel::set_layer(wlr_scene_tree* layer) {
@@ -590,12 +462,54 @@ sol::table UraToplevel::to_lua_table() {
     this->workspace != server->scratchpad.get() ? this->workspace->index() : -1;
   table["app_id"] = this->app_id();
   table["title"] = this->title();
-  table["floating"] = this->floating;
-  table["fullscreen"] = this->fullscreen();
   table["x"] = this->geometry.x;
   table["y"] = this->geometry.y;
   table["width"] = this->geometry.width;
   table["height"] = this->geometry.height;
+  table["layout"] = this->layout;
+  table["initial_commit"] = this->initial_commit;
   return table;
 }
+
+std::optional<wlr_box> UraToplevel::apply_layout() {
+  auto server = UraServer::get_instance();
+  sol::protected_function layout;
+  if (server->lua->layouts.contains(this->layout)) {
+    layout = server->lua->layouts[this->layout];
+  } else {
+    layout = server->lua->layouts["tiling"];
+  }
+  auto result = layout(this->index());
+  if (!result.valid())
+    return {};
+  auto table = result.get<std::optional<sol::table>>();
+  if (!table)
+    return {};
+  auto x = table->get<std::optional<int>>("x");
+  auto y = table->get<std::optional<int>>("y");
+  auto w = table->get<std::optional<int>>("width");
+  auto h = table->get<std::optional<int>>("height");
+  if (!x || !y || !w || !h)
+    return {};
+  return wlr_box { x.value(), y.value(), w.value(), h.value() };
+}
+
+void UraToplevel::set_layout(std::string layout) {
+  if (layout != this->layout) {
+    if (layout == "fullscreen") {
+      wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, false);
+      wlr_foreign_toplevel_handle_v1_set_fullscreen(
+        this->foreign_handle,
+        false
+      );
+    }
+    this->initial_commit = true;
+    this->layout = layout;
+    if (layout == "fullscreen") {
+      wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, true);
+      wlr_foreign_toplevel_handle_v1_set_fullscreen(this->foreign_handle, true);
+    }
+  }
+}
+
 } // namespace ura

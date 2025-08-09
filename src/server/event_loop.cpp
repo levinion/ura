@@ -16,6 +16,7 @@ namespace ura {
 UraServer* UraServer::init() {
   wlr_log_init(WLR_DEBUG, NULL);
   this->runtime = UraRuntime::init();
+  this->view = UraView::init();
   this->lua = Lua::init();
   assert(this->lua->try_execute_init());
   this->lua->try_execute_hook("prepare");
@@ -81,9 +82,8 @@ void UraServer::setup_output() {
   );
 
   // create scene
-  this->scene = wlr_scene_create();
   this->scene_layout =
-    wlr_scene_attach_output_layout(this->scene, this->output_layout);
+    wlr_scene_attach_output_layout(this->view->scene, this->output_layout);
 
   // output_manager_v1
   wlr_xdg_output_manager_v1_create(this->display, this->output_layout);
@@ -312,7 +312,6 @@ void UraServer::destroy() {
   wlr_backend_destroy(this->backend);
   this->runtime->remove(nullptr);
   wl_display_destroy(this->display);
-  wlr_scene_node_destroy(&this->scene->tree.node);
 }
 
 UraServer::~UraServer() {

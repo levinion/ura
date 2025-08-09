@@ -32,22 +32,12 @@ public:
   std::list<UraPopup*> popups;
 
   /* Layers */
-  wlr_scene_tree* background;
-  wlr_scene_tree* bottom;
-  wlr_scene_tree* normal;
-  wlr_scene_tree* floating;
-  wlr_scene_tree* top;
-  wlr_scene_tree* popup;
-  wlr_scene_tree* fullscreen;
-  wlr_scene_tree* overlay;
-  wlr_scene_tree* lock_screen;
   wlr_box usable_area;
 
   UraSessionLockSurface* session_lock_surface = nullptr;
 
   void configure_layers();
   void configure_layer(
-    wlr_scene_tree* layer,
     std::list<UraLayerShell*>& list,
     wlr_box* full_area,
     wlr_box* usable_area,

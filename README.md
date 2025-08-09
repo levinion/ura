@@ -145,21 +145,24 @@ ura.hook.set("window-new", function()
   local win = ura.win.get_current()
   if not win then return end
   if string.match(win.app_id, "fzfmenu") then
-    ura.win.set_floating(win.index, true)
+    ura.win.set_layout(win.index, "floating")
     ura.win.resize(win.index, 1000, 600)
     ura.win.center(win.index)
   end
 end)
 ```
 
-The `tiling` hook allows you to customize your own tiling logic. The following is a simple tiling algorithm that lays out the window to fill the usable area of the current output. If the hook is not set, it will fallback to a horizontal tiling algorithm.
+## Layout
+
+The layout module in Ura lets you create custom layout algorithms. Here's a simple example that makes a window fill the entire usable area of the screen (just like maximizing).
 
 ```lua
-ura.hook.set("tiling", function()
+ura.layout.set("my-tiling", function(index)
   local output = ura.output.get_current()
   return { x = output.usable.x, y = output.usable.y, width = output.usable.width, height = output.usable.height }
 end)
 ```
+Used with the window-new hook, this allows you to apply a custom layout algorithm when a new window is created. The default layout algorithms include tiling, floating, and fullscreen. Of these, tiling is a simple horizontal tiling algorithm.
 
 More examples are available at: [examples](/examples/)
 

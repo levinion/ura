@@ -22,6 +22,8 @@ public:
     std::unordered_map<uint64_t, sol::protected_function>>
     keymaps; // mode -> id -> func
   std::string mode = "normal";
+  std::unordered_map<std::string, sol::protected_function> layouts;
+
   static std::unique_ptr<Lua> init();
   std::expected<std::string, std::string> execute(std::string script);
   std::expected<std::string, std::string> execute_file(std::filesystem::path);
@@ -68,6 +70,14 @@ public:
   }
 
   void setup();
+
+private:
+  template<typename T>
+  sol::protected_function create_protected_function(T f) {
+    auto table = this->state.create_table();
+    table["f"] = f;
+    return table["f"];
+  }
 };
 
 } // namespace ura

@@ -3,6 +3,7 @@
 #include <memory>
 #include "ura/layer_shell.hpp"
 #include "ura/ura.hpp"
+#include "ura/view.hpp"
 #include "ura/workspace.hpp"
 
 namespace ura {
@@ -22,7 +23,6 @@ public:
   wlr_session* session;
   wlr_renderer* renderer;
   wlr_allocator* allocator;
-  wlr_scene* scene;
   wlr_scene_output_layout* scene_layout;
   wlr_output_layout* output_layout;
   wlr_xdg_shell* xdg_shell;
@@ -45,6 +45,7 @@ public:
   std::unique_ptr<Lua> lua;
   std::unique_ptr<UraSeat> seat;
   std::unique_ptr<UraWorkSpace> scratchpad;
+  std::unique_ptr<UraView> view;
 
   bool quit = false;
 

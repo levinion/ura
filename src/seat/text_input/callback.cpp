@@ -7,6 +7,7 @@
 #include "ura/text_input.hpp"
 #include "ura/ura.hpp"
 #include "ura/seat.hpp"
+#include "ura/view.hpp"
 
 namespace ura {
 /* Text Input V3 Callbacks */
@@ -171,7 +172,7 @@ void on_input_method_new_popup_surface(wl_listener* listener, void* data) {
   popup->popup_surface->data = popup;
   server->seat->text_input->popups.push_back(popup);
   popup->scene_tree = wlr_scene_subsurface_tree_create(
-    server->current_output()->popup,
+    server->view->try_get_scene_tree(UraSceneLayer::Popup),
     popup->popup_surface->surface
   );
 

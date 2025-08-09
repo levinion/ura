@@ -5,7 +5,6 @@
 #include "ura/runtime.hpp"
 #include "ura/callback.hpp"
 #include "ura/seat.hpp"
-#include "wlr-layer-shell-unstable-v1-protocol.h"
 
 namespace ura {
 
@@ -16,7 +15,7 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
     auto output = server->current_output();
     layer_surface->output = output->output;
   }
-  auto output = server->current_output();
+  this->output = UraOutput::from(layer_surface->output);
 
   // get the layer scene tree based on layer_shell's type
   auto layer_scene_tree =
@@ -27,7 +26,6 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
 
   this->layer_surface = layer_surface;
   this->scene_surface = scene_surface;
-  this->output = output;
   this->scene_tree = scene_surface->tree;
   layer_surface->surface->data = this;
 

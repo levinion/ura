@@ -138,7 +138,7 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
       if (super_pressed) {
         // begin grab
         auto toplevel = server->seat->focused_toplevel();
-        if (toplevel && toplevel->floating) {
+        if (toplevel && toplevel->draggable) {
           this->mode = UraCursorMode::Move;
           this->grab = this->position();
           this->anchor = toplevel->geometry;
@@ -163,7 +163,7 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
       if (super_pressed) {
         // begin grab
         auto toplevel = server->seat->focused_toplevel();
-        if (toplevel && toplevel->floating) {
+        if (toplevel && toplevel->draggable) {
           this->mode = UraCursorMode::Resize;
           this->grab = this->position();
           this->anchor = toplevel->geometry;
@@ -229,7 +229,7 @@ void UraCursor::reset_mode() {
 void UraCursor::process_cursor_mode_move() {
   auto server = UraServer::get_instance();
   auto toplevel = server->seat->focused_toplevel();
-  if (!toplevel || !toplevel->floating)
+  if (!toplevel || !toplevel->draggable)
     this->reset_mode();
   else {
     toplevel->move(
@@ -243,7 +243,7 @@ void UraCursor::process_cursor_mode_move() {
 void UraCursor::process_cursor_mode_resize() {
   auto server = UraServer::get_instance();
   auto toplevel = server->seat->focused_toplevel();
-  if (!toplevel || !toplevel->floating)
+  if (!toplevel || !toplevel->draggable)
     this->reset_mode();
   else {
     toplevel->resize(

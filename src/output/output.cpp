@@ -5,6 +5,7 @@
 #include <utility>
 #include "ura/ura.hpp"
 #include "ura/layer_shell.hpp"
+#include "ura/view.hpp"
 #include "ura/workspace.hpp"
 #include "ura/runtime.hpp"
 #include "ura/callback.hpp"
@@ -26,17 +27,6 @@ void UraOutput::init(wlr_output* _wlr_output) {
   this->current_workspace = this->create_workspace();
   this->switch_workspace(this->current_workspace);
 
-  // create scene tree
-  this->background = wlr_scene_tree_create(&server->scene->tree);
-  this->bottom = wlr_scene_tree_create(&server->scene->tree);
-  this->normal = wlr_scene_tree_create(&server->scene->tree);
-  this->floating = wlr_scene_tree_create(&server->scene->tree);
-  this->top = wlr_scene_tree_create(&server->scene->tree);
-  this->popup = wlr_scene_tree_create(&server->scene->tree);
-  this->fullscreen = wlr_scene_tree_create(&server->scene->tree);
-  this->overlay = wlr_scene_tree_create(&server->scene->tree);
-  this->lock_screen = wlr_scene_tree_create(&server->scene->tree);
-
   // register callback
   server->runtime
     ->register_callback(&this->output->events.frame, on_output_frame, this);
@@ -48,17 +38,6 @@ void UraOutput::init(wlr_output* _wlr_output) {
   server->runtime
     ->register_callback(&this->output->events.destroy, on_output_destroy, this);
 
-  // order of layers
-  wlr_scene_node_raise_to_top(&this->background->node);
-  wlr_scene_node_raise_to_top(&this->bottom->node);
-  wlr_scene_node_raise_to_top(&this->normal->node);
-  wlr_scene_node_raise_to_top(&this->floating->node);
-  wlr_scene_node_raise_to_top(&this->top->node);
-  wlr_scene_node_raise_to_top(&this->popup->node);
-  wlr_scene_node_raise_to_top(&this->fullscreen->node);
-  wlr_scene_node_raise_to_top(&this->overlay->node);
-  wlr_scene_node_raise_to_top(&this->lock_screen->node);
-
   // set usable area to full area
   this->usable_area = this->logical_geometry();
 
@@ -66,7 +45,8 @@ void UraOutput::init(wlr_output* _wlr_output) {
   auto output_layout_output =
     wlr_output_layout_add_auto(server->output_layout, this->output);
 
-  auto scene_output = wlr_scene_output_create(server->scene, this->output);
+  auto scene_output =
+    wlr_scene_output_create(server->view->scene, this->output);
   wlr_scene_output_layout_add_output(
     server->scene_layout,
     output_layout_output,
@@ -83,7 +63,7 @@ UraOutput* UraOutput::from(wlr_output* output) {
 
 void UraOutput::fresh_screen() {
   auto server = UraServer::get_instance();
-  auto scene = server->scene;
+  auto scene = server->view->scene;
   auto scene_output = wlr_scene_get_scene_output(scene, this->output);
   // commit scene_output
   wlr_scene_output_commit(scene_output, nullptr);
@@ -95,18 +75,19 @@ void UraOutput::fresh_screen() {
 
 wlr_scene_tree* UraOutput::get_layer_by_type(zwlr_layer_shell_v1_layer type) {
   wlr_scene_tree* layer;
+  auto server = UraServer::get_instance();
   switch (type) {
     case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
-      layer = this->background;
+      layer = server->view->try_get_scene_tree(UraSceneLayer::Background);
       break;
     case ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM:
-      layer = this->bottom;
+      layer = server->view->try_get_scene_tree(UraSceneLayer::Bottom);
       break;
     case ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY:
-      layer = this->overlay;
+      layer = server->view->try_get_scene_tree(UraSceneLayer::Overlay);
       break;
     case ZWLR_LAYER_SHELL_V1_LAYER_TOP:
-      layer = this->top;
+      layer = server->view->try_get_scene_tree(UraSceneLayer::Top);
       break;
   }
   return layer;
@@ -132,7 +113,6 @@ UraOutput::get_layer_list_by_type(zwlr_layer_shell_v1_layer type) {
 }
 
 void UraOutput::configure_layer(
-  wlr_scene_tree* layer,
   std::list<UraLayerShell*>& list,
   wlr_box* full_area,
   wlr_box* usable_area,
@@ -162,7 +142,6 @@ void UraOutput::configure_layers() {
   for (auto exclusive : { true, false }) {
     // background
     this->configure_layer(
-      this->background,
       this->background_surfaces,
       &full_area,
       &usable_area,
@@ -170,7 +149,6 @@ void UraOutput::configure_layers() {
     );
     // bottom
     this->configure_layer(
-      this->bottom,
       this->bottom_surfaces,
       &full_area,
       &usable_area,
@@ -178,7 +156,6 @@ void UraOutput::configure_layers() {
     );
     // top
     this->configure_layer(
-      this->top,
       this->top_surfaces,
       &full_area,
       &usable_area,
@@ -186,7 +163,6 @@ void UraOutput::configure_layers() {
     );
     // overlay
     this->configure_layer(
-      this->overlay,
       this->overlay_surfaces,
       &full_area,
       &usable_area,

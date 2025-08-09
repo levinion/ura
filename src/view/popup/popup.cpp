@@ -7,6 +7,7 @@
 #include "ura/ura.hpp"
 #include "ura/callback.hpp"
 #include "ura/client.hpp"
+#include "ura/view.hpp"
 
 namespace ura {
 
@@ -43,8 +44,10 @@ bool UraPopup::init(wlr_xdg_popup* xdg_popup) {
   } else {
     // this happens when a popup has no parent
     // then send them to current output's popup layer
-    this->scene_tree =
-      wlr_scene_xdg_surface_create(output->popup, xdg_popup->base);
+    this->scene_tree = wlr_scene_xdg_surface_create(
+      server->view->try_get_scene_tree(UraSceneLayer::Popup),
+      xdg_popup->base
+    );
   }
 
   output->popups.push_back(this);

@@ -10,10 +10,6 @@ local UraWindow = {
   app_id = "",
   --- @type string
   title = "",
-  --- @type boolean
-  floating = false,
-  --- @type boolean
-  fullscreen = false,
   --- @type integer
   x = 0,
   --- @type integer
@@ -21,7 +17,11 @@ local UraWindow = {
   --- @type integer
   width = 0,
   --- @type integer
-  height = 0
+  height = 0,
+  --- @type string
+  layout = "tiling",
+  --- @type boolean
+  initial_commit = true,
 }
 
 --- @class UraWorkspace: table
@@ -66,6 +66,18 @@ local UraOutput = {
   dpms = true,
 }
 
+--- @class UraLayout: table
+local UraLayout = {
+  --- @type number
+  x = 0,
+  --- @type number
+  y = 0,
+  --- @type number
+  width = 0,
+  --- @type number
+  height = 0
+}
+
 --- @class ura: table
 ura = {
   --- @class ura.api: table
@@ -84,12 +96,6 @@ ura = {
     focus = function(index) end,
     --- @param index integer
     close = function(index) end,
-    --- @param index integer
-    --- @param flag boolean
-    set_floating = function(index, flag) end,
-    --- @param index integer
-    --- @param flag boolean
-    set_fullscreen = function(index, flag) end,
     --- @param window_index integer
     --- @param workspace_index integer
     move_to_workspace = function(window_index, workspace_index) end,
@@ -111,7 +117,13 @@ ura = {
     ---@param height integer
     resize = function(index, width, height) end,
     ---@param index integer
-    center = function(index) end
+    center = function(index) end,
+    ---@param index integer
+    ---@param layout string
+    set_layout = function(index, layout) end,
+    ---@param index integer
+    ---@param z integer
+    set_layer = function(index, z) end
   },
 
   --- @class ura.input: table
@@ -169,6 +181,11 @@ ura = {
 
   --- @class ura.layout: table
   layout = {
+    --- @param name string
+    --- @param f fun(integer): UraLayout
+    set = function(name, f) end,
+    --- @param name string
+    unset = function(name) end,
     --- @class ura.layout.tilling: table
     tilling = {
       --- @class ura.layout.tilling.gap: table

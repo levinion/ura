@@ -9,7 +9,8 @@ end)
 
 ura.keymap.set("alt+space", function()
   local w = ura.win.get_current()
-  if w then ura.win.set_floating(w.index, not w.floating) end
+  if not w then return end
+  ura.win.set_layout(w.index, w.layout ~= "floating" and "floating" or "tiling")
 end)
 
 ura.keymap.set("super+shift+e", function()
@@ -22,7 +23,8 @@ end)
 
 ura.keymap.set("super+f", function()
   local w = ura.win.get_current()
-  if w then ura.win.set_fullscreen(w.index, not w.fullscreen) end
+  if not w then return end
+  ura.win.set_layout(w.index, w.layout ~= "fullscreen" and "fullscreen" or "tiling")
 end)
 
 ura.keymap.set("ctrl+left", function()

@@ -184,29 +184,14 @@ bool focus_window(int index) {
   return true;
 }
 
-void set_window_fullscreen(int index, bool flag) {
+void set_window_layout(int index, std::string layout) {
   auto server = UraServer::get_instance();
   auto client =
     server->current_output()->current_workspace->get_toplevel_at(index);
   if (client) {
     auto toplevel = client.value();
-    if (toplevel && toplevel->fullscreen() != flag) {
-      toplevel->set_fullscreen(flag);
-      toplevel->request_commit();
-    }
-  }
-}
-
-void set_window_floating(int index, bool flag) {
-  auto server = UraServer::get_instance();
-  auto client =
-    server->current_output()->current_workspace->get_toplevel_at(index);
-  if (client) {
-    auto toplevel = client.value();
-    if (toplevel && toplevel->floating != flag) {
-      toplevel->set_float(flag);
-      toplevel->request_commit();
-    }
+    toplevel->set_layout(layout);
+    toplevel->request_commit();
   }
 }
 
@@ -411,6 +396,41 @@ void notify_idle_activity() {
 void set_idle_inhibitor(bool flag) {
   auto server = UraServer::get_instance();
   server->seat->set_idle_inhibitor(flag);
+}
+
+void set_window_draggable(int index, bool flag) {
+  auto server = UraServer::get_instance();
+  auto toplevel =
+    server->current_output()->current_workspace->get_toplevel_at(index);
+  if (!toplevel)
+    return;
+  toplevel.value()->draggable = flag;
+}
+
+void set_layout(std::string name, sol::protected_function f) {
+  auto server = UraServer::get_instance();
+  server->lua->layouts[name] = f;
+}
+
+void unset_layout(std::string name) {
+  auto server = UraServer::get_instance();
+  if (server->lua->layouts.contains(name)) {
+    server->lua->layouts.erase(name);
+  }
+}
+
+void set_window_layer(int index, int z) {
+  auto server = UraServer::get_instance();
+  auto toplevel =
+    server->current_output()->current_workspace->get_toplevel_at(index);
+  if (!toplevel)
+    return;
+  auto layer = server->view->try_get_scene_tree(z);
+  if (!layer) {
+    layer = server->view->create_scene_tree(z);
+    server->view->reorder();
+  }
+  toplevel.value()->set_layer(layer);
 }
 
 } // namespace ura::api

@@ -143,21 +143,25 @@ ura.hook.set("window-new", function()
   local win = ura.win.get_current()
   if not win then return end
   if string.match(win.app_id, "fzfmenu") then
-    ura.win.set_floating(win.index, true)
+    ura.win.set_layout(win.index, "floating")
     ura.win.resize(win.index, 1000, 600)
     ura.win.center(win.index)
   end
 end)
 ```
 
-`tiling`，即平铺hook，允许你自定义平铺逻辑。下面是一个简单的平铺算法，仅仅使窗口填满屏幕的可用空间（除去独占组件的屏幕剩余空间）。如果未设置该hook，将回退到一个简单的水平平铺算法。
+## Layout
+
+Ura 的 `layout` 模块允许用户自定义布局算法。以下是一个最简单的布局算法，它只是让窗口填满屏幕的可用区域（或称最大化）。
 
 ```lua
-ura.hook.set("tiling", function()
+ura.layout.set("my-tiling", function(index)
   local output = ura.output.get_current()
   return { x = output.usable.x, y = output.usable.y, width = output.usable.width, height = output.usable.height }
 end)
 ```
+
+与 `window-new` hook 配合使用可以在窗口创建时应用用户自定义的布局算法。默认布局算法包括：`tiling`、`floating`、`fullscreen`。其中`tiling`是一个简单的水平平铺算法。
 
 更多示例可以参见：[examples](/examples/)。
 
