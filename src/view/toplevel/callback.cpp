@@ -63,6 +63,7 @@ void on_toplevel_destroy(wl_listener* listener, void* data) {
 void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  toplevel->set_layout("fullscreen");
+  toplevel->layout != "fullscreen" ? toplevel->set_layout("fullscreen")
+                                   : toplevel->recover_layout();
 }
 } // namespace ura

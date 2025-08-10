@@ -16,6 +16,7 @@ public:
   bool destroying = false;
   bool draggable = false;
   std::string layout = "tiling";
+  std::optional<std::string> last_layout;
   bool initial_commit = true;
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
@@ -56,6 +57,7 @@ public:
   bool is_active();
   sol::table to_lua_table();
   void set_layout(std::string layout);
+  void recover_layout();
 
 private:
   void create_borders();
