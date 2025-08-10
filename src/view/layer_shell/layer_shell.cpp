@@ -109,14 +109,12 @@ void UraLayerShell::commit() {
   // configure size
   auto width = this->layer_surface->pending.desired_width;
   auto height = this->layer_surface->pending.desired_height;
-  auto scale = output->output->scale;
 
-  if (width == 0) {
-    width = output->output->current_mode->width / scale;
-  }
-  if (height == 0) {
-    height = output->output->current_mode->height / scale;
-  }
+  auto output_geo = output->logical_geometry();
+  if (width == 0)
+    width = output_geo.width;
+  if (height == 0)
+    height = output_geo.height;
 
   if (width != this->layer_surface->current.actual_width
       || height != this->layer_surface->current.actual_height) {

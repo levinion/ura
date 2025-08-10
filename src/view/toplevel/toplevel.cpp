@@ -489,7 +489,7 @@ std::optional<wlr_box> UraToplevel::apply_layout() {
   auto y = table->get<std::optional<int>>("y");
   auto w = table->get<std::optional<int>>("width");
   auto h = table->get<std::optional<int>>("height");
-  if (!x || !y || !w || !h)
+  if (!x || !y || !w || !h || w.value() <= 0 || h.value() <= 0)
     return {};
   return wlr_box { x.value(), y.value(), w.value(), h.value() };
 }
