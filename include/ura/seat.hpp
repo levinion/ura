@@ -7,6 +7,7 @@
 #include "ura/keyboard.hpp"
 #include "ura/text_input.hpp"
 #include "ura/toplevel.hpp"
+#include "ura/ura.hpp"
 
 namespace ura {
 
@@ -17,6 +18,7 @@ public:
   wlr_seat* seat;
   std::list<UraKeyboard*> keyboards;
   bool locked = false;
+  bool keyboard_shortcuts_inhibited = false;
 
   UraToplevel* focused_toplevel();
   std::optional<UraClient> focused_client();

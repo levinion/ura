@@ -87,8 +87,8 @@ void reload() {
 
 void set_keyboard_repeat(int rate, int delay) {
   auto server = UraServer::get_instance();
-  auto keyboard = server->current_keyboard();
-  keyboard->set_repeat(rate, delay);
+  for (auto keyboard : server->seat->keyboards)
+    keyboard->set_repeat(rate, delay);
 }
 
 void set_env(std::string name, std::string value) {

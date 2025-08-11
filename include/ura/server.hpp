@@ -40,6 +40,7 @@ public:
   wlr_input_method_manager_v2* input_method_manager;
   wlr_virtual_keyboard_manager_v1* virtual_keyboard_manager;
   wlr_session_lock_manager_v1* session_lock_manager;
+  wlr_keyboard_shortcuts_inhibit_manager_v1* keyboard_shortcuts_inhibit_manager;
 
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;
@@ -59,13 +60,13 @@ public:
 
   std::optional<UraClient> foreground_client(double* sx, double* sy);
   UraOutput* current_output();
-  UraKeyboard* current_keyboard();
   void terminate();
   void update_output_configuration();
 
 private:
   static UraServer* instance;
 
+  void setup_log();
   void setup_seat();
   void setup_toplevel();
   void setup_popup();

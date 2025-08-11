@@ -14,7 +14,7 @@
 namespace ura {
 
 UraServer* UraServer::init() {
-  wlr_log_init(WLR_DEBUG, NULL);
+  this->setup_log();
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
   this->lua = Lua::init();
@@ -37,6 +37,21 @@ UraServer* UraServer::init() {
   this->setup_scratchpad();
   this->setup_others();
   return this;
+}
+
+void UraServer::setup_log() {
+  auto level_str_ = std::getenv("URA_LOG");
+  std::string level_str = level_str_ ? level_str_ : "INFO";
+  wlr_log_importance level;
+  if (level_str == "DEBUG")
+    level = WLR_DEBUG;
+  else if (level_str == "SLIENT")
+    level = WLR_SILENT;
+  else if (level_str == "ERROR")
+    level = WLR_ERROR;
+  else
+    level = WLR_INFO;
+  wlr_log_init(level, NULL);
 }
 
 void UraServer::setup_base() {
@@ -125,6 +140,13 @@ void UraServer::setup_popup() {
 void UraServer::setup_seat() {
   this->seat = std::make_unique<UraSeat>();
   this->seat->init();
+  this->keyboard_shortcuts_inhibit_manager =
+    wlr_keyboard_shortcuts_inhibit_v1_create(this->display);
+  this->runtime->register_callback(
+    &this->keyboard_shortcuts_inhibit_manager->events.new_inhibitor,
+    on_new_keyboard_shortcuts_inhibitor,
+    nullptr
+  );
 }
 
 void UraServer::setup_decoration() {

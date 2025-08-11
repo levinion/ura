@@ -56,6 +56,7 @@ extern "C" {
 #include <wlr/types/wlr_idle_inhibit_v1.h>
 #include <wlr/types/wlr_session_lock_v1.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
+#include <wlr/types/wlr_keyboard_shortcuts_inhibit_v1.h>
 #include <wlr/util/log.h>
 #include <xkbcommon/xkbcommon.h>
 }

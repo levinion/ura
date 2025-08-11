@@ -43,11 +43,6 @@ UraOutput* UraServer::current_output() {
   return UraOutput::from(output);
 }
 
-UraKeyboard* UraServer::current_keyboard() {
-  auto keyboard = this->seat->seat->keyboard_state.keyboard;
-  return UraKeyboard::from(keyboard);
-}
-
 void UraServer::terminate() {
   this->quit = true;
   for (auto output : this->runtime->outputs)

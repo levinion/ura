@@ -37,6 +37,8 @@ void on_keyboard_modifiers(wl_listener* listener, void* data);
 void on_keyboard_key(wl_listener* listener, void* data);
 void on_keyboard_destroy(wl_listener* listener, void* data);
 void on_new_virtual_keyboard(wl_listener* listener, void* data);
+void on_new_keyboard_shortcuts_inhibitor(wl_listener* listener, void* data);
+void on_keyboard_shortcuts_inhibitor_destroy(wl_listener* listener, void* data);
 
 // view/toplevel/callback.cpp
 void on_new_toplevel(wl_listener* listener, void* data);

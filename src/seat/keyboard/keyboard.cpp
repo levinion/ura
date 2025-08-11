@@ -89,13 +89,14 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
   if (server->seat->locked && this->virt)
     return;
 
+  server->seat->notify_idle_activity();
+
   // order: tty > keybinding > input_method > client
   // if seat is locked: tty > client
 
   // no repeat event yet...
-  if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-    server->seat->notify_idle_activity();
-
+  if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED
+      && !server->seat->keyboard_shortcuts_inhibited) {
     uint32_t keycode = event->keycode + 8; // xkeycode = libinput keycode + 8
     auto sym = xkb_state_key_get_one_sym(this->keyboard->xkb_state, keycode);
     auto modifiers = this->get_modifiers();
