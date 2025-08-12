@@ -1,14 +1,18 @@
 mod client;
 
-use std::io::{self, Write};
+use std::{
+    io::{self, Write},
+    path::PathBuf,
+};
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use clap::Parser;
 
 #[derive(Parser)]
 struct Cli {
-    #[arg(short = 'c', long)]
+    #[arg(short = 'c')]
     code: Option<String>,
+    path: Option<String>,
 }
 
 fn shell_mode() -> Result<()> {
@@ -60,11 +64,27 @@ fn oneshot(code: String) -> Result<()> {
     Ok(())
 }
 
+fn oneshot_file(path: String) -> Result<()> {
+    let path = PathBuf::from(path);
+    if !path.is_file() {
+        return Err(anyhow!(
+            "the given path `{}` doesn't exist or is not a regular file",
+            path.to_string_lossy()
+        ));
+    }
+    let code = std::fs::read_to_string(&path)?;
+    oneshot(code)?;
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.code {
         Some(code) => oneshot(code)?,
-        None => shell_mode()?,
+        None => match cli.path {
+            Some(path) => oneshot_file(path)?,
+            None => shell_mode()?,
+        },
     }
     Ok(())
 }
