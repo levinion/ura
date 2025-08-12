@@ -28,6 +28,7 @@ public:
   std::expected<std::string, std::string> execute(std::string script);
   std::expected<std::string, std::string> execute_file(std::filesystem::path);
   bool try_execute_keybinding(uint64_t id);
+  bool contains_keybinding(uint64_t id);
   std::optional<std::filesystem::path> find_init_path();
   bool try_execute_init();
 

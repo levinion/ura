@@ -155,9 +155,7 @@ Lua::execute_file(std::filesystem::path path) {
 
 bool Lua::try_execute_keybinding(uint64_t id) {
   auto server = UraServer::get_instance();
-  if (!this->keymaps.contains(this->mode))
-    return false;
-  if (!this->keymaps[mode].contains(id))
+  if (!this->contains_keybinding(id))
     return false;
   this->keymaps[mode][id]();
   return true;
@@ -185,6 +183,15 @@ bool Lua::try_execute_init() {
     return true;
   }
   return false;
+}
+
+bool Lua::contains_keybinding(uint64_t id) {
+  auto server = UraServer::get_instance();
+  if (!this->keymaps.contains(this->mode))
+    return false;
+  if (!this->keymaps[mode].contains(id))
+    return false;
+  return true;
 }
 
 } // namespace ura

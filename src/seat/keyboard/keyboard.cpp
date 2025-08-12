@@ -94,12 +94,18 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
   // order: tty > keybinding > input_method > client
   // if seat is locked: tty > client
 
-  // no repeat event yet...
+  uint32_t keycode = event->keycode + 8; // xkeycode = libinput keycode + 8
+  auto sym = xkb_state_key_get_one_sym(this->keyboard->xkb_state, keycode);
+  auto modifiers = this->get_modifiers();
+  auto id = (static_cast<uint64_t>(modifiers) << 32) | sym;
+
+  // ignore release events of a keybinding
+  if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED
+      && server->lua->contains_keybinding(id))
+    return;
+
   if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED
       && !server->seat->keyboard_shortcuts_inhibited) {
-    uint32_t keycode = event->keycode + 8; // xkeycode = libinput keycode + 8
-    auto sym = xkb_state_key_get_one_sym(this->keyboard->xkb_state, keycode);
-    auto modifiers = this->get_modifiers();
     // switch tty
     if (sym >= XKB_KEY_XF86Switch_VT_1 && sym <= XKB_KEY_XF86Switch_VT_12) {
       auto vt = sym - XKB_KEY_XF86Switch_VT_1 + 1;
@@ -108,7 +114,6 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
     }
     // exec keybinding
     if (!server->seat->locked) {
-      auto id = (static_cast<uint64_t>(modifiers) << 32) | sym;
       if (server->lua->try_execute_keybinding(id))
         return;
     }
