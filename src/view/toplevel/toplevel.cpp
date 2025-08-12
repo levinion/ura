@@ -495,20 +495,26 @@ std::optional<wlr_box> UraToplevel::apply_layout() {
 }
 
 void UraToplevel::set_layout(std::string layout) {
+  if (!this->xdg_toplevel->base->initialized)
+    return;
+
   if (layout != this->layout) {
     this->last_layout = this->layout;
     this->initial_commit = true;
     this->layout = layout;
 
     // handle enter and leave fullscreen mode
-    if (layout != "fullscreen") {
+    if (this->last_layout.value() == "fullscreen"
+        && this->layout != "fullscreen") {
       wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, false);
       wlr_foreign_toplevel_handle_v1_set_fullscreen(
         this->foreign_handle,
         false
       );
-    } else {
-      wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, true);
+    }
+    if (this->layout == "fullscreen") {
+      if (this->xdg_toplevel)
+        wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, true);
       wlr_foreign_toplevel_handle_v1_set_fullscreen(this->foreign_handle, true);
     }
   }
