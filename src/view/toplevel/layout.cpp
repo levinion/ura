@@ -19,12 +19,14 @@ std::optional<sol::table> tiling(int index) {
   auto usable_area = toplevel.value()->output->usable_area;
   auto width = usable_area.width;
   auto height = usable_area.height;
-  auto outer_l = server->lua->fetch<int>("opt.tilling.outer.left").value_or(10);
+  auto outer_l =
+    server->lua->fetch<int>("opt.tilling.gap.outer.left").value_or(10);
   auto outer_r =
-    server->lua->fetch<int>("opt.tilling.outer.right").value_or(10);
-  auto outer_t = server->lua->fetch<int>("opt.tilling.outer.top").value_or(10);
+    server->lua->fetch<int>("opt.tilling.gap.outer.right").value_or(10);
+  auto outer_t =
+    server->lua->fetch<int>("opt.tilling.gap.outer.top").value_or(10);
   auto outer_b =
-    server->lua->fetch<int>("opt.tilling.outer.bottom").value_or(10);
+    server->lua->fetch<int>("opt.tilling.gap.outer.bottom").value_or(10);
   auto inner = server->lua->fetch<int>("opt.tilling.gap.inner").value_or(10);
   auto& toplevels = toplevel.value()->output->current_workspace->toplevels;
   // find mapped toplevel number
