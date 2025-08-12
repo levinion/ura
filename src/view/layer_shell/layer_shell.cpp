@@ -119,7 +119,10 @@ void UraLayerShell::commit() {
   if (width != this->layer_surface->current.actual_width
       || height != this->layer_surface->current.actual_height) {
     wlr_layer_surface_v1_configure(this->layer_surface, width, height);
-    output->configure_layers();
+    if (output->configure_layers()) {
+      for (auto toplevel : this->output->current_workspace->toplevels)
+        toplevel->request_commit();
+    }
   }
 
   if (this->layer_surface->initial_commit

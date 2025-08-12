@@ -136,7 +136,7 @@ void UraOutput::configure_layer(
   }
 }
 
-void UraOutput::configure_layers() {
+bool UraOutput::configure_layers() {
   auto full_area = this->logical_geometry();
   auto usable_area = full_area;
   for (auto exclusive : { true, false }) {
@@ -169,7 +169,14 @@ void UraOutput::configure_layers() {
       exclusive
     );
   }
-  this->usable_area = usable_area;
+  if (this->usable_area.x != usable_area.x
+      || this->usable_area.y != usable_area.y
+      || this->usable_area.width != usable_area.width
+      || this->usable_area.height != usable_area.height) {
+    this->usable_area = usable_area;
+    return true;
+  }
+  return false;
 }
 
 // internal method

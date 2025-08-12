@@ -36,7 +36,7 @@ public:
 
   UraSessionLockSurface* session_lock_surface = nullptr;
 
-  void configure_layers();
+  bool configure_layers();
   void configure_layer(
     std::list<UraLayerShell*>& list,
     wlr_box* full_area,

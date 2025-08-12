@@ -117,6 +117,8 @@ void Lua::setup() {
   this->set("opt.floating.default.height", 600);
   // override
   this->state.set("print", api::lua_print);
+  // g
+  this->set("g", this->state.create_table());
 
   this->layouts["tiling"] = this->create_protected_function(layout::tiling);
   this->layouts["fullscreen"] =
