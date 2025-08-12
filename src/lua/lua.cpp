@@ -88,13 +88,6 @@ void Lua::setup() {
   // layout
   this->set("layout.set", api::set_layout);
   this->set("layout.unset", api::unset_layout);
-  this->set("layout.tilling.gap.outer.top", 10);
-  this->set("layout.tilling.gap.outer.left", 10);
-  this->set("layout.tilling.gap.outer.bottom", 10);
-  this->set("layout.tilling.gap.outer.right", 10);
-  this->set("layout.tilling.gap.inner", 10);
-  this->set("layout.floating.default.width", 800);
-  this->set("layout.floating.default.height", 600);
   // keymap
   this->set("keymap.set", api::keymap_set);
   this->set("keymap.set_mode", api::keymap_set_mode);
@@ -115,6 +108,13 @@ void Lua::setup() {
   this->set("opt.active_border_color", "#89b4fa");
   this->set("opt.inactive_border_color", "#00000000");
   this->set("opt.focus_follow_mouse", true);
+  this->set("opt.tilling.gap.outer.top", 10);
+  this->set("opt.tilling.gap.outer.left", 10);
+  this->set("opt.tilling.gap.outer.bottom", 10);
+  this->set("opt.tilling.gap.outer.right", 10);
+  this->set("opt.tilling.gap.inner", 10);
+  this->set("opt.floating.default.width", 800);
+  this->set("opt.floating.default.height", 600);
   // override
   this->state.set("print", api::lua_print);
 

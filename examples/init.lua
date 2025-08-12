@@ -121,7 +121,7 @@ ura.hook.set("ready", function()
   os.execute("fcitx5 -rd &")
   ura.input.keyboard.set_repeat(40, 300)
   ura.input.cursor.set_theme("", 18)
-  ura.layout.tilling.gap.outer.top = 0
+  ura.opt.tilling.gap.outer.top = 0
 end)
 
 ura.hook.set("focus-change", function()

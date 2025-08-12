@@ -186,34 +186,6 @@ ura = {
     set = function(name, f) end,
     --- @param name string
     unset = function(name) end,
-    --- @class ura.layout.tilling: table
-    tilling = {
-      --- @class ura.layout.tilling.gap: table
-      gap = {
-        outer = {
-          --- @type number
-          top = 10,
-          --- @type number
-          left = 10,
-          --- @type number
-          bottom = 10,
-          --- @type number
-          right = 10,
-        },
-        --- @type number
-        inner = 10,
-      },
-    },
-    --- @class ura.layout.floating: table
-    floating = {
-      --- @class ura.layout.floating.default: table
-      default = {
-        --- @type integer
-        width = 800,
-        --- @type integer
-        height = 600,
-      },
-    },
   },
 
   --- @class ura.keymap: table
@@ -271,5 +243,33 @@ ura = {
     border_width = 1,
     --- @type boolean
     focus_follow_mouse = true,
+    --- @class ura.opt.tilling: table
+    tilling = {
+      --- @class ura.opt.tilling.gap: table
+      gap = {
+        outer = {
+          --- @type number
+          top = 10,
+          --- @type number
+          left = 10,
+          --- @type number
+          bottom = 10,
+          --- @type number
+          right = 10,
+        },
+        --- @type number
+        inner = 10,
+      },
+    },
+    --- @class ura.opt.floating: table
+    floating = {
+      --- @class ura.opt.floating.default: table
+      default = {
+        --- @type integer
+        width = 800,
+        --- @type integer
+        height = 600,
+      },
+    },
   },
 }

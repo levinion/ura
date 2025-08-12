@@ -43,9 +43,9 @@ public:
   }
 
   template<typename T>
-  void set(std::string key, T value) {
+  void set(sol::table table, std::string key, T value) {
     auto keys = split(key, '.');
-    auto current_table = this->ura;
+    auto current_table = table;
     for (size_t i = 0; i < keys.size() - 1; ++i) {
       auto& k = keys[i];
       current_table = current_table[k].get_or_create<sol::table>();
@@ -54,9 +54,14 @@ public:
   }
 
   template<typename T>
-  std::optional<T> fetch(std::string key) {
+  void set(std::string key, T value) {
+    this->set<T>(this->ura, key, value);
+  }
+
+  template<typename T>
+  std::optional<T> fetch(sol::table table, std::string key) {
     auto keys = split(key, '.');
-    auto current_table = this->ura;
+    auto current_table = table;
     for (size_t i = 0; i < keys.size() - 1; ++i) {
       auto& k = keys[i];
       auto next_table = current_table.get<std::optional<sol::table>>(k);
@@ -67,6 +72,11 @@ public:
     if (!current_table.is<sol::table>())
       return {};
     return current_table.get<std::optional<T>>(keys.back());
+  }
+
+  template<typename T>
+  std::optional<T> fetch(std::string key) {
+    return this->fetch<T>(this->ura, key);
   }
 
   void setup();

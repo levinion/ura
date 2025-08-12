@@ -485,10 +485,10 @@ std::optional<wlr_box> UraToplevel::apply_layout() {
   auto table = result.get<std::optional<sol::table>>();
   if (!table)
     return {};
-  auto x = table->get<std::optional<int>>("x");
-  auto y = table->get<std::optional<int>>("y");
-  auto w = table->get<std::optional<int>>("width");
-  auto h = table->get<std::optional<int>>("height");
+  auto x = server->lua->fetch<int>(table.value(), "x");
+  auto y = server->lua->fetch<int>(table.value(), "y");
+  auto w = server->lua->fetch<int>(table.value(), "width");
+  auto h = server->lua->fetch<int>(table.value(), "height");
   if (!x || !y || !w || !h || w.value() <= 0 || h.value() <= 0)
     return {};
   return wlr_box { x.value(), y.value(), w.value(), h.value() };
