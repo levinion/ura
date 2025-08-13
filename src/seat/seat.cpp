@@ -1,13 +1,11 @@
-#include "ura/seat.hpp"
-#include <memory>
-#include "ura/client.hpp"
-#include "ura/server.hpp"
-#include "ura/runtime.hpp"
-#include "ura/callback.hpp"
-#include "ura/toplevel.hpp"
-#include "ura/ura.hpp"
-#include "ura/text_input.hpp"
-#include "ura/lua.hpp"
+#include "ura/core/server.hpp"
+#include "ura/core/runtime.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/view/client.hpp"
+#include "ura/view/toplevel.hpp"
+#include "ura/seat/seat.hpp"
+#include "ura/seat/text_input.hpp"
+#include "ura/lua/lua.hpp"
 
 namespace ura {
 void UraSeat::init() {

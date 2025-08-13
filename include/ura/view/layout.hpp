@@ -1,5 +1,5 @@
 #pragma once
-#include "ura/lua.hpp"
+#include "ura/lua/lua.hpp"
 
 namespace ura::layout {
 std::optional<sol::table> tiling(int index);

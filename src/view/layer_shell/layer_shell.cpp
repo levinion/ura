@@ -1,10 +1,9 @@
-#include "ura/layer_shell.hpp"
-#include "ura/server.hpp"
-#include "ura/output.hpp"
-#include "ura/ura.hpp"
-#include "ura/runtime.hpp"
-#include "ura/callback.hpp"
-#include "ura/seat.hpp"
+#include "ura/core/runtime.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/core/server.hpp"
+#include "ura/view/layer_shell.hpp"
+#include "ura/view/output.hpp"
+#include "ura/seat/seat.hpp"
 
 namespace ura {
 

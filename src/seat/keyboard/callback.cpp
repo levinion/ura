@@ -1,11 +1,8 @@
-#include "ura/keyboard.hpp"
-#include <wayland-server-core.h>
-#include <xkbcommon/xkbcommon-keysyms.h>
-#include "ura/server.hpp"
-#include "ura/callback.hpp"
-#include "ura/runtime.hpp"
-#include "ura/seat.hpp"
-#include "ura/ura.hpp"
+#include "ura/core/server.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/core/runtime.hpp"
+#include "ura/seat/seat.hpp"
+#include "ura/seat/keyboard.hpp"
 
 namespace ura {
 

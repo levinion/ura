@@ -1,6 +1,6 @@
-#include "ura/session_lock.hpp"
-#include "ura/server.hpp"
-#include "ura/seat.hpp"
+#include "ura/view/session_lock.hpp"
+#include "ura/core/server.hpp"
+#include "ura/seat/seat.hpp"
 
 namespace ura {
 

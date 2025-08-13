@@ -1,11 +1,10 @@
-#include "ura/callback.hpp"
-#include "ura/server.hpp"
-#include "ura/runtime.hpp"
-#include "ura/session_lock.hpp"
-#include "ura/ura.hpp"
-#include "ura/output.hpp"
-#include "ura/seat.hpp"
-#include "ura/view.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/core/server.hpp"
+#include "ura/core/runtime.hpp"
+#include "ura/view/session_lock.hpp"
+#include "ura/view/output.hpp"
+#include "ura/view/view.hpp"
+#include "ura/seat/seat.hpp"
 
 namespace ura {
 void on_new_session_lock(wl_listener* listener, void* data) {

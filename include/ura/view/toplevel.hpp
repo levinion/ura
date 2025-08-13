@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ura/ura.hpp"
+#include "ura/util/vec.hpp"
 #include <array>
 #include <string>
 #include <sol/sol.hpp>
@@ -25,7 +26,7 @@ public:
   UraWorkSpace* workspace;
   wlr_xdg_toplevel_decoration_v1* decoration;
   wlr_foreign_toplevel_handle_v1* foreign_handle;
-  wlr_box geometry = { 0, 0, 0, 0 };
+  Vec4<int> geometry = { 0, 0, 0, 0 };
 
   // same with css, top > right > bottom > left
   std::array<wlr_scene_rect*, 4> borders;
@@ -62,7 +63,7 @@ public:
 private:
   void create_borders();
   void set_border_color(std::array<float, 4>& color);
-  std::optional<wlr_box> apply_layout();
+  std::optional<Vec4<int>> apply_layout();
 };
 
 } // namespace ura

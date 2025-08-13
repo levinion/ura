@@ -3,10 +3,11 @@
 #include <cstdint>
 #include <list>
 #include <memory>
-#include "ura/cursor.hpp"
-#include "ura/keyboard.hpp"
-#include "ura/text_input.hpp"
-#include "ura/toplevel.hpp"
+#include "ura/seat/cursor.hpp"
+#include "ura/seat/keyboard.hpp"
+#include "ura/seat/text_input.hpp"
+#include "ura/view/toplevel.hpp"
+#include "ura/view/layer_shell.hpp"
 #include "ura/ura.hpp"
 
 namespace ura {

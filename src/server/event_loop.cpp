@@ -1,14 +1,14 @@
 #include <cassert>
 #include <memory>
-#include "ura/cursor.hpp"
-#include "ura/ipc.hpp"
-#include "ura/seat.hpp"
-#include "ura/server.hpp"
-#include "ura/callback.hpp"
-#include "ura/runtime.hpp"
+#include "ura/seat/cursor.hpp"
+#include "ura/core/ipc.hpp"
+#include "ura/seat/seat.hpp"
+#include "ura/core/server.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/core/runtime.hpp"
 #include "ura/ura.hpp"
-#include "ura/workspace.hpp"
-#include "ura/lua.hpp"
+#include "ura/view/workspace.hpp"
+#include "ura/lua/lua.hpp"
 #include <sys/epoll.h>
 
 namespace ura {

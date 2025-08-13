@@ -1,15 +1,10 @@
 #pragma once
 
 #include "ura/ura.hpp"
+#include "ura/util/vec.hpp"
 #include <string>
 
 namespace ura {
-template<typename T>
-class Vec2 {
-public:
-  T x;
-  T y;
-};
 
 enum class UraCursorMode { Passthrough, Move, Resize };
 
@@ -38,7 +33,7 @@ private:
   wlr_xcursor_manager* cursor_mgr;
   wlr_input_device* device = nullptr;
   Vec2<double> grab; // old cursor postion
-  wlr_box anchor; // old toplevel geometry
+  Vec4<int> anchor; // old toplevel geometry
   void process_cursor_mode_move();
   void process_cursor_mode_resize();
 };

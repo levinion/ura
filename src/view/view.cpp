@@ -1,7 +1,6 @@
-#include "ura/view.hpp"
+#include "ura/view/view.hpp"
 #include <memory>
-#include "ura/server.hpp"
-#include "ura/ura.hpp"
+#include "ura/core/server.hpp"
 
 namespace ura {
 

@@ -1,13 +1,12 @@
-#include "ura/popup.hpp"
-#include "ura/layer_shell.hpp"
-#include "ura/toplevel.hpp"
-#include "ura/runtime.hpp"
-#include "ura/server.hpp"
-#include "ura/output.hpp"
-#include "ura/ura.hpp"
-#include "ura/callback.hpp"
-#include "ura/client.hpp"
-#include "ura/view.hpp"
+#include "ura/core/runtime.hpp"
+#include "ura/core/server.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/view/popup.hpp"
+#include "ura/view/layer_shell.hpp"
+#include "ura/view/toplevel.hpp"
+#include "ura/view/output.hpp"
+#include "ura/view/client.hpp"
+#include "ura/view/view.hpp"
 
 namespace ura {
 
@@ -81,7 +80,7 @@ void UraPopup::commit() {
   auto output = server->current_output();
 
   auto client = UraClient::from(this->xdg_popup->parent);
-  auto box = output->logical_geometry();
+  auto box = output->logical_geometry().to_wlr_box();
   switch (client.type) {
     case UraSurfaceType::Toplevel: {
       // try parse popup's parent as a toplevel

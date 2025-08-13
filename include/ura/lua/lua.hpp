@@ -6,8 +6,8 @@
 #include <sol/sol.hpp>
 #include <filesystem>
 #include <unordered_map>
-#include "ura/server.hpp"
-#include "ura/util.hpp"
+#include "ura/core/server.hpp"
+#include "ura/util/util.hpp"
 
 namespace ura {
 class Lua {

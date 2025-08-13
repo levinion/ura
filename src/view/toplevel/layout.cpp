@@ -1,5 +1,5 @@
-#include "ura/layout.hpp"
-#include "ura/output.hpp"
+#include "ura/view/layout.hpp"
+#include "ura/view/output.hpp"
 
 namespace ura::layout {
 
@@ -103,8 +103,14 @@ std::optional<sol::table> floating(int index) {
   int w = geo.width, h = geo.height, x = geo.x, y = geo.y;
   if (toplevel.value()->initial_commit
       && !toplevel.value()->xdg_toplevel->base->initial_commit) {
-    w = server->lua->fetch<int>("opt.floating.default.width").value_or(800);
-    h = server->lua->fetch<int>("opt.floating.default.height").value_or(600);
+    w = std::min(
+      toplevel.value()->xdg_toplevel->base->current.geometry.width,
+      server->lua->fetch<int>("opt.floating.default.width").value_or(800)
+    );
+    h = std::min(
+      toplevel.value()->xdg_toplevel->base->current.geometry.height,
+      server->lua->fetch<int>("opt.floating.default.height").value_or(600)
+    );
     x = usable_area.x + (usable_area.width - w) / 2;
     y = usable_area.y + (usable_area.height - h) / 2;
   }

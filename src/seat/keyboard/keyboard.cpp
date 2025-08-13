@@ -1,11 +1,9 @@
-#include "ura/keyboard.hpp"
-#include <wayland-server-protocol.h>
-#include "ura/cursor.hpp"
-#include "ura/seat.hpp"
-#include "ura/callback.hpp"
-#include "ura/runtime.hpp"
-#include "ura/lua.hpp"
-#include "ura/ura.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/core/runtime.hpp"
+#include "ura/seat/seat.hpp"
+#include "ura/seat/keyboard.hpp"
+#include "ura/seat/cursor.hpp"
+#include "ura/lua/lua.hpp"
 
 namespace ura {
 

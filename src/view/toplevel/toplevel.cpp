@@ -1,16 +1,14 @@
-#include "ura/toplevel.hpp"
-#include <wayland-server-core.h>
-#include <utility>
-#include "ura/layout.hpp"
-#include "ura/runtime.hpp"
-#include "ura/server.hpp"
-#include "ura/output.hpp"
-#include "ura/ura.hpp"
-#include "ura/callback.hpp"
-#include "ura/seat.hpp"
-#include "ura/util.hpp"
-#include "ura/lua.hpp"
-#include "ura/view.hpp"
+#include "ura/view/toplevel.hpp"
+#include "ura/util/vec.hpp"
+#include "ura/view/layout.hpp"
+#include "ura/core/runtime.hpp"
+#include "ura/core/server.hpp"
+#include "ura/view/output.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/seat/seat.hpp"
+#include "ura/util/util.hpp"
+#include "ura/lua/lua.hpp"
+#include "ura/view/view.hpp"
 
 namespace ura {
 
@@ -471,7 +469,7 @@ sol::table UraToplevel::to_lua_table() {
   return table;
 }
 
-std::optional<wlr_box> UraToplevel::apply_layout() {
+std::optional<Vec4<int>> UraToplevel::apply_layout() {
   auto server = UraServer::get_instance();
   sol::protected_function layout;
   if (server->lua->layouts.contains(this->layout)) {
@@ -491,7 +489,7 @@ std::optional<wlr_box> UraToplevel::apply_layout() {
   auto h = server->lua->fetch<int>(table.value(), "height");
   if (!x || !y || !w || !h || w.value() <= 0 || h.value() <= 0)
     return {};
-  return wlr_box { x.value(), y.value(), w.value(), h.value() };
+  return Vec4 { x.value(), y.value(), w.value(), h.value() };
 }
 
 void UraToplevel::set_layout(std::string layout) {

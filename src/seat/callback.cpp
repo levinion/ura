@@ -1,6 +1,6 @@
-#include "ura/server.hpp"
-#include "ura/keyboard.hpp"
-#include "ura/seat.hpp"
+#include "ura/core/server.hpp"
+#include "ura/seat/keyboard.hpp"
+#include "ura/seat/seat.hpp"
 
 namespace ura {
 void on_new_input(wl_listener* listener, void* data) {

@@ -1,9 +1,8 @@
-#include "ura/layer_shell.hpp"
-#include "ura/callback.hpp"
-#include "ura/server.hpp"
-#include "ura/output.hpp"
-#include "ura/ura.hpp"
-#include "ura/runtime.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/core/server.hpp"
+#include "ura/core/runtime.hpp"
+#include "ura/view/layer_shell.hpp"
+#include "ura/view/output.hpp"
 
 namespace ura {
 void on_layer_shell_new_surface(wl_listener* listener, void* data) {

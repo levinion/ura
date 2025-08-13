@@ -1,6 +1,5 @@
-#include "ura/text_input.hpp"
+#include "ura/seat/text_input.hpp"
 #include <algorithm>
-#include "ura/ura.hpp"
 
 namespace ura {
 

@@ -1,15 +1,13 @@
-#include "ura/layer_shell.hpp"
-#include "ura/server.hpp"
-#include "ura/output.hpp"
-#include <list>
-#include <utility>
-#include "ura/ura.hpp"
-#include "ura/layer_shell.hpp"
-#include "ura/view.hpp"
-#include "ura/workspace.hpp"
-#include "ura/runtime.hpp"
-#include "ura/callback.hpp"
-#include "ura/lua.hpp"
+#include "ura/core/server.hpp"
+#include "ura/core/runtime.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/util/vec.hpp"
+#include "ura/view/layer_shell.hpp"
+#include "ura/view/output.hpp"
+#include "ura/view/layer_shell.hpp"
+#include "ura/view/view.hpp"
+#include "ura/view/workspace.hpp"
+#include "ura/lua/lua.hpp"
 
 namespace ura {
 
@@ -137,7 +135,7 @@ void UraOutput::configure_layer(
 }
 
 bool UraOutput::configure_layers() {
-  auto full_area = this->logical_geometry();
+  auto full_area = this->logical_geometry().to_wlr_box();
   auto usable_area = full_area;
   for (auto exclusive : { true, false }) {
     // background
@@ -173,7 +171,7 @@ bool UraOutput::configure_layers() {
       || this->usable_area.y != usable_area.y
       || this->usable_area.width != usable_area.width
       || this->usable_area.height != usable_area.height) {
-    this->usable_area = usable_area;
+    this->usable_area = Vec4<int>::from(usable_area);
     return true;
   }
   return false;
@@ -190,11 +188,11 @@ void UraOutput::set_mode(wlr_output_mode* mode) {
   wlr_output_state_finish(&state);
 }
 
-wlr_box UraOutput::physical_geometry() {
+Vec4<int> UraOutput::physical_geometry() {
   return { 0, 0, this->output->width, this->output->height };
 }
 
-wlr_box UraOutput::logical_geometry() {
+Vec4<int> UraOutput::logical_geometry() {
   int width, height;
   wlr_output_effective_resolution(this->output, &width, &height);
   return { 0, 0, width, height };

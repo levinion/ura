@@ -1,7 +1,7 @@
-#include "ura/toplevel.hpp"
-#include "ura/server.hpp"
+#include "ura/view/toplevel.hpp"
+#include "ura/core/server.hpp"
 #include "ura/ura.hpp"
-#include "ura/callback.hpp"
+#include "ura/core/callback.hpp"
 
 namespace ura {
 // toplevel/foreign.cpp

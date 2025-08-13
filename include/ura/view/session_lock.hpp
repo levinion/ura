@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ura/output.hpp"
+#include "ura/view/output.hpp"
 
 namespace ura {
 

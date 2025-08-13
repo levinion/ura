@@ -1,7 +1,6 @@
-#include "ura/server.hpp"
-#include "ura/callback.hpp"
-#include "ura/toplevel.hpp"
-#include "ura/ura.hpp"
+#include "ura/core/server.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/view/toplevel.hpp"
 
 namespace ura {
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ura/server.hpp"
+#include "ura/core/server.hpp"
 #include <list>
 
 namespace ura {
@@ -17,8 +17,8 @@ public:
   void init(wlr_output* output);
   static UraOutput* from(wlr_output* output);
   void fresh_screen();
-  wlr_box physical_geometry();
-  wlr_box logical_geometry();
+  Vec4<int> physical_geometry();
+  Vec4<int> logical_geometry();
   int index();
 
   /* Power */
@@ -32,7 +32,7 @@ public:
   std::list<UraPopup*> popups;
 
   /* Layers */
-  wlr_box usable_area;
+  Vec4<int> usable_area;
 
   UraSessionLockSurface* session_lock_surface = nullptr;
 

@@ -1,13 +1,10 @@
-#include "ura/callback.hpp"
-#include "ura/layer_shell.hpp"
-#include "ura/server.hpp"
-#include "ura/output.hpp"
-#include "ura/server.hpp"
-#include "ura/runtime.hpp"
-#include "ura/text_input.hpp"
-#include "ura/ura.hpp"
-#include "ura/seat.hpp"
-#include "ura/view.hpp"
+#include "ura/core/server.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/core/runtime.hpp"
+#include "ura/view/layer_shell.hpp"
+#include "ura/view/output.hpp"
+#include "ura/seat/text_input.hpp"
+#include "ura/seat/seat.hpp"
 
 namespace ura {
 /* Text Input V3 Callbacks */

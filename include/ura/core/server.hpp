@@ -1,10 +1,9 @@
 #pragma once
 
 #include <memory>
-#include "ura/layer_shell.hpp"
 #include "ura/ura.hpp"
-#include "ura/view.hpp"
-#include "ura/workspace.hpp"
+#include "ura/view/view.hpp"
+#include "ura/view/workspace.hpp"
 
 namespace ura {
 // extern

@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <optional>
-#include "ura/toplevel.hpp"
-#include "ura/workspace.hpp"
+#include "ura/view/toplevel.hpp"
+#include "ura/view/workspace.hpp"
 
 namespace ura {
 

@@ -1,11 +1,10 @@
 #pragma once
 
 #include <utility>
-#include "ura/layer_shell.hpp"
-#include "ura/popup.hpp"
-#include "ura/toplevel.hpp"
-#include "ura/ura.hpp"
-#include "ura/session_lock.hpp"
+#include "ura/view/layer_shell.hpp"
+#include "ura/view/popup.hpp"
+#include "ura/view/toplevel.hpp"
+#include "ura/view/session_lock.hpp"
 
 namespace ura {
 enum class UraSurfaceType { Toplevel, LayerShell, Popup, SessionLock, Unknown };

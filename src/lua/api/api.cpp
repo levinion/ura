@@ -1,15 +1,15 @@
-#include "ura/api.hpp"
+#include "ura/lua/api.hpp"
 #include <regex>
 #include <unordered_set>
-#include "ura/lua.hpp"
-#include "ura/server.hpp"
-#include "ura/output.hpp"
-#include "ura/runtime.hpp"
-#include "ura/toplevel.hpp"
-#include "ura/keyboard.hpp"
-#include "ura/workspace.hpp"
-#include "ura/util.hpp"
-#include "ura/seat.hpp"
+#include "ura/lua/lua.hpp"
+#include "ura/core/server.hpp"
+#include "ura/view/output.hpp"
+#include "ura/core/runtime.hpp"
+#include "ura/view/toplevel.hpp"
+#include "ura/seat/keyboard.hpp"
+#include "ura/view/workspace.hpp"
+#include "ura/util/util.hpp"
+#include "ura/seat/seat.hpp"
 
 namespace ura::api {
 

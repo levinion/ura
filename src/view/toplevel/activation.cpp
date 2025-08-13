@@ -1,6 +1,6 @@
-#include "ura/callback.hpp"
-#include "ura/client.hpp"
-#include "ura/toplevel.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/view/client.hpp"
+#include "ura/view/toplevel.hpp"
 
 namespace ura {
 void on_activation_request_activate(wl_listener* listener, void* data) {

@@ -1,10 +1,10 @@
-#include "ura/workspace.hpp"
-#include "ura/output.hpp"
+#include "ura/view/workspace.hpp"
+#include "ura/view/output.hpp"
 #include <memory>
 #include <utility>
-#include "ura/server.hpp"
-#include "ura/seat.hpp"
-#include "ura/lua.hpp"
+#include "ura/core/server.hpp"
+#include "ura/seat/seat.hpp"
+#include "ura/lua/lua.hpp"
 
 namespace ura {
 

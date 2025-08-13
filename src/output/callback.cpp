@@ -1,11 +1,8 @@
-#include "ura/server.hpp"
-#include "ura/output.hpp"
-#include <list>
-#include "ura/callback.hpp"
-#include "ura/ura.hpp"
-#include "ura/runtime.hpp"
-#include "ura/seat.hpp"
-#include "wlr-output-power-management-unstable-v1-protocol.h"
+#include "ura/core/server.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/core/runtime.hpp"
+#include "ura/view/output.hpp"
+#include "ura/seat/seat.hpp"
 
 namespace ura {
 

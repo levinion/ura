@@ -1,7 +1,7 @@
-#include "ura/lua.hpp"
-#include "ura/api.hpp"
-#include "ura/layout.hpp"
-#include "ura/server.hpp"
+#include "ura/lua/lua.hpp"
+#include "ura/lua/api.hpp"
+#include "ura/view/layout.hpp"
+#include "ura/core/server.hpp"
 #include <expected>
 #include <filesystem>
 #include <format>

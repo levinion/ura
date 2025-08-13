@@ -1,8 +1,7 @@
-#include "ura/server.hpp"
-#include "ura/popup.hpp"
-#include "ura/callback.hpp"
-#include "ura/runtime.hpp"
-#include "ura/ura.hpp"
+#include "ura/core/server.hpp"
+#include "ura/view/popup.hpp"
+#include "ura/core/callback.hpp"
+#include "ura/core/runtime.hpp"
 
 namespace ura {
 void on_new_popup(wl_listener* listener, void* data) {
