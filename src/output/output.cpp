@@ -275,6 +275,13 @@ sol::table UraOutput::to_lua_table() {
   table["scale"] = this->output->scale;
   table["refresh"] = this->output->refresh;
   table["dpms"] = this->dpms_on;
+
+  auto workspaces = server->lua->state.create_table();
+  for (auto& workspace : this->workspaces) {
+    workspaces.add(workspace->to_lua_table());
+  }
+  table["workspaces"] = workspaces;
+
   return table;
 }
 

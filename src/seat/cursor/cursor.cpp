@@ -297,4 +297,18 @@ void UraCursor::process_cursor_mode_resize() {
     toplevel->request_commit();
   }
 }
+
+void UraCursor::process_axis(wlr_pointer_axis_event* event) {
+  auto server = UraServer::get_instance();
+  server->seat->notify_idle_activity();
+  wlr_seat_pointer_notify_axis(
+    server->seat->seat,
+    event->time_msec,
+    event->orientation,
+    event->delta,
+    event->delta_discrete,
+    event->source,
+    event->relative_direction
+  );
+}
 } // namespace ura

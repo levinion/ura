@@ -24,9 +24,5 @@ public:
   std::map<int, wlr_scene_tree*> layers;
   static std::unique_ptr<UraView> init();
   wlr_scene_tree* get_scene_tree_or_create(int z);
-
-private:
-  wlr_scene_tree* create_scene_tree(int z);
-  void reorder();
 };
 } // namespace ura

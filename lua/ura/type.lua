@@ -22,6 +22,8 @@ local UraWindow = {
   layout = "tiling",
   --- @type boolean
   initial_commit = true,
+  --- @type integer
+  z_index = 0
 }
 
 --- @class UraWorkspace: table
@@ -45,7 +47,9 @@ local UraOutput = {
     --- @type number
     width = 0,
     --- @type number
-    height = 0
+    height = 0,
+    --- @type UraWorkspace[]
+    workspaces = {}
   },
   --- @class UraOutput.usable: table
   usable = {
@@ -122,8 +126,8 @@ ura = {
     ---@param layout string
     set_layout = function(index, layout) end,
     ---@param index integer
-    ---@param z integer
-    set_layer = function(index, z) end
+    ---@param z_index integer
+    set_layer = function(index, z_index) end
   },
 
   --- @class ura.input: table

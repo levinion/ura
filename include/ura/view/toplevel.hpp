@@ -21,7 +21,7 @@ public:
   bool initial_commit = true;
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
-  int z;
+  int z_index;
   UraOutput* output;
   UraWorkSpace* workspace;
   wlr_xdg_toplevel_decoration_v1* decoration;

@@ -33,15 +33,7 @@ void on_cursor_button(wl_listener* listener, void* data) {
 void on_cursor_axis(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto event = static_cast<wlr_pointer_axis_event*>(data);
-  wlr_seat_pointer_notify_axis(
-    server->seat->seat,
-    event->time_msec,
-    event->orientation,
-    event->delta,
-    event->delta_discrete,
-    event->source,
-    event->relative_direction
-  );
+  server->seat->cursor->process_axis(event);
 }
 
 void on_cursor_frame(wl_listener* listener, void* data) {

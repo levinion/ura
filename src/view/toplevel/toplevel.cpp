@@ -18,9 +18,9 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   // setup ura toplevel
   this->xdg_toplevel = xdg_toplevel;
   // add to output's normal layer
-  this->z = UraSceneLayer::Normal;
+  this->z_index = UraSceneLayer::Normal;
   this->scene_tree = wlr_scene_xdg_surface_create(
-    server->view->get_scene_tree_or_create(this->z),
+    server->view->get_scene_tree_or_create(this->z_index),
     xdg_toplevel->base
   );
   this->output = output;
@@ -395,12 +395,12 @@ void UraToplevel::set_title(std::string title) {
   wlr_foreign_toplevel_handle_v1_set_title(this->foreign_handle, title.data());
 }
 
-void UraToplevel::set_layer(int z) {
+void UraToplevel::set_layer(int z_index) {
   auto server = UraServer::get_instance();
-  if (this->z != z) {
-    auto layer = server->view->get_scene_tree_or_create(z);
+  if (this->z_index != z_index) {
+    auto layer = server->view->get_scene_tree_or_create(z_index);
     wlr_scene_node_reparent(&this->scene_tree->node, layer);
-    this->z = z;
+    this->z_index = z_index;
   }
 }
 
@@ -470,6 +470,7 @@ sol::table UraToplevel::to_lua_table() {
   table["height"] = this->geometry.height;
   table["layout"] = this->layout;
   table["initial_commit"] = this->initial_commit;
+  table["z_index"] = this->z_index;
   return table;
 }
 

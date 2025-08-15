@@ -18,6 +18,7 @@ public:
   void relative_move(wlr_pointer_motion_event* event);
   void absolute_move(wlr_pointer_motion_absolute_event* event);
   void process_button(wlr_pointer_button_event* event);
+  void process_axis(wlr_pointer_axis_event* event);
   void set_xcursor(std::string name);
   void hide();
   void show();
