@@ -22,6 +22,7 @@ init:
   wayland-scanner server-header ./protocols/wlr-layer-shell-unstable-v1.xml include/protocols/wlr-layer-shell-unstable-v1-protocol.h
   wayland-scanner server-header ./protocols/wlr-output-power-management-unstable-v1.xml include/protocols/wlr-output-power-management-unstable-v1-protocol.h
   wayland-scanner server-header ./protocols/cursor-shape-v1.xml include/protocols/cursor-shape-v1-protocol.h
+  wayland-scanner server-header ./protocols/pointer-constraints-unstable-v1.xml include/protocols/pointer-constraints-unstable-v1-protocol.h
   cmake -B build
 
 build:

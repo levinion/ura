@@ -140,11 +140,22 @@ void UraServer::setup_popup() {
 void UraServer::setup_seat() {
   this->seat = std::make_unique<UraSeat>();
   this->seat->init();
+  // keyboard shortcuts inhibitor protocol
   this->keyboard_shortcuts_inhibit_manager =
     wlr_keyboard_shortcuts_inhibit_v1_create(this->display);
   this->runtime->register_callback(
     &this->keyboard_shortcuts_inhibit_manager->events.new_inhibitor,
     on_new_keyboard_shortcuts_inhibitor,
+    nullptr
+  );
+  // relative pointer protocol
+  this->relative_pointer_manager =
+    wlr_relative_pointer_manager_v1_create(this->display);
+  // pointer pointer constraints protocol
+  this->pointer_constraints = wlr_pointer_constraints_v1_create(this->display);
+  this->runtime->register_callback(
+    &this->pointer_constraints->events.new_constraint,
+    on_pointer_constraints_new_constraint,
     nullptr
   );
 }

@@ -1,5 +1,6 @@
 #include "ura/core/server.hpp"
 #include "ura/core/callback.hpp"
+#include "ura/core/runtime.hpp"
 #include "ura/view/client.hpp"
 #include "ura/seat/cursor.hpp"
 #include "ura/seat/seat.hpp"
@@ -11,16 +12,14 @@ namespace ura {
 void on_cursor_motion(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto event = static_cast<wlr_pointer_motion_event*>(data);
-  server->seat->cursor->relative_move(event->delta_x, event->delta_y);
-  server->seat->cursor->process_motion(event->time_msec);
+  server->seat->cursor->relative_move(event);
 }
 
 // callback on cursor moves absolutely
 void on_cursor_motion_absolute(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto event = static_cast<wlr_pointer_motion_absolute_event*>(data);
-  server->seat->cursor->absolute_move(event->x, event->y);
-  server->seat->cursor->process_motion(event->time_msec);
+  server->seat->cursor->absolute_move(event);
 }
 
 // this sends the click/press event
@@ -103,5 +102,36 @@ void on_cursor_request_set_shape(wl_listener* listener, void* data) {
     auto cursor_shape_name = wlr_cursor_shape_v1_name(event->shape);
     server->seat->cursor->set_xcursor(cursor_shape_name);
   }
+}
+
+// TODO: impl pointer constraints protocol
+void on_pointer_constraints_new_constraint(wl_listener* listener, void* data) {
+  auto constraint = static_cast<wlr_pointer_constraint_v1*>(data);
+  auto server = UraServer::get_instance();
+  server->runtime->register_callback(
+    &constraint->events.set_region,
+    on_pointer_constraints_constraint_set_region,
+    constraint
+  );
+  server->runtime->register_callback(
+    &constraint->events.destroy,
+    on_pointer_constraints_constraint_destroy,
+    constraint
+  );
+}
+
+void on_pointer_constraints_constraint_set_region(
+  wl_listener* listener,
+  void* data
+) {}
+
+void on_pointer_constraints_constraint_destroy(
+  wl_listener* listener,
+  void* data
+) {
+  auto server = UraServer::get_instance();
+  auto constraint =
+    server->runtime->fetch<wlr_pointer_constraint_v1*>(listener);
+  server->runtime->remove(constraint);
 }
 } // namespace ura

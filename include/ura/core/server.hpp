@@ -40,6 +40,8 @@ public:
   wlr_virtual_keyboard_manager_v1* virtual_keyboard_manager;
   wlr_session_lock_manager_v1* session_lock_manager;
   wlr_keyboard_shortcuts_inhibit_manager_v1* keyboard_shortcuts_inhibit_manager;
+  wlr_relative_pointer_manager_v1* relative_pointer_manager;
+  wlr_pointer_constraints_v1* pointer_constraints;
 
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;

@@ -21,7 +21,7 @@ public:
   bool initial_commit = true;
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
-  wlr_scene_tree* layer;
+  int z;
   UraOutput* output;
   UraWorkSpace* workspace;
   wlr_xdg_toplevel_decoration_v1* decoration;
@@ -53,7 +53,7 @@ public:
   void move_to_scratchpad();
   int index();
   void activate();
-  void set_layer(wlr_scene_tree* layer);
+  void set_layer(int z);
   void request_commit();
   bool is_active();
   sol::table to_lua_table();

@@ -31,6 +31,15 @@ void on_cursor_request_set_shape(wl_listener* listener, void* data);
 void on_seat_request_set_primary_selection(wl_listener* listener, void* data);
 void on_seat_request_start_drag(wl_listener* listener, void* data);
 void on_seat_start_drag(wl_listener* listener, void* data);
+void on_pointer_constraints_new_constraint(wl_listener* listener, void* data);
+void on_pointer_constraints_constraint_set_region(
+  wl_listener* listener,
+  void* data
+);
+void on_pointer_constraints_constraint_destroy(
+  wl_listener* listener,
+  void* data
+);
 
 // seat/keyboard/callback.cpp
 void on_keyboard_modifiers(wl_listener* listener, void* data);

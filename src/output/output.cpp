@@ -76,16 +76,16 @@ wlr_scene_tree* UraOutput::get_layer_by_type(zwlr_layer_shell_v1_layer type) {
   auto server = UraServer::get_instance();
   switch (type) {
     case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
-      layer = server->view->try_get_scene_tree(UraSceneLayer::Background);
+      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Background);
       break;
     case ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM:
-      layer = server->view->try_get_scene_tree(UraSceneLayer::Bottom);
+      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Bottom);
       break;
     case ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY:
-      layer = server->view->try_get_scene_tree(UraSceneLayer::Overlay);
+      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Overlay);
       break;
     case ZWLR_LAYER_SHELL_V1_LAYER_TOP:
-      layer = server->view->try_get_scene_tree(UraSceneLayer::Top);
+      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Top);
       break;
   }
   return layer;

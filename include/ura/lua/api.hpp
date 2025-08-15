@@ -43,8 +43,6 @@ void set_keyboard_repeat(int rate, int delay);
 void set_cursor_theme(std::string theme, int size);
 void set_cursor_visible(bool flag);
 bool is_cursor_visible();
-void cursor_absolute_move(double x, double y);
-void cursor_relative_move(double delta_x, double delta_y);
 void set_cursor_shape(std::string name);
 // ws
 void switch_workspace(int index);

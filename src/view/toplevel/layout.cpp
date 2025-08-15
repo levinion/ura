@@ -1,5 +1,6 @@
 #include "ura/view/layout.hpp"
 #include "ura/view/output.hpp"
+#include "ura/view/view.hpp"
 
 namespace ura::layout {
 
@@ -11,9 +12,7 @@ std::optional<sol::table> tiling(int index) {
     return {};
   if (toplevel.value()->initial_commit) {
     toplevel.value()->draggable = false;
-    auto layer = toplevel.value()->layer =
-      server->view->try_get_scene_tree(UraSceneLayer::Normal);
-    toplevel.value()->set_layer(layer);
+    toplevel.value()->set_layer(UraSceneLayer::Normal);
   }
   auto geo = toplevel.value()->geometry;
   auto usable_area = toplevel.value()->output->usable_area;
@@ -71,8 +70,7 @@ std::optional<sol::table> fullscreen(int index) {
     return {};
   if (toplevel.value()->initial_commit) {
     toplevel.value()->draggable = false;
-    auto layer = server->view->try_get_scene_tree(UraSceneLayer::Fullscreen);
-    toplevel.value()->set_layer(layer);
+    toplevel.value()->set_layer(UraSceneLayer::Fullscreen);
   }
 
   auto geo = server->current_output()->logical_geometry();
@@ -94,8 +92,7 @@ std::optional<sol::table> floating(int index) {
 
   if (toplevel.value()->initial_commit) {
     toplevel.value()->draggable = true;
-    auto layer = server->view->try_get_scene_tree(UraSceneLayer::Floating);
-    toplevel.value()->set_layer(layer);
+    toplevel.value()->set_layer(UraSceneLayer::Floating);
   }
 
   auto geo = toplevel.value()->geometry;

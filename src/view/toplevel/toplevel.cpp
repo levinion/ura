@@ -18,9 +18,11 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   // setup ura toplevel
   this->xdg_toplevel = xdg_toplevel;
   // add to output's normal layer
-  this->layer = server->view->try_get_scene_tree(UraSceneLayer::Normal);
-  this->scene_tree =
-    wlr_scene_xdg_surface_create(this->layer, xdg_toplevel->base);
+  this->z = UraSceneLayer::Normal;
+  this->scene_tree = wlr_scene_xdg_surface_create(
+    server->view->get_scene_tree_or_create(this->z),
+    xdg_toplevel->base
+  );
   this->output = output;
   this->workspace = this->output->current_workspace;
   this->workspace->add(this);
@@ -393,10 +395,12 @@ void UraToplevel::set_title(std::string title) {
   wlr_foreign_toplevel_handle_v1_set_title(this->foreign_handle, title.data());
 }
 
-void UraToplevel::set_layer(wlr_scene_tree* layer) {
-  if (this->layer != layer) {
+void UraToplevel::set_layer(int z) {
+  auto server = UraServer::get_instance();
+  if (this->z != z) {
+    auto layer = server->view->get_scene_tree_or_create(z);
     wlr_scene_node_reparent(&this->scene_tree->node, layer);
-    this->layer = layer;
+    this->z = z;
   }
 }
 

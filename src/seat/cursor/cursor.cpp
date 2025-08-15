@@ -47,22 +47,50 @@ void UraCursor::init() {
   );
 }
 
-void UraCursor::relative_move(double delta_x, double delta_y) {
+void UraCursor::relative_move(wlr_pointer_motion_event* event) {
   auto server = UraServer::get_instance();
-  wlr_cursor_move(this->cursor, this->device, delta_x, delta_y);
+  server->seat->notify_idle_activity();
+  wlr_cursor_move(
+    this->cursor,
+    &event->pointer->base,
+    event->delta_x,
+    event->delta_y
+  );
   if (this->mode == UraCursorMode::Move)
     this->process_cursor_mode_move();
-  if (this->mode == UraCursorMode::Resize)
+  else if (this->mode == UraCursorMode::Resize)
     this->process_cursor_mode_resize();
+  else
+    this->process_motion(
+      event->time_msec,
+      event->delta_x,
+      event->delta_y,
+      event->unaccel_dx,
+      event->unaccel_dy
+    );
 }
 
-void UraCursor::absolute_move(double x, double y) {
+void UraCursor::absolute_move(wlr_pointer_motion_absolute_event* event) {
   auto server = UraServer::get_instance();
-  wlr_cursor_warp_absolute(this->cursor, this->device, x, y);
+  server->seat->notify_idle_activity();
+  double lx, ly;
+  wlr_cursor_absolute_to_layout_coords(
+    this->cursor,
+    &event->pointer->base,
+    event->x,
+    event->y,
+    &lx,
+    &ly
+  );
   if (this->mode == UraCursorMode::Move)
     this->process_cursor_mode_move();
-  if (this->mode == UraCursorMode::Resize)
+  else if (this->mode == UraCursorMode::Resize)
     this->process_cursor_mode_resize();
+  else {
+    auto dx = lx - this->cursor->x;
+    auto dy = ly - this->cursor->y;
+    this->process_motion(event->time_msec, dx, dy, dx, dy);
+  }
 }
 
 void UraCursor::set_xcursor(std::string name) {
@@ -91,36 +119,53 @@ void UraCursor::toggle() {
 }
 
 // internal method
-void UraCursor::process_motion(uint32_t time_msec) {
+
+void UraCursor::process_motion(
+  uint32_t time_msec,
+  double dx,
+  double dy,
+  double dx_unaccel,
+  double dy_unaccel
+) {
   auto server = UraServer::get_instance();
-  server->seat->notify_idle_activity();
-
-  if (this->mode != UraCursorMode::Passthrough)
-    return;
-
-  double sx, sy;
   auto seat = server->seat->seat;
+  auto cursor_follow_mouse =
+    server->lua->fetch<bool>("opt.focus_follow_mouse").value_or(true);
+
+  // surface local coordination
+  double sx, sy;
   auto client = server->foreground_client(&sx, &sy);
-  if (!client || !client.value().surface) {
+
+  // unfocus if surface is none under cursor_follow_mouse mode
+  if (cursor_follow_mouse && (!client || !client.value().surface)) {
     server->seat->unfocus();
     return;
   }
+
+  // focus surface based on its type
   auto surface = client.value().surface;
   if (surface != server->seat->seat->pointer_state.focused_surface)
     wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
   if (surface != server->seat->seat->keyboard_state.focused_surface) {
-    auto cursor_follow_mouse =
-      server->lua->fetch<bool>("opt.focus_follow_mouse").value_or(true);
     if (cursor_follow_mouse) {
       server->seat->focus(client.value());
     }
   }
+
+  wlr_relative_pointer_manager_v1_send_relative_motion(
+    server->relative_pointer_manager,
+    server->seat->seat,
+    static_cast<uint64_t>(time_msec) * 1000,
+    dx,
+    dx,
+    dx_unaccel,
+    dy_unaccel
+  );
   wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
 }
 
 void UraCursor::process_button(wlr_pointer_button_event* event) {
   auto server = UraServer::get_instance();
-  server->seat->notify_idle_activity();
 
   // process move window
   if (event->button == 0x110) { // left button
@@ -219,7 +264,6 @@ void UraCursor::set_theme(std::string theme, int size) {
 
 void UraCursor::attach_device(wlr_input_device* device) {
   wlr_cursor_attach_input_device(this->cursor, device);
-  this->device = device;
 }
 
 void UraCursor::reset_mode() {

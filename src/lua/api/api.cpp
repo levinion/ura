@@ -158,16 +158,6 @@ void set_cursor_visible(bool flag) {
     server->seat->cursor->show();
 }
 
-void cursor_absolute_move(double x, double y) {
-  auto server = UraServer::get_instance();
-  server->seat->cursor->absolute_move(x, y);
-}
-
-void cursor_relative_move(double delta_x, double delta_y) {
-  auto server = UraServer::get_instance();
-  server->seat->cursor->relative_move(delta_x, delta_y);
-}
-
 void set_cursor_shape(std::string name) {
   auto server = UraServer::get_instance();
   server->seat->cursor->set_xcursor(name);
@@ -425,12 +415,7 @@ void set_window_layer(int index, int z) {
     server->current_output()->current_workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  auto layer = server->view->try_get_scene_tree(z);
-  if (!layer) {
-    layer = server->view->create_scene_tree(z);
-    server->view->reorder();
-  }
-  toplevel.value()->set_layer(layer);
+  toplevel.value()->set_layer(z);
 }
 
 } // namespace ura::api

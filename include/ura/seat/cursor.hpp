@@ -15,9 +15,8 @@ public:
   UraCursorMode mode = UraCursorMode::Passthrough;
   void init();
   void attach_device(wlr_input_device* device);
-  void relative_move(double delta_x, double delta_y);
-  void absolute_move(double x, double y);
-  void process_motion(uint32_t time_msec);
+  void relative_move(wlr_pointer_motion_event* event);
+  void absolute_move(wlr_pointer_motion_absolute_event* event);
   void process_button(wlr_pointer_button_event* event);
   void set_xcursor(std::string name);
   void hide();
@@ -31,11 +30,17 @@ public:
 private:
   wlr_cursor* cursor;
   wlr_xcursor_manager* cursor_mgr;
-  wlr_input_device* device = nullptr;
   Vec2<double> grab; // old cursor postion
   Vec4<int> anchor; // old toplevel geometry
   void process_cursor_mode_move();
   void process_cursor_mode_resize();
+  void process_motion(
+    uint32_t time_msec,
+    double dx,
+    double dy,
+    double dx_unaccel,
+    double dy_unaccel
+  );
 };
 
 } // namespace ura

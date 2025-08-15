@@ -72,8 +72,6 @@ void Lua::setup() {
   this->set("input.cursor.set_theme", api::set_cursor_theme);
   this->set("input.cursor.set_visible", api::set_cursor_visible);
   this->set("input.cursor.is_visible", api::is_cursor_visible);
-  this->set("input.cursor.absolute_move", api::cursor_absolute_move);
-  this->set("input.cursor.relative_move", api::cursor_relative_move);
   this->set("input.cursor.set_shape", api::set_cursor_shape);
   // workspace
   this->set("ws.switch", api::switch_workspace);

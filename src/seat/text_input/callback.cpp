@@ -169,7 +169,7 @@ void on_input_method_new_popup_surface(wl_listener* listener, void* data) {
   popup->popup_surface->data = popup;
   server->seat->text_input->popups.push_back(popup);
   popup->scene_tree = wlr_scene_subsurface_tree_create(
-    server->view->try_get_scene_tree(UraSceneLayer::Popup),
+    server->view->get_scene_tree_or_create(UraSceneLayer::Popup),
     popup->popup_surface->surface
   );
 

@@ -27,10 +27,12 @@ wlr_scene_tree* UraView::create_scene_tree(int z) {
   return scene_tree;
 }
 
-wlr_scene_tree* UraView::try_get_scene_tree(int z) {
+wlr_scene_tree* UraView::get_scene_tree_or_create(int z) {
   if (this->layers.contains(z))
     return this->layers[z];
-  return nullptr;
+  auto layer = this->create_scene_tree(z);
+  this->reorder();
+  return layer;
 }
 
 void UraView::reorder() {

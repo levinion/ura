@@ -143,12 +143,6 @@ ura = {
       set_visible = function(visible) end,
       --- @return boolean
       is_visible = function(visible) end,
-      --- @param x number The absolute X coordinate.
-      --- @param y number The absolute Y coordinate.
-      absolute_move = function(x, y) end,
-      --- @param x number The amount to move horizontally.
-      --- @param y number The amount to move vertically.
-      relative_move = function(x, y) end,
       --- @param name string The name of the cursor shape (e.g., "arrow", "hand").
       set_shape = function(name) end,
     },

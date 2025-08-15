@@ -44,7 +44,7 @@ bool UraPopup::init(wlr_xdg_popup* xdg_popup) {
     // this happens when a popup has no parent
     // then send them to current output's popup layer
     this->scene_tree = wlr_scene_xdg_surface_create(
-      server->view->try_get_scene_tree(UraSceneLayer::Popup),
+      server->view->get_scene_tree_or_create(UraSceneLayer::Popup),
       xdg_popup->base
     );
   }

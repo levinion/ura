@@ -13,7 +13,7 @@ void on_new_session_lock(wl_listener* listener, void* data) {
   auto lock = new UraSessionLock;
   lock->lock = session_lock;
   lock->scene_tree = wlr_scene_tree_create(
-    server->view->try_get_scene_tree(UraSceneLayer::LockScreen)
+    server->view->get_scene_tree_or_create(UraSceneLayer::LockScreen)
   );
   server->runtime->register_callback(
     &session_lock->events.new_surface,
