@@ -126,6 +126,7 @@ void Lua::setup() {
 
 std::expected<std::string, std::string> Lua::execute(std::string script) {
   this->lua_stdout.clear();
+  this->cache.clear();
   auto result = this->state.safe_script(script, sol::script_pass_on_error);
   if (result.valid()) {
     auto out = this->lua_stdout;
@@ -139,6 +140,7 @@ std::expected<std::string, std::string> Lua::execute(std::string script) {
 std::expected<std::string, std::string>
 Lua::execute_file(std::filesystem::path path) {
   this->lua_stdout.clear();
+  this->cache.clear();
   if (!std::filesystem::is_regular_file(path))
     return std::unexpected(
       std::format("[ura] path not exists or invalid: {}", path.string())
