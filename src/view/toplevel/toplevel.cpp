@@ -368,11 +368,11 @@ void UraToplevel::map() {
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
   wlr_foreign_toplevel_handle_v1_set_title(
     this->foreign_handle,
-    this->xdg_toplevel->title
+    this->title().data()
   );
   wlr_foreign_toplevel_handle_v1_set_app_id(
     this->foreign_handle,
-    this->xdg_toplevel->app_id
+    this->app_id().data()
   );
 }
 
