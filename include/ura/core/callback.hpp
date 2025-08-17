@@ -67,6 +67,7 @@ void on_toplevel_decoration_destroy(wl_listener* listener, void* data);
 void on_toplevel_decoration_request_mode(wl_listener* listener, void* data);
 void on_new_server_decoration(wl_listener* listener, void* data);
 void on_server_decoration_mode(wl_listener* listener, void* data);
+void on_server_decoration_destroy(wl_listener* listener, void* data);
 
 // view/toplevel/activation.cpp
 void on_activation_request_activate(wl_listener* listener, void* data);

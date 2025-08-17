@@ -163,7 +163,6 @@ void UraServer::setup_seat() {
 void UraServer::setup_decoration() {
   this->server_decoration_manager =
     wlr_server_decoration_manager_create(this->display);
-
   wlr_server_decoration_manager_set_default_mode(
     server_decoration_manager,
     WLR_SERVER_DECORATION_MANAGER_MODE_SERVER
