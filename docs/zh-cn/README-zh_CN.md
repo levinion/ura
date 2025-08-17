@@ -30,7 +30,7 @@ Lua 是一门通用语言，它被许多编辑器/LSP（如 lua_ls）支持，�
 ```shell
 git clone https://github.com/levinion/ura.git
 cd ura
-just install
+just
 
 cd uracil 
 cargo build --release
@@ -48,7 +48,7 @@ wayland-scanner server-header ./protocols/wlr-layer-shell-unstable-v1.xml includ
 wayland-scanner server-header ./protocols/wlr-output-power-management-unstable-v1.xml include/protocols/wlr-output-power-management-unstable-v1-protocol.h
 wayland-scanner server-header ./protocols/cursor-shape-v1.xml include/protocols/cursor-shape-v1-protocol.h
 wayland-scanner server-header ./protocols/pointer-constraints-unstable-v1.xml include/protocols/pointer-constraints-unstable-v1-protocol.h
-cmake -B build
+cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j$(nproc)
 
 sudo install -Dm755 "build/ura" "/usr/bin/ura"

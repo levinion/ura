@@ -1,5 +1,8 @@
+default:
+  just release
+  just install
+
 install:
-  just build
   sudo install -Dm755 ./build/ura /usr/bin/
   sudo install -Dm644 ./assets/ura.desktop /usr/share/wayland-sessions/
   sudo install -d /etc/ura
@@ -12,9 +15,14 @@ run:
   ./build/$(cat build/CMakeCache.txt | grep CMAKE_PROJECT_NAME | awk -F '=' '{print $2}')
 
 debug:
+  just init
   cmake -B build -DCMAKE_BUILD_TYPE=Debug
   just build
-  sudo install -Dm755 ./build/ura /usr/bin/
+
+release:
+  just init
+  cmake -B build -DCMAKE_BUILD_TYPE=Release
+  just build
 
 init:
   mkdir -p include/protocols
@@ -23,7 +31,6 @@ init:
   wayland-scanner server-header ./protocols/wlr-output-power-management-unstable-v1.xml include/protocols/wlr-output-power-management-unstable-v1-protocol.h
   wayland-scanner server-header ./protocols/cursor-shape-v1.xml include/protocols/cursor-shape-v1-protocol.h
   wayland-scanner server-header ./protocols/pointer-constraints-unstable-v1.xml include/protocols/pointer-constraints-unstable-v1-protocol.h
-  cmake -B build
 
 build:
   just init

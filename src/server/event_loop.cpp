@@ -1,4 +1,3 @@
-#include <cassert>
 #include <memory>
 #include "ura/seat/cursor.hpp"
 #include "ura/core/ipc.hpp"
@@ -18,7 +17,7 @@ UraServer* UraServer::init() {
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
   this->lua = Lua::init();
-  assert(this->lua->try_execute_init());
+  this->lua->try_execute_init();
   this->lua->try_execute_hook("prepare");
   this->setup_base();
   this->setup_drm();
@@ -302,7 +301,7 @@ void UraServer::run() {
   assert(epoll_fd != -1);
 
   int ret;
-  epoll_event event;
+  epoll_event event {};
   event.events = EPOLLIN;
   event.data.fd = wl_fd;
   ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, wl_fd, &event);
@@ -311,12 +310,12 @@ void UraServer::run() {
   event.data.fd = ipc_fd;
   ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, ipc_fd, &event);
   assert(ret != -1);
-  epoll_event events[10];
+  epoll_event events[1024];
 
-  assert(this->lua->try_execute_hook("ready"));
+  this->lua->try_execute_hook("ready");
 
   while (!this->quit) {
-    int nfds = epoll_wait(epoll_fd, events, 10, -1);
+    int nfds = epoll_wait(epoll_fd, events, 1024, -1);
     if (nfds == -1) {
       if (errno == EINTR) {
         continue;
