@@ -12,8 +12,8 @@ enum UraSceneLayer {
   Normal = 20,
   Floating = 30,
   Top = 40,
-  Popup = 50,
-  Fullscreen = 60,
+  Fullscreen = 50,
+  Popup = 60,
   Overlay = 70,
   LockScreen = 80
 };

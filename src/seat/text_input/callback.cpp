@@ -6,9 +6,8 @@
 #include "ura/seat/text_input.hpp"
 #include "ura/seat/seat.hpp"
 
+// TEXT INPUT V3
 namespace ura {
-/* Text Input V3 Callbacks */
-
 void on_new_text_input(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto text_input = static_cast<wlr_text_input_v3*>(data);
@@ -70,9 +69,10 @@ void on_text_input_destroy(wl_listener* listener, void* data) {
   server->seat->text_input->text_inputs.remove(text_input);
   server->runtime->remove(text_input);
 }
+} // namespace ura
 
-/* Input Method V2 Callbacks */
-
+// INPUT METHOD V2
+namespace ura {
 void on_new_input_method(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto input_method = static_cast<wlr_input_method_v2*>(data);
@@ -163,7 +163,7 @@ void on_input_method_grab_keyboard_destroy(wl_listener* listener, void* data) {
 void on_input_method_new_popup_surface(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto popup_surface = static_cast<wlr_input_popup_surface_v2*>(data);
-  auto popup = new UraInputPopup {};
+  auto popup = new UraInputMethodPopup {};
 
   popup->popup_surface = popup_surface;
   popup->popup_surface->data = popup;
@@ -197,7 +197,7 @@ void on_input_method_new_popup_surface(wl_listener* listener, void* data) {
 
 void on_input_method_popup_surface_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto input_popup = server->runtime->fetch<UraInputPopup*>(listener);
+  auto input_popup = server->runtime->fetch<UraInputMethodPopup*>(listener);
   server->runtime->remove(input_popup);
   wlr_scene_node_destroy(&input_popup->scene_tree->node);
   delete input_popup;
@@ -205,7 +205,7 @@ void on_input_method_popup_surface_destroy(wl_listener* listener, void* data) {
 
 void on_input_method_popup_surface_map(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto input_popup = server->runtime->fetch<UraInputPopup*>(listener);
+  auto input_popup = server->runtime->fetch<UraInputMethodPopup*>(listener);
   auto toplevel = server->seat->focused_toplevel();
   if (!toplevel)
     return;
@@ -215,21 +215,13 @@ void on_input_method_popup_surface_map(wl_listener* listener, void* data) {
   auto active_text_input = server->seat->text_input->get_active_text_input();
   if (!active_text_input)
     return;
-  wlr_scene_node_reparent(&input_popup->scene_tree->node, parent_scene_tree);
-  auto cursor_rect = active_text_input->current.cursor_rectangle;
-  wlr_input_popup_surface_v2_send_text_input_rectangle(
-    input_popup->popup_surface,
-    &cursor_rect
-  );
-  auto popup_x = cursor_rect.x;
-  auto popup_y = cursor_rect.y + cursor_rect.height;
-  wlr_scene_node_set_position(&input_popup->scene_tree->node, popup_x, popup_y);
+  input_popup->constrain(active_text_input);
   wlr_scene_node_set_enabled(&input_popup->scene_tree->node, true);
 }
 
 void on_input_method_popup_surface_unmap(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto input_popup = server->runtime->fetch<UraInputPopup*>(listener);
+  auto input_popup = server->runtime->fetch<UraInputMethodPopup*>(listener);
   if (input_popup->scene_tree) {
     wlr_scene_node_set_enabled(&input_popup->scene_tree->node, false);
   }
@@ -237,17 +229,13 @@ void on_input_method_popup_surface_unmap(wl_listener* listener, void* data) {
 
 void on_input_method_popup_surface_commit(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto input_popup = server->runtime->fetch<UraInputPopup*>(listener);
+  auto input_popup = server->runtime->fetch<UraInputMethodPopup*>(listener);
   if (!input_popup->scene_tree || !input_popup->scene_tree->node.enabled)
     return;
   auto active_text_input = server->seat->text_input->get_active_text_input();
   if (!active_text_input)
     return;
-  auto cursor_rect = active_text_input->current.cursor_rectangle;
-  wlr_input_popup_surface_v2_send_text_input_rectangle(
-    input_popup->popup_surface,
-    &cursor_rect
-  );
+  input_popup->constrain(active_text_input);
 }
 
 } // namespace ura

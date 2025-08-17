@@ -35,14 +35,8 @@ wlr_text_input_v3* UraTextInput::get_active_text_input() {
 }
 
 void UraTextInput::send_state(wlr_text_input_v3* text_input) {
-  if (!this->input_method) {
-    wlr_log(WLR_DEBUG, "no input method, return");
+  if (!this->input_method || !text_input->focused_surface)
     return;
-  }
-  if (!text_input->focused_surface) {
-    wlr_log(WLR_DEBUG, "text_input is not focused, return");
-    return;
-  }
   wlr_input_method_v2_send_surrounding_text(
     input_method,
     text_input->current.surrounding.text,
