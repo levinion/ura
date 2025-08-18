@@ -9,7 +9,8 @@
 
 namespace ura {
 
-inline std::vector<std::string> split(std::string& s, char symbol) {
+inline constexpr std::vector<std::string>
+split(std::string_view s, char symbol) {
   std::vector<std::string> v;
   std::string t;
   for (int i = 0; i < s.size(); i++) {
@@ -37,7 +38,7 @@ inline std::string join(std::vector<std::string> v, char symbol) {
   return r;
 }
 
-inline std::optional<std::array<float, 4>> hex2rgba(std::string hex_str) {
+inline std::optional<std::array<float, 4>> hex2rgba(std::string& hex_str) {
   if (!hex_str.starts_with('#'))
     return {};
   hex_str = hex_str.substr(1);

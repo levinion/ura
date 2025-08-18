@@ -46,7 +46,7 @@ public:
   }
 
   template<typename T>
-  void set(sol::table table, std::string key, T value) {
+  void set(sol::table table, std::string_view key, T value) {
     auto keys = split(key, '.');
     auto current_table = table;
     for (size_t i = 0; i < keys.size() - 1; ++i) {
@@ -62,7 +62,7 @@ public:
   }
 
   template<typename T>
-  std::optional<T> fetch(sol::table table, std::string key) {
+  std::optional<T> fetch(sol::table table, std::string_view key) {
     auto keys = split(key, '.');
     auto current_table = table;
     for (size_t i = 0; i < keys.size() - 1; ++i) {
@@ -78,7 +78,7 @@ public:
   }
 
   template<typename T>
-  std::optional<T> fetch(std::string key) {
+  std::optional<T> fetch(const std::string& key) {
     if (this->cache.contains(key))
       return std::any_cast<T>(this->cache[key]);
     auto result = this->fetch<T>(this->ura, key);

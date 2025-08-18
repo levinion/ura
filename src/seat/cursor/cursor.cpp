@@ -165,57 +165,37 @@ void UraCursor::process_motion(
 
 void UraCursor::process_button(wlr_pointer_button_event* event) {
   auto server = UraServer::get_instance();
-
+  auto process_mode = [=, this](UraCursorMode mode) {
+    if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
+      this->reset_mode();
+    else {
+      auto super_pressed = false;
+      for (auto keyboard : server->seat->keyboards) {
+        auto modifiers = keyboard->get_modifiers();
+        if (modifiers & WLR_MODIFIER_LOGO) {
+          super_pressed = true;
+          break;
+        }
+      }
+      if (super_pressed) {
+        // begin grab
+        auto toplevel = server->seat->focused_toplevel();
+        if (toplevel && toplevel->draggable) {
+          this->mode = mode;
+          this->grab = this->position();
+          this->anchor = toplevel->geometry;
+        }
+      }
+    }
+  };
   // process move window
   if (event->button == 0x110) { // left button
-    if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
-      this->reset_mode();
-    else {
-      auto super_pressed = false;
-      for (auto keyboard : server->seat->keyboards) {
-        auto modifiers = keyboard->get_modifiers();
-        if (modifiers & WLR_MODIFIER_LOGO) {
-          super_pressed = true;
-          break;
-        }
-      }
-      if (super_pressed) {
-        // begin grab
-        auto toplevel = server->seat->focused_toplevel();
-        if (toplevel && toplevel->draggable) {
-          this->mode = UraCursorMode::Move;
-          this->grab = this->position();
-          this->anchor = toplevel->geometry;
-        }
-      }
-    }
+    process_mode(UraCursorMode::Move);
   }
-
   // process resize window
   if (event->button == 0x111) { // right button
-    if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
-      this->reset_mode();
-    else {
-      auto super_pressed = false;
-      for (auto keyboard : server->seat->keyboards) {
-        auto modifiers = keyboard->get_modifiers();
-        if (modifiers & WLR_MODIFIER_LOGO) {
-          super_pressed = true;
-          break;
-        }
-      }
-      if (super_pressed) {
-        // begin grab
-        auto toplevel = server->seat->focused_toplevel();
-        if (toplevel && toplevel->draggable) {
-          this->mode = UraCursorMode::Resize;
-          this->grab = this->position();
-          this->anchor = toplevel->geometry;
-        }
-      }
-    }
+    process_mode(UraCursorMode::Resize);
   }
-
   if (this->mode != UraCursorMode::Passthrough)
     return;
 

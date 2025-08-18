@@ -37,6 +37,16 @@ bool UraPopup::init(wlr_xdg_popup* xdg_popup) {
           wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base);
         break;
       }
+      case UraSurfaceType::Popup: {
+        auto popup = client.transform<UraPopup>();
+        auto parent_tree = popup->scene_tree;
+        if (!parent_tree) {
+          return false;
+        }
+        this->scene_tree =
+          wlr_scene_xdg_surface_create(parent_tree, xdg_popup->base);
+        break;
+      }
       default:
         return false;
     }
