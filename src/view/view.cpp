@@ -58,4 +58,10 @@ UraWorkSpace* UraView::get_named_workspace_or_create(std::string name) {
   }
   return this->named_workspaces[name].get();
 }
+
+UraWorkSpace* UraView::get_named_workspace(std::string name) {
+  if (!this->named_workspaces.contains(name))
+    return nullptr;
+  return this->named_workspaces[name].get();
+}
 } // namespace ura

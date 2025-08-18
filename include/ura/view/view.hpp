@@ -33,6 +33,7 @@ public:
   static std::unique_ptr<UraView> init();
   wlr_scene_tree* get_scene_tree_or_create(int z);
   UraWorkSpace* get_named_workspace_or_create(std::string name);
+  UraWorkSpace* get_named_workspace(std::string name);
   UraOutput* current_output();
   std::optional<UraClient> foreground_client(double* sx, double* sy);
 };

@@ -250,10 +250,13 @@ std::optional<sol::table> get_window(int index) {
   return toplevel->to_lua_table();
 }
 
-// index == -1 means scratchpad
-std::optional<sol::table> get_workspace(int index) {
+std::optional<sol::table> get_workspace(sol::object id) {
   auto server = UraServer::get_instance();
-  auto workspace = server->view->current_output()->get_workspace_at(index);
+  UraWorkSpace* workspace = nullptr;
+  if (id.is<int>())
+    workspace = server->view->current_output()->get_workspace_at(id.as<int>());
+  else if (id.is<std::string>())
+    workspace = server->view->get_named_workspace(id.as<std::string>());
   if (!workspace)
     return {};
   return workspace->to_lua_table();

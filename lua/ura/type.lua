@@ -164,8 +164,9 @@ ura = {
     destroy = function(index) end,
     --- @return UraWorkspace
     get_current = function() end,
+    --- @param id integer|string
     --- @return UraWorkspace|nil
-    get = function(index) end,
+    get = function(id) end,
     --- @return UraWorkspace[]
     list = function() end
   },
