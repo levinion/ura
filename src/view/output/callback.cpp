@@ -2,6 +2,7 @@
 #include "ura/core/callback.hpp"
 #include "ura/core/runtime.hpp"
 #include "ura/view/output.hpp"
+#include "ura/view/view.hpp"
 #include "ura/seat/seat.hpp"
 
 namespace ura {
@@ -30,7 +31,7 @@ void on_output_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto output = server->runtime->fetch<UraOutput*>(listener);
   server->runtime->remove(output);
-  server->runtime->outputs.remove(output);
+  server->view->outputs.remove(output);
   delete output;
 }
 

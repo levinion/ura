@@ -7,6 +7,7 @@
 #include "ura/core/runtime.hpp"
 #include "ura/ura.hpp"
 #include "ura/view/workspace.hpp"
+#include "ura/view/view.hpp"
 #include "ura/lua/lua.hpp"
 #include <sys/epoll.h>
 
@@ -33,7 +34,6 @@ UraServer* UraServer::init() {
   this->setup_activation();
   this->setup_foreign();
   this->setup_text_input();
-  this->setup_scratchpad();
   this->setup_others();
   return this;
 }
@@ -248,12 +248,6 @@ void UraServer::setup_session_lock() {
     on_new_session_lock,
     nullptr
   );
-}
-
-// scratchpad is a special workspace that cannot be switch to
-void UraServer::setup_scratchpad() {
-  this->scratchpad = UraWorkSpace::init();
-  this->scratchpad->output = nullptr;
 }
 
 void UraServer::setup_others() {

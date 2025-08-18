@@ -5,6 +5,7 @@
 #include "ura/view/output.hpp"
 #include "ura/seat/text_input.hpp"
 #include "ura/seat/seat.hpp"
+#include "ura/view/view.hpp"
 
 // TEXT INPUT V3
 namespace ura {

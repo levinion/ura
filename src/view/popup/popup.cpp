@@ -12,7 +12,7 @@ namespace ura {
 
 bool UraPopup::init(wlr_xdg_popup* xdg_popup) {
   auto server = UraServer::get_instance();
-  auto output = server->current_output();
+  auto output = server->view->current_output();
   if (xdg_popup->parent) {
     auto parent = xdg_popup->parent;
     auto client = UraClient::from(xdg_popup->parent);
@@ -77,7 +77,7 @@ void UraPopup::commit() {
     return;
 
   auto server = UraServer::get_instance();
-  auto output = server->current_output();
+  auto output = server->view->current_output();
 
   auto client = UraClient::from(this->xdg_popup->parent);
   auto box = output->logical_geometry().to_wlr_box();
@@ -109,7 +109,7 @@ void UraPopup::commit() {
 
 void UraPopup::destroy() {
   auto server = UraServer::get_instance();
-  auto output = server->current_output();
+  auto output = server->view->current_output();
   output->popups.remove(this);
   server->runtime->remove(this);
 }

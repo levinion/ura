@@ -49,8 +49,8 @@ public:
   std::string title();
   std::string app_id();
   void set_title(std::string title);
-  std::optional<int> move_to_workspace(int index);
-  void move_to_scratchpad();
+  void move_to_workspace(int index);
+  void move_to_workspace(std::string name);
   int index();
   void activate();
   void set_layer(int z);

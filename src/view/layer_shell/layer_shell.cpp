@@ -3,6 +3,7 @@
 #include "ura/core/server.hpp"
 #include "ura/view/layer_shell.hpp"
 #include "ura/view/output.hpp"
+#include "ura/view/view.hpp"
 #include "ura/seat/seat.hpp"
 
 namespace ura {
@@ -11,7 +12,7 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
   auto server = UraServer::get_instance();
   // if no output given, then assign current output to surface
   if (!layer_surface->output) {
-    auto output = server->current_output();
+    auto output = server->view->current_output();
     layer_surface->output = output->output;
   }
   this->output = UraOutput::from(layer_surface->output);

@@ -27,7 +27,7 @@ void UraWorkSpace::disable() {
 
 int UraWorkSpace::index() {
   auto server = UraServer::get_instance();
-  if (this == server->scratchpad.get())
+  if (this->name)
     return -1;
   int i = 0;
   for (auto& workspace : this->output->workspaces) {
@@ -55,6 +55,7 @@ sol::table UraWorkSpace::to_lua_table() {
     toplevels.add(toplevel->to_lua_table());
   }
   table["index"] = this->index();
+  table["name"] = this->name;
   table["windows"] = toplevels;
   return table;
 }

@@ -8,6 +8,7 @@
 namespace ura {
 
 class UraOutput;
+class UraFocusStack;
 
 class UraFocusStack {
 public:
@@ -29,8 +30,9 @@ private:
 class UraWorkSpace {
 public:
   std::list<UraToplevel*> toplevels;
-  UraOutput* output;
+  UraOutput* output = nullptr;
   UraFocusStack focus_stack;
+  std::optional<std::string> name;
   static std::unique_ptr<UraWorkSpace> init();
   void enable();
   void disable();

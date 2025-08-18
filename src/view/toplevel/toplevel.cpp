@@ -14,7 +14,7 @@ namespace ura {
 
 void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   auto server = UraServer::get_instance();
-  auto output = server->current_output();
+  auto output = server->view->current_output();
   // setup ura toplevel
   this->xdg_toplevel = xdg_toplevel;
   // add to output's normal layer
@@ -214,31 +214,30 @@ UraToplevel* UraToplevel::from(wlr_surface* surface) {
   return static_cast<UraToplevel*>(surface->data);
 }
 
-void UraToplevel::move_to_scratchpad() {
+void UraToplevel::move_to_workspace(std::string name) {
   auto server = UraServer::get_instance();
   if (this->is_active())
     server->seat->unfocus();
   this->unmap();
-  auto scratchpad = server->scratchpad.get();
-  this->workspace->toplevels.remove(this);
-  this->workspace->focus_stack.remove(this);
+  auto named_workspace = server->view->get_named_workspace_or_create(name);
+  this->workspace->remove(this);
   auto prev_workspace = this->workspace;
-  this->workspace = scratchpad;
+  this->workspace = named_workspace;
   this->workspace->toplevels.push_back(this);
   for (auto toplevel : prev_workspace->toplevels) toplevel->request_commit();
-  if (prev_workspace->focus_stack.size()) {
+  if (prev_workspace->focus_stack.top()) {
     server->seat->focus(prev_workspace->focus_stack.top().value());
   }
 }
 
-std::optional<int> UraToplevel::move_to_workspace(int index) {
+void UraToplevel::move_to_workspace(int index) {
   auto server = UraServer::get_instance();
-  auto output = server->current_output();
+  auto output = server->view->current_output();
   auto target = output->get_workspace_at(index);
   if (!target)
-    return {};
+    return;
   if (target == this->workspace)
-    return index;
+    return;
   // switch focus
   if (this->is_active())
     server->seat->unfocus();
@@ -247,12 +246,11 @@ std::optional<int> UraToplevel::move_to_workspace(int index) {
     server->seat->focus(this->workspace->focus_stack.top().value());
   this->workspace = target;
   this->workspace->add(this);
-  return this->workspace->index();
 }
 
 int UraToplevel::index() {
   auto server = UraServer::get_instance();
-  auto output = server->current_output();
+  auto output = server->view->current_output();
   int index = 0;
   for (auto toplevel : this->workspace->toplevels) {
     if (toplevel == this)
@@ -264,11 +262,13 @@ int UraToplevel::index() {
 
 void UraToplevel::activate() {
   auto server = UraServer::get_instance();
-  auto output = server->current_output();
+  auto output = server->view->current_output();
   auto current_workspace = output->current_workspace->index();
-  if (server->scratchpad.get() == this->workspace) {
+  if (this->workspace->name) {
+    // named workspace, move this toplevel to current workspace
     this->move_to_workspace(current_workspace);
   } else if (this->workspace->index() != current_workspace) {
+    // indexed workspace, switch to this toplevel's workspace
     output->switch_workspace(this->workspace);
   }
   server->seat->focus(this);
@@ -461,7 +461,7 @@ sol::table UraToplevel::to_lua_table() {
   auto table = server->lua->state.create_table();
   table["index"] = this->index();
   table["workspace_index"] =
-    this->workspace != server->scratchpad.get() ? this->workspace->index() : -1;
+    !this->workspace->name ? this->workspace->index() : -1;
   table["app_id"] = this->app_id();
   table["title"] = this->title();
   table["x"] = this->geometry.x;

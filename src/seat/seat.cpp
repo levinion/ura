@@ -2,6 +2,7 @@
 #include "ura/core/runtime.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/view/client.hpp"
+#include "ura/view/view.hpp"
 #include "ura/view/toplevel.hpp"
 #include "ura/seat/seat.hpp"
 #include "ura/seat/text_input.hpp"
@@ -105,7 +106,7 @@ void UraSeat::focus(UraLayerShell* layer_shell) {
 void UraSeat::notify_idle_activity() {
   auto server = UraServer::get_instance();
   wlr_idle_notifier_v1_notify_activity(server->idle_notifier, this->seat);
-  for (auto output : server->runtime->outputs) {
+  for (auto output : server->view->outputs) {
     if (!output->dpms_on)
       output->set_dpms_mode(true);
   }

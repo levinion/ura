@@ -43,8 +43,6 @@ public:
     this->listeners.erase(data);
   }
 
-  std::list<UraOutput*> outputs;
-
 private:
   // listener to data
   std::unordered_map<wl_listener*, void*> storage;

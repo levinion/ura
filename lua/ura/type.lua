@@ -30,6 +30,8 @@ local UraWindow = {
 local UraWorkspace = {
   --- @type integer
   index = 0,
+  --- @type string | nil
+  name = "",
   --- @type UraWindow[]
   windows = {}
 }
@@ -101,17 +103,17 @@ ura = {
     --- @param index integer
     close = function(index) end,
     --- @param window_index integer
-    --- @param workspace_index integer
-    move_to_workspace = function(window_index, workspace_index) end,
+    --- @param workspace_id integer|string
+    move_to_workspace = function(window_index, workspace_id) end,
     --- @return integer
     size = function() end,
     --- @return UraWindow|nil
     get_current = function() end,
     --- @return UraWindow|nil
     get = function(index) end,
-    --- @param workspace_index integer
+    --- @param workspace_id integer|string
     --- @param window_index integer
-    activate = function(workspace_index, window_index) end,
+    activate = function(workspace_id, window_index) end,
     ---@param index integer
     ---@param x integer
     ---@param y integer

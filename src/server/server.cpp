@@ -1,5 +1,6 @@
 #include "ura/core/server.hpp"
 #include <optional>
+#include "ura/view/view.hpp"
 #include "ura/view/client.hpp"
 #include "ura/view/output.hpp"
 #include "ura/core/runtime.hpp"
@@ -21,31 +22,9 @@ UraServer* UraServer::get_instance() {
   return UraServer::instance;
 }
 
-// returns the topmost toplevel under current cursor coordination
-std::optional<UraClient> UraServer::foreground_client(double* sx, double* sy) {
-  auto pos = this->seat->cursor->position();
-  auto node =
-    wlr_scene_node_at(&this->view->scene->tree.node, pos.x, pos.y, sx, sy);
-  if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
-    return {};
-  }
-  auto scene_buffer = wlr_scene_buffer_from_node(node);
-  auto scene_surface = wlr_scene_surface_try_from_buffer(scene_buffer);
-  if (!scene_surface) {
-    return {};
-  }
-  return UraClient::from(scene_surface->surface);
-}
-
-UraOutput* UraServer::current_output() {
-  auto pos = this->seat->cursor->position();
-  auto output = wlr_output_layout_output_at(this->output_layout, pos.x, pos.y);
-  return UraOutput::from(output);
-}
-
 void UraServer::terminate() {
   this->quit = true;
-  for (auto output : this->runtime->outputs)
+  for (auto output : this->view->outputs)
     for (auto& workspace : output->workspaces)
       for (auto toplevel : workspace->toplevels) toplevel->close();
 
@@ -53,12 +32,4 @@ void UraServer::terminate() {
   wl_display_terminate(this->display);
 }
 
-/* Ouput Manager */
-void UraServer::update_output_configuration() {
-  auto configuration = wlr_output_configuration_v1_create();
-  for (auto output : this->runtime->outputs) {
-    wlr_output_configuration_head_v1_create(configuration, output->output);
-  }
-  wlr_output_manager_v1_set_configuration(this->output_manager, configuration);
-}
 } // namespace ura

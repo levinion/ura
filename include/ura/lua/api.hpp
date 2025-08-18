@@ -27,14 +27,14 @@ std::string keymap_get_current_mode();
 // win
 void close_window(int index);
 int get_window_number();
-void move_window_to_workspace(int window_index, int workspace_index);
+void move_window_to_workspace(int window_index, sol::object workspace_id);
 std::optional<sol::table> get_current_window();
 std::optional<sol::table> get_window(int index);
 bool focus_window(int index);
 void set_window_layout(int index, std::string layout);
 void set_window_layer(int index, int z);
 void set_window_draggable(int index, bool flag);
-void activate_window(int workspace_index, int window_index);
+void activate_window(sol::object workspace_id, int window_index);
 void move_window(int index, int x, int y);
 void resize_window(int index, int width, int height);
 void center_window(int index);

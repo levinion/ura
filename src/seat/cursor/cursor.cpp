@@ -1,8 +1,7 @@
 #include "ura/seat/cursor.hpp"
-#include <wayland-server-protocol.h>
 #include "ura/view/client.hpp"
+#include "ura/view/view.hpp"
 #include "ura/core/runtime.hpp"
-#include <memory>
 #include "ura/core/server.hpp"
 #include "ura/ura.hpp"
 #include "ura/core/callback.hpp"
@@ -134,7 +133,7 @@ void UraCursor::process_motion(
 
   // surface local coordination
   double sx, sy;
-  auto client = server->foreground_client(&sx, &sy);
+  auto client = server->view->foreground_client(&sx, &sy);
 
   // unfocus if surface is none under cursor_follow_mouse mode
   if (cursor_follow_mouse && (!client || !client.value().surface)) {
@@ -234,7 +233,7 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
   if (!cursor_follow_mouse && event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
     // focus client
     double sx, sy;
-    auto client = server->foreground_client(&sx, &sy);
+    auto client = server->view->foreground_client(&sx, &sy);
     if ((!client || !client.value().surface)
         && server->seat->focused_client()) {
       server->seat->unfocus();

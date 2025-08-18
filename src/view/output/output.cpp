@@ -51,8 +51,16 @@ void UraOutput::init(wlr_output* _wlr_output) {
     scene_output
   );
 
-  server->runtime->outputs.push_back(this);
-  server->update_output_configuration();
+  server->view->outputs.push_back(this);
+
+  auto configuration = wlr_output_configuration_v1_create();
+  for (auto output : server->view->outputs) {
+    wlr_output_configuration_head_v1_create(configuration, output->output);
+  }
+  wlr_output_manager_v1_set_configuration(
+    server->output_manager,
+    configuration
+  );
 }
 
 UraOutput* UraOutput::from(wlr_output* output) {
@@ -117,7 +125,7 @@ void UraOutput::configure_layer(
   bool exclusive
 ) {
   auto server = UraServer::get_instance();
-  if (server->current_output() != this)
+  if (server->view->current_output() != this)
     return;
   // auto scene_output = wlr_scene_get_scene_output(server->scene, this->output);
   // wlr_scene_node_set_position(&layer->node, scene_output->x, scene_output->y);
@@ -229,27 +237,26 @@ UraWorkSpace* UraOutput::create_workspace() {
   return this->workspaces.back().get();
 }
 
-bool UraOutput::switch_workspace(int index) {
-  if (index < 0)
-    return false;
+void UraOutput::switch_workspace(int index) {
+  if (index < 0 || index >= this->workspaces.size())
+    return;
   auto target = this->get_workspace_at(index);
   if (target == this->current_workspace)
-    return true;
-  return this->switch_workspace(target);
+    return;
+  this->switch_workspace(target);
 }
 
-bool UraOutput::switch_workspace(UraWorkSpace* workspace) {
+void UraOutput::switch_workspace(UraWorkSpace* workspace) {
   if (!workspace)
-    return false;
+    return;
   if (workspace == this->current_workspace)
-    return true;
+    return;
   auto server = UraServer::get_instance();
   assert(workspace != server->scratchpad.get());
   this->current_workspace->disable();
   this->current_workspace = workspace;
   this->current_workspace->enable();
   server->lua->try_execute_hook("workspace-change");
-  return true;
 }
 
 sol::table UraOutput::to_lua_table() {
@@ -295,7 +302,7 @@ void UraOutput::set_dpms_mode(bool flag) {
 int UraOutput::index() {
   auto server = UraServer::get_instance();
   int index = 0;
-  for (auto output : server->runtime->outputs) {
+  for (auto output : server->view->outputs) {
     if (output == this)
       return index;
     index++;

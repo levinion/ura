@@ -40,10 +40,10 @@ end)
 
 ura.keymap.set("ctrl+shift+left", function()
   local ws = ura.ws.get_current()
-  if ws.index == 0 then return end
   local win = ura.win.get_current()
   if not win then return end
   ura.win.move_to_workspace(win.index, ws.index - 1)
+  ura.ws.switch(ws.index - 1)
   ura.ws.destroy(ws.index)
 end)
 
@@ -52,6 +52,7 @@ ura.keymap.set("ctrl+shift+right", function()
   local win = ura.win.get_current()
   if not win then return end
   ura.win.move_to_workspace(win.index, ws.index + 1)
+  ura.ws.switch(ws.index + 1)
 end)
 
 ura.keymap.set("super+h", function()
@@ -66,7 +67,7 @@ end)
 
 ura.keymap.set("super+shift+m", function()
   local index = ura.win.get_current().index
-  ura.win.move_to_workspace(index, -1)
+  ura.win.move_to_workspace(index, "scratchpad")
 end)
 
 ura.hook.set("prepare", function() end)

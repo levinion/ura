@@ -7,7 +7,7 @@ namespace ura::layout {
 std::optional<sol::table> tiling(int index) {
   auto server = UraServer::get_instance();
   auto toplevel =
-    server->current_output()->current_workspace->get_toplevel_at(index);
+    server->view->current_output()->current_workspace->get_toplevel_at(index);
   if (!toplevel)
     return {};
   if (toplevel.value()->initial_commit) {
@@ -65,7 +65,7 @@ std::optional<sol::table> fullscreen(int index) {
   auto server = UraServer::get_instance();
 
   auto toplevel =
-    server->current_output()->current_workspace->get_toplevel_at(index);
+    server->view->current_output()->current_workspace->get_toplevel_at(index);
   if (!toplevel)
     return {};
   if (toplevel.value()->initial_commit) {
@@ -73,7 +73,7 @@ std::optional<sol::table> fullscreen(int index) {
     toplevel.value()->set_layer(UraSceneLayer::Fullscreen);
   }
 
-  auto geo = server->current_output()->logical_geometry();
+  auto geo = server->view->current_output()->logical_geometry();
   auto table = server->lua->state.create_table();
   table["x"] = geo.x;
   table["y"] = geo.y;
@@ -86,7 +86,7 @@ std::optional<sol::table> floating(int index) {
   auto server = UraServer::get_instance();
 
   auto toplevel =
-    server->current_output()->current_workspace->get_toplevel_at(index);
+    server->view->current_output()->current_workspace->get_toplevel_at(index);
   if (!toplevel)
     return {};
 

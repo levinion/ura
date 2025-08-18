@@ -51,8 +51,8 @@ public:
   UraWorkSpace* current_workspace = nullptr;
   std::list<std::unique_ptr<UraWorkSpace>> workspaces;
   UraWorkSpace* create_workspace();
-  bool switch_workspace(int index);
-  bool switch_workspace(UraWorkSpace* workspace);
+  void switch_workspace(int index);
+  void switch_workspace(UraWorkSpace* workspace);
   void destroy_workspace(int index);
   UraWorkSpace* get_workspace_at(int index);
   sol::table to_lua_table();

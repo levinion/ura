@@ -1,8 +1,12 @@
 #pragma once
 
+#include <list>
 #include <memory>
 #include <map>
+#include <unordered_map>
 #include "ura/ura.hpp"
+#include "ura/view/output.hpp"
+#include "ura/view/workspace.hpp"
 
 namespace ura {
 
@@ -22,7 +26,14 @@ class UraView {
 public:
   wlr_scene* scene;
   std::map<int, wlr_scene_tree*> layers;
+  std::list<UraOutput*> outputs;
+  std::unordered_map<std::string, std::unique_ptr<UraWorkSpace>>
+    named_workspaces;
+
   static std::unique_ptr<UraView> init();
   wlr_scene_tree* get_scene_tree_or_create(int z);
+  UraWorkSpace* get_named_workspace_or_create(std::string name);
+  UraOutput* current_output();
+  std::optional<UraClient> foreground_client(double* sx, double* sy);
 };
 } // namespace ura

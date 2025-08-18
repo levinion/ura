@@ -2,7 +2,6 @@
 
 #include <memory>
 #include "ura/ura.hpp"
-#include "ura/view/view.hpp"
 #include "ura/view/workspace.hpp"
 
 namespace ura {
@@ -14,6 +13,7 @@ class UraKeyboard;
 class UraRuntime;
 class UraSeat;
 class Lua;
+class UraView;
 
 class UraServer {
 public:
@@ -46,27 +46,19 @@ public:
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;
   std::unique_ptr<UraSeat> seat;
-  std::unique_ptr<UraWorkSpace> scratchpad;
   std::unique_ptr<UraView> view;
 
   bool quit = false;
 
-  // Get the global instance of server
   static UraServer* get_instance();
   UraServer* init();
-
   void run();
   void destroy();
-  ~UraServer();
-
-  std::optional<UraClient> foreground_client(double* sx, double* sy);
-  UraOutput* current_output();
   void terminate();
-  void update_output_configuration();
+  ~UraServer();
 
 private:
   static UraServer* instance;
-
   void setup_log();
   void setup_seat();
   void setup_toplevel();
@@ -80,7 +72,6 @@ private:
   void setup_foreign();
   void setup_drm();
   void setup_text_input();
-  void setup_scratchpad();
   void setup_idle();
   void setup_session_lock();
   void setup_others();

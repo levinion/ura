@@ -1,4 +1,5 @@
 #include "ura/view/toplevel.hpp"
+#include "ura/view/view.hpp"
 #include "ura/core/runtime.hpp"
 #include "ura/core/server.hpp"
 #include "ura/core/callback.hpp"
@@ -33,7 +34,7 @@ void on_toplevel_commit(wl_listener* listener, void* data) {
 
 void on_toplevel_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto output = server->current_output();
+  auto output = server->view->current_output();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   toplevel->destroy();
   delete toplevel;
