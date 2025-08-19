@@ -38,6 +38,7 @@ void activate_window(sol::object workspace_id, int window_index);
 void move_window(int index, int x, int y);
 void resize_window(int index, int width, int height);
 void center_window(int index);
+void swap_window(int index, int target);
 // input
 void set_keyboard_repeat(int rate, int delay);
 void set_cursor_theme(std::string theme, int size);

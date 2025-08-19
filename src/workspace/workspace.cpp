@@ -1,5 +1,6 @@
 #include "ura/view/workspace.hpp"
 #include "ura/view/output.hpp"
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include "ura/core/server.hpp"
@@ -68,6 +69,15 @@ void UraWorkSpace::add(UraToplevel* toplevel) {
 void UraWorkSpace::remove(UraToplevel* toplevel) {
   this->toplevels.remove(toplevel);
   this->focus_stack.remove(toplevel);
+}
+
+void UraWorkSpace::swap_toplevel(UraToplevel* src, UraToplevel* dst) {
+  auto it1 = std::find(this->toplevels.begin(), this->toplevels.end(), src);
+  auto it2 = std::find(this->toplevels.begin(), this->toplevels.end(), dst);
+  if (it1 == this->toplevels.end() || it2 == this->toplevels.end())
+    return;
+  *it1 = dst;
+  *it2 = src;
 }
 
 } // namespace ura

@@ -41,6 +41,7 @@ public:
   sol::table to_lua_table();
   void add(UraToplevel* toplevel);
   void remove(UraToplevel* toplevel);
+  void swap_toplevel(UraToplevel* src, UraToplevel* dst);
 };
 
 } // namespace ura

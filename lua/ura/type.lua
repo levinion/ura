@@ -129,7 +129,13 @@ ura = {
     set_layout = function(index, layout) end,
     ---@param index integer
     ---@param z_index integer
-    set_layer = function(index, z_index) end
+    set_layer = function(index, z_index) end,
+    ---@param index integer
+    ---@param flag boolean
+    set_draggable = function(index, flag) end,
+    ---@param src integer
+    ---@param dst integer
+    swap = function(src, dst) end
   },
 
   --- @class ura.input: table

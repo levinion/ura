@@ -420,4 +420,16 @@ void set_window_layer(int index, int z) {
   toplevel.value()->set_layer(z);
 }
 
+void swap_window(int index, int target) {
+  auto server = UraServer::get_instance();
+  auto workspace = server->view->current_output()->current_workspace;
+  auto src = workspace->get_toplevel_at(index);
+  auto dst = workspace->get_toplevel_at(target);
+  if (!src || !dst)
+    return;
+  workspace->swap_toplevel(src.value(), dst.value());
+  src.value()->request_commit();
+  dst.value()->request_commit();
+}
+
 } // namespace ura::api
