@@ -259,7 +259,7 @@ void UraCursor::process_cursor_mode_move() {
       this->anchor.x + this->position().x - this->grab.x,
       this->anchor.y + this->position().y - this->grab.y
     );
-    toplevel->request_commit();
+    toplevel->refresh();
   }
 }
 
@@ -273,7 +273,7 @@ void UraCursor::process_cursor_mode_resize() {
       this->anchor.width + this->position().x - this->grab.x,
       this->anchor.height + this->position().y - this->grab.y
     );
-    toplevel->request_commit();
+    toplevel->refresh();
   }
 }
 

@@ -20,8 +20,12 @@ local UraWindow = {
   height = 0,
   --- @type string
   layout = "tiling",
+  --- @type string|nil
+  last_layout = nil,
   --- @type boolean
   initial_commit = true,
+  --- @type boolean
+  first_commit_after_layout_change = true,
   --- @type integer
   z_index = 0
 }
@@ -30,7 +34,7 @@ local UraWindow = {
 local UraWorkspace = {
   --- @type integer
   index = 0,
-  --- @type string | nil
+  --- @type string|nil
   name = "",
   --- @type UraWindow[]
   windows = {}
@@ -129,7 +133,7 @@ ura = {
     set_layout = function(index, layout) end,
     ---@param index integer
     ---@param z_index integer
-    set_layer = function(index, z_index) end,
+    set_z_index = function(index, z_index) end,
     ---@param index integer
     ---@param flag boolean
     set_draggable = function(index, flag) end,
@@ -266,16 +270,6 @@ ura = {
         },
         --- @type number
         inner = 10,
-      },
-    },
-    --- @class ura.opt.floating: table
-    floating = {
-      --- @class ura.opt.floating.default: table
-      default = {
-        --- @type integer
-        width = 800,
-        --- @type integer
-        height = 600,
       },
     },
   },

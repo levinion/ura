@@ -63,7 +63,7 @@ void Lua::setup() {
   this->set("win.get", api::get_window);
   this->set("win.activate", api::activate_window);
   this->set("win.set_layout", api::set_window_layout);
-  this->set("win.set_layer", api::set_window_layer);
+  this->set("win.set_z_index", api::set_window_z_index);
   this->set("win.move", api::move_window);
   this->set("win.resize", api::resize_window);
   this->set("win.center", api::center_window);
@@ -113,8 +113,6 @@ void Lua::setup() {
   this->set("opt.tilling.gap.outer.bottom", 10);
   this->set("opt.tilling.gap.outer.right", 10);
   this->set("opt.tilling.gap.inner", 10);
-  this->set("opt.floating.default.width", 800);
-  this->set("opt.floating.default.height", 600);
   // override
   this->state.set("print", api::lua_print);
   // g

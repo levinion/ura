@@ -10,7 +10,7 @@ end)
 ura.keymap.set("alt+space", function()
   local w = ura.win.get_current()
   if not w then return end
-  ura.win.set_layout(w.index, w.layout ~= "floating" and "floating" or "tiling")
+  ura.win.set_layout(w.index, w.layout ~= "floating" and "floating" or (w.last_layout or "tiling"))
 end)
 
 ura.keymap.set("super+shift+e", function()
@@ -24,7 +24,7 @@ end)
 ura.keymap.set("super+f", function()
   local w = ura.win.get_current()
   if not w then return end
-  ura.win.set_layout(w.index, w.layout ~= "fullscreen" and "fullscreen" or "tiling")
+  ura.win.set_layout(w.index, w.layout ~= "fullscreen" and "fullscreen" or (w.last_layout or "tiling"))
 end)
 
 ura.keymap.set("ctrl+left", function()
@@ -56,13 +56,40 @@ ura.keymap.set("ctrl+shift+right", function()
 end)
 
 ura.keymap.set("super+h", function()
-  local index = ura.win.get_current().index
-  ura.win.focus(index - 1)
+  local win = ura.win.get_current()
+  if not win then return end
+  if win.index == 0 and win.workspace_index == 0 then return end
+  if win.index >= 1 then
+    ura.win.focus(win.index - 1)
+  else
+    ura.ws.switch(win.workspace_index - 1)
+    ura.win.focus(ura.win.size() - 1)
+  end
 end)
 
 ura.keymap.set("super+l", function()
-  local index = ura.win.get_current().index
-  ura.win.focus(index + 1)
+  local win = ura.win.get_current()
+  if not win then return end
+  if win.index < ura.win.size() - 1 then
+    ura.win.focus(win.index + 1)
+  else
+    if ura.ws.get_current().index ~= ura.ws.size() - 1 then
+      ura.ws.switch(win.workspace_index + 1)
+      ura.win.focus(0)
+    end
+  end
+end)
+
+ura.keymap.set("super+shift+h", function()
+  local win = ura.win.get_current()
+  if not win then return end
+  ura.win.swap(win.index, win.index - 1)
+end)
+
+ura.keymap.set("super+shift+l", function()
+  local win = ura.win.get_current()
+  if not win then return end
+  ura.win.swap(win.index, win.index + 1)
 end)
 
 ura.keymap.set("super+shift+m", function()

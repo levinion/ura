@@ -181,7 +181,7 @@ void set_window_layout(int index, std::string layout) {
   if (client) {
     auto toplevel = client.value();
     toplevel->set_layout(layout);
-    toplevel->request_commit();
+    toplevel->workspace->refresh();
   }
 }
 
@@ -298,7 +298,7 @@ void move_window(int index, int x, int y) {
   if (!toplevel)
     return;
   toplevel.value()->move(x, y);
-  toplevel.value()->request_commit();
+  toplevel.value()->refresh();
 }
 
 void resize_window(int index, int width, int height) {
@@ -308,7 +308,7 @@ void resize_window(int index, int width, int height) {
   if (!toplevel)
     return;
   toplevel.value()->resize(width, height);
-  toplevel.value()->request_commit();
+  toplevel.value()->refresh();
 }
 
 void center_window(int index) {
@@ -318,7 +318,7 @@ void center_window(int index) {
   if (!toplevel)
     return;
   toplevel.value()->center();
-  toplevel.value()->request_commit();
+  toplevel.value()->refresh();
 }
 
 sol::table get_current_output() {
@@ -411,13 +411,13 @@ void unset_layout(std::string name) {
   }
 }
 
-void set_window_layer(int index, int z) {
+void set_window_z_index(int index, int z) {
   auto server = UraServer::get_instance();
   auto toplevel =
     server->view->current_output()->current_workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  toplevel.value()->set_layer(z);
+  toplevel.value()->set_z_index(z);
 }
 
 void swap_window(int index, int target) {
@@ -428,8 +428,8 @@ void swap_window(int index, int target) {
   if (!src || !dst)
     return;
   workspace->swap_toplevel(src.value(), dst.value());
-  src.value()->request_commit();
-  dst.value()->request_commit();
+  src.value()->refresh();
+  dst.value()->refresh();
 }
 
 } // namespace ura::api

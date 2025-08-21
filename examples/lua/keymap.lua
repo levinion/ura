@@ -22,7 +22,7 @@ end)
 ura.keymap.set("alt+space", function()
   local w = ura.win.get_current()
   if not w then return end
-  ura.win.set_layout(w.index, w.layout ~= "floating" and "floating" or "tiling")
+  ura.win.set_layout(w.index, w.layout ~= "floating" and "floating" or (w.last_layout or "tiling"))
 end)
 
 ura.keymap.set("super+shift+e", function()
@@ -36,7 +36,7 @@ end)
 ura.keymap.set("super+f", function()
   local w = ura.win.get_current()
   if not w then return end
-  ura.win.set_layout(w.index, w.layout ~= "fullscreen" and "fullscreen" or "tiling")
+  ura.win.set_layout(w.index, w.layout ~= "fullscreen" and "fullscreen" or (w.last_layout or "tiling"))
 end)
 
 ura.keymap.set("ctrl+left", function()
@@ -126,7 +126,7 @@ ura.keymap.set("XF86AudioLowerVolume", function()
 end)
 
 ura.keymap.set("super+shift+s", function()
-  os.execute("swaylock &")
+  os.execute("swaylock -f -i ~/.config/ura/assets/bg.jpg &")
 end)
 
 ura.keymap.set("super+up", function()

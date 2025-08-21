@@ -10,9 +10,9 @@ std::optional<sol::table> tiling(int index) {
     server->view->current_output()->current_workspace->get_toplevel_at(index);
   if (!toplevel)
     return {};
-  if (toplevel.value()->initial_commit) {
+  if (toplevel.value()->first_commit_after_layout_change) {
     toplevel.value()->draggable = false;
-    toplevel.value()->set_layer(UraSceneLayer::Normal);
+    toplevel.value()->set_z_index(UraSceneLayer::Normal);
   }
   auto geo = toplevel.value()->geometry;
   auto usable_area = toplevel.value()->output->usable_area;
@@ -68,9 +68,9 @@ std::optional<sol::table> fullscreen(int index) {
     server->view->current_output()->current_workspace->get_toplevel_at(index);
   if (!toplevel)
     return {};
-  if (toplevel.value()->initial_commit) {
+  if (toplevel.value()->first_commit_after_layout_change) {
     toplevel.value()->draggable = false;
-    toplevel.value()->set_layer(UraSceneLayer::Fullscreen);
+    toplevel.value()->set_z_index(UraSceneLayer::Fullscreen);
   }
 
   auto geo = server->view->current_output()->logical_geometry();
@@ -90,27 +90,18 @@ std::optional<sol::table> floating(int index) {
   if (!toplevel)
     return {};
 
-  if (toplevel.value()->initial_commit) {
-    toplevel.value()->draggable = true;
-    toplevel.value()->set_layer(UraSceneLayer::Floating);
-  }
+  if (!toplevel.value()->first_commit_after_layout_change)
+    return {};
+
+  toplevel.value()->draggable = true;
+  toplevel.value()->set_z_index(UraSceneLayer::Floating);
 
   auto geo = toplevel.value()->geometry;
   auto usable_area = toplevel.value()->output->usable_area;
   int w = geo.width, h = geo.height, x = geo.x, y = geo.y;
-  if (toplevel.value()->initial_commit
-      && !toplevel.value()->xdg_toplevel->base->initial_commit) {
-    w = std::min(
-      toplevel.value()->xdg_toplevel->base->current.geometry.width,
-      server->lua->fetch<int>("opt.floating.default.width").value_or(800)
-    );
-    h = std::min(
-      toplevel.value()->xdg_toplevel->base->current.geometry.height,
-      server->lua->fetch<int>("opt.floating.default.height").value_or(600)
-    );
-    x = usable_area.x + (usable_area.width - w) / 2;
-    y = usable_area.y + (usable_area.height - h) / 2;
-  }
+  x = usable_area.x + (usable_area.width - w) / 2;
+  y = usable_area.y + (usable_area.height - h) / 2;
+
   auto table = server->lua->state.create_table();
   table["x"] = x;
   table["y"] = y;

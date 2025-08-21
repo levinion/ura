@@ -80,4 +80,18 @@ void UraWorkSpace::swap_toplevel(UraToplevel* src, UraToplevel* dst) {
   *it2 = src;
 }
 
+void UraWorkSpace::refresh() {
+  for (auto toplevel : this->toplevels) toplevel->refresh();
+}
+
+void UraWorkSpace::refresh_except(
+  std::initializer_list<UraToplevel*> toplevels
+) {
+  for (auto toplevel : this->toplevels) {
+    if (std::find(toplevels.begin(), toplevels.end(), toplevel)
+        == toplevels.end())
+      toplevel->refresh();
+  }
+}
+
 } // namespace ura

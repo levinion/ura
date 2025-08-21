@@ -146,6 +146,13 @@ void UraToplevel::commit() {
       );
     server->seat->focus(this);
     server->lua->try_execute_hook("window-new");
+    this->refresh();
+    return;
+  }
+
+  if (this->geometry.empty()) {
+    this->geometry = Vec4<int>::from(this->xdg_toplevel->base->geometry);
+    this->layout_geometry["floating"] = this->geometry;
   }
 
   auto box = this->apply_layout();
@@ -159,11 +166,10 @@ void UraToplevel::commit() {
 
   if (this->initial_commit)
     this->initial_commit = false;
-  if (changed) {
-    for (auto toplevel : this->workspace->toplevels)
-      if (toplevel != this)
-        toplevel->request_commit();
-  }
+  if (this->first_commit_after_layout_change)
+    this->first_commit_after_layout_change = false;
+  if (changed)
+    this->workspace->refresh_except({ this });
 }
 
 void UraToplevel::focus() {
@@ -224,7 +230,7 @@ void UraToplevel::move_to_workspace(std::string name) {
   auto prev_workspace = this->workspace;
   this->workspace = named_workspace;
   this->workspace->toplevels.push_back(this);
-  for (auto toplevel : prev_workspace->toplevels) toplevel->request_commit();
+  prev_workspace->refresh();
   if (prev_workspace->focus_stack.top()) {
     server->seat->focus(prev_workspace->focus_stack.top().value());
   }
@@ -395,7 +401,7 @@ void UraToplevel::set_title(std::string title) {
   wlr_foreign_toplevel_handle_v1_set_title(this->foreign_handle, title.data());
 }
 
-void UraToplevel::set_layer(int z_index) {
+void UraToplevel::set_z_index(int z_index) {
   auto server = UraServer::get_instance();
   if (this->z_index != z_index) {
     auto layer = server->view->get_scene_tree_or_create(z_index);
@@ -405,7 +411,7 @@ void UraToplevel::set_layer(int z_index) {
 }
 
 // request the toplevel to send a commit request now
-void UraToplevel::request_commit() {
+void UraToplevel::refresh() {
   wlr_xdg_surface_schedule_configure(this->xdg_toplevel->base);
 }
 
@@ -469,7 +475,10 @@ sol::table UraToplevel::to_lua_table() {
   table["width"] = this->geometry.width;
   table["height"] = this->geometry.height;
   table["layout"] = this->layout;
+  table["last_layout"] = this->last_layout;
   table["initial_commit"] = this->initial_commit;
+  table["first_commit_after_layout_change"] =
+    this->first_commit_after_layout_change;
   table["z_index"] = this->z_index;
   return table;
 }
@@ -503,8 +512,15 @@ void UraToplevel::set_layout(std::string layout) {
 
   if (layout != this->layout) {
     this->last_layout = this->layout;
-    this->initial_commit = true;
+    this->first_commit_after_layout_change = true;
     this->layout = layout;
+    this->layout_geometry[this->last_layout.value()] = this->geometry;
+
+    if (this->layout_geometry.contains(this->layout)) {
+      auto geo = this->layout_geometry[this->layout];
+      this->resize(geo.width, geo.height);
+      this->move(geo.x, geo.y);
+    }
 
     // handle enter and leave fullscreen mode
     if (this->last_layout.value() == "fullscreen"
@@ -522,13 +538,4 @@ void UraToplevel::set_layout(std::string layout) {
     }
   }
 }
-
-void UraToplevel::recover_layout() {
-  if (this->last_layout && this->layout != this->last_layout) {
-    this->set_layout(this->last_layout.value());
-  } else {
-    this->set_layout("tiling");
-  }
-}
-
 } // namespace ura

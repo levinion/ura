@@ -1,14 +1,10 @@
 #pragma once
 #include "ura/view/toplevel.hpp"
 #include <list>
-#include <memory>
-#include <optional>
-#include <sol/table.hpp>
 
 namespace ura {
 
 class UraOutput;
-class UraFocusStack;
 
 class UraFocusStack {
 public:
@@ -42,6 +38,8 @@ public:
   void add(UraToplevel* toplevel);
   void remove(UraToplevel* toplevel);
   void swap_toplevel(UraToplevel* src, UraToplevel* dst);
+  void refresh();
+  void refresh_except(std::initializer_list<UraToplevel*> toplevels);
 };
 
 } // namespace ura
