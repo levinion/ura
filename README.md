@@ -82,7 +82,7 @@ Ura's configuration files are searched in the following order:
 
 The [default configuration file](/assets/init.lua) is installed with Ura at `/etc/ura/init.lua`. If you wish to modify it, it's recommended to copy it to your user directory before making changes.
 
-The default terminal is [alacritty](https://github.com/alacritty/alacritty), which can be launched using the `super+t` shortcut. However, make sure that `alacritty` is installed before starting Ura, or change it to another terminal of your choice.
+The default terminal is [foot](https://codeberg.org/dnkl/foot), which can be launched using the `super+t` shortcut. However, make sure that `foot` is installed before starting Ura, or change it to another terminal of your choice.
 
 ### Keybindings
 
@@ -90,7 +90,7 @@ Define keybindings using the following format: one or more modifier keys (or non
 
 ```lua
 ura.keymap.set("super+t", function()
-  os.execute("alacritty -e tmux &")
+  os.execute("foot -e tmux &")
 end)
 
 ura.keymap.set("super+shift+e", function()

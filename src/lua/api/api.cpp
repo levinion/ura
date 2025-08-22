@@ -181,7 +181,7 @@ void set_window_layout(int index, std::string layout) {
   if (client) {
     auto toplevel = client.value();
     toplevel->set_layout(layout);
-    toplevel->workspace->refresh();
+    toplevel->send_redraw_event();
   }
 }
 
@@ -298,7 +298,6 @@ void move_window(int index, int x, int y) {
   if (!toplevel)
     return;
   toplevel.value()->move(x, y);
-  toplevel.value()->refresh();
 }
 
 void resize_window(int index, int width, int height) {
@@ -308,7 +307,7 @@ void resize_window(int index, int width, int height) {
   if (!toplevel)
     return;
   toplevel.value()->resize(width, height);
-  toplevel.value()->refresh();
+  toplevel.value()->redraw();
 }
 
 void center_window(int index) {
@@ -318,7 +317,6 @@ void center_window(int index) {
   if (!toplevel)
     return;
   toplevel.value()->center();
-  toplevel.value()->refresh();
 }
 
 sol::table get_current_output() {
@@ -428,8 +426,23 @@ void swap_window(int index, int target) {
   if (!src || !dst)
     return;
   workspace->swap_toplevel(src.value(), dst.value());
-  src.value()->refresh();
-  dst.value()->refresh();
+  src.value()->redraw();
+  dst.value()->redraw();
+}
+
+void redraw_window(int index) {
+  auto server = UraServer::get_instance();
+  auto workspace = server->view->current_output()->current_workspace;
+  auto toplevel = workspace->get_toplevel_at(index);
+  if (!toplevel)
+    return;
+  toplevel.value()->redraw();
+}
+
+void redraw_current_workspace() {
+  auto server = UraServer::get_instance();
+  auto workspace = server->view->current_output()->current_workspace;
+  workspace->redraw();
 }
 
 } // namespace ura::api

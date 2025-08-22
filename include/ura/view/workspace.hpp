@@ -38,8 +38,9 @@ public:
   void add(UraToplevel* toplevel);
   void remove(UraToplevel* toplevel);
   void swap_toplevel(UraToplevel* src, UraToplevel* dst);
-  void refresh();
-  void refresh_except(std::initializer_list<UraToplevel*> toplevels);
+  void redraw();
+  void redraw_dirty();
+  void mark_dirty_all();
 };
 
 } // namespace ura

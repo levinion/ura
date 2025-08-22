@@ -39,6 +39,7 @@ void move_window(int index, int x, int y);
 void resize_window(int index, int width, int height);
 void center_window(int index);
 void swap_window(int index, int target);
+void redraw_window(int index);
 // input
 void set_keyboard_repeat(int rate, int delay);
 void set_cursor_theme(std::string theme, int size);
@@ -52,6 +53,7 @@ int get_workspace_number();
 sol::table get_current_workspace();
 std::optional<sol::table> get_workspace(sol::object id);
 sol::table list_workspaces();
+void redraw_current_workspace();
 // output
 sol::table get_current_output();
 void set_output_dpms(int index, bool flag);

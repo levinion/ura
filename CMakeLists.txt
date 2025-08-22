@@ -15,6 +15,10 @@ add_executable(${name} ${SRC})
 target_compile_options(${name} PRIVATE)
 target_link_options(${name} PRIVATE -static-libgcc -static-libstdc++)
 
+if(CMAKE_BUILD_TYPE MATCHES 'Release')
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
+
 # include header
 target_include_directories(${name} PUBLIC include/)
 target_include_directories(${name} PUBLIC include/protocols/)

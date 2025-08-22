@@ -55,7 +55,6 @@ void on_toplevel_map(wl_listener* listener, void* data);
 void on_toplevel_unmap(wl_listener* listener, void* data);
 void on_toplevel_commit(wl_listener* listener, void* data);
 void on_toplevel_destroy(wl_listener* listener, void* data);
-// TODO:
 // void on_toplevel_request_move(wl_listener* listener, void* data);
 // void on_toplevel_request_resize(wl_listener* listener, void* data);
 // void on_toplevel_request_maximize(wl_listener* listener, void* data);

@@ -40,5 +40,10 @@ public:
     return this->x == 0 && this->y == 0 && this->width == 0
       && this->height == 0;
   }
+
+  inline void center(Vec4<T>& geo) {
+    this->x = geo.x + (geo.width - this->width) / 2;
+    this->y = geo.y + (geo.height - this->height) / 2;
+  }
 };
 } // namespace ura

@@ -15,9 +15,7 @@ namespace ura {
 void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
-  // setup ura toplevel
   this->xdg_toplevel = xdg_toplevel;
-  // add to output's normal layer
   this->z_index = UraSceneLayer::Normal;
   this->scene_tree = wlr_scene_xdg_surface_create(
     server->view->get_scene_tree_or_create(this->z_index),
@@ -146,30 +144,37 @@ void UraToplevel::commit() {
       );
     server->seat->focus(this);
     server->lua->try_execute_hook("window-new");
-    this->refresh();
+    if (this->geometry.empty())
+      this->redraw();
     return;
   }
 
+  // second commit
   if (this->geometry.empty()) {
-    this->geometry = Vec4<int>::from(this->xdg_toplevel->base->geometry);
-    this->layout_geometry["floating"] = this->geometry;
+    auto geo = Vec4<int>::from(this->xdg_toplevel->base->geometry);
+    geo.center(this->output->usable_area);
+    this->layout_geometry["floating"] = geo;
+    this->resize(geo.width, geo.height);
+    this->move(geo.x, geo.y, true);
   }
 
   auto box = this->apply_layout();
   if (!box)
     return;
-  auto changed = false;
-  if (this->resize(box->width, box->height))
-    changed = true;
-  if (this->move(box->x, box->y))
-    changed = true;
+
+  auto changed = this->resize(box->width, box->height);
+  this->move(box->x, box->y);
+
+  if (changed && !this->dirty) {
+    this->send_redraw_event();
+  }
 
   if (this->initial_commit)
     this->initial_commit = false;
   if (this->first_commit_after_layout_change)
     this->first_commit_after_layout_change = false;
-  if (changed)
-    this->workspace->refresh_except({ this });
+  if (this->dirty)
+    this->dirty = false;
 }
 
 void UraToplevel::focus() {
@@ -230,7 +235,7 @@ void UraToplevel::move_to_workspace(std::string name) {
   auto prev_workspace = this->workspace;
   this->workspace = named_workspace;
   this->workspace->toplevels.push_back(this);
-  prev_workspace->refresh();
+  prev_workspace->redraw_dirty();
   if (prev_workspace->focus_stack.top()) {
     server->seat->focus(prev_workspace->focus_stack.top().value());
   }
@@ -322,10 +327,8 @@ bool UraToplevel::move(int x, int y, bool force_update_border) {
 }
 
 bool UraToplevel::resize(int width, int height) {
-  if (width <= 0)
-    width = 1;
-  if (height <= 0)
-    height = 1;
+  if (width < 0 || height < 0)
+    return false;
   if (width == this->geometry.width && height == this->geometry.height)
     return false;
   this->geometry.width = width;
@@ -411,7 +414,7 @@ void UraToplevel::set_z_index(int z_index) {
 }
 
 // request the toplevel to send a commit request now
-void UraToplevel::refresh() {
+void UraToplevel::redraw() {
   wlr_xdg_surface_schedule_configure(this->xdg_toplevel->base);
 }
 
@@ -453,13 +456,11 @@ void UraToplevel::set_border_color(std::array<float, 4>& color) {
   }
 }
 
-// move to center of usable area
 void UraToplevel::center() {
-  auto geo = this->geometry;
   auto usable_area = this->output->usable_area;
-  auto x = usable_area.x + (usable_area.width - geo.width) / 2;
-  auto y = usable_area.y + (usable_area.height - geo.height) / 2;
-  this->move(x, y);
+  auto geo = this->geometry;
+  geo.center(usable_area);
+  this->move(geo.x, geo.y);
 }
 
 sol::table UraToplevel::to_lua_table() {
@@ -485,12 +486,9 @@ sol::table UraToplevel::to_lua_table() {
 
 std::optional<Vec4<int>> UraToplevel::apply_layout() {
   auto server = UraServer::get_instance();
-  sol::protected_function layout;
-  if (server->lua->layouts.contains(this->layout)) {
-    layout = server->lua->layouts[this->layout];
-  } else {
-    layout = server->lua->layouts["tiling"];
-  }
+  sol::protected_function layout = server->lua->layouts.contains(this->layout)
+    ? server->lua->layouts[this->layout]
+    : server->lua->layouts["tiling"];
   auto result = layout(this->index());
   if (!result.valid())
     return {};
@@ -501,7 +499,7 @@ std::optional<Vec4<int>> UraToplevel::apply_layout() {
   auto y = server->lua->fetch<int>(table.value(), "y");
   auto w = server->lua->fetch<int>(table.value(), "width");
   auto h = server->lua->fetch<int>(table.value(), "height");
-  if (!x || !y || !w || !h || w.value() <= 0 || h.value() <= 0)
+  if (!x || !y || !w || !h || w.value() < 0 || h.value() < 0)
     return {};
   return Vec4 { x.value(), y.value(), w.value(), h.value() };
 }
@@ -537,5 +535,11 @@ void UraToplevel::set_layout(std::string layout) {
       wlr_foreign_toplevel_handle_v1_set_fullscreen(this->foreign_handle, true);
     }
   }
+}
+
+void UraToplevel::send_redraw_event() {
+  this->workspace->mark_dirty_all();
+  this->dirty = false;
+  this->workspace->redraw_dirty();
 }
 } // namespace ura

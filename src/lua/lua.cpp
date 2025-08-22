@@ -69,6 +69,7 @@ void Lua::setup() {
   this->set("win.center", api::center_window);
   this->set("win.set_draggable", api::set_window_draggable);
   this->set("win.swap", api::swap_window);
+  this->set("win.redraw", api::redraw_window);
   // input
   this->set("input.keyboard.set_repeat", api::set_keyboard_repeat);
   this->set("input.cursor.set_theme", api::set_cursor_theme);
@@ -82,6 +83,7 @@ void Lua::setup() {
   this->set("ws.get_current", api::get_current_workspace);
   this->set("ws.get", api::get_workspace);
   this->set("ws.list", api::list_workspaces);
+  this->set("ws.redraw", api::redraw_current_workspace);
   // output
   this->set("output.get_current", api::get_current_output);
   this->set("output.set_dpms", api::set_output_dpms);

@@ -34,9 +34,6 @@ std::optional<sol::table> tiling(int index) {
     if (window->layout == toplevel.value()->layout)
       sum += 1;
   }
-  // no toplevel to arrage
-  if (sum == 0)
-    return {};
   // find this toplevel's index
   int i = 0;
   for (auto window : toplevels) {
@@ -98,15 +95,11 @@ std::optional<sol::table> floating(int index) {
 
   auto geo = toplevel.value()->geometry;
   auto usable_area = toplevel.value()->output->usable_area;
-  int w = geo.width, h = geo.height, x = geo.x, y = geo.y;
-  x = usable_area.x + (usable_area.width - w) / 2;
-  y = usable_area.y + (usable_area.height - h) / 2;
-
   auto table = server->lua->state.create_table();
-  table["x"] = x;
-  table["y"] = y;
-  table["width"] = w;
-  table["height"] = h;
+  table["x"] = geo.x;
+  table["y"] = geo.y;
+  table["width"] = geo.width;
+  table["height"] = geo.height;
   return table;
 }
 } // namespace ura::layout

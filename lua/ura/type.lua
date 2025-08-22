@@ -139,7 +139,9 @@ ura = {
     set_draggable = function(index, flag) end,
     ---@param src integer
     ---@param dst integer
-    swap = function(src, dst) end
+    swap = function(src, dst) end,
+    ---@param index integer
+    redraw = function(index) end
   },
 
   --- @class ura.input: table
@@ -178,7 +180,8 @@ ura = {
     --- @return UraWorkspace|nil
     get = function(id) end,
     --- @return UraWorkspace[]
-    list = function() end
+    list = function() end,
+    redraw = function() end,
   },
 
   --- @class ura.output: table

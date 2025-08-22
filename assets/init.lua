@@ -1,5 +1,5 @@
 ura.keymap.set("super+t", function()
-  os.execute("alacritty &")
+  os.execute("foot &")
 end)
 
 ura.keymap.set("super+q", function()

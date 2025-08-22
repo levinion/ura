@@ -120,7 +120,7 @@ void UraLayerShell::commit() {
       || height != this->layer_surface->current.actual_height) {
     wlr_layer_surface_v1_configure(this->layer_surface, width, height);
     if (output->configure_layers()) {
-      this->output->current_workspace->refresh();
+      this->output->current_workspace->redraw();
     }
   }
 

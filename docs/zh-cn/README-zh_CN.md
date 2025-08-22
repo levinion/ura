@@ -80,7 +80,7 @@ Ura的配置文件按照查找顺序排列，有以下几个路径：
 
 [默认的配置文件](/assets/init.lua)会随着ura一同安装到`/etc/ura/init.lua`。若尝试对其进行修改，建议拷贝到用户目录下再进行修改。
 
-默认的终端为 [alacritty](https://github.com/alacritty/alacritty)，这可以使用快捷键`super+t`打开。不过，请确保在启动 ura 之前安装了`alacritty`，或者将其修改为其他你想要使用的终端。
+默认的终端为 [foot](https://codeberg.org/dnkl/foot)，这可以使用快捷键`super+t`打开。不过，请确保在启动 ura 之前安装了`foot`，或者将其修改为其他你想要使用的终端。
 
 ### 快捷键
 
@@ -88,7 +88,7 @@ Ura的配置文件按照查找顺序排列，有以下几个路径：
 
 ```lua
 ura.keymap.set("super+t", function()
-  os.execute("alacritty -e tmux &")
+  os.execute("foot -e tmux &")
 end)
 
 ura.keymap.set("super+shift+e", function()

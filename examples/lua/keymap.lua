@@ -1,5 +1,5 @@
 ura.keymap.set("super+t", function()
-  os.execute("alacritty -e tmux &")
+  os.execute("foot -e tmux &")
 end)
 
 ura.keymap.set("super+w", function()
@@ -7,7 +7,7 @@ ura.keymap.set("super+w", function()
 end)
 
 ura.keymap.set("super+e", function()
-  os.execute("alacritty -e yazi &")
+  os.execute("foot -e yazi &")
 end)
 
 ura.keymap.set("super+q", function()
