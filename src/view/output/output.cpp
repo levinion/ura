@@ -252,7 +252,6 @@ void UraOutput::switch_workspace(UraWorkSpace* workspace) {
   if (workspace == this->current_workspace)
     return;
   auto server = UraServer::get_instance();
-  assert(workspace != server->scratchpad.get());
   this->current_workspace->disable();
   this->current_workspace = workspace;
   this->current_workspace->enable();

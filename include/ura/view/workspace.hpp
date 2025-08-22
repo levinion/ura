@@ -39,8 +39,6 @@ public:
   void remove(UraToplevel* toplevel);
   void swap_toplevel(UraToplevel* src, UraToplevel* dst);
   void redraw();
-  void redraw_dirty();
-  void mark_dirty_all();
 };
 
 } // namespace ura

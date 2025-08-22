@@ -34,8 +34,8 @@ ura.hook.set("workspace-change", function()
   os.execute("pkill -SIGRTMIN+8 waybar &")
 end)
 
-ura.hook.set("window-new", function()
-  local win = ura.win.get_current()
+ura.hook.set("window-new", function(index)
+  local win = ura.win.get(index)
   if not win then return end
   if string.match(win.app_id, "fzfmenu") then
     ura.win.set_layout(win.index, "floating")

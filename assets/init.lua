@@ -97,12 +97,8 @@ ura.keymap.set("super+shift+m", function()
   ura.win.move_to_workspace(index, "scratchpad")
 end)
 
-ura.hook.set("prepare", function() end)
-
-ura.hook.set("ready", function() end)
-
-ura.hook.set("focus-change", function() end)
-
-ura.hook.set("workspace-change", function() end)
-
-ura.hook.set("window-new", function() end)
+-- ura.hook.set("prepare", function() end)
+-- ura.hook.set("ready", function() end)
+-- ura.hook.set("focus-change", function() end)
+-- ura.hook.set("workspace-change", function() end)
+-- ura.hook.set("window-new", function(index) end)

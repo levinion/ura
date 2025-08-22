@@ -142,8 +142,8 @@ end)
 The `window-new` hook is triggered when a new top-level window is created and focused. You can use it to apply window-specific styling:
 
 ```lua
-ura.hook.set("window-new", function()
-  local win = ura.win.get_current()
+ura.hook.set("window-new", function(index)
+  local win = ura.win.get(index)
   if not win then return end
   if string.match(win.app_id, "fzfmenu") then
     ura.win.set_layout(win.index, "floating")

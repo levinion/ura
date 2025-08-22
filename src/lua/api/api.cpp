@@ -181,7 +181,7 @@ void set_window_layout(int index, std::string layout) {
   if (client) {
     auto toplevel = client.value();
     toplevel->set_layout(layout);
-    toplevel->send_redraw_event();
+    toplevel->redraw_all_others();
   }
 }
 

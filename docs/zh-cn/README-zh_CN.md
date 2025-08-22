@@ -140,8 +140,8 @@ end)
 `window-new` 发生于新的顶级窗口创建和聚焦后，此时可以设置窗口样式：
 
 ```lua
-ura.hook.set("window-new", function()
-  local win = ura.win.get_current()
+ura.hook.set("window-new", function(index)
+  local win = ura.win.get(index)
   if not win then return end
   if string.match(win.app_id, "fzfmenu") then
     ura.win.set_layout(win.index, "floating")

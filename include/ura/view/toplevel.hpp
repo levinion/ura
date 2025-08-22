@@ -16,7 +16,6 @@ public:
   bool mapped = true;
   bool destroying = false;
   bool draggable = false;
-  // dirty should never be set by itself: a dirty toplevel is one that changed by others. A toplevel needed to change but not dirty is the event sender.
   bool dirty = false;
   std::string layout = "tiling";
   std::optional<std::string> last_layout;
@@ -43,7 +42,7 @@ public:
   void commit();
   void focus();
   void unfocus();
-  bool move(int x, int y, bool force_update_border = false);
+  bool move(int x, int y);
   bool resize(int width, int height);
   void center();
   void close();
@@ -58,15 +57,15 @@ public:
   void activate();
   void set_z_index(int z);
   void redraw();
+  void redraw_all_others();
   bool is_active();
   sol::table to_lua_table();
   void set_layout(std::string layout);
-  void send_redraw_event();
 
 private:
   void create_borders();
   void set_border_color(std::array<float, 4>& color);
-  std::optional<Vec4<int>> apply_layout();
+  void apply_layout();
   std::unordered_map<std::string, Vec4<int>> layout_geometry;
 };
 

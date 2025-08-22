@@ -83,15 +83,4 @@ void UraWorkSpace::swap_toplevel(UraToplevel* src, UraToplevel* dst) {
 void UraWorkSpace::redraw() {
   for (auto toplevel : this->toplevels) toplevel->redraw();
 }
-
-void UraWorkSpace::redraw_dirty() {
-  for (auto toplevel : this->toplevels)
-    if (toplevel->dirty)
-      toplevel->redraw();
-}
-
-void UraWorkSpace::mark_dirty_all() {
-  for (auto toplevel : this->toplevels) toplevel->dirty = true;
-}
-
 } // namespace ura
