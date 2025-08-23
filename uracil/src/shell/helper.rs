@@ -1,81 +1,15 @@
 use std::collections::HashSet;
 
-use anyhow::Result;
 use rustyline::{
-    Editor, Helper, Highlighter, Hinter, Validator,
+    Helper, Highlighter, Hinter, Validator,
     completion::{Completer, Pair},
-    config::Configurer,
-    error::ReadlineError,
     highlight::MatchingBracketHighlighter,
     hint::HistoryHinter,
-    history::DefaultHistory,
     validate::MatchingBracketValidator,
 };
 
-use crate::ipc::{UraIPCClient, UraIPCRequestMessage};
-
-pub struct UracilShell {
-    rl: Editor<UracilHelper, DefaultHistory>,
-    client: UraIPCClient,
-}
-
-impl UracilShell {
-    pub fn new() -> Result<Self> {
-        let mut rl = Editor::<UracilHelper, DefaultHistory>::new()?;
-        let helper = UracilHelper::new();
-        rl.set_helper(Some(helper));
-        rl.set_completion_type(rustyline::CompletionType::List);
-        let client = UraIPCClient::new()?;
-        Ok(Self { rl, client })
-    }
-
-    pub fn run(&mut self) -> Result<()> {
-        loop {
-            let readline = self.rl.readline(">> ");
-            match readline {
-                Ok(line) => {
-                    let line = line.trim();
-                    self.rl.add_history_entry(line)?;
-
-                    let line_p = format!("print({})", line);
-
-                    let mut request = UraIPCRequestMessage {
-                        method: "execute".to_string(),
-                        body: line_p,
-                    };
-                    match self.client.send(&request) {
-                        Ok(reply) => {
-                            if reply.success() {
-                                reply.print();
-                            } else {
-                                request.body = line.to_string();
-                                match self.client.send(&request) {
-                                    Ok(reply) => reply.print(),
-                                    Err(err) => eprintln!("{}", err),
-                                }
-                            }
-                        }
-                        Err(err) => {
-                            println!("Error: {:?}", err);
-                        }
-                    }
-                }
-                Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
-                    break;
-                }
-                Err(err) => {
-                    println!("Error: {:?}", err);
-                    break;
-                }
-            }
-        }
-        self.client.destroy()?;
-        Ok(())
-    }
-}
-
 #[derive(Helper, Hinter, Validator, Highlighter)]
-struct UracilHelper {
+pub struct UracilHelper {
     #[rustyline(Highlighter)]
     highlighter: MatchingBracketHighlighter,
     #[rustyline(Validator)]
@@ -86,8 +20,12 @@ struct UracilHelper {
 }
 
 impl UracilHelper {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let keywords: HashSet<String> = [
+            // buildin,
+            ":clear",
+            ":quit",
+            ":clear_history",
             "ura",
             // ura.api
             "ura.api",
@@ -156,6 +94,20 @@ impl UracilHelper {
             "ura.fn.append_package_path",
             "ura.fn.prepend_package_path",
             "ura.fn.expanduser",
+            // ura.opt
+            "ura.opt",
+            "ura.opt.active_border_color",
+            "ura.opt.inactive_border_color",
+            "ura.opt.border_width",
+            "ura.opt.focus_follow_mouse",
+            "ura.opt.tilling",
+            "ura.opt.tilling.gap",
+            "ura.opt.tilling.gap.outer",
+            "ura.opt.tilling.gap.outer.top",
+            "ura.opt.tilling.gap.outer.left",
+            "ura.opt.tilling.gap.outer.bottom",
+            "ura.opt.tilling.gap.outer.right",
+            "ura.opt.tilling.gap.inner",
         ]
         .iter()
         .map(|&s| s.to_string())
