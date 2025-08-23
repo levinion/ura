@@ -115,6 +115,7 @@ void UraToplevel::destroy() {
   }
   server->runtime->remove(this);
   wlr_foreign_toplevel_handle_v1_destroy(this->foreign_handle);
+  workspace->redraw();
 }
 
 void UraToplevel::commit() {

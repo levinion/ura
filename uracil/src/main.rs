@@ -1,12 +1,12 @@
-mod client;
+mod ipc;
+mod shell;
 
-use std::{
-    io::{self, Write},
-    path::PathBuf,
-};
+use std::path::PathBuf;
 
 use anyhow::{Result, anyhow};
 use clap::Parser;
+
+use crate::shell::UracilShell;
 
 #[derive(Parser)]
 struct Cli {
@@ -16,45 +16,14 @@ struct Cli {
 }
 
 fn shell_mode() -> Result<()> {
-    let client = client::UraIPCClient::new()?;
-    loop {
-        print!("> ");
-        io::stdout().flush()?;
-        let mut input = String::new();
-        match io::stdin().read_line(&mut input) {
-            Ok(bytes_read) => {
-                if bytes_read == 0 {
-                    break;
-                }
-                let input = input.trim();
-                if input.is_empty() {
-                    continue;
-                }
-                if input == "exit" {
-                    break;
-                }
-                let request = client::UraIPCRequestMessage {
-                    method: "execute".to_string(),
-                    body: input.to_string(),
-                };
-                match client.send(&request) {
-                    Ok(reply) => reply.print(),
-                    Err(err) => eprintln!("{}", err),
-                }
-            }
-            Err(err) => {
-                eprintln!("{:?}", err);
-                break;
-            }
-        }
-    }
-    client.destroy()?;
+    let mut shell = UracilShell::new()?;
+    shell.run()?;
     Ok(())
 }
 
 fn oneshot(code: String) -> Result<()> {
-    let client = client::UraIPCClient::new()?;
-    let request = client::UraIPCRequestMessage {
+    let client = ipc::UraIPCClient::new()?;
+    let request = ipc::UraIPCRequestMessage {
         method: "execute".to_string(),
         body: code,
     };

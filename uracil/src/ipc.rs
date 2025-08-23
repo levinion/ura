@@ -66,4 +66,8 @@ impl UraIPCReplyMessage {
             _ => unreachable!(),
         }
     }
+
+    pub fn success(&self) -> bool {
+        self.status == "success"
+    }
 }
