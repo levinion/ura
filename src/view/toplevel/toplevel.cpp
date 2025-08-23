@@ -154,21 +154,17 @@ void UraToplevel::commit() {
   }
 
   if (this->initial_commit) {
+    this->initial_commit = false;
+    assert(this->geometry.empty());
     auto geo = Vec4<int>::from(this->xdg_toplevel->base->geometry);
     geo.center(this->output->usable_area);
     this->layout_geometry["floating"] = geo;
-    this->resize(geo.width, geo.height);
+    this->geometry.width = geo.width;
+    this->geometry.width = geo.width;
     this->move(geo.x, geo.y);
   }
 
-  this->apply_layout();
-
-  if (this->initial_commit)
-    this->initial_commit = false;
-  if (this->first_commit_after_layout_change)
-    this->first_commit_after_layout_change = false;
-  if (this->dirty)
-    this->dirty = false;
+  this->apply_layout(true);
 }
 
 void UraToplevel::focus() {
@@ -329,7 +325,7 @@ bool UraToplevel::move(int x, int y) {
 }
 
 bool UraToplevel::resize(int width, int height) {
-  if (width < 0 || height < 0)
+  if (width <= 0 || height <= 0)
     return false;
   if (width == this->geometry.width && height == this->geometry.height)
     return false;
@@ -418,8 +414,8 @@ void UraToplevel::set_z_index(int z_index) {
   }
 }
 
-void UraToplevel::redraw() {
-  this->apply_layout();
+void UraToplevel::redraw(bool recursive) {
+  this->apply_layout(recursive);
 }
 
 void UraToplevel::create_borders() {
@@ -481,14 +477,15 @@ sol::table UraToplevel::to_lua_table() {
   table["height"] = this->geometry.height;
   table["layout"] = this->layout;
   table["last_layout"] = this->last_layout;
-  table["initial_commit"] = this->initial_commit;
   table["first_commit_after_layout_change"] =
     this->first_commit_after_layout_change;
   table["z_index"] = this->z_index;
   return table;
 }
 
-void UraToplevel::apply_layout() {
+void UraToplevel::apply_layout(bool recursive) {
+  if (this->initial_commit)
+    return;
   auto server = UraServer::get_instance();
   sol::protected_function layout = server->lua->layouts.contains(this->layout)
     ? server->lua->layouts[this->layout]
@@ -509,8 +506,11 @@ void UraToplevel::apply_layout() {
   auto changed = this->resize(w.value(), h.value());
   this->move(x.value(), y.value());
 
-  if (changed && !this->dirty)
+  if (changed && recursive)
     this->redraw_all_others();
+
+  if (this->first_commit_after_layout_change)
+    this->first_commit_after_layout_change = false;
 }
 
 void UraToplevel::set_layout(std::string layout) {
@@ -554,7 +554,6 @@ void UraToplevel::set_layout(std::string layout) {
 void UraToplevel::redraw_all_others() {
   for (auto toplevel : this->workspace->toplevels) {
     if (toplevel != this) {
-      toplevel->dirty = true;
       toplevel->redraw();
     }
   }

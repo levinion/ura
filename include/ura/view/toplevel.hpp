@@ -16,7 +16,6 @@ public:
   bool mapped = true;
   bool destroying = false;
   bool draggable = false;
-  bool dirty = false;
   std::string layout = "tiling";
   std::optional<std::string> last_layout;
   bool initial_commit = true;
@@ -56,7 +55,7 @@ public:
   int index();
   void activate();
   void set_z_index(int z);
-  void redraw();
+  void redraw(bool recursive = false);
   void redraw_all_others();
   bool is_active();
   sol::table to_lua_table();
@@ -65,7 +64,7 @@ public:
 private:
   void create_borders();
   void set_border_color(std::array<float, 4>& color);
-  void apply_layout();
+  void apply_layout(bool recursive);
   std::unordered_map<std::string, Vec4<int>> layout_geometry;
 };
 

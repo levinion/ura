@@ -23,8 +23,6 @@ local UraWindow = {
   --- @type string|nil
   last_layout = nil,
   --- @type boolean
-  initial_commit = true,
-  --- @type boolean
   first_commit_after_layout_change = true,
   --- @type integer
   z_index = 0
