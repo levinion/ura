@@ -94,6 +94,8 @@ impl UracilHelper {
             "ura.fn.append_package_path",
             "ura.fn.prepend_package_path",
             "ura.fn.expanduser",
+            "ura.fn.expandvars",
+            "ura.fn.expand",
             // ura.opt
             "ura.opt",
             "ura.opt.active_border_color",
@@ -133,15 +135,19 @@ impl Completer for UracilHelper {
         _ctx: &rustyline::Context<'_>,
     ) -> rustyline::Result<(usize, Vec<Self::Candidate>)> {
         let prefix = &line[0..pos];
+        let word_start = prefix
+            .rfind(|c: char| !c.is_alphanumeric() && c != '.' && c != '_')
+            .map_or(0, |idx| idx + 1);
+        let word_prefix = &line[word_start..pos];
         let mut matches = vec![];
         for keyword in &self.keywords {
-            if keyword.starts_with(prefix) {
+            if keyword.starts_with(word_prefix) {
                 matches.push(Pair {
                     display: keyword.clone(),
                     replacement: keyword.clone(),
                 });
             }
         }
-        Ok((0, matches))
+        Ok((word_start, matches))
     }
 }

@@ -243,6 +243,12 @@ ura = {
     --- @param path string
     --- @return string
     expanduser = function(path) end,
+    --- @param path string
+    --- @return string
+    expandvars = function(path) end,
+    --- @param path string
+    --- @return string
+    expand = function(path) end,
   },
 
   --- @class ura.opt: table

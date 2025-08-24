@@ -11,6 +11,9 @@
 #include "ura/view/workspace.hpp"
 #include "ura/util/util.hpp"
 #include "ura/seat/seat.hpp"
+#include <sys/types.h>
+#include <pwd.h>
+#include <unistd.h>
 
 namespace ura::api {
 
@@ -359,14 +362,61 @@ void prepend_lua_package_path(std::string path) {
 }
 
 std::string expanduser(std::string path) {
-  auto home = getenv("HOME");
-  assert(home);
-  return std::regex_replace(
-    path,
-    std::regex("~"),
-    home,
-    std::regex_constants::format_first_only
+  if (!path.starts_with("~"))
+    return path;
+  std::string userhome;
+  auto i = path.find('/', 1);
+  if (i == std::string::npos) {
+    i = path.size();
+  }
+  if (i == 1) {
+    auto home = getenv("HOME");
+    if (home) {
+      userhome = home;
+    } else {
+      auto pwent = getpwuid(getuid());
+      if (!pwent)
+        return path;
+      userhome = pwent->pw_dir;
+    }
+  } else {
+    auto username = path.substr(1, i - 1);
+    auto pwent = getpwnam(username.data());
+    if (!pwent)
+      return path;
+    userhome = pwent->pw_dir;
+  }
+  // rstrip '/'
+  while (!userhome.empty() && userhome.back() == '/') {
+    userhome.pop_back();
+  }
+  path = userhome + path.substr(i);
+  return path.empty() ? "/" : path;
+}
+
+std::string expandvars(std::string path) {
+  std::regex re(
+    "\\$([a-zA-Z_][a-zA-Z0-9_]*)|\\$\\{([a-zA-Z_][a-zA-Z0-9_]*)\\}"
   );
+  std::string result = "";
+  std::smatch match;
+  auto search_start = path.cbegin();
+
+  while (std::regex_search(search_start, path.cend(), match, re)) {
+    result += match.prefix().str();
+    auto var_name = match[1].matched ? match[1].str() : match[2].str();
+    auto var_value = getenv(var_name.c_str());
+    if (var_value) {
+      result += var_value;
+    }
+    search_start = match.suffix().first;
+  }
+  result += std::string(search_start, path.cend());
+  return result;
+}
+
+std::string expand(std::string path) {
+  return expanduser(expandvars(path));
 }
 
 void set_output_dpms(int index, bool flag) {
