@@ -84,22 +84,15 @@ std::optional<sol::table> floating(int index) {
 
   auto toplevel =
     server->view->current_output()->current_workspace->get_toplevel_at(index);
+
   if (!toplevel)
     return {};
 
-  if (!toplevel.value()->first_commit_after_layout_change)
-    return {};
+  if (toplevel.value()->first_commit_after_layout_change) {
+    toplevel.value()->draggable = true;
+    toplevel.value()->set_z_index(UraSceneLayer::Floating);
+  }
 
-  toplevel.value()->draggable = true;
-  toplevel.value()->set_z_index(UraSceneLayer::Floating);
-
-  auto geo = toplevel.value()->geometry;
-  auto usable_area = toplevel.value()->output->usable_area;
-  auto table = server->lua->state.create_table();
-  table["x"] = geo.x;
-  table["y"] = geo.y;
-  table["width"] = geo.width;
-  table["height"] = geo.height;
-  return table;
+  return {};
 }
 } // namespace ura::layout

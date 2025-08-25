@@ -194,7 +194,7 @@ ura = {
   --- @class ura.layout: table
   layout = {
     --- @param name string
-    --- @param f fun(integer): UraLayout
+    --- @param f fun(integer): UraLayout|nil
     set = function(name, f) end,
     --- @param name string
     unset = function(name) end,

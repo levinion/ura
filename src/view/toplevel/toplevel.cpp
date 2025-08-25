@@ -518,6 +518,10 @@ void UraToplevel::set_layout(std::string layout) {
   if (!this->xdg_toplevel->base->initialized)
     return;
 
+  auto server = UraServer::get_instance();
+  if (!server->lua->layouts.contains(layout))
+    return;
+
   if (layout != this->layout) {
     this->last_layout = this->layout;
     this->first_commit_after_layout_change = true;
@@ -532,7 +536,6 @@ void UraToplevel::set_layout(std::string layout) {
 
     this->redraw();
 
-    auto server = UraServer::get_instance();
     server->lua->try_execute_hook("layout-change", this->index());
 
     // handle enter and leave fullscreen mode
