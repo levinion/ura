@@ -189,7 +189,6 @@ void UraToplevel::focus() {
   wlr_xdg_toplevel_set_activated(this->xdg_toplevel, true);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
   this->set_border_color(this->active_border_color);
-  server->seat->text_input->focus_text_input(surface);
   auto keyboard = wlr_seat_get_keyboard(seat);
   if (keyboard) {
     wlr_seat_keyboard_notify_enter(
@@ -200,6 +199,7 @@ void UraToplevel::focus() {
       &keyboard->modifiers
     );
   }
+  server->seat->text_input->focus_text_input(surface);
 }
 
 void UraToplevel::unfocus() {
