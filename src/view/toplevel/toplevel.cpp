@@ -265,16 +265,25 @@ int UraToplevel::index() {
 void UraToplevel::activate() {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
-  auto current_workspace = output->current_workspace->index();
+  auto current_workspace_index = output->current_workspace->index();
+  auto current_toplevel_index = this->index();
+  auto flag = server->lua->try_execute_hook(
+    "pre-window-activate",
+    current_workspace_index,
+    current_toplevel_index
+  );
+  // if hook returns a false value, then stop the operation.
+  if (flag && flag->is<bool>() && !flag->as<bool>())
+    return;
   if (this->workspace->name) {
     // named workspace, move this toplevel to current workspace
-    this->move_to_workspace(current_workspace);
-  } else if (this->workspace->index() != current_workspace) {
+    this->move_to_workspace(current_workspace_index);
+  } else if (this->workspace->index() != current_workspace_index) {
     // indexed workspace, switch to this toplevel's workspace
     output->switch_workspace(this->workspace);
   }
   server->seat->focus(this);
-  server->lua->try_execute_hook("activate");
+  server->lua->try_execute_hook("post-window-activate", current_toplevel_index);
 }
 
 bool UraToplevel::move(int x, int y) {

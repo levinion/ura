@@ -49,11 +49,13 @@ void UraCursor::init() {
 void UraCursor::relative_move(wlr_pointer_motion_event* event) {
   auto server = UraServer::get_instance();
   server->seat->notify_idle_activity();
+  auto factor =
+    server->lua->fetch<double>("opt.mouse_move_factor").value_or(1.);
   wlr_cursor_move(
     this->cursor,
     &event->pointer->base,
-    event->delta_x,
-    event->delta_y
+    event->delta_x * factor,
+    event->delta_y * factor
   );
   if (this->mode == UraCursorMode::Move)
     this->process_cursor_mode_move();
@@ -62,10 +64,10 @@ void UraCursor::relative_move(wlr_pointer_motion_event* event) {
   else
     this->process_motion(
       event->time_msec,
-      event->delta_x,
-      event->delta_y,
-      event->unaccel_dx,
-      event->unaccel_dy
+      event->delta_x * factor,
+      event->delta_y * factor,
+      event->unaccel_dx * factor,
+      event->unaccel_dy * factor
     );
 }
 
@@ -156,7 +158,7 @@ void UraCursor::process_motion(
     server->seat->seat,
     static_cast<uint64_t>(time_msec) * 1000,
     dx,
-    dx,
+    dy,
     dx_unaccel,
     dy_unaccel
   );
@@ -278,11 +280,13 @@ void UraCursor::process_cursor_mode_resize() {
 void UraCursor::process_axis(wlr_pointer_axis_event* event) {
   auto server = UraServer::get_instance();
   server->seat->notify_idle_activity();
+  auto factor =
+    server->lua->fetch<double>("opt.mouse_scroll_factor").value_or(1.);
   wlr_seat_pointer_notify_axis(
     server->seat->seat,
     event->time_msec,
     event->orientation,
-    event->delta,
+    event->delta * factor,
     event->delta_discrete,
     event->source,
     event->relative_direction

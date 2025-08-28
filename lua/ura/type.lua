@@ -279,6 +279,10 @@ ura = {
         inner = 10,
       },
     },
+    --- @type number
+    mouse_scroll_factor = 1,
+    --- @type number
+    mouse_move_factor = 1,
   },
   --- @type table
   g = {}

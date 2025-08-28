@@ -117,6 +117,8 @@ void Lua::setup() {
   this->set("opt.tilling.gap.outer.bottom", 10);
   this->set("opt.tilling.gap.outer.right", 10);
   this->set("opt.tilling.gap.inner", 10);
+  this->set("opt.mouse_scroll_factor", 1.);
+  this->set("opt.mouse_move_factor", 1.);
   // override
   this->state.set("print", api::lua_print);
   // g
