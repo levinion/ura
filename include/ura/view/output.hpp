@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ura/core/server.hpp"
-#include <list>
+#include "ura/util/vec.hpp"
 
 namespace ura {
 
@@ -25,11 +25,11 @@ public:
   void set_dpms_mode(bool flag);
 
   /* Surfaces */
-  std::list<UraLayerShell*> bottom_surfaces;
-  std::list<UraLayerShell*> background_surfaces;
-  std::list<UraLayerShell*> top_surfaces;
-  std::list<UraLayerShell*> overlay_surfaces;
-  std::list<UraPopup*> popups;
+  Vec<UraLayerShell*> bottom_surfaces;
+  Vec<UraLayerShell*> background_surfaces;
+  Vec<UraLayerShell*> top_surfaces;
+  Vec<UraLayerShell*> overlay_surfaces;
+  Vec<UraPopup*> popups;
 
   /* Layers */
   Vec4<int> usable_area;
@@ -38,18 +38,17 @@ public:
 
   bool configure_layers();
   void configure_layer(
-    std::list<UraLayerShell*>& list,
+    Vec<UraLayerShell*>& list,
     wlr_box* full_area,
     wlr_box* usable_area,
     bool exclusive
   );
   wlr_scene_tree* get_layer_by_type(zwlr_layer_shell_v1_layer type);
-  std::list<UraLayerShell*>&
-  get_layer_list_by_type(zwlr_layer_shell_v1_layer type);
+  Vec<UraLayerShell*>& get_layer_list_by_type(zwlr_layer_shell_v1_layer type);
 
   /* Workspaces */
   UraWorkSpace* current_workspace = nullptr;
-  std::list<std::unique_ptr<UraWorkSpace>> workspaces;
+  Vec<std::unique_ptr<UraWorkSpace>> workspaces;
   UraWorkSpace* create_workspace();
   void switch_workspace(int index);
   void switch_workspace(UraWorkSpace* workspace);

@@ -17,7 +17,7 @@ public:
   std::unique_ptr<UraCursor> cursor;
   std::unique_ptr<UraTextInput> text_input;
   wlr_seat* seat;
-  std::list<UraKeyboard*> keyboards;
+  Vec<UraKeyboard*> keyboards;
   bool locked = false;
   bool keyboard_shortcuts_inhibited = false;
 

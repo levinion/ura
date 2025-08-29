@@ -99,7 +99,7 @@ wlr_scene_tree* UraOutput::get_layer_by_type(zwlr_layer_shell_v1_layer type) {
   return layer;
 }
 
-std::list<UraLayerShell*>&
+Vec<UraLayerShell*>&
 UraOutput::get_layer_list_by_type(zwlr_layer_shell_v1_layer type) {
   switch (type) {
     case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
@@ -119,7 +119,7 @@ UraOutput::get_layer_list_by_type(zwlr_layer_shell_v1_layer type) {
 }
 
 void UraOutput::configure_layer(
-  std::list<UraLayerShell*>& list,
+  Vec<UraLayerShell*>& list,
   wlr_box* full_area,
   wlr_box* usable_area,
   bool exclusive
@@ -217,9 +217,7 @@ void UraOutput::destroy_workspace(int index) {
   if (workspace == this->current_workspace)
     return;
 
-  auto it = workspaces.begin();
-  std::advance(it, index);
-  this->workspaces.erase(it);
+  this->workspaces.remove_n(index);
 }
 
 UraWorkSpace* UraOutput::get_workspace_at(int index) {

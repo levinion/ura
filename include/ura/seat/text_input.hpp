@@ -15,9 +15,9 @@ public:
 
 class UraTextInput {
 public:
-  std::list<wlr_text_input_v3*> text_inputs;
+  Vec<wlr_text_input_v3*> text_inputs;
   wlr_input_method_v2* input_method = nullptr;
-  std::list<UraInputMethodPopup*> popups;
+  Vec<UraInputMethodPopup*> popups;
 
   void focus_text_input(wlr_surface* surface);
   wlr_text_input_v3* get_active_text_input();

@@ -26,7 +26,7 @@ class UraView {
 public:
   wlr_scene* scene;
   std::map<int, wlr_scene_tree*> layers;
-  std::list<UraOutput*> outputs;
+  Vec<UraOutput*> outputs;
   std::unordered_map<std::string, std::unique_ptr<UraWorkSpace>>
     named_workspaces;
 

@@ -1,4 +1,5 @@
 #pragma once
+#include "ura/util/vec.hpp"
 #include "ura/view/toplevel.hpp"
 #include <list>
 
@@ -20,12 +21,12 @@ public:
   void unfocus_all();
 
 private:
-  std::list<UraToplevel*> stack;
+  Vec<UraToplevel*> stack;
 };
 
 class UraWorkSpace {
 public:
-  std::list<UraToplevel*> toplevels;
+  Vec<UraToplevel*> toplevels;
   UraOutput* output = nullptr;
   UraFocusStack focus_stack;
   std::optional<std::string> name;
