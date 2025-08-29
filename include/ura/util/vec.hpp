@@ -115,6 +115,12 @@ public:
     return this->v.back();
   }
 
+  T* get(int index) {
+    if (index < 0 || index >= this->v.size())
+      return nullptr;
+    return &this->v[index];
+  }
+
 private:
   std::vector<T> v;
 };

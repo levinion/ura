@@ -1,3 +1,5 @@
+local util = require("util")
+
 ura.keymap.set("super+t", function()
   os.execute("foot -e tmux &")
 end)
@@ -22,7 +24,7 @@ end)
 ura.keymap.set("alt+space", function()
   local w = ura.win.get_current()
   if not w then return end
-  ura.win.set_layout(w.index, w.layout ~= "floating" and "floating" or (w.last_layout or "tiling"))
+  util.toggle_layout(w, "floating")
 end)
 
 ura.keymap.set("super+shift+e", function()
@@ -36,7 +38,7 @@ end)
 ura.keymap.set("super+f", function()
   local w = ura.win.get_current()
   if not w then return end
-  ura.win.set_layout(w.index, w.layout ~= "fullscreen" and "fullscreen" or (w.last_layout or "tiling"))
+  util.toggle_layout(w, "fullscreen")
 end)
 
 ura.keymap.set("ctrl+left", function()
@@ -47,7 +49,11 @@ end)
 
 ura.keymap.set("ctrl+right", function()
   local index = ura.ws.get_current().index
-  ura.ws.switch(index + 1)
+  local target = index + 1
+  if target == ura.ws.size() then
+    ura.ws.create()
+  end
+  ura.ws.switch(target)
 end)
 
 ura.keymap.set("ctrl+shift+left", function()
@@ -63,8 +69,12 @@ ura.keymap.set("ctrl+shift+right", function()
   local ws = ura.ws.get_current()
   local win = ura.win.get_current()
   if not win then return end
-  ura.win.move_to_workspace(win.index, ws.index + 1)
-  ura.ws.switch(ws.index + 1)
+  local target = ws.index + 1
+  if target == ura.ws.size() then
+    ura.ws.create()
+  end
+  ura.win.move_to_workspace(win.index, target)
+  ura.ws.switch(target)
 end)
 
 ura.keymap.set("super+h", function()
@@ -133,4 +143,10 @@ ura.keymap.set("super+up", function()
   local win = ura.win.get_current()
   if not win or not win.layout == "floating" then return end
   ura.win.center(win.index)
+end)
+
+ura.keymap.set("super+d", function()
+  local w = ura.win.get_current()
+  if not w then return end
+  util.toggle_layout(w, "always-on-top")
 end)

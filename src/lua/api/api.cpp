@@ -103,14 +103,15 @@ void unset_env(std::string name) {
   unsetenv(name.data());
 }
 
-// switch to certain workspace, if not exists then create one
+void create_workspace() {
+  auto server = UraServer::get_instance();
+  auto output = server->view->current_output();
+  output->create_workspace();
+}
+
 void switch_workspace(int index) {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
-  if (index < 0 || index > output->workspaces.size())
-    return;
-  if (index == output->workspaces.size())
-    output->create_workspace();
   output->switch_workspace(index);
 }
 
@@ -124,10 +125,6 @@ void move_window_to_workspace(int window_index, sol::object workspace_id) {
   auto toplevel = client.value();
   if (workspace_id.is<int>()) {
     auto workspace_index = workspace_id.as<int>();
-    if (workspace_index < 0 || workspace_index > output->workspaces.size())
-      return;
-    if (workspace_index == output->workspaces.size())
-      output->create_workspace();
     toplevel->move_to_workspace(workspace_index);
   } else if (workspace_id.is<std::string>()) {
     auto workspace_name = workspace_id.as<std::string>();
@@ -164,17 +161,15 @@ void set_cursor_shape(std::string name) {
   server->seat->cursor->set_xcursor(name);
 }
 
-bool focus_window(int index) {
+void focus_window(int index) {
   auto server = UraServer::get_instance();
-  if (index < 0
-      || index
-        >= server->view->current_output()->current_workspace->toplevels.size())
-    return false;
-  auto it =
-    server->view->current_output()->current_workspace->toplevels.begin();
-  std::advance(it, index);
-  server->seat->focus(*it);
-  return true;
+  auto workspace = server->view->current_output()->current_workspace;
+  if (index < 0 || index >= workspace->toplevels.size())
+    return;
+  auto toplevel = workspace->toplevels.get(index);
+  if (!toplevel)
+    return;
+  server->seat->focus(*toplevel);
 }
 
 void set_window_layout(int index, std::string layout) {
@@ -423,9 +418,9 @@ void set_output_dpms(int index, bool flag) {
   auto server = UraServer::get_instance();
   if (index < 0 || index >= server->view->outputs.size())
     return;
-  auto it = server->view->outputs.begin();
-  std::advance(it, index);
-  (*it)->set_dpms_mode(flag);
+  auto output = server->view->outputs.get(index);
+  if (output)
+    (*output)->set_dpms_mode(flag);
 }
 
 void notify_idle_activity() {

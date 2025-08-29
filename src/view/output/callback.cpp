@@ -50,8 +50,7 @@ void on_output_manager_apply(wl_listener* listener, void* data) {
     wlr_output_configuration_v1_send_succeeded(config);
     wlr_output_manager_v1_set_configuration(server->output_manager, config);
     auto output = server->view->current_output();
-    if (output->configure_layers())
-      output->current_workspace->redraw();
+    output->configure_layers();
   } else {
     wlr_output_configuration_v1_send_failed(config);
     wlr_output_configuration_v1_destroy(config);

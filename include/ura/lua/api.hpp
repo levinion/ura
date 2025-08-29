@@ -30,7 +30,7 @@ int get_window_number();
 void move_window_to_workspace(int window_index, sol::object workspace_id);
 std::optional<sol::table> get_current_window();
 std::optional<sol::table> get_window(int index);
-bool focus_window(int index);
+void focus_window(int index);
 void set_window_layout(int index, std::string layout);
 void set_window_z_index(int index, int z);
 void set_window_draggable(int index, bool flag);
@@ -47,6 +47,7 @@ void set_cursor_visible(bool flag);
 bool is_cursor_visible();
 void set_cursor_shape(std::string name);
 // ws
+void create_workspace();
 void switch_workspace(int index);
 void destroy_workspace(int index);
 int get_workspace_number();

@@ -77,6 +77,7 @@ void Lua::setup() {
   this->set("input.cursor.is_visible", api::is_cursor_visible);
   this->set("input.cursor.set_shape", api::set_cursor_shape);
   // workspace
+  this->set("ws.create", api::create_workspace);
   this->set("ws.switch", api::switch_workspace);
   this->set("ws.destroy", api::destroy_workspace);
   this->set("ws.size", api::get_workspace_number);

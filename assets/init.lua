@@ -35,7 +35,11 @@ end)
 
 ura.keymap.set("ctrl+right", function()
   local index = ura.ws.get_current().index
-  ura.ws.switch(index + 1)
+  local target = index + 1
+  if target == ura.ws.size() then
+    ura.ws.create()
+  end
+  ura.ws.switch(target)
 end)
 
 ura.keymap.set("ctrl+shift+left", function()
@@ -51,8 +55,12 @@ ura.keymap.set("ctrl+shift+right", function()
   local ws = ura.ws.get_current()
   local win = ura.win.get_current()
   if not win then return end
-  ura.win.move_to_workspace(win.index, ws.index + 1)
-  ura.ws.switch(ws.index + 1)
+  local target = ws.index + 1
+  if target == ura.ws.size() then
+    ura.ws.create()
+  end
+  ura.win.move_to_workspace(win.index, target)
+  ura.ws.switch(target)
 end)
 
 ura.keymap.set("super+h", function()

@@ -183,6 +183,7 @@ bool UraOutput::configure_layers() {
       || this->usable_area.width != usable_area.width
       || this->usable_area.height != usable_area.height) {
     this->usable_area = Vec4<int>::from(usable_area);
+    this->current_workspace->redraw();
     return true;
   }
   return false;
@@ -197,9 +198,7 @@ void UraOutput::set_mode(wlr_output_mode* mode) {
     wlr_output_state_set_mode(&state, mode);
   wlr_output_commit_state(this->output, &state);
   wlr_output_state_finish(&state);
-
-  if (this->configure_layers())
-    this->current_workspace->redraw();
+  this->configure_layers();
 }
 
 Vec4<int> UraOutput::physical_geometry() {
@@ -212,6 +211,10 @@ Vec4<int> UraOutput::logical_geometry() {
   return { 0, 0, width, height };
 }
 
+/* destroy workspace unless it:
+ - is nonexistant
+ - is active (current workspace)
+ - has no toplevels */
 void UraOutput::destroy_workspace(int index) {
   if (this->workspaces.size() == 1)
     return;
@@ -227,11 +230,8 @@ void UraOutput::destroy_workspace(int index) {
 }
 
 UraWorkSpace* UraOutput::get_workspace_at(int index) {
-  if (index < 0 || index >= this->workspaces.size())
-    return nullptr;
-  auto it = this->workspaces.begin();
-  std::advance(it, index);
-  return it->get();
+  auto workspace = this->workspaces.get(index);
+  return workspace ? workspace->get() : nullptr;
 }
 
 UraWorkSpace* UraOutput::create_workspace() {

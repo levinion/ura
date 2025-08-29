@@ -41,11 +41,8 @@ int UraWorkSpace::index() {
 }
 
 std::optional<UraToplevel*> UraWorkSpace::get_toplevel_at(int index) {
-  if (index < 0 || index >= this->toplevels.size())
-    return {};
-  auto it = this->toplevels.begin();
-  std::advance(it, index);
-  return *it;
+  auto toplevel = this->toplevels.get(index);
+  return toplevel ? *toplevel : nullptr;
 }
 
 sol::table UraWorkSpace::to_lua_table() {
@@ -73,16 +70,16 @@ void UraWorkSpace::remove(UraToplevel* toplevel) {
 
 void UraWorkSpace::swap_toplevel(UraToplevel* src, UraToplevel* dst) {
   auto it1 = std::find(this->toplevels.begin(), this->toplevels.end(), src);
+  if (it1 == this->toplevels.end())
+    return;
   auto it2 = std::find(this->toplevels.begin(), this->toplevels.end(), dst);
-  if (it1 == this->toplevels.end() || it2 == this->toplevels.end())
+  if (it2 == this->toplevels.end())
     return;
   *it1 = dst;
   *it2 = src;
 }
 
 void UraWorkSpace::redraw() {
-  for (auto toplevel : this->toplevels) {
-    toplevel->redraw();
-  }
+  for (auto toplevel : this->toplevels) toplevel->redraw();
 }
 } // namespace ura

@@ -100,7 +100,6 @@ ura = {
   --- @class ura.win: table
   win = {
     --- @param index integer
-    --- @return boolean
     focus = function(index) end,
     --- @param index integer
     close = function(index) end,
@@ -166,6 +165,7 @@ ura = {
 
   --- @class ura.ws: table
   ws = {
+    create = function() end,
     --- @param index integer The index of the workspace to switch to (0-based).
     switch = function(index) end,
     --- @return integer The size of workspaces in current output.
