@@ -13,6 +13,8 @@ struct Cli {
     #[arg(short = 'c')]
     code: Option<String>,
     path: Option<String>,
+    #[clap(trailing_var_arg = true, allow_hyphen_values = true)]
+    args: Vec<String>,
 }
 
 fn shell_mode() -> Result<()> {
@@ -21,11 +23,17 @@ fn shell_mode() -> Result<()> {
     Ok(())
 }
 
-fn oneshot(code: String) -> Result<()> {
+fn oneshot(code: String, args: Vec<String>) -> Result<()> {
+    let args = args
+        .into_iter()
+        .enumerate()
+        .map(|(i, arg)| format!("arg[{}] = '{}'\n", i + 1, arg))
+        .collect::<String>();
+    let args = "arg = {}\narg[0] = \"uracil\"".to_string() + &args;
     let client = ipc::UraIPCClient::new()?;
     let request = ipc::UraIPCRequestMessage {
         method: "execute".to_string(),
-        body: code,
+        body: format!("{}\n{}", args, code),
     };
     let reply = client.send(&request)?;
     reply.print();
@@ -33,7 +41,7 @@ fn oneshot(code: String) -> Result<()> {
     Ok(())
 }
 
-fn oneshot_file(path: String) -> Result<()> {
+fn oneshot_file(path: String, args: Vec<String>) -> Result<()> {
     let path = PathBuf::from(path);
     if !path.is_file() {
         return Err(anyhow!(
@@ -42,16 +50,16 @@ fn oneshot_file(path: String) -> Result<()> {
         ));
     }
     let code = std::fs::read_to_string(&path)?;
-    oneshot(code)?;
+    oneshot(code, args)?;
     Ok(())
 }
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.code {
-        Some(code) => oneshot(code)?,
+        Some(code) => oneshot(code, cli.args)?,
         None => match cli.path {
-            Some(path) => oneshot_file(path)?,
+            Some(path) => oneshot_file(path, cli.args)?,
             None => shell_mode()?,
         },
     }
