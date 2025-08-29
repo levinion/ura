@@ -38,6 +38,7 @@ impl UracilHelper {
             "ura.win.focus",
             "ura.win.close",
             "ura.win.move_to_workspace",
+            "ura.win.move_to_workspace_or_create",
             "ura.win.size",
             "ura.win.get_current",
             "ura.win.get",
@@ -61,7 +62,9 @@ impl UracilHelper {
             "ura.input.cursor.set_shape",
             // ura.ws
             "ura.ws",
+            "ura.ws.create",
             "ura.ws.switch",
+            "ura.ws.switch_or_create",
             "ura.ws.size",
             "ura.ws.destroy",
             "ura.ws.get_current",
