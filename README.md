@@ -26,6 +26,7 @@ Dependencies include:
 - cmake
 - pkgconf
 - nlohmann-json
+- cli11
 - [just](https://github.com/casey/just) (optional)
 - cargo
 

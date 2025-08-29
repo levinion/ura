@@ -24,6 +24,7 @@ Lua 是一门通用语言，它被许多编辑器/LSP（如 lua_ls）支持，�
 - cmake
 - pkgconf
 - nlohmann-json
+- cli11
 - [just](https://github.com/casey/just)（可选）
 - cargo
 
