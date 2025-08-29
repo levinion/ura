@@ -32,6 +32,8 @@ UraOutput* UraView::current_output() {
   auto pos = server->seat->cursor->position();
   auto output =
     wlr_output_layout_output_at(server->output_layout, pos.x, pos.y);
+  if (!output)
+    return nullptr;
   return UraOutput::from(output);
 }
 

@@ -86,12 +86,14 @@ void UraLayerShell::focus() {
 
 void UraLayerShell::map() {
   wlr_scene_node_set_enabled(&this->scene_surface->tree->node, true);
-  this->output->configure_layers();
+  if (this->output->configure_layers())
+    this->output->current_workspace->redraw();
 }
 
 void UraLayerShell::unmap() {
   wlr_scene_node_set_enabled(&this->scene_surface->tree->node, false);
-  this->output->configure_layers();
+  if (this->output->configure_layers())
+    this->output->current_workspace->redraw();
 }
 
 void UraLayerShell::commit() {
@@ -119,7 +121,8 @@ void UraLayerShell::commit() {
   if (width != this->layer_surface->current.actual_width
       || height != this->layer_surface->current.actual_height) {
     wlr_layer_surface_v1_configure(this->layer_surface, width, height);
-    output->configure_layers();
+    if (output->configure_layers())
+      output->current_workspace->redraw();
   }
 
   if (this->layer_surface->initial_commit
@@ -141,6 +144,9 @@ void UraLayerShell::destroy() {
       && this->layer_surface->current.keyboard_interactive
         != ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE)
     server->seat->focus(toplevel.value());
+
+  if (this->output->configure_layers())
+    this->output->current_workspace->redraw();
 }
 
 } // namespace ura

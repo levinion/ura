@@ -23,6 +23,7 @@ public:
 
   /* Power */
   void set_dpms_mode(bool flag);
+  void set_mode(wlr_output_mode* mode);
 
   /* Surfaces */
   Vec<UraLayerShell*> bottom_surfaces;
@@ -55,9 +56,6 @@ public:
   void destroy_workspace(int index);
   UraWorkSpace* get_workspace_at(int index);
   sol::table to_lua_table();
-
-private:
-  void set_mode(wlr_output_mode* mode);
 };
 
 } // namespace ura

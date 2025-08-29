@@ -1,6 +1,7 @@
 #include "ura/core/server.hpp"
 #include "ura/core/runtime.hpp"
 #include "ura/core/callback.hpp"
+#include "ura/ura.hpp"
 #include "ura/util/vec.hpp"
 #include "ura/view/layer_shell.hpp"
 #include "ura/view/output.hpp"
@@ -14,16 +15,16 @@ namespace ura {
 void UraOutput::init(wlr_output* _wlr_output) {
   this->output = _wlr_output;
   this->output->data = this;
+
+  this->current_workspace = this->create_workspace();
+  this->switch_workspace(this->current_workspace);
+
   auto server = UraServer::get_instance();
   // bind render and allocator to this output
   wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
 
   auto prefered_mode = wlr_output_preferred_mode(this->output);
   this->set_mode(prefered_mode);
-
-  // create ura output object from _wlr_output
-  this->current_workspace = this->create_workspace();
-  this->switch_workspace(this->current_workspace);
 
   // register callback
   server->runtime
@@ -124,6 +125,8 @@ void UraOutput::configure_layer(
   wlr_box* usable_area,
   bool exclusive
 ) {
+  if (list.empty())
+    return;
   auto server = UraServer::get_instance();
   if (server->view->current_output() != this)
     return;
@@ -194,6 +197,9 @@ void UraOutput::set_mode(wlr_output_mode* mode) {
     wlr_output_state_set_mode(&state, mode);
   wlr_output_commit_state(this->output, &state);
   wlr_output_state_finish(&state);
+
+  if (this->configure_layers())
+    this->current_workspace->redraw();
 }
 
 Vec4<int> UraOutput::physical_geometry() {
@@ -290,7 +296,7 @@ sol::table UraOutput::to_lua_table() {
 }
 
 void UraOutput::set_dpms_mode(bool flag) {
-  wlr_output_state wlr_state = { 0 };
+  wlr_output_state wlr_state;
   this->dpms_on = flag;
   wlr_output_state_set_enabled(&wlr_state, flag);
   wlr_output_commit_state(this->output, &wlr_state);
