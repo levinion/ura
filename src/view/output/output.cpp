@@ -2,6 +2,7 @@
 #include "ura/core/runtime.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/ura.hpp"
+#include "ura/seat/seat.hpp"
 #include "ura/util/vec.hpp"
 #include "ura/view/layer_shell.hpp"
 #include "ura/view/output.hpp"
@@ -9,6 +10,7 @@
 #include "ura/view/view.hpp"
 #include "ura/view/workspace.hpp"
 #include "ura/lua/lua.hpp"
+#include <thread>
 
 namespace ura {
 
@@ -68,7 +70,7 @@ UraOutput* UraOutput::from(wlr_output* output) {
   return static_cast<UraOutput*>(output->data);
 }
 
-void UraOutput::fresh_screen() {
+void UraOutput::commit() {
   auto server = UraServer::get_instance();
   auto scene = server->view->scene;
   auto scene_output = wlr_scene_get_scene_output(scene, this->output);
@@ -296,10 +298,18 @@ sol::table UraOutput::to_lua_table() {
 }
 
 void UraOutput::set_dpms_mode(bool flag) {
-  wlr_output_state wlr_state;
+  wlr_output_state wlr_state = { 0 };
   this->dpms_on = flag;
   wlr_output_state_set_enabled(&wlr_state, flag);
   wlr_output_commit_state(this->output, &wlr_state);
+
+  auto server = UraServer::get_instance();
+  wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, true);
+  auto t = std::thread([=]() {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, false);
+  });
+  t.detach();
 }
 
 int UraOutput::index() {

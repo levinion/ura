@@ -439,8 +439,6 @@ std::string expand(std::string path) {
 
 void set_output_dpms(int index, bool flag) {
   auto server = UraServer::get_instance();
-  if (index < 0 || index >= server->view->outputs.size())
-    return;
   auto output = server->view->outputs.get(index);
   if (output)
     (*output)->set_dpms_mode(flag);

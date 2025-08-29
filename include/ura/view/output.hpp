@@ -16,7 +16,7 @@ public:
 
   void init(wlr_output* output);
   static UraOutput* from(wlr_output* output);
-  void fresh_screen();
+  void commit();
   Vec4<int> physical_geometry();
   Vec4<int> logical_geometry();
   int index();
