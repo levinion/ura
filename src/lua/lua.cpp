@@ -58,6 +58,10 @@ void Lua::setup() {
   this->set("win.focus", api::focus_window);
   this->set("win.close", api::close_window);
   this->set("win.move_to_workspace", api::move_window_to_workspace);
+  this->set(
+    "win.move_to_workspace_or_create",
+    api::move_window_to_workspace_or_create
+  );
   this->set("win.size", api::get_window_number);
   this->set("win.get_current", api::get_current_window);
   this->set("win.get", api::get_window);
@@ -79,6 +83,7 @@ void Lua::setup() {
   // workspace
   this->set("ws.create", api::create_workspace);
   this->set("ws.switch", api::switch_workspace);
+  this->set("ws.switch_or_create", api::switch_or_create_workspace);
   this->set("ws.destroy", api::destroy_workspace);
   this->set("ws.size", api::get_workspace_number);
   this->set("ws.get_current", api::get_current_workspace);

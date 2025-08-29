@@ -106,6 +106,9 @@ ura = {
     --- @param window_index integer
     --- @param workspace_id integer|string
     move_to_workspace = function(window_index, workspace_id) end,
+    --- @param window_index integer
+    --- @param workspace_index integer The 0-based index of the workspace to move to. If the index is greater than the current number of workspaces, new ones will be created until this index is available.
+    move_to_workspace_or_create = function(window_index, workspace_index) end,
     --- @return integer
     size = function() end,
     --- @return UraWindow|nil
@@ -168,6 +171,8 @@ ura = {
     create = function() end,
     --- @param index integer The index of the workspace to switch to (0-based).
     switch = function(index) end,
+    --- @param index integer The 0-based index of the workspace to switch to. If the index is greater than the current number of workspaces, new ones will be created until this index is available.
+    switch_or_create = function(index) end,
     --- @return integer The size of workspaces in current output.
     size = function() end,
     --- @param index integer The index of the workspace to destroy (0-based).

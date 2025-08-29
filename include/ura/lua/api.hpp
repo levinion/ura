@@ -28,6 +28,7 @@ std::string keymap_get_current_mode();
 void close_window(int index);
 int get_window_number();
 void move_window_to_workspace(int window_index, sol::object workspace_id);
+void move_window_to_workspace_or_create(int window_index, int workspace_index);
 std::optional<sol::table> get_current_window();
 std::optional<sol::table> get_window(int index);
 void focus_window(int index);
@@ -49,6 +50,7 @@ void set_cursor_shape(std::string name);
 // ws
 void create_workspace();
 void switch_workspace(int index);
+void switch_or_create_workspace(int index);
 void destroy_workspace(int index);
 int get_workspace_number();
 sol::table get_current_workspace();

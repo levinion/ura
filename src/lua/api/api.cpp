@@ -115,6 +115,14 @@ void switch_workspace(int index) {
   output->switch_workspace(index);
 }
 
+void switch_or_create_workspace(int index) {
+  auto server = UraServer::get_instance();
+  auto output = server->view->current_output();
+  for (int i = output->workspaces.size(); i <= index; i++)
+    output->create_workspace();
+  output->switch_workspace(index);
+}
+
 void move_window_to_workspace(int window_index, sol::object workspace_id) {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
@@ -130,6 +138,21 @@ void move_window_to_workspace(int window_index, sol::object workspace_id) {
     auto workspace_name = workspace_id.as<std::string>();
     toplevel->move_to_workspace(workspace_name);
   }
+}
+
+void move_window_to_workspace_or_create(int window_index, int workspace_index) {
+  auto server = UraServer::get_instance();
+  auto output = server->view->current_output();
+  auto workspace = output->current_workspace;
+  auto client = workspace->get_toplevel_at(window_index);
+  if (!client)
+    return;
+  auto toplevel = client.value();
+
+  for (int i = output->workspaces.size(); i <= workspace_index; i++)
+    output->create_workspace();
+
+  toplevel->move_to_workspace(workspace_index);
 }
 
 int get_current_workspace_index() {
