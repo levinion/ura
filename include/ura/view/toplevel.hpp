@@ -23,7 +23,7 @@ public:
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
   int z_index;
-  UraOutput* output;
+  std::string output;
   UraWorkSpace* workspace;
   wlr_xdg_toplevel_decoration_v1* decoration;
   wlr_foreign_toplevel_handle_v1* foreign_handle;

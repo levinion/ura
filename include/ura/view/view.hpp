@@ -26,15 +26,19 @@ class UraView {
 public:
   wlr_scene* scene;
   std::map<int, wlr_scene_tree*> layers;
-  Vec<UraOutput*> outputs;
-  std::unordered_map<std::string, std::unique_ptr<UraWorkSpace>>
-    named_workspaces;
+  std::unordered_map<std::string, UraOutput*> outputs;
+  Vec<std::unique_ptr<UraWorkSpace>> workspaces;
+  std::unordered_map<std::string, Vec<UraWorkSpace*>> indexed_workspaces;
+  std::unordered_map<std::string, UraWorkSpace*> named_workspaces;
 
   static std::unique_ptr<UraView> init();
   wlr_scene_tree* get_scene_tree_or_create(int z);
   UraWorkSpace* get_named_workspace_or_create(std::string name);
   UraWorkSpace* get_named_workspace(std::string name);
   UraOutput* current_output();
+  UraOutput* get_output_by_name(std::string& name);
   std::optional<UraClient> foreground_client(double* sx, double* sy);
+
+  wlr_scene_tree* get_layer_by_type(zwlr_layer_shell_v1_layer type);
 };
 } // namespace ura

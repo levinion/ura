@@ -15,13 +15,25 @@
 namespace ura {
 
 void UraOutput::init(wlr_output* _wlr_output) {
+  auto server = UraServer::get_instance();
+
   this->output = _wlr_output;
   this->output->data = this;
+  this->name = this->output->name;
 
-  this->current_workspace = this->create_workspace();
+  auto workspaces = this->get_workspaces();
+
+  auto resume = false;
+
+  if (workspaces.empty()) {
+    this->current_workspace = this->create_workspace();
+  } else {
+    // output resume
+    this->current_workspace = workspaces.front();
+    resume = true;
+  }
   this->switch_workspace(this->current_workspace);
 
-  auto server = UraServer::get_instance();
   // bind render and allocator to this output
   wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
 
@@ -54,16 +66,21 @@ void UraOutput::init(wlr_output* _wlr_output) {
     scene_output
   );
 
-  server->view->outputs.push_back(this);
+  server->view->outputs[name] = this;
 
   auto configuration = wlr_output_configuration_v1_create();
   for (auto output : server->view->outputs) {
-    wlr_output_configuration_head_v1_create(configuration, output->output);
+    wlr_output_configuration_head_v1_create(configuration, this->output);
   }
   wlr_output_manager_v1_set_configuration(
     server->output_manager,
     configuration
   );
+
+  if (resume)
+    server->lua->try_execute_hook("output-resume", this->name);
+  else
+    server->lua->try_execute_hook("output-new", this->name);
 }
 
 UraOutput* UraOutput::from(wlr_output* output) {
@@ -82,24 +99,10 @@ void UraOutput::commit() {
   wlr_scene_output_send_frame_done(scene_output, &now);
 }
 
-wlr_scene_tree* UraOutput::get_layer_by_type(zwlr_layer_shell_v1_layer type) {
-  wlr_scene_tree* layer;
+void UraOutput::destroy() {
   auto server = UraServer::get_instance();
-  switch (type) {
-    case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
-      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Background);
-      break;
-    case ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM:
-      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Bottom);
-      break;
-    case ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY:
-      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Overlay);
-      break;
-    case ZWLR_LAYER_SHELL_V1_LAYER_TOP:
-      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Top);
-      break;
-  }
-  return layer;
+  server->runtime->remove(this);
+  server->view->outputs.erase(this->name);
 }
 
 Vec<UraLayerShell*>&
@@ -213,12 +216,18 @@ Vec4<int> UraOutput::logical_geometry() {
   return { 0, 0, width, height };
 }
 
+Vec<UraWorkSpace*>& UraOutput::get_workspaces() {
+  auto server = UraServer::get_instance();
+  return server->view->indexed_workspaces[this->name];
+}
+
 /* destroy workspace unless it:
  - is nonexistant
  - is active (current workspace)
  - has no toplevels */
 void UraOutput::destroy_workspace(int index) {
-  if (this->workspaces.size() == 1)
+  auto& workspaces = this->get_workspaces();
+  if (workspaces.size() == 1)
     return;
   auto workspace = this->get_workspace_at(index);
   if (!workspace)
@@ -228,26 +237,28 @@ void UraOutput::destroy_workspace(int index) {
   if (workspace == this->current_workspace)
     return;
 
-  this->workspaces.remove_n(index);
+  workspaces.remove_n(index);
 }
 
 UraWorkSpace* UraOutput::get_workspace_at(int index) {
-  auto workspace = this->workspaces.get(index);
-  return workspace ? workspace->get() : nullptr;
+  auto& workspaces = this->get_workspaces();
+  auto workspace = workspaces.get(index);
+  return workspace ? *workspace : nullptr;
 }
 
 UraWorkSpace* UraOutput::create_workspace() {
+  auto& workspaces = this->get_workspaces();
   auto workspace = UraWorkSpace::init();
-  workspace->output = this;
-  this->workspaces.push_back(std::move(workspace));
-  return this->workspaces.back().get();
+  workspace->output = this->name;
+  auto server = UraServer::get_instance();
+  server->view->indexed_workspaces[this->name].push_back(workspace.get());
+  server->view->workspaces.push_back(std::move(workspace));
+  return workspaces.back();
 }
 
 void UraOutput::switch_workspace(int index) {
-  if (index < 0 || index >= this->workspaces.size())
-    return;
   auto target = this->get_workspace_at(index);
-  if (target == this->current_workspace)
+  if (!target || target == this->current_workspace)
     return;
   this->switch_workspace(target);
 }
@@ -283,13 +294,13 @@ sol::table UraOutput::to_lua_table() {
   usable["height"] = this->usable_area.height;
   table["usable"] = usable;
 
-  table["index"] = this->index();
+  table["name"] = this->name;
   table["scale"] = this->output->scale;
   table["refresh"] = this->output->refresh;
   table["dpms"] = this->dpms_on;
 
   auto workspaces = server->lua->state.create_table();
-  for (auto& workspace : this->workspaces) {
+  for (auto& workspace : this->get_workspaces()) {
     workspaces.add(workspace->to_lua_table());
   }
   table["workspaces"] = workspaces;
@@ -298,7 +309,7 @@ sol::table UraOutput::to_lua_table() {
 }
 
 void UraOutput::set_dpms_mode(bool flag) {
-  wlr_output_state wlr_state = { 0 };
+  wlr_output_state wlr_state {};
   this->dpms_on = flag;
   wlr_output_state_set_enabled(&wlr_state, flag);
   wlr_output_commit_state(this->output, &wlr_state);
@@ -312,14 +323,4 @@ void UraOutput::set_dpms_mode(bool flag) {
   t.detach();
 }
 
-int UraOutput::index() {
-  auto server = UraServer::get_instance();
-  int index = 0;
-  for (auto output : server->view->outputs) {
-    if (output == this)
-      return index;
-    index++;
-  }
-  std::unreachable();
-}
 } // namespace ura

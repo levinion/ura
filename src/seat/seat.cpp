@@ -107,7 +107,7 @@ void UraSeat::notify_idle_activity() {
   auto server = UraServer::get_instance();
   wlr_idle_notifier_v1_notify_activity(server->idle_notifier, this->seat);
   if (!server->idle_notifier->WLR_PRIVATE.inhibited)
-    for (auto output : server->view->outputs) {
+    for (auto [_, output] : server->view->outputs) {
       if (!output->dpms_on)
         output->set_dpms_mode(true);
     }

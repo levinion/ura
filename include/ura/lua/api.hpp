@@ -59,7 +59,8 @@ sol::table list_workspaces();
 void redraw_current_workspace();
 // output
 sol::table get_current_output();
-void set_output_dpms(int index, bool flag);
+sol::table get_output(std::string name);
+void set_output_dpms(std::string name, bool flag);
 // layout
 void set_layout(std::string name, sol::protected_function f);
 void unset_layout(std::string name);

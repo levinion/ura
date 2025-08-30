@@ -92,6 +92,7 @@ void Lua::setup() {
   this->set("ws.redraw", api::redraw_current_workspace);
   // output
   this->set("output.get_current", api::get_current_output);
+  this->set("output.get", api::get_output);
   this->set("output.set_dpms", api::set_output_dpms);
   // layout
   this->set("layout.set", api::set_layout);

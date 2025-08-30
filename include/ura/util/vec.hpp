@@ -115,6 +115,10 @@ public:
     return this->v.back();
   }
 
+  T& front() {
+    return this->v.front();
+  }
+
   T* get(int index) {
     if (index < 0 || index >= this->v.size())
       return nullptr;

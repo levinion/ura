@@ -6,8 +6,10 @@ namespace ura::layout {
 
 std::optional<sol::table> tiling(int index) {
   auto server = UraServer::get_instance();
-  auto toplevel =
-    server->view->current_output()->current_workspace->get_toplevel_at(index);
+  auto output = server->view->current_output();
+  if (!output)
+    return {};
+  auto toplevel = output->current_workspace->get_toplevel_at(index);
   if (!toplevel)
     return {};
   if (toplevel.value()->first_commit_after_layout_change) {
@@ -15,7 +17,7 @@ std::optional<sol::table> tiling(int index) {
     toplevel.value()->set_z_index(UraSceneLayer::Normal);
   }
   auto geo = toplevel.value()->geometry;
-  auto usable_area = toplevel.value()->output->usable_area;
+  auto usable_area = output->usable_area;
   auto width = usable_area.width;
   auto height = usable_area.height;
   auto outer_l =
@@ -27,7 +29,7 @@ std::optional<sol::table> tiling(int index) {
   auto outer_b =
     server->lua->fetch<int>("opt.tilling.gap.outer.bottom").value_or(10);
   auto inner = server->lua->fetch<int>("opt.tilling.gap.inner").value_or(10);
-  auto& toplevels = toplevel.value()->output->current_workspace->toplevels;
+  auto& toplevels = output->current_workspace->toplevels;
   // find mapped toplevel number
   int sum = 0;
   for (auto window : toplevels) {

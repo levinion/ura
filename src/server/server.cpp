@@ -24,11 +24,6 @@ UraServer* UraServer::get_instance() {
 
 void UraServer::terminate() {
   this->quit = true;
-  for (auto output : this->view->outputs)
-    for (auto& workspace : output->workspaces)
-      for (auto toplevel : workspace->toplevels) toplevel->close();
-
-  wl_display_flush_clients(this->display);
   wl_display_terminate(this->display);
 }
 

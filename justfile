@@ -33,7 +33,6 @@ init:
   wayland-scanner server-header ./protocols/pointer-constraints-unstable-v1.xml include/protocols/pointer-constraints-unstable-v1-protocol.h
 
 build:
-  just init
   cmake --build build -j$(nproc)
 
 clean:

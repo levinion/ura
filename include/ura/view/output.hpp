@@ -12,14 +12,16 @@ class UraPopup;
 class UraOutput {
 public:
   wlr_output* output;
+  std::string name;
+
   bool dpms_on = true;
 
   void init(wlr_output* output);
   static UraOutput* from(wlr_output* output);
   void commit();
+  void destroy();
   Vec4<int> physical_geometry();
   Vec4<int> logical_geometry();
-  int index();
 
   /* Power */
   void set_dpms_mode(bool flag);
@@ -44,13 +46,12 @@ public:
     wlr_box* usable_area,
     bool exclusive
   );
-  wlr_scene_tree* get_layer_by_type(zwlr_layer_shell_v1_layer type);
   Vec<UraLayerShell*>& get_layer_list_by_type(zwlr_layer_shell_v1_layer type);
 
   /* Workspaces */
   UraWorkSpace* current_workspace = nullptr;
-  Vec<std::unique_ptr<UraWorkSpace>> workspaces;
   UraWorkSpace* create_workspace();
+  Vec<UraWorkSpace*>& get_workspaces();
   void switch_workspace(int index);
   void switch_workspace(UraWorkSpace* workspace);
   void destroy_workspace(int index);

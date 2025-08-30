@@ -118,7 +118,7 @@ void switch_workspace(int index) {
 void switch_or_create_workspace(int index) {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
-  for (int i = output->workspaces.size(); i <= index; i++)
+  for (int i = output->get_workspaces().size(); i <= index; i++)
     output->create_workspace();
   output->switch_workspace(index);
 }
@@ -149,7 +149,7 @@ void move_window_to_workspace_or_create(int window_index, int workspace_index) {
     return;
   auto toplevel = client.value();
 
-  for (int i = output->workspaces.size(); i <= workspace_index; i++)
+  for (int i = output->get_workspaces().size(); i <= workspace_index; i++)
     output->create_workspace();
 
   toplevel->move_to_workspace(workspace_index);
@@ -226,7 +226,7 @@ void lua_print(sol::variadic_args args) {
 int get_workspace_number() {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
-  return output->workspaces.size();
+  return output->get_workspaces().size();
 }
 
 int get_window_number() {
@@ -305,7 +305,7 @@ sol::table list_workspaces() {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
   auto table = server->lua->state.create_table();
-  for (auto& workspace : output->workspaces)
+  for (auto& workspace : output->get_workspaces())
     table.add(workspace->to_lua_table());
   for (auto& [_, workspace] : server->view->named_workspaces)
     table.add(workspace->to_lua_table());
@@ -437,11 +437,11 @@ std::string expand(std::string path) {
   return expanduser(expandvars(path));
 }
 
-void set_output_dpms(int index, bool flag) {
+void set_output_dpms(std::string name, bool flag) {
   auto server = UraServer::get_instance();
-  auto output = server->view->outputs.get(index);
+  auto output = server->view->get_output_by_name(name);
   if (output)
-    (*output)->set_dpms_mode(flag);
+    output->set_dpms_mode(flag);
 }
 
 void notify_idle_activity() {
@@ -509,6 +509,12 @@ void redraw_current_workspace() {
   auto server = UraServer::get_instance();
   auto workspace = server->view->current_output()->current_workspace;
   workspace->redraw();
+}
+
+sol::table get_output(std::string name) {
+  auto server = UraServer::get_instance();
+  auto output = server->view->get_output_by_name(name);
+  return output->to_lua_table();
 }
 
 } // namespace ura::api

@@ -40,8 +40,8 @@ local UraWorkspace = {
 
 --- @class UraOutput: table
 local UraOutput = {
-  --- @type integer
-  index = 0,
+  --- @type string
+  name = "",
   --- @class UraOutput.size: table
   size = {
     --- @type number
@@ -191,9 +191,12 @@ ura = {
   output = {
     --- @return UraOutput
     get_current = function() end,
-    --- @param index integer
+    --- @return UraOutput
+    --- @param name string
+    get = function(name) end,
+    --- @param name string
     --- @param flag boolean
-    set_dpms = function(index, flag) end
+    set_dpms = function(name, flag) end
   },
 
   --- @class ura.layout: table

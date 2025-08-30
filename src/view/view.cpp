@@ -37,6 +37,10 @@ UraOutput* UraView::current_output() {
   return UraOutput::from(output);
 }
 
+UraOutput* UraView::get_output_by_name(std::string& name) {
+  return this->outputs.contains(name) ? this->outputs[name] : nullptr;
+}
+
 std::optional<UraClient> UraView::foreground_client(double* sx, double* sy) {
   auto server = UraServer::get_instance();
   auto pos = server->seat->cursor->position();
@@ -56,14 +60,35 @@ UraWorkSpace* UraView::get_named_workspace_or_create(std::string name) {
   if (!this->named_workspaces.contains(name)) {
     auto workspace = UraWorkSpace::init();
     workspace->name = name;
-    this->named_workspaces[name] = std::move(workspace);
+    this->workspaces.push_back(std::move(workspace));
   }
-  return this->named_workspaces[name].get();
+  return this->named_workspaces[name];
 }
 
 UraWorkSpace* UraView::get_named_workspace(std::string name) {
   if (!this->named_workspaces.contains(name))
     return nullptr;
-  return this->named_workspaces[name].get();
+  return this->named_workspaces[name];
 }
+
+wlr_scene_tree* UraView::get_layer_by_type(zwlr_layer_shell_v1_layer type) {
+  wlr_scene_tree* layer;
+  auto server = UraServer::get_instance();
+  switch (type) {
+    case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
+      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Background);
+      break;
+    case ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM:
+      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Bottom);
+      break;
+    case ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY:
+      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Overlay);
+      break;
+    case ZWLR_LAYER_SHELL_V1_LAYER_TOP:
+      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Top);
+      break;
+  }
+  return layer;
+}
+
 } // namespace ura

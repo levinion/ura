@@ -1,5 +1,6 @@
 #include "ura/view/workspace.hpp"
 #include "ura/view/output.hpp"
+#include "ura/view/view.hpp"
 #include <algorithm>
 #include <memory>
 #include <utility>
@@ -30,11 +31,12 @@ int UraWorkSpace::index() {
   auto server = UraServer::get_instance();
   if (this->name)
     return -1;
+
+  auto output = server->view->get_output_by_name(this->output);
   int i = 0;
-  for (auto& workspace : this->output->workspaces) {
-    if (this == workspace.get()) {
+  for (auto& workspace : output->get_workspaces()) {
+    if (this == workspace)
       return i;
-    }
     i++;
   }
   std::unreachable();

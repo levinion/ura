@@ -1,3 +1,5 @@
+#include "ura/core/server.hpp"
+#include "ura/view/view.hpp"
 #include "ura/seat/text_input.hpp"
 #include "ura/view/client.hpp"
 
@@ -19,7 +21,11 @@ void UraInputMethodPopup::constrain(wlr_text_input_v3* text_input) {
   popup_rect.height = this->popup_surface->surface->current.height;
 
   // constrain to current screen
-  auto geo = parent->output->logical_geometry();
+  auto server = UraServer::get_instance();
+  auto output = server->view->get_output_by_name(parent->output);
+  if (!output)
+    return;
+  auto geo = output->logical_geometry();
   auto avaliable_right = geo.x + geo.width - (popup_rect.x + popup_rect.width);
   auto avaliable_bottom =
     geo.y + geo.height - (popup_rect.y + popup_rect.height);

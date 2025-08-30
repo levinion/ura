@@ -27,7 +27,7 @@ private:
 class UraWorkSpace {
 public:
   Vec<UraToplevel*> toplevels;
-  UraOutput* output = nullptr;
+  std::string output;
   UraFocusStack focus_stack;
   std::optional<std::string> name;
   static std::unique_ptr<UraWorkSpace> init();

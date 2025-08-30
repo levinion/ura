@@ -22,8 +22,8 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     server->view->get_scene_tree_or_create(this->z_index),
     xdg_toplevel->base
   );
-  this->output = output;
-  this->workspace = this->output->current_workspace;
+  this->output = output->name;
+  this->workspace = output->current_workspace;
   this->workspace->add(this);
   xdg_toplevel->base->surface->data = this;
   this->create_borders();
@@ -102,24 +102,26 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
 
 void UraToplevel::destroy() {
   auto server = UraServer::get_instance();
-  auto workspace = this->workspace;
   this->destroying = true;
   if (this->is_active()) {
     server->seat->unfocus();
-    workspace->remove(this);
-    auto top = workspace->focus_stack.top();
+    this->workspace->remove(this);
+    auto top = this->workspace->focus_stack.top();
     if (top)
       server->seat->focus(top.value());
   } else {
-    workspace->remove(this);
+    this->workspace->remove(this);
   }
   server->runtime->remove(this);
   wlr_foreign_toplevel_handle_v1_destroy(this->foreign_handle);
-  workspace->redraw();
+  this->workspace->redraw();
 }
 
 void UraToplevel::commit() {
   auto server = UraServer::get_instance();
+  auto output = server->view->get_output_by_name(this->output);
+  if (!output)
+    return;
   if (!this->mapped || !this->xdg_toplevel->base->initialized) {
     return;
   }
@@ -132,7 +134,7 @@ void UraToplevel::commit() {
       );
     wlr_foreign_toplevel_handle_v1_output_enter(
       this->foreign_handle,
-      this->output->output
+      output->output
     );
     if (this->xdg_toplevel->title)
       wlr_foreign_toplevel_handle_v1_set_title(
@@ -158,7 +160,7 @@ void UraToplevel::commit() {
     this->initial_commit = false;
     assert(this->geometry.empty());
     auto geo = Vec4<int>::from(this->xdg_toplevel->base->geometry);
-    geo.center(this->output->usable_area);
+    geo.center(output->usable_area);
     this->layout_geometry["floating"] = geo;
     this->geometry.width = geo.width;
     this->geometry.width = geo.width;
@@ -252,9 +254,9 @@ void UraToplevel::move_to_workspace(int index) {
 
 int UraToplevel::index() {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
   int index = 0;
-  for (auto toplevel : this->workspace->toplevels) {
+  auto& toplevels = this->workspace->toplevels;
+  for (auto toplevel : toplevels) {
     if (toplevel == this)
       return index;
     index++;
@@ -264,7 +266,7 @@ int UraToplevel::index() {
 
 void UraToplevel::activate() {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
+  auto output = server->view->get_output_by_name(this->output);
   auto current_workspace_index = output->current_workspace->index();
   auto current_toplevel_index = this->index();
   auto flag = server->lua->try_execute_hook(
@@ -375,10 +377,12 @@ bool UraToplevel::resize(int width, int height) {
 }
 
 void UraToplevel::close() {
+  auto server = UraServer::get_instance();
+  auto output = server->view->get_output_by_name(this->output);
   wlr_xdg_toplevel_send_close(this->xdg_toplevel);
   wlr_foreign_toplevel_handle_v1_output_leave(
     this->foreign_handle,
-    this->output->output
+    output->output
   );
 }
 
@@ -467,7 +471,9 @@ void UraToplevel::set_border_color(std::array<float, 4>& color) {
 }
 
 void UraToplevel::center() {
-  auto usable_area = this->output->usable_area;
+  auto server = UraServer::get_instance();
+  auto output = server->view->get_output_by_name(this->output);
+  auto usable_area = output->usable_area;
   auto geo = this->geometry;
   geo.center(usable_area);
   this->move(geo.x, geo.y);
@@ -494,7 +500,7 @@ sol::table UraToplevel::to_lua_table() {
 }
 
 void UraToplevel::apply_layout(bool recursive) {
-  if (this->initial_commit)
+  if (!this->mapped || this->initial_commit)
     return;
   auto server = UraServer::get_instance();
   sol::protected_function layout = server->lua->layouts.contains(this->layout)
