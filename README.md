@@ -91,7 +91,7 @@ Define keybindings using the following format: one or more modifier keys (or non
 
 ```lua
 ura.keymap.set("super+t", function()
-  os.execute("foot -e tmux &")
+  ura.api.spawn("foot -e tmux")
 end)
 
 ura.keymap.set("super+shift+e", function()
@@ -99,7 +99,7 @@ ura.keymap.set("super+shift+e", function()
 end)
 
 ura.keymap.set("XF86AudioRaiseVolume", function()
-  os.execute("volume -i 5")
+  ura.api.spawn("volume -i 5")
 end)
 ```
 
@@ -125,7 +125,7 @@ Use the `ready` hook (note: hook names may change across versions) to start appl
 ```lua
 ura.hook.set("ready", function()
   ura.fn.set_env("DISPLAY", ":0")
-  os.execute("xwayland-satellite &")
+  ura.api.spawn("xwayland-satellite")
 end)
 ```
 
@@ -133,11 +133,11 @@ The `focus-change` and `workspace-change` hooks are triggered when focus or work
 
 ```lua
 ura.hook.set("focus-change", function()
-  os.execute("pkill -SIGRTMIN+9 waybar &")
+  ura.api.spawn("pkill -SIGRTMIN+9 waybar")
 end)
 
 ura.hook.set("workspace-change", function()
-  os.execute("pkill -SIGRTMIN+8 waybar &")
+  ura.api.spawn("pkill -SIGRTMIN+8 waybar")
 end)
 ```
 
