@@ -37,16 +37,8 @@ void UraOutput::init(wlr_output* _wlr_output) {
   // bind render and allocator to this output
   wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
 
-  auto output_table = server->lua->fetch<sol::table>("opt.output");
-  if (output_table) {
-    auto custom_mode =
-      output_table.value()[this->name].get<std::optional<sol::table>>();
-    if (custom_mode) {
-      auto success = this->set_mode(custom_mode.value());
-      if (!success)
-        this->set_preferred_mode();
-    }
-  }
+  if (!this->try_set_custom_mode())
+    this->set_preferred_mode();
 
   // register callback
   server->runtime
@@ -221,17 +213,17 @@ bool UraOutput::set_mode(sol::table& mode) {
   auto server = UraServer::get_instance();
   auto _mode = wlr_output_preferred_mode(this->output);
   auto height = server->lua->fetch<int>(mode, "height");
-  if (height && height.value() != _mode->height) {
+  if (height && height.value() != this->output->height) {
     _mode->height = height.value();
     _mode->preferred = false;
   }
   auto width = server->lua->fetch<int>(mode, "width");
-  if (width && width.value() != _mode->width) {
+  if (width && width.value() != this->output->width) {
     _mode->width = height.value();
     _mode->preferred = false;
   }
   auto refresh = server->lua->fetch<float>(mode, "refresh");
-  if (refresh && refresh.value() != _mode->refresh) {
+  if (refresh && refresh.value() != this->output->refresh) {
     _mode->refresh = refresh.value() * 1000;
     _mode->preferred = false;
   }
@@ -240,6 +232,19 @@ bool UraOutput::set_mode(sol::table& mode) {
     this->output->scale = scale.value();
   }
   return this->set_mode(_mode);
+}
+
+bool UraOutput::try_set_custom_mode() {
+  auto server = UraServer::get_instance();
+  auto output_table = server->lua->fetch<sol::table>("opt.output");
+  if (output_table) {
+    auto custom_mode =
+      output_table.value()[this->name].get<std::optional<sol::table>>();
+    if (custom_mode) {
+      return this->set_mode(custom_mode.value());
+    }
+  }
+  return false;
 }
 
 bool UraOutput::set_preferred_mode() {

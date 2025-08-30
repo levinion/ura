@@ -28,6 +28,7 @@ public:
   bool set_mode(wlr_output_mode* mode);
   bool set_mode(sol::table& mode);
   bool set_preferred_mode();
+  bool try_set_custom_mode();
 
   /* Surfaces */
   Vec<UraLayerShell*> bottom_surfaces;

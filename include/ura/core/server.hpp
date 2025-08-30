@@ -55,6 +55,7 @@ public:
   void run();
   void destroy();
   void terminate();
+  void check_lua_reset();
   ~UraServer();
 
 private:

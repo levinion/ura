@@ -1,6 +1,7 @@
 #include "ura/lua/lua.hpp"
 #include "ura/lua/api.hpp"
 #include "ura/view/layout.hpp"
+#include "ura/view/view.hpp"
 #include "ura/core/server.hpp"
 #include <expected>
 #include <filesystem>
@@ -12,16 +13,6 @@
 #include <string>
 
 namespace ura {
-
-void check_reset() {
-  auto server = UraServer::get_instance();
-  if (server->lua->reset) {
-    server->lua = Lua::init();
-    server->lua->setup();
-    server->lua->try_execute_init();
-    server->lua->try_execute_hook("reload");
-  }
-}
 
 std::unique_ptr<Lua> Lua::init() {
   auto lua = std::make_unique<Lua>();
@@ -143,11 +134,8 @@ std::expected<std::string, std::string> Lua::execute(std::string script) {
   this->lua_stdout.clear();
   this->cache.clear();
   auto result = this->state.safe_script(script, sol::script_pass_on_error);
-  if (result.valid()) {
-    auto out = this->lua_stdout;
-    check_reset();
-    return out;
-  }
+  if (result.valid())
+    return this->lua_stdout;
   sol::error err = result;
   return std::unexpected(err.what());
 }
@@ -161,11 +149,8 @@ Lua::execute_file(std::filesystem::path path) {
       std::format("[ura] path not exists or invalid: {}", path.string())
     );
   auto result = this->state.safe_script_file(path, sol::script_pass_on_error);
-  if (result.valid()) {
-    auto out = this->lua_stdout;
-    check_reset();
-    return out;
-  }
+  if (result.valid())
+    return this->lua_stdout;
   sol::error err = result;
   return std::unexpected(err.what());
 }

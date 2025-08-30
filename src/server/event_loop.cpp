@@ -265,6 +265,21 @@ void UraServer::setup_others() {
   wlr_alpha_modifier_v1_create(this->display);
 }
 
+void UraServer::check_lua_reset() {
+  auto server = UraServer::get_instance();
+  if (server->lua->reset) {
+    server->lua = Lua::init();
+    server->lua->setup();
+    server->lua->try_execute_init();
+    server->lua->try_execute_hook("reload");
+    auto output = server->view->current_output();
+    if (output) {
+      output->try_set_custom_mode();
+      output->current_workspace->redraw();
+    }
+  }
+}
+
 void UraServer::run() {
   // create wayland socket
   auto socket = wl_display_add_socket_auto(this->display);
@@ -327,6 +342,7 @@ void UraServer::run() {
         ipc->try_handle();
       }
     }
+    this->check_lua_reset();
   }
 }
 
