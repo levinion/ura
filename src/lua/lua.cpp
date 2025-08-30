@@ -43,6 +43,7 @@ void Lua::setup() {
   // api
   this->set("api.terminate", api::terminate);
   this->set("api.reload", api::reload);
+  this->set("api.spawn", api::spawn);
   this->set("api.notify_idle_activity", api::notify_idle_activity);
   this->set("api.set_idle_inhibitor", api::set_idle_inhibitor);
   // window

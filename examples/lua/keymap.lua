@@ -1,15 +1,15 @@
 local util = require("util")
 
 ura.keymap.set("super+t", function()
-  os.execute("foot -e tmux &")
+  ura.api.spawn("foot -e tmux")
 end)
 
 ura.keymap.set("super+w", function()
-  os.execute("firefox-developer-edition &")
+  ura.api.spawn("firefox-developer-edition")
 end)
 
 ura.keymap.set("super+e", function()
-  os.execute("foot -e yazi &")
+  ura.api.spawn("foot -e yazi")
 end)
 
 ura.keymap.set("super+q", function()
@@ -18,7 +18,7 @@ ura.keymap.set("super+q", function()
 end)
 
 ura.keymap.set("super+space", function()
-  os.execute("fzfmenu &")
+  ura.api.spawn("fzfmenu")
 end)
 
 ura.keymap.set("alt+space", function()
@@ -106,12 +106,16 @@ ura.keymap.set("super+shift+l", function()
   ura.win.swap(win.index, win.index + 1)
 end)
 
+ura.keymap.set("super+shift+p", function()
+  ura.api.spawn('uracil ~/.config/ura/scripts/dpms_off.lua')
+end)
+
 ura.keymap.set("super+p", function()
-  os.execute("rmpc togglepause &")
+  ura.api.spawn("rmpc togglepause")
 end)
 
 ura.keymap.set("alt+a", function()
-  os.execute('grim -g "$(slurp)" - | wl-copy &')
+  ura.api.spawn('grim -g "$(slurp)" - | wl-copy')
 end)
 
 ura.keymap.set("super+shift+m", function()
@@ -120,15 +124,15 @@ ura.keymap.set("super+shift+m", function()
 end)
 
 ura.keymap.set("XF86AudioRaiseVolume", function()
-  os.execute("volume -i 5 &")
+  ura.api.spawn("volume -i 5")
 end)
 
 ura.keymap.set("XF86AudioLowerVolume", function()
-  os.execute("volume -d 5 &")
+  ura.api.spawn("volume -d 5")
 end)
 
 ura.keymap.set("super+shift+s", function()
-  os.execute("swaylock -f -i ~/.config/ura/assets/bg.jpg &")
+  ura.api.spawn("swaylock -f -i ~/.config/ura/assets/bg.jpg")
 end)
 
 ura.keymap.set("super+up", function()

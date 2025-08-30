@@ -98,12 +98,22 @@ local UraOutputMode = {
   scale = 0
 }
 
+--- @class UraCursorTheme: table
+local UraCursorTheme = {
+  --- @type string|nil
+  theme = "",
+  --- @type integer
+  size = 0
+}
+
 --- @class ura: table
 ura = {
   --- @class ura.api: table
   api = {
     terminate = function() end,
     reload = function() end,
+    --- @param cmd string
+    spawn = function(cmd) end,
     notify_idle_activity = function() end,
     --- @param flag boolean
     set_idle_inhibitor = function(flag) end
@@ -166,9 +176,8 @@ ura = {
     },
     --- @class ura.input.cursor: table
     cursor = {
-      --- @param theme string The name of the cursor theme.
-      --- @param size integer The size of the cursor.
-      set_theme = function(theme, size) end,
+      --- @param theme UraCursorTheme
+      set_theme = function(theme) end,
       --- @param visible boolean True to show, false to hide.
       set_visible = function(visible) end,
       --- @return boolean

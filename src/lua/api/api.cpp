@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <sys/prctl.h>
 
 namespace ura::api {
 
@@ -166,9 +167,17 @@ void set_hook(std::string name, sol::protected_function f) {
   server->lua->hooks[name] = f;
 }
 
-void set_cursor_theme(std::string theme, int size) {
+void set_cursor_theme(sol::object obj) {
+  if (!obj.is<sol::table>())
+    return;
+  auto table = obj.as<sol::table>();
   auto server = UraServer::get_instance();
-  server->seat->cursor->set_theme(theme, size);
+  auto theme =
+    server->lua->fetch<std::string>(table, "theme").value_or("default");
+  auto size = server->lua->fetch<int>(table, "size");
+  if (!size)
+    return;
+  server->seat->cursor->set_theme(theme, size.value());
 }
 
 void set_cursor_visible(bool flag) {
@@ -517,10 +526,27 @@ sol::table get_output(std::string name) {
   return output->to_lua_table();
 }
 
-void set_output_mode(std::string name, sol::table mode) {
+void set_output_mode(std::string name, sol::object obj) {
+  if (!obj.is<sol::table>())
+    return;
+  auto mode = obj.as<sol::table>();
   auto server = UraServer::get_instance();
   auto output = server->view->get_output_by_name(name);
   output->set_mode(mode);
+}
+
+void spawn(std::string cmd) {
+  pid_t pid = fork();
+
+  if (pid < 0)
+    return;
+
+  if (pid == 0) {
+    prctl(PR_SET_PDEATHSIG, SIGTERM);
+    if (getppid() == 1)
+      exit(1);
+    execl("/bin/sh", "sh", "-c", cmd.c_str(), (char*)nullptr);
+  }
 }
 
 } // namespace ura::api

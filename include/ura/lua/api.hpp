@@ -10,7 +10,8 @@ namespace ura::api {
 // api
 void terminate();
 void reload();
-void set_hook(std::string, sol::protected_function f);
+void spawn(std::string cmd);
+void set_hook(std::string name, sol::protected_function f);
 void notify_idle_activity();
 void set_idle_inhibitor(bool flag);
 // keymap
@@ -43,7 +44,7 @@ void swap_window(int index, int target);
 void redraw_window(int index);
 // input
 void set_keyboard_repeat(int rate, int delay);
-void set_cursor_theme(std::string theme, int size);
+void set_cursor_theme(sol::object table);
 void set_cursor_visible(bool flag);
 bool is_cursor_visible();
 void set_cursor_shape(std::string name);
@@ -61,7 +62,7 @@ void redraw_current_workspace();
 sol::table get_current_output();
 sol::table get_output(std::string name);
 void set_output_dpms(std::string name, bool flag);
-void set_output_mode(std::string name, sol::table mode);
+void set_output_mode(std::string name, sol::object mode);
 // layout
 void set_layout(std::string name, sol::protected_function f);
 void unset_layout(std::string name);
