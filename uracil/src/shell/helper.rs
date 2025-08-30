@@ -30,6 +30,7 @@ impl UracilHelper {
             // ura.api
             "ura.api",
             "ura.api.terminate",
+            "ura.api.spawn",
             "ura.api.reload",
             "ura.api.notify_idle_activity",
             "ura.api.set_idle_inhibitor",
@@ -74,6 +75,7 @@ impl UracilHelper {
             // ura.output
             "ura.output",
             "ura.output.get_current",
+            "ura.output.get",
             "ura.output.set_dpms",
             // ura.layout
             "ura.layout",
