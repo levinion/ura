@@ -6,7 +6,6 @@ ura.hook.set("prepare", function()
 end)
 
 ura.hook.set("ready", function()
-  os.execute("wlr-randr --output DP-5 --mode 3840x2160@119.879997Hz --scale 2 &")
   ura.fn.set_env("DISPLAY", ":0")
   os.execute("xwayland-satellite &")
   os.execute("swaybg -i ~/.config/ura/assets/bg.jpg &")

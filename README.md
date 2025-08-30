@@ -113,18 +113,19 @@ The `prepare` hook runs after the Lua module is initialized, but before composit
 
 ```lua
 ura.hook.set("prepare", function()
-  ura.fn.set_env("WLR_RENDERER", "gles2")
-  ura.fn.set_env("WLR_NO_HARDWARE_CURSORS", "1")
+  ura.fn.set_env("WLR_RENDERER", "vulkan")
+  ura.fn.set_env("WLR_NO_HARDWARE_CURSORS", "0")
   ura.fn.set_env("LIBVA_DRIVER_NAME", "nvidia")
   ura.fn.set_env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
 end)
 ```
 
-Use the `ready` hook (note: hook names may change across versions) to execute `wlr-randr` and configure display modes just before the compositor starts running. This is also a good place to start background applications:
+Use the `ready` hook (note: hook names may change across versions) to start applications just before the compositor starts running:
 
 ```lua
 ura.hook.set("ready", function()
-  os.execute("wlr-randr --output DP-5 --mode 3840x2160@119.879997Hz --scale 2 &")
+  ura.fn.set_env("DISPLAY", ":0")
+  os.execute("xwayland-satellite &")
 end)
 ```
 

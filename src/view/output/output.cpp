@@ -37,8 +37,16 @@ void UraOutput::init(wlr_output* _wlr_output) {
   // bind render and allocator to this output
   wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
 
-  auto prefered_mode = wlr_output_preferred_mode(this->output);
-  this->set_mode(prefered_mode);
+  auto output_table = server->lua->fetch<sol::table>("opt.output");
+  if (output_table) {
+    auto custom_mode =
+      output_table.value()[this->name].get<std::optional<sol::table>>();
+    if (custom_mode) {
+      auto success = this->set_mode(custom_mode.value());
+      if (!success)
+        this->set_preferred_mode();
+    }
+  }
 
   // register callback
   server->runtime
@@ -194,16 +202,49 @@ bool UraOutput::configure_layers() {
   return false;
 }
 
-// internal method
-void UraOutput::set_mode(wlr_output_mode* mode) {
+bool UraOutput::set_mode(wlr_output_mode* mode) {
+  if (!mode)
+    return false;
   wlr_output_state state;
   wlr_output_state_init(&state);
   wlr_output_state_set_enabled(&state, true);
-  if (mode)
-    wlr_output_state_set_mode(&state, mode);
-  wlr_output_commit_state(this->output, &state);
-  wlr_output_state_finish(&state);
-  this->configure_layers();
+  wlr_output_state_set_mode(&state, mode);
+  if (wlr_output_commit_state(this->output, &state)) {
+    wlr_output_state_finish(&state);
+    this->configure_layers();
+    return true;
+  }
+  return false;
+}
+
+bool UraOutput::set_mode(sol::table& mode) {
+  auto server = UraServer::get_instance();
+  auto _mode = wlr_output_preferred_mode(this->output);
+  auto height = server->lua->fetch<int>(mode, "height");
+  if (height && height.value() != _mode->height) {
+    _mode->height = height.value();
+    _mode->preferred = false;
+  }
+  auto width = server->lua->fetch<int>(mode, "width");
+  if (width && width.value() != _mode->width) {
+    _mode->width = height.value();
+    _mode->preferred = false;
+  }
+  auto refresh = server->lua->fetch<float>(mode, "refresh");
+  if (refresh && refresh.value() != _mode->refresh) {
+    _mode->refresh = refresh.value() * 1000;
+    _mode->preferred = false;
+  }
+  auto scale = server->lua->fetch<float>(mode, "scale");
+  if (scale && scale.value() != this->output->scale) {
+    this->output->scale = scale.value();
+  }
+  return this->set_mode(_mode);
+}
+
+bool UraOutput::set_preferred_mode() {
+  auto mode = wlr_output_preferred_mode(this->output);
+  return this->set_mode(mode);
 }
 
 Vec4<int> UraOutput::physical_geometry() {

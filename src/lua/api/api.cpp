@@ -517,4 +517,10 @@ sol::table get_output(std::string name) {
   return output->to_lua_table();
 }
 
+void set_output_mode(std::string name, sol::table mode) {
+  auto server = UraServer::get_instance();
+  auto output = server->view->get_output_by_name(name);
+  output->set_mode(mode);
+}
+
 } // namespace ura::api

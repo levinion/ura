@@ -23,9 +23,11 @@ public:
   Vec4<int> physical_geometry();
   Vec4<int> logical_geometry();
 
-  /* Power */
+  /* Mode */
   void set_dpms_mode(bool flag);
-  void set_mode(wlr_output_mode* mode);
+  bool set_mode(wlr_output_mode* mode);
+  bool set_mode(sol::table& mode);
+  bool set_preferred_mode();
 
   /* Surfaces */
   Vec<UraLayerShell*> bottom_surfaces;

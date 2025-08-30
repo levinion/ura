@@ -86,6 +86,18 @@ local UraLayout = {
   height = 0
 }
 
+--- @class UraOutputMode: table
+local UraOutputMode = {
+  --- @type integer|nil
+  width = 0,
+  --- @type integer|nil
+  height = 0,
+  --- @type number|nil
+  refresh = 0,
+  --- @type number|nil
+  scale = 0
+}
+
 --- @class ura: table
 ura = {
   --- @class ura.api: table
@@ -196,7 +208,10 @@ ura = {
     get = function(name) end,
     --- @param name string
     --- @param flag boolean
-    set_dpms = function(name, flag) end
+    set_dpms = function(name, flag) end,
+    --- @param name string
+    --- @param mode UraOutputMode
+    set_mode = function(name, mode) end
   },
 
   --- @class ura.layout: table
@@ -291,6 +306,8 @@ ura = {
     mouse_scroll_factor = 1,
     --- @type number
     mouse_move_factor = 1,
+    --- @type table<string,UraOutputMode>
+    output = {}
   },
   --- @type table
   g = {}

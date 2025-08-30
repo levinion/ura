@@ -111,18 +111,19 @@ end)
 
 ```lua
 ura.hook.set("prepare", function()
-  ura.fn.set_env("WLR_RENDERER", "gles2")
-  ura.fn.set_env("WLR_NO_HARDWARE_CURSORS", "1")
+  ura.fn.set_env("WLR_RENDERER", "vulkan")
+  ura.fn.set_env("WLR_NO_HARDWARE_CURSORS", "0")
   ura.fn.set_env("LIBVA_DRIVER_NAME", "nvidia")
   ura.fn.set_env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
 end)
 ```
 
-在 Wayland 建立 Socket，合成器开始运行前，通过 `ready` 钩子（钩子名称可能随版本发生变化，下同）执行 wlr-randr 以设置显示器模式。另外，此处也是创建自启应用的好时机：
+在 Wayland 建立 Socket，合成器开始运行前，通过 `ready` 钩子（钩子名称可能随版本发生变化，下同）启动应用程序：
 
 ```lua
 ura.hook.set("ready", function()
-  os.execute("wlr-randr --output DP-5 --mode 3840x2160@119.879997Hz --scale 2 &")
+  ura.fn.set_env("DISPLAY", ":0")
+  os.execute("xwayland-satellite &")
 end)
 ```
 
