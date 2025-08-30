@@ -103,6 +103,8 @@ void UraLayerShell::unmap() {
 void UraLayerShell::commit() {
   auto server = UraServer::get_instance();
   auto output = server->view->get_output_by_name(this->output);
+  if (!output)
+    return;
   if (this->layer_surface->initialized
       && this->layer_surface->current.committed
         & WLR_LAYER_SURFACE_V1_STATE_LAYER) {
