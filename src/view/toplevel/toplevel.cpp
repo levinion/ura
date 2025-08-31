@@ -146,25 +146,20 @@ void UraToplevel::commit() {
         this->foreign_handle,
         this->xdg_toplevel->app_id
       );
-    server->seat->focus(this);
-    server->lua->try_execute_hook("window-new", this->index());
-    if (this->geometry.empty()) {
-      wlr_xdg_toplevel_set_size(this->xdg_toplevel, 0, 0);
-      return;
-    } else {
-      this->prepared = true;
-    }
+    wlr_xdg_toplevel_set_size(this->xdg_toplevel, 0, 0);
+    return;
   }
 
   if (!this->prepared) {
     this->prepared = true;
-    assert(this->geometry.empty());
     auto geo = Vec4<int>::from(this->xdg_toplevel->base->geometry);
     geo.center(output->usable_area);
     this->layout_geometry["floating"] = geo;
     this->geometry.width = geo.width;
     this->geometry.width = geo.width;
     this->move(geo.x, geo.y);
+    server->seat->focus(this);
+    server->lua->try_execute_hook("window-new", this->index());
   }
 
   this->apply_layout(true);
@@ -473,9 +468,9 @@ void UraToplevel::set_border_color(std::array<float, 4>& color) {
 void UraToplevel::center() {
   auto server = UraServer::get_instance();
   auto output = server->view->get_output_by_name(this->output);
-  auto usable_area = output->usable_area;
+  auto area = output->logical_geometry();
   auto geo = this->geometry;
-  geo.center(usable_area);
+  geo.center(area);
   this->move(geo.x, geo.y);
 }
 
