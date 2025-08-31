@@ -222,6 +222,7 @@ bool UraOutput::set_mode(wlr_output_mode mode) {
   wlr_output_state_set_enabled(&state, true);
   wlr_output_state_set_mode(&state, nearest_mode);
   if (wlr_output_commit_state(this->output, &state)) {
+    this->mode = *nearest_mode;
     wlr_output_state_finish(&state);
     this->configure_layers();
     return true;
@@ -233,7 +234,8 @@ bool UraOutput::set_mode(wlr_output_mode mode) {
 
 bool UraOutput::set_mode(sol::table& mode) {
   auto server = UraServer::get_instance();
-  auto _mode = *wlr_output_preferred_mode(this->output);
+  auto _mode =
+    this->mode ? this->mode.value() : *wlr_output_preferred_mode(this->output);
   auto height = server->lua->fetch<int>(mode, "height");
   if (height && height.value() != this->output->height) {
     _mode.height = height.value();

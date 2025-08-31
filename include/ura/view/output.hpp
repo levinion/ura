@@ -15,6 +15,7 @@ public:
   std::string name;
 
   bool dpms_on = true;
+  std::optional<wlr_output_mode> mode;
 
   void init(wlr_output* output);
   static UraOutput* from(wlr_output* output);
