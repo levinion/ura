@@ -60,6 +60,7 @@ public:
 private:
   static UraServer* instance;
   bool quit = false;
+  void setup_signal();
   void setup_seat();
   void setup_toplevel();
   void setup_popup();

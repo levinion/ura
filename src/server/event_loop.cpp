@@ -18,6 +18,7 @@ UraServer* UraServer::init() {
   log::init();
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
+  this->setup_signal();
   this->lua = Lua::init();
   this->lua->try_execute_init();
   this->lua->try_execute_hook("prepare");
@@ -345,6 +346,14 @@ void UraServer::destroy() {
 
 UraServer::~UraServer() {
   this->destroy();
+}
+
+void UraServer::setup_signal() {
+  struct sigaction sa;
+  sa.sa_handler = [](int signo) { while (waitpid(-1, NULL, WNOHANG) > 0); };
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+  sigaction(SIGCHLD, &sa, 0);
 }
 
 } // namespace ura
