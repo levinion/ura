@@ -1,4 +1,5 @@
 #include "ura/lua/lua.hpp"
+#include "ura/core/log.hpp"
 #include "ura/lua/api.hpp"
 #include "ura/view/layout.hpp"
 #include "ura/view/view.hpp"
@@ -46,6 +47,7 @@ void Lua::setup() {
   this->set("api.spawn", api::spawn);
   this->set("api.notify_idle_activity", api::notify_idle_activity);
   this->set("api.set_idle_inhibitor", api::set_idle_inhibitor);
+  this->set("api.notify", api::notify);
   // window
   this->set("win.focus", api::focus_window);
   this->set("win.close", api::close_window);
@@ -133,7 +135,6 @@ void Lua::setup() {
 
 std::expected<std::string, std::string> Lua::execute(std::string script) {
   this->lua_stdout.clear();
-  this->cache.clear();
   auto result = this->state.safe_script(script, sol::script_pass_on_error);
   if (result.valid())
     return this->lua_stdout;
@@ -141,6 +142,7 @@ std::expected<std::string, std::string> Lua::execute(std::string script) {
   return std::unexpected(err.what());
 }
 
+// this is only used to run init.lua by now
 std::expected<std::string, std::string>
 Lua::execute_file(std::filesystem::path path) {
   this->lua_stdout.clear();
@@ -178,14 +180,15 @@ std::optional<std::filesystem::path> Lua::find_init_path() {
   return {};
 }
 
-bool Lua::try_execute_init() {
+void Lua::try_execute_init() {
   auto path = this->find_init_path();
-  if (path) {
-    // TODO: handle error
-    auto _ = this->execute_file(path.value());
-    return true;
+  if (!path)
+    return;
+  auto result = this->execute_file(path.value());
+  if (!result) {
+    log::error("{}", result.error().c_str());
+    UraServer::get_instance()->terminate();
   }
-  return false;
 }
 
 bool Lua::contains_keybinding(uint64_t id) {

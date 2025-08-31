@@ -1,4 +1,5 @@
 #include <memory>
+#include "ura/core/log.hpp"
 #include "ura/seat/cursor.hpp"
 #include "ura/core/ipc.hpp"
 #include "ura/seat/seat.hpp"
@@ -14,7 +15,7 @@
 namespace ura {
 
 UraServer* UraServer::init() {
-  this->setup_log();
+  log::init();
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
   this->lua = Lua::init();
@@ -38,37 +39,22 @@ UraServer* UraServer::init() {
   return this;
 }
 
-void UraServer::setup_log() {
-  auto level_str_ = std::getenv("URA_LOG");
-  std::string level_str = level_str_ ? level_str_ : "INFO";
-  wlr_log_importance level;
-  if (level_str == "DEBUG")
-    level = WLR_DEBUG;
-  else if (level_str == "SLIENT")
-    level = WLR_SILENT;
-  else if (level_str == "ERROR")
-    level = WLR_ERROR;
-  else
-    level = WLR_INFO;
-  wlr_log_init(level, NULL);
-}
-
 void UraServer::setup_base() {
   this->display = wl_display_create();
   auto event_loop = wl_display_get_event_loop(this->display);
   this->backend = wlr_backend_autocreate(event_loop, &this->session);
   if (!this->backend) {
-    wlr_log(WLR_ERROR, "failed to create wlr_backend");
+    log::error("failed to create wlr_backend");
     exit(1);
   }
   this->renderer = wlr_renderer_autocreate(this->backend);
   if (!this->renderer) {
-    wlr_log(WLR_ERROR, "failed to create wlr_renderer");
+    log::error("failed to create wlr_renderer");
     exit(1);
   }
   this->allocator = wlr_allocator_autocreate(this->backend, this->renderer);
   if (!this->allocator) {
-    wlr_log(WLR_ERROR, "failed to create wlr_allocator");
+    log::error("failed to create wlr_allocator");
     exit(1);
   }
 }
@@ -300,7 +286,7 @@ void UraServer::run() {
 
   // set env
   setenv("WAYLAND_DISPLAY", socket, true);
-  wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s", socket);
+  log::info("Running Wayland compositor on WAYLAND_DISPLAY={}", socket);
 
   // run event loop
   auto event_loop = wl_display_get_event_loop(this->display);
@@ -354,6 +340,7 @@ void UraServer::destroy() {
   wlr_backend_destroy(this->backend);
   this->runtime->remove(nullptr);
   wl_display_destroy(this->display);
+  log::destroy();
 }
 
 UraServer::~UraServer() {

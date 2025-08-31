@@ -24,7 +24,6 @@ UraServer* UraServer::get_instance() {
 
 void UraServer::terminate() {
   this->quit = true;
-  wl_display_terminate(this->display);
 }
 
 } // namespace ura

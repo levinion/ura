@@ -25,10 +25,11 @@ public:
 
   /* Mode */
   void set_dpms_mode(bool flag);
-  bool set_mode(wlr_output_mode* mode);
+  bool set_mode(wlr_output_mode mode);
   bool set_mode(sol::table& mode);
   bool set_preferred_mode();
   bool try_set_custom_mode();
+  wlr_output_mode* find_nearest_mode(int width, int height, float refresh);
 
   /* Surfaces */
   Vec<UraLayerShell*> bottom_surfaces;

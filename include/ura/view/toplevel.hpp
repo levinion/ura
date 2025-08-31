@@ -18,7 +18,7 @@ public:
   bool draggable = false;
   std::string layout = "tiling";
   std::optional<std::string> last_layout;
-  bool initial_commit = true;
+  bool prepared = false;
   bool first_commit_after_layout_change = true;
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;

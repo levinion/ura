@@ -1,6 +1,7 @@
 #include "ura/lua/api.hpp"
 #include <regex>
 #include <unordered_set>
+#include "ura/core/log.hpp"
 #include "ura/lua/lua.hpp"
 #include "ura/core/server.hpp"
 #include "ura/view/output.hpp"
@@ -11,6 +12,7 @@
 #include "ura/view/workspace.hpp"
 #include "ura/util/util.hpp"
 #include "ura/seat/seat.hpp"
+#include <fcntl.h>
 #include <sys/types.h>
 #include <pwd.h>
 #include <unistd.h>
@@ -542,11 +544,22 @@ void spawn(std::string cmd) {
     return;
 
   if (pid == 0) {
+    // try redirecting stdout and stderr to /dev/null to avoid log pollution
+    int dev_null = open("/dev/null", O_WRONLY);
+    if (dev_null != -1) {
+      dup2(dev_null, STDOUT_FILENO);
+      dup2(dev_null, STDERR_FILENO);
+      close(dev_null);
+    }
     prctl(PR_SET_PDEATHSIG, SIGTERM);
     if (getppid() == 1)
       exit(1);
     execl("/bin/sh", "sh", "-c", cmd.c_str(), (char*)nullptr);
   }
+}
+
+void notify(std::string summary, std::string body) {
+  log::notify(summary, body);
 }
 
 } // namespace ura::api

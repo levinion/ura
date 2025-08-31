@@ -101,4 +101,12 @@ inline std::optional<uint64_t> parse_keymap(std::string& pattern) {
   }
   return (static_cast<uint64_t>(mod) << 32) | sym;
 }
+
+inline std::string to_lower_t(const std::string& word) {
+  std::string s;
+  for (auto& c : word) {
+    s.push_back(tolower(c));
+  }
+  return s;
+}
 } // namespace ura

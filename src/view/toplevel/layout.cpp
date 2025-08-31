@@ -4,14 +4,14 @@
 
 namespace ura::layout {
 
-std::optional<sol::table> tiling(int index) {
+void tiling(int index) {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
   if (!output)
-    return {};
+    return;
   auto toplevel = output->current_workspace->get_toplevel_at(index);
   if (!toplevel)
-    return {};
+    return;
   if (toplevel.value()->first_commit_after_layout_change) {
     toplevel.value()->draggable = false;
     toplevel.value()->set_z_index(UraSceneLayer::Normal);
@@ -52,21 +52,17 @@ std::optional<sol::table> tiling(int index) {
   auto x = usable_area.x + outer_l + (w + inner) * i;
   auto y = usable_area.y + outer_t;
 
-  auto table = server->lua->state.create_table();
-  table["x"] = x;
-  table["y"] = y;
-  table["width"] = w;
-  table["height"] = h;
-  return table;
+  toplevel.value()->resize(w, h);
+  toplevel.value()->move(x, y);
 }
 
-std::optional<sol::table> fullscreen(int index) {
+void fullscreen(int index) {
   auto server = UraServer::get_instance();
 
   auto toplevel =
     server->view->current_output()->current_workspace->get_toplevel_at(index);
   if (!toplevel)
-    return {};
+    return;
   if (toplevel.value()->first_commit_after_layout_change) {
     toplevel.value()->draggable = false;
     toplevel.value()->set_z_index(UraSceneLayer::Fullscreen);
@@ -74,27 +70,20 @@ std::optional<sol::table> fullscreen(int index) {
 
   auto geo = server->view->current_output()->logical_geometry();
   auto table = server->lua->state.create_table();
-  table["x"] = geo.x;
-  table["y"] = geo.y;
-  table["width"] = geo.width;
-  table["height"] = geo.height;
-  return table;
+
+  toplevel.value()->resize(geo.width, geo.height);
+  toplevel.value()->move(geo.x, geo.y);
 }
 
-std::optional<sol::table> floating(int index) {
+void floating(int index) {
   auto server = UraServer::get_instance();
-
   auto toplevel =
     server->view->current_output()->current_workspace->get_toplevel_at(index);
-
   if (!toplevel)
-    return {};
-
+    return;
   if (toplevel.value()->first_commit_after_layout_change) {
     toplevel.value()->draggable = true;
     toplevel.value()->set_z_index(UraSceneLayer::Floating);
   }
-
-  return {};
 }
 } // namespace ura::layout

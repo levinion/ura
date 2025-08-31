@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include "ura/core/log.hpp"
 #include "ura/ura.hpp"
 #include "ura/view/workspace.hpp"
 
@@ -48,8 +49,6 @@ public:
   std::unique_ptr<UraSeat> seat;
   std::unique_ptr<UraView> view;
 
-  bool quit = false;
-
   static UraServer* get_instance();
   UraServer* init();
   void run();
@@ -60,7 +59,7 @@ public:
 
 private:
   static UraServer* instance;
-  void setup_log();
+  bool quit = false;
   void setup_seat();
   void setup_toplevel();
   void setup_popup();

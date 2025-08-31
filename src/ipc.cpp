@@ -65,7 +65,7 @@ std::optional<UraIPCRequestMessage> UraIPC::try_read() {
   if (msg)
     return msg.value();
   else
-    wlr_log(WLR_ERROR, "IPC ERROR: %s", msg.error().data());
+    log::error("IPC ERROR: {}", msg.error().data());
   return {};
 }
 

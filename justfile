@@ -1,5 +1,7 @@
 default:
+  just init
   just release
+  just build
   just install
 
 install:
@@ -10,19 +12,11 @@ install:
   sudo rm -rf /usr/share/lua/5.1/ura
   sudo cp -r lua/ura /usr/share/lua/5.1
 
-run:
-  just build
-  ./build/$(cat build/CMakeCache.txt | grep CMAKE_PROJECT_NAME | awk -F '=' '{print $2}')
-
 debug:
-  just init
   cmake -B build -DCMAKE_BUILD_TYPE=Debug
-  just build
 
 release:
-  just init
   cmake -B build -DCMAKE_BUILD_TYPE=Release
-  just build
 
 init:
   mkdir -p include/protocols

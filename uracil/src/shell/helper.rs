@@ -31,6 +31,7 @@ impl UracilHelper {
             "ura.api",
             "ura.api.terminate",
             "ura.api.spawn",
+            "ura.api.notify",
             "ura.api.reload",
             "ura.api.notify_idle_activity",
             "ura.api.set_idle_inhibitor",

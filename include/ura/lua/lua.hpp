@@ -32,7 +32,7 @@ public:
   bool try_execute_keybinding(uint64_t id);
   bool contains_keybinding(uint64_t id);
   std::optional<std::filesystem::path> find_init_path();
-  bool try_execute_init();
+  void try_execute_init();
 
   template<typename... Args>
   std::optional<sol::object>

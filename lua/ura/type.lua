@@ -74,18 +74,6 @@ local UraOutput = {
   dpms = true,
 }
 
---- @class UraLayout: table
-local UraLayout = {
-  --- @type number
-  x = 0,
-  --- @type number
-  y = 0,
-  --- @type number
-  width = 0,
-  --- @type number
-  height = 0
-}
-
 --- @class UraOutputMode: table
 local UraOutputMode = {
   --- @type integer|nil
@@ -114,6 +102,9 @@ ura = {
     reload = function() end,
     --- @param cmd string
     spawn = function(cmd) end,
+    --- @param summary string
+    --- @param body string
+    notify = function(summary, body) end,
     notify_idle_activity = function() end,
     --- @param flag boolean
     set_idle_inhibitor = function(flag) end
@@ -226,7 +217,7 @@ ura = {
   --- @class ura.layout: table
   layout = {
     --- @param name string
-    --- @param f fun(integer): UraLayout|nil
+    --- @param f fun(integer)
     set = function(name, f) end,
     --- @param name string
     unset = function(name) end,

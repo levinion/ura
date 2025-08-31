@@ -26,10 +26,7 @@ public:
   T width = 0;
   T height = 0;
 
-  constexpr bool operator==(const Vec4<T>& box) {
-    return this->x == box.x && this->y == box.y && this->width == box.width
-      && this->height == box.height;
-  }
+  bool operator==(const Vec4<T>& box) const = default;
 
   wlr_box to_wlr_box() {
     return { this->x, this->y, this->width, this->height };

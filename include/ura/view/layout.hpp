@@ -2,7 +2,7 @@
 #include "ura/lua/lua.hpp"
 
 namespace ura::layout {
-std::optional<sol::table> tiling(int index);
-std::optional<sol::table> fullscreen(int index);
-std::optional<sol::table> floating(int index);
+void tiling(int index);
+void fullscreen(int index);
+void floating(int index);
 } // namespace ura::layout

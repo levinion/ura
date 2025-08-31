@@ -27,6 +27,8 @@ Dependencies include:
 - pkgconf
 - nlohmann-json
 - cli11
+- libnotify
+- spdlog
 - [just](https://github.com/casey/just) (optional)
 - cargo
 
@@ -162,7 +164,8 @@ The layout module in Ura lets you create custom layout algorithms. Here's a simp
 ```lua
 ura.layout.set("my-tiling", function(index)
   local output = ura.output.get_current()
-  return { x = output.usable.x, y = output.usable.y, width = output.usable.width, height = output.usable.height }
+  ura.win.resize(index, output.usable.width, output.usable.height)
+  ura.win.move(index, output.usable.x, output.usable.y)
 end)
 ```
 Used with the window-new hook, this allows you to apply a custom layout algorithm when a new window is created. The default layout algorithms include tiling, floating, and fullscreen. Of these, tiling is a simple horizontal tiling algorithm.

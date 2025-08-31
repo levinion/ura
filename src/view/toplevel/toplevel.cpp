@@ -152,12 +152,12 @@ void UraToplevel::commit() {
       wlr_xdg_toplevel_set_size(this->xdg_toplevel, 0, 0);
       return;
     } else {
-      this->initial_commit = false;
+      this->prepared = true;
     }
   }
 
-  if (this->initial_commit) {
-    this->initial_commit = false;
+  if (!this->prepared) {
+    this->prepared = true;
     assert(this->geometry.empty());
     auto geo = Vec4<int>::from(this->xdg_toplevel->base->geometry);
     geo.center(output->usable_area);
@@ -500,29 +500,20 @@ sol::table UraToplevel::to_lua_table() {
 }
 
 void UraToplevel::apply_layout(bool recursive) {
-  if (!this->mapped || this->initial_commit)
+  if (!this->mapped || !this->prepared)
     return;
   auto server = UraServer::get_instance();
   sol::protected_function layout = server->lua->layouts.contains(this->layout)
     ? server->lua->layouts[this->layout]
     : server->lua->layouts["tiling"];
+
+  auto prev_geo = this->geometry;
+
   auto result = layout(this->index());
   if (!result.valid())
     return;
-  auto table = result.get<std::optional<sol::table>>();
-  if (!table)
-    return;
-  auto x = server->lua->fetch<int>(table.value(), "x");
-  auto y = server->lua->fetch<int>(table.value(), "y");
-  auto w = server->lua->fetch<int>(table.value(), "width");
-  auto h = server->lua->fetch<int>(table.value(), "height");
-  if (!x || !y || !w || !h || w.value() < 0 || h.value() < 0)
-    return;
 
-  auto changed = this->resize(w.value(), h.value());
-  this->move(x.value(), y.value());
-
-  if (changed && recursive)
+  if (this->geometry != prev_geo && recursive)
     this->redraw_all_others();
 
   if (this->first_commit_after_layout_change)

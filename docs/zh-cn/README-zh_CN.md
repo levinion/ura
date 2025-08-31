@@ -25,6 +25,8 @@ Lua 是一门通用语言，它被许多编辑器/LSP（如 lua_ls）支持，�
 - pkgconf
 - nlohmann-json
 - cli11
+- libnotify
+- spdlog
 - [just](https://github.com/casey/just)（可选）
 - cargo
 
@@ -160,7 +162,8 @@ Ura 的 `layout` 模块允许用户自定义布局算法。以下是一个最简
 ```lua
 ura.layout.set("my-tiling", function(index)
   local output = ura.output.get_current()
-  return { x = output.usable.x, y = output.usable.y, width = output.usable.width, height = output.usable.height }
+  ura.win.resize(index, output.usable.width, output.usable.height)
+  ura.win.move(index, output.usable.x, output.usable.y)
 end)
 ```
 

@@ -2,7 +2,7 @@
 #include <CLI/CLI.hpp>
 #include <print>
 
-#define URA_PROJECT_VERSION "0.1.0"
+#define URA_PROJECT_VERSION "0.1.1"
 
 void run() {
   auto server = ura::UraServer::get_instance();

@@ -11,6 +11,7 @@ namespace ura::api {
 void terminate();
 void reload();
 void spawn(std::string cmd);
+void notify(std::string summary, std::string body);
 void set_hook(std::string name, sol::protected_function f);
 void notify_idle_activity();
 void set_idle_inhibitor(bool flag);
