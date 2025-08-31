@@ -129,6 +129,8 @@ void switch_or_create_workspace(int index) {
 void move_window_to_workspace(int window_index, sol::object workspace_id) {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
+  if (!output)
+    return;
   auto workspace = output->current_workspace;
   auto client = workspace->get_toplevel_at(window_index);
   if (!client)
@@ -146,6 +148,8 @@ void move_window_to_workspace(int window_index, sol::object workspace_id) {
 void move_window_to_workspace_or_create(int window_index, int workspace_index) {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
+  if (!output)
+    return;
   auto workspace = output->current_workspace;
   auto client = workspace->get_toplevel_at(window_index);
   if (!client)

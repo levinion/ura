@@ -60,6 +60,7 @@ UraWorkSpace* UraView::get_named_workspace_or_create(std::string name) {
   if (!this->named_workspaces.contains(name)) {
     auto workspace = UraWorkSpace::init();
     workspace->name = name;
+    this->named_workspaces[name] = workspace.get();
     this->workspaces.push_back(std::move(workspace));
   }
   return this->named_workspaces[name];
