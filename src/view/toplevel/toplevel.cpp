@@ -166,7 +166,8 @@ void UraToplevel::commit() {
     this->map();
   }
 
-  this->apply_layout(true);
+  if (this->first_apply_layout)
+    this->apply_layout(true);
 }
 
 void UraToplevel::focus() {
