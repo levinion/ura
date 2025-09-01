@@ -163,11 +163,36 @@ void UraToplevel::commit() {
     this->move(geo.x, geo.y);
     server->seat->focus(this);
     server->lua->try_execute_hook("window-new", this->index());
-    this->map();
   }
 
   if (this->first_apply_layout)
     this->apply_layout(true);
+}
+
+void UraToplevel::apply_layout(bool recursive) {
+  if (!this->prepared)
+    return;
+  if (!this->mapped && !this->first_apply_layout)
+    return;
+  auto server = UraServer::get_instance();
+  sol::protected_function layout = server->lua->layouts.contains(this->layout)
+    ? server->lua->layouts[this->layout]
+    : server->lua->layouts["tiling"];
+
+  auto prev_geo = this->geometry;
+
+  auto result = layout(this->index());
+  if (!result.valid())
+    return;
+  if (this->first_apply_layout) {
+    this->first_apply_layout = false;
+    this->map();
+  }
+  if (this->geometry != prev_geo && recursive) {
+    this->redraw_all_others();
+  }
+  if (this->first_commit_after_layout_change)
+    this->first_commit_after_layout_change = false;
 }
 
 void UraToplevel::focus() {
@@ -500,33 +525,6 @@ sol::table UraToplevel::to_lua_table() {
     this->first_commit_after_layout_change;
   table["z_index"] = this->z_index;
   return table;
-}
-
-void UraToplevel::apply_layout(bool recursive) {
-  if (!this->prepared)
-    return;
-  if (!this->mapped && !this->first_apply_layout)
-    return;
-  auto server = UraServer::get_instance();
-  sol::protected_function layout = server->lua->layouts.contains(this->layout)
-    ? server->lua->layouts[this->layout]
-    : server->lua->layouts["tiling"];
-
-  auto prev_geo = this->geometry;
-
-  auto result = layout(this->index());
-  if (!result.valid())
-    return;
-
-  if (this->geometry != prev_geo && recursive) {
-    if (this->first_apply_layout) {
-      this->first_apply_layout = false;
-      this->map();
-    }
-    this->redraw_all_others();
-  }
-  if (this->first_commit_after_layout_change)
-    this->first_commit_after_layout_change = false;
 }
 
 void UraToplevel::set_layout(std::string layout) {
