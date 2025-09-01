@@ -308,6 +308,7 @@ void UraToplevel::activate() {
     output->switch_workspace(this->workspace);
   }
   server->seat->focus(this);
+  this->map();
   server->lua->try_execute_hook("post-window-activate", current_toplevel_index);
 }
 
