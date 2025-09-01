@@ -67,3 +67,7 @@ extern "C" {
 #undef class
 #undef namespace
 #undef delete
+
+extern "C" {
+#include <wlr/backend/libinput.h>
+}

@@ -4,9 +4,15 @@ ura.opt.tilling.gap.outer = {
 
 ura.opt.tilling.gap.inner = 10
 
-ura.opt.output["DP-5"] = {
+ura.opt.device.outputs["DP-5"] = {
   height = 2160,
   width = 3840,
-  refresh = 119.879997,
+  refresh = 159.977005,
   scale = 2
+}
+
+ura.opt.mouse_move_factor = 1
+
+ura.opt.device.pointer_rules[".*"] = {
+  accel_profile = "flat"
 }

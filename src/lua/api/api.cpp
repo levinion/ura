@@ -13,6 +13,7 @@
 #include "ura/util/util.hpp"
 #include "ura/seat/seat.hpp"
 #include <fcntl.h>
+#include <libinput.h>
 #include <sys/types.h>
 #include <pwd.h>
 #include <unistd.h>
@@ -564,6 +565,11 @@ void spawn(std::string cmd) {
 
 void notify(std::string summary, std::string body) {
   log::notify(summary, body);
+}
+
+void set_pointer_accel_profile(std::string pattern, std::string profile) {
+  auto server = UraServer::get_instance();
+  server->seat->set_pointer_accel_profile(pattern, profile);
 }
 
 } // namespace ura::api

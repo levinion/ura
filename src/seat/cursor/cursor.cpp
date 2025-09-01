@@ -153,6 +153,7 @@ void UraCursor::process_motion(
     }
   }
 
+  wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
   wlr_relative_pointer_manager_v1_send_relative_motion(
     server->relative_pointer_manager,
     server->seat->seat,
@@ -162,7 +163,6 @@ void UraCursor::process_motion(
     dx_unaccel,
     dy_unaccel
   );
-  wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
 }
 
 void UraCursor::process_button(wlr_pointer_button_event* event) {

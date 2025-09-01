@@ -20,6 +20,7 @@ public:
   Vec<UraKeyboard*> keyboards;
   bool locked = false;
   bool keyboard_shortcuts_inhibited = false;
+  Vec<wlr_input_device*> devices;
 
   UraToplevel* focused_toplevel();
   std::optional<UraClient> focused_client();
@@ -30,6 +31,10 @@ public:
   void focus(UraLayerShell* layer_shell);
   void notify_idle_activity();
   void set_idle_inhibitor(bool flag);
+  void try_apply_pointer_rules(wlr_input_device* device);
+  void
+  set_pointer_accel_profile(wlr_input_device* device, std::string& profile);
+  void set_pointer_accel_profile(std::string& pattern, std::string& profile);
 };
 
 } // namespace ura

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <libinput.h>
 #include "ura/ura.hpp"
 #include "ura/util/vec.hpp"
 #include <string>

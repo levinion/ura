@@ -264,6 +264,8 @@ void UraServer::check_lua_reset() {
       output->try_set_custom_mode();
       output->current_workspace->redraw();
     }
+    for (auto device : server->seat->devices)
+      server->seat->try_apply_pointer_rules(device);
   }
 }
 

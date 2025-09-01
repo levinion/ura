@@ -94,6 +94,12 @@ local UraCursorTheme = {
   size = 0
 }
 
+--- @class UraPointerProfile: table
+local UraPointerProfile = {
+  ---@type "adaptive"|"flat"
+  accel_profile = "adaptive"
+}
+
 --- @class ura: table
 ura = {
   --- @class ura.api: table
@@ -176,6 +182,13 @@ ura = {
       --- @param name string The name of the cursor shape (e.g., "arrow", "hand").
       set_shape = function(name) end,
     },
+    --- @class ura.input.pointer: table
+    pointer = {
+      ---@param pattern string
+      ---@param profile "adaptive"|"flat"
+      ---@param notify boolean|nil
+      set_accel_profile = function(pattern, profile, notify) end,
+    }
   },
 
   --- @class ura.ws: table
@@ -306,8 +319,13 @@ ura = {
     mouse_scroll_factor = 1,
     --- @type number
     mouse_move_factor = 1,
-    --- @type table<string,UraOutputMode>
-    output = {}
+    --- @class ura.opt.device: table
+    device = {
+      --- @type table<string,UraOutputMode>
+      outputs = {},
+      --- @type table<string,UraPointerProfile>
+      pointer_rules = {},
+    },
   },
   --- @type table
   g = {}

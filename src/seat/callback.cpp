@@ -6,6 +6,7 @@ namespace ura {
 void on_new_input(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto device = static_cast<wlr_input_device*>(data);
+  server->seat->devices.push_back(device);
   switch (device->type) {
     case WLR_INPUT_DEVICE_KEYBOARD: {
       auto keyboard = new UraKeyboard {};
@@ -14,6 +15,7 @@ void on_new_input(wl_listener* listener, void* data) {
     }
     case WLR_INPUT_DEVICE_POINTER: {
       server->seat->cursor->attach_device(device);
+      server->seat->try_apply_pointer_rules(device);
       break;
     }
     default:

@@ -21,46 +21,22 @@ Lua 是一门通用语言，它被许多编辑器/LSP（如 lua_ls）支持，�
 - luajit
 - sol2
 - pixman
-- cmake
-- pkgconf
 - nlohmann-json
 - cli11
 - libnotify
 - spdlog
-- [just](https://github.com/casey/just)（可选）
+
+Make dependencies include:
+
 - cargo
+- make
+- cmake
+- pkgconf
 
 ```shell
 git clone https://github.com/levinion/ura.git
 cd ura
-just
-
-cd uracil 
-cargo build --release
-sudo install -Dm755 target/release/uracil /usr/bin/uracil
-```
-
-如果你不想使用 just，可以直接使用 cmake 构建：
-
-```shell
-git clone https://github.com/levinion/ura.git
-cd ura
-mkdir -p include/protocols
-wayland-scanner server-header ./protocols/xdg-shell.xml include/protocols/xdg-shell-protocol.h
-wayland-scanner server-header ./protocols/wlr-layer-shell-unstable-v1.xml include/protocols/wlr-layer-shell-unstable-v1-protocol.h
-wayland-scanner server-header ./protocols/wlr-output-power-management-unstable-v1.xml include/protocols/wlr-output-power-management-unstable-v1-protocol.h
-wayland-scanner server-header ./protocols/cursor-shape-v1.xml include/protocols/cursor-shape-v1-protocol.h
-wayland-scanner server-header ./protocols/pointer-constraints-unstable-v1.xml include/protocols/pointer-constraints-unstable-v1-protocol.h
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j$(nproc)
-
-sudo install -Dm755 "build/ura" "/usr/bin/ura"
-sudo install -Dm644 "LICENSE" "/usr/share/licenses/ura/LICENSE"
-sudo install -d "/etc/ura"
-sudo install -Dm644 "assets/init.lua" "/etc/ura/"
-sudo install -Dm644 "assets/ura.desktop" "/usr/share/wayland-sessions/ura.desktop"
-sudo install -d "/usr/share/lua/5.1"
-sudo cp -r "lua/ura" "/usr/share/lua/5.1/"
+make
 
 cd uracil 
 cargo build --release

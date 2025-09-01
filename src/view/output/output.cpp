@@ -273,7 +273,7 @@ bool UraOutput::set_mode(sol::table& mode) {
 
 bool UraOutput::try_set_custom_mode() {
   auto server = UraServer::get_instance();
-  auto output_table = server->lua->fetch<sol::table>("opt.output");
+  auto output_table = server->lua->fetch<sol::table>("opt.device.outputs");
   if (output_table) {
     auto custom_mode =
       output_table.value()[this->name].get<std::optional<sol::table>>();

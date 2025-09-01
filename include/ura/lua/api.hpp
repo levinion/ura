@@ -45,6 +45,7 @@ void swap_window(int index, int target);
 void redraw_window(int index);
 // input
 void set_keyboard_repeat(int rate, int delay);
+void set_pointer_accel_profile(std::string pattern, std::string profile);
 void set_cursor_theme(sol::object table);
 void set_cursor_visible(bool flag);
 bool is_cursor_visible();
