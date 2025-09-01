@@ -13,7 +13,7 @@ class UraWorkSpace;
 
 class UraToplevel {
 public:
-  bool mapped = true;
+  bool mapped = false;
   bool destroying = false;
   bool draggable = false;
   std::string layout = "tiling";

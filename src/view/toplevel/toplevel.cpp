@@ -22,6 +22,8 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     server->view->get_scene_tree_or_create(this->z_index),
     xdg_toplevel->base
   );
+  // hide until prepared
+  this->unmap();
   this->output = output->name;
   this->workspace = output->current_workspace;
   this->workspace->add(this);
@@ -122,7 +124,7 @@ void UraToplevel::commit() {
   auto output = server->view->get_output_by_name(this->output);
   if (!output)
     return;
-  if (!this->mapped || !this->xdg_toplevel->base->initialized) {
+  if (!this->xdg_toplevel->base->initialized) {
     return;
   }
   // first commit
@@ -150,6 +152,7 @@ void UraToplevel::commit() {
     return;
   }
 
+  // second commit
   if (!this->prepared) {
     this->prepared = true;
     auto geo = Vec4<int>::from(this->xdg_toplevel->base->geometry);
@@ -160,6 +163,7 @@ void UraToplevel::commit() {
     this->move(geo.x, geo.y);
     server->seat->focus(this);
     server->lua->try_execute_hook("window-new", this->index());
+    this->map();
   }
 
   this->apply_layout(true);
@@ -180,8 +184,6 @@ void UraToplevel::focus() {
 
   // move to top of stack and focus this
   workspace->focus_stack.move_to_top(this);
-  if (!this->mapped)
-    this->map();
   wlr_scene_node_raise_to_top(&this->scene_tree->node);
   wlr_xdg_toplevel_set_activated(this->xdg_toplevel, true);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
@@ -384,21 +386,24 @@ void UraToplevel::close() {
 void UraToplevel::map() {
   this->mapped = true;
   wlr_scene_node_set_enabled(&this->scene_tree->node, true);
-  wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
-  wlr_foreign_toplevel_handle_v1_set_title(
-    this->foreign_handle,
-    this->title().data()
-  );
-  wlr_foreign_toplevel_handle_v1_set_app_id(
-    this->foreign_handle,
-    this->app_id().data()
-  );
+  if (this->xdg_toplevel->base->initialized) {
+    wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
+    wlr_foreign_toplevel_handle_v1_set_title(
+      this->foreign_handle,
+      this->title().data()
+    );
+    wlr_foreign_toplevel_handle_v1_set_app_id(
+      this->foreign_handle,
+      this->app_id().data()
+    );
+  }
 }
 
 void UraToplevel::unmap() {
   this->mapped = false;
   wlr_scene_node_set_enabled(&this->scene_tree->node, false);
-  wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
+  if (this->xdg_toplevel->base->initialized)
+    wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
 }
 
 std::string UraToplevel::title() {
