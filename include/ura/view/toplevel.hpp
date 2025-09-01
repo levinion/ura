@@ -18,7 +18,6 @@ public:
   bool draggable = false;
   std::string layout = "tiling";
   std::optional<std::string> last_layout;
-  bool prepared = false;
   bool first_commit_after_layout_change = true;
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
@@ -66,6 +65,8 @@ private:
   void set_border_color(std::array<float, 4>& color);
   void apply_layout(bool recursive);
   std::unordered_map<std::string, Vec4<int>> layout_geometry;
+  bool prepared = false;
+  bool first_apply_layout = true;
 };
 
 } // namespace ura

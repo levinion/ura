@@ -384,6 +384,8 @@ void UraToplevel::close() {
 }
 
 void UraToplevel::map() {
+  if (this->mapped)
+    return;
   this->mapped = true;
   wlr_scene_node_set_enabled(&this->scene_tree->node, true);
   if (this->xdg_toplevel->base->initialized) {
@@ -500,7 +502,9 @@ sol::table UraToplevel::to_lua_table() {
 }
 
 void UraToplevel::apply_layout(bool recursive) {
-  if (!this->mapped || !this->prepared)
+  if (!this->prepared)
+    return;
+  if (!this->mapped && !this->first_apply_layout)
     return;
   auto server = UraServer::get_instance();
   sol::protected_function layout = server->lua->layouts.contains(this->layout)
@@ -513,9 +517,13 @@ void UraToplevel::apply_layout(bool recursive) {
   if (!result.valid())
     return;
 
-  if (this->geometry != prev_geo && recursive)
+  if (this->geometry != prev_geo && recursive) {
+    if (this->first_apply_layout) {
+      this->first_apply_layout = false;
+      this->map();
+    }
     this->redraw_all_others();
-
+  }
   if (this->first_commit_after_layout_change)
     this->first_commit_after_layout_change = false;
 }
