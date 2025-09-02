@@ -1,4 +1,5 @@
 #include <memory>
+#include "ura/core/dispatcher.hpp"
 #include "ura/core/log.hpp"
 #include "ura/seat/cursor.hpp"
 #include "ura/core/ipc.hpp"
@@ -16,12 +17,15 @@ namespace ura {
 
 UraServer* UraServer::init() {
   log::init();
+
+  this->setup_signal();
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
-  this->setup_signal();
+  this->ipc = UraIPC::init();
   this->lua = Lua::init();
   this->lua->try_execute_init();
   this->lua->try_execute_hook("prepare");
+
   this->setup_base();
   this->setup_drm();
   this->setup_compositor();
@@ -284,54 +288,33 @@ void UraServer::run() {
     exit(1);
   }
 
-  // run ipc
-  auto ipc = UraIPC::init();
-
   // set env
   setenv("WAYLAND_DISPLAY", socket, true);
   log::info("Running Wayland compositor on WAYLAND_DISPLAY={}", socket);
 
   // run event loop
   auto event_loop = wl_display_get_event_loop(this->display);
-  auto wl_fd = wl_event_loop_get_fd(event_loop);
-  auto ipc_fd = ipc->fd;
-
-  int epoll_fd = epoll_create1(0);
-  assert(epoll_fd != -1);
-
-  int ret;
-  epoll_event event {};
-  event.events = EPOLLIN;
-  event.data.fd = wl_fd;
-  ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, wl_fd, &event);
-  assert(ret != -1);
-  event.events = EPOLLIN;
-  event.data.fd = ipc_fd;
-  ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, ipc_fd, &event);
-  assert(ret != -1);
-  epoll_event events[1024];
+  auto dispatcher = UraDispatcher<1024>();
+  dispatcher.init(event_loop);
+  // wayland event_loop
+  dispatcher.add_task(wl_event_loop_get_fd(event_loop), [=, this]() {
+    if (wl_event_loop_dispatch(event_loop, 0) == -1)
+      return false;
+    wl_display_flush_clients(this->display);
+    return true;
+  });
+  // ura ipc event_loop
+  dispatcher.add_task(ipc->fd, [=, this]() {
+    ipc->try_handle();
+    this->check_lua_reset();
+    return true;
+  });
 
   this->lua->try_execute_hook("ready");
 
   while (!this->quit) {
-    int nfds = epoll_wait(epoll_fd, events, 1024, -1);
-    if (nfds == -1) {
-      if (errno == EINTR) {
-        continue;
-      }
+    if (!dispatcher.dispatch())
       break;
-    }
-    for (int i = 0; i < nfds; i++) {
-      auto current_fd = events[i].data.fd;
-      if (current_fd == wl_fd) {
-        if (wl_event_loop_dispatch(event_loop, 0) == -1)
-          return;
-        wl_display_flush_clients(this->display);
-      } else if (current_fd == ipc_fd) {
-        ipc->try_handle();
-      }
-    }
-    this->check_lua_reset();
   }
 }
 

@@ -4,6 +4,7 @@
 #include "ura/core/log.hpp"
 #include "ura/ura.hpp"
 #include "ura/view/workspace.hpp"
+#include "ura/core/ipc.hpp"
 
 namespace ura {
 // extern
@@ -48,6 +49,7 @@ public:
   std::unique_ptr<Lua> lua;
   std::unique_ptr<UraSeat> seat;
   std::unique_ptr<UraView> view;
+  std::unique_ptr<UraIPC> ipc;
 
   static UraServer* get_instance();
   UraServer* init();
