@@ -355,6 +355,7 @@ void UraOutput::switch_workspace(UraWorkSpace* workspace) {
   this->current_workspace->disable();
   this->current_workspace = workspace;
   this->current_workspace->enable();
+  this->current_workspace->redraw();
   server->lua->try_execute_hook("workspace-change");
 }
 

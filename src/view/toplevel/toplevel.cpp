@@ -271,6 +271,7 @@ void UraToplevel::move_to_workspace(int index) {
   this->workspace->remove(this);
   if (this->workspace->focus_stack.top())
     server->seat->focus(this->workspace->focus_stack.top().value());
+  this->workspace->redraw();
   this->workspace = target;
   this->workspace->add(this);
 }
