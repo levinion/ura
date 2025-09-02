@@ -263,13 +263,12 @@ void UraServer::check_lua_reset() {
     server->lua->setup();
     server->lua->try_execute_init();
     server->lua->try_execute_hook("reload");
+    for (auto pointer : server->seat->pointers) pointer->try_apply_rules();
     auto output = server->view->current_output();
     if (output) {
       output->try_set_custom_mode();
       output->current_workspace->redraw();
     }
-    for (auto device : server->seat->devices)
-      server->seat->try_apply_pointer_rules(device);
   }
 }
 
@@ -294,27 +293,26 @@ void UraServer::run() {
 
   // run event loop
   auto event_loop = wl_display_get_event_loop(this->display);
-  auto dispatcher = UraDispatcher<1024>();
-  dispatcher.init(event_loop);
+  this->dispatcher = UraDispatcher<1024>::init(event_loop);
   // wayland event_loop
-  dispatcher.add_task(wl_event_loop_get_fd(event_loop), [=, this]() {
+  dispatcher->add_task(wl_event_loop_get_fd(event_loop), [=, this]() {
     if (wl_event_loop_dispatch(event_loop, 0) == -1)
       return false;
     wl_display_flush_clients(this->display);
     return true;
   });
   // ura ipc event_loop
-  dispatcher.add_task(ipc->fd, [=, this]() {
+  dispatcher->add_task(ipc->fd, [=, this]() {
     ipc->try_handle();
-    this->check_lua_reset();
     return true;
   });
 
   this->lua->try_execute_hook("ready");
 
   while (!this->quit) {
-    if (!dispatcher.dispatch())
+    if (!dispatcher->dispatch())
       break;
+    this->check_lua_reset();
   }
 }
 

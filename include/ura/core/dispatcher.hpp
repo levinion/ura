@@ -3,6 +3,7 @@
 #include <array>
 #include <cassert>
 #include <functional>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 #include "ura/ura.hpp"
@@ -12,10 +13,13 @@ namespace ura {
 template<int MAXEVENTS>
 class UraDispatcher {
 public:
-  void init(wl_event_loop* event_loop) {
-    this->fd = epoll_create1(0);
+  static std::unique_ptr<UraDispatcher<MAXEVENTS>>
+  init(wl_event_loop* event_loop) {
+    auto dispatcher = std::make_unique<UraDispatcher<MAXEVENTS>>();
+    dispatcher->fd = epoll_create1(0);
     assert(this->fd != -1);
-    this->event_loop = event_loop;
+    dispatcher->event_loop = event_loop;
+    return dispatcher;
   }
 
   // if it goes wrong, then a false value will be returned

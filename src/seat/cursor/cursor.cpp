@@ -1,4 +1,5 @@
 #include "ura/seat/cursor.hpp"
+#include "ura/seat/pointer.hpp"
 #include "ura/view/client.hpp"
 #include "ura/view/view.hpp"
 #include "ura/core/runtime.hpp"
@@ -47,10 +48,8 @@ void UraCursor::init() {
 }
 
 void UraCursor::relative_move(wlr_pointer_motion_event* event) {
-  auto server = UraServer::get_instance();
-  server->seat->notify_idle_activity();
-  auto factor =
-    server->lua->fetch<double>("opt.mouse_move_factor").value_or(1.);
+  auto pointer = UraPointer::from(event->pointer);
+  auto factor = pointer->move_speed;
   wlr_cursor_move(
     this->cursor,
     &event->pointer->base,
@@ -69,6 +68,9 @@ void UraCursor::relative_move(wlr_pointer_motion_event* event) {
       event->unaccel_dx * factor,
       event->unaccel_dy * factor
     );
+
+  auto server = UraServer::get_instance();
+  server->seat->notify_idle_activity();
 }
 
 void UraCursor::absolute_move(wlr_pointer_motion_absolute_event* event) {
@@ -279,9 +281,8 @@ void UraCursor::process_cursor_mode_resize() {
 
 void UraCursor::process_axis(wlr_pointer_axis_event* event) {
   auto server = UraServer::get_instance();
-  server->seat->notify_idle_activity();
-  auto factor =
-    server->lua->fetch<double>("opt.mouse_scroll_factor").value_or(1.);
+  auto pointer = UraPointer::from(event->pointer);
+  auto factor = pointer->scroll_speed;
   wlr_seat_pointer_notify_axis(
     server->seat->seat,
     event->time_msec,
@@ -291,5 +292,6 @@ void UraCursor::process_axis(wlr_pointer_axis_event* event) {
     event->source,
     event->relative_direction
   );
+  server->seat->notify_idle_activity();
 }
 } // namespace ura

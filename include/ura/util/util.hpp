@@ -109,4 +109,13 @@ inline std::string to_lower_t(const std::string& word) {
   }
   return s;
 }
+
+inline std::optional<libinput_config_accel_profile>
+accel_profile_from_str(std::string_view profile) {
+  if (profile == "flat")
+    return LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT;
+  else if (profile == "adaptive")
+    return LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
+  return {};
+}
 } // namespace ura

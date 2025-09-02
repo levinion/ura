@@ -567,9 +567,14 @@ void notify(std::string summary, std::string body) {
   log::notify(summary, body);
 }
 
-void set_pointer_accel_profile(std::string pattern, std::string profile) {
+void set_pointer_properties(std::string pattern, sol::object obj) {
+  if (!obj.is<sol::table>())
+    return;
+  auto properties = obj.as<sol::table>();
   auto server = UraServer::get_instance();
-  server->seat->set_pointer_accel_profile(pattern, profile);
+  for (auto pointer : server->seat->match_pointers(pattern)) {
+    pointer->set_properties(properties);
+  }
 }
 
 } // namespace ura::api

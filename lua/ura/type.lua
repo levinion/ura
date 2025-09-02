@@ -94,10 +94,14 @@ local UraCursorTheme = {
   size = 0
 }
 
---- @class UraPointerProfile: table
+--- @class UraPointerProperties: table
 local UraPointerProfile = {
   ---@type "adaptive"|"flat"
-  accel_profile = "adaptive"
+  accel_profile = "adaptive",
+  ---@type number
+  move_speed = 1,
+  ---@type number
+  scroll_speed = 1,
 }
 
 --- @class ura: table
@@ -185,9 +189,8 @@ ura = {
     --- @class ura.input.pointer: table
     pointer = {
       ---@param pattern string
-      ---@param profile "adaptive"|"flat"
-      ---@param notify boolean|nil
-      set_accel_profile = function(pattern, profile, notify) end,
+      ---@param properties UraPointerProperties
+      set_properties = function(pattern, properties) end,
     }
   },
 
@@ -315,15 +318,11 @@ ura = {
         inner = 10,
       },
     },
-    --- @type number
-    mouse_scroll_factor = 1,
-    --- @type number
-    mouse_move_factor = 1,
     --- @class ura.opt.device: table
     device = {
       --- @type table<string,UraOutputMode>
       outputs = {},
-      --- @type table<string,UraPointerProfile>
+      --- @type table<string,UraPointerProperties>
       pointer_rules = {},
     },
   },

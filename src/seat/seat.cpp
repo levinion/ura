@@ -119,70 +119,13 @@ void UraSeat::set_idle_inhibitor(bool flag) {
   wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, flag);
 }
 
-std::optional<libinput_config_accel_profile>
-accel_profile_from_str(std::string_view profile) {
-  if (profile == "flat")
-    return LIBINPUT_CONFIG_ACCEL_PROFILE_FLAT;
-  else if (profile == "adaptive")
-    return LIBINPUT_CONFIG_ACCEL_PROFILE_ADAPTIVE;
-  return {};
-}
-
-void UraSeat::set_pointer_accel_profile(
-  wlr_input_device* wlr_device,
-  std::string& _profile
-) {
-  auto profile = accel_profile_from_str(_profile);
-  if (!profile)
-    return;
-  if (!wlr_input_device_is_libinput(wlr_device))
-    return;
-  auto device = wlr_libinput_get_device_handle(wlr_device);
-  if (!libinput_device_config_accel_is_available(device)
-      || libinput_device_config_accel_get_profile(device) == profile.value())
-    return;
-  libinput_device_config_accel_set_profile(device, profile.value());
-}
-
-void UraSeat::set_pointer_accel_profile(
-  std::string& pattern,
-  std::string& _profile
-) {
+std::vector<UraPointer*> UraSeat::match_pointers(std::string& pattern) {
+  std::vector<UraPointer*> v;
   auto reg = std::regex(pattern);
-  for (auto wlr_device : this->devices) {
-    if (!wlr_input_device_is_libinput(wlr_device))
-      continue;
-    auto device = wlr_libinput_get_device_handle(wlr_device);
-    std::string device_name = libinput_device_get_name(device);
-    if (std::regex_match(device_name, reg)) {
-      this->set_pointer_accel_profile(wlr_device, _profile);
-    }
+  for (auto pointer : this->pointers) {
+    if (std::regex_match(pointer->name, reg))
+      v.push_back(pointer);
   }
+  return v;
 }
-
-void UraSeat::try_apply_pointer_rules(wlr_input_device* wlr_device) {
-  auto server = UraServer::get_instance();
-  if (!wlr_input_device_is_libinput(wlr_device))
-    return;
-  auto device = wlr_libinput_get_device_handle(wlr_device);
-  std::string device_name = libinput_device_get_name(device);
-  auto rules = server->lua->fetch<sol::table>("opt.device.pointer_rules");
-  if (rules) {
-    for (auto const& rule : rules.value()) {
-      auto [key, value] = rule;
-      if (!key.is<std::string>() || !value.is<sol::table>())
-        continue;
-      auto pattern = key.as<std::string>();
-      auto table = value.as<sol::table>();
-      auto reg = std::regex(pattern);
-      if (!std::regex_match(device_name, reg))
-        continue;
-      auto profile = table.get<std::optional<std::string>>("accel_profile");
-      if (profile)
-        this->set_pointer_accel_profile(wlr_device, profile.value());
-      // TODO: more rules should be added here
-    }
-  }
-}
-
 } // namespace ura

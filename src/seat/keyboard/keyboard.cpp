@@ -43,8 +43,6 @@ void UraKeyboard::init(wlr_input_device* device) {
     ->register_callback(&device->events.destroy, on_keyboard_destroy, this);
   // attach this keyboard to seat
   wlr_seat_set_keyboard(server->seat->seat, keyboard);
-
-  server->seat->keyboards.push_back(this);
 }
 
 void UraKeyboard::process_modifiers() {

@@ -22,6 +22,7 @@ UraServer* UraServer::get_instance() {
   return UraServer::instance;
 }
 
+// this should never be called besides through lua api
 void UraServer::terminate() {
   this->quit = true;
 }

@@ -74,7 +74,7 @@ void Lua::setup() {
   this->set("input.cursor.set_visible", api::set_cursor_visible);
   this->set("input.cursor.is_visible", api::is_cursor_visible);
   this->set("input.cursor.set_shape", api::set_cursor_shape);
-  this->set("input.pointer.set_accel_profile", api::set_pointer_accel_profile);
+  this->set("input.pointer.set_properties", api::set_pointer_properties);
   // workspace
   this->set("ws.create", api::create_workspace);
   this->set("ws.switch", api::switch_workspace);
@@ -120,8 +120,6 @@ void Lua::setup() {
   this->set("opt.tilling.gap.outer.bottom", 10);
   this->set("opt.tilling.gap.outer.right", 10);
   this->set("opt.tilling.gap.inner", 10);
-  this->set("opt.mouse_scroll_factor", 1.);
-  this->set("opt.mouse_move_factor", 1.);
   this->set("opt.device.outputs", this->state.create_table());
   this->set("opt.device.pointer_rules", this->state.create_table());
   // override

@@ -1,21 +1,24 @@
 #include "ura/core/server.hpp"
 #include "ura/seat/keyboard.hpp"
+#include "ura/seat/pointer.hpp"
 #include "ura/seat/seat.hpp"
 
 namespace ura {
 void on_new_input(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto device = static_cast<wlr_input_device*>(data);
-  server->seat->devices.push_back(device);
   switch (device->type) {
     case WLR_INPUT_DEVICE_KEYBOARD: {
       auto keyboard = new UraKeyboard {};
       keyboard->init(device);
+      server->seat->keyboards.push_back(keyboard);
       break;
     }
     case WLR_INPUT_DEVICE_POINTER: {
       server->seat->cursor->attach_device(device);
-      server->seat->try_apply_pointer_rules(device);
+      auto pointer = new UraPointer {};
+      pointer->init(device);
+      server->seat->pointers.push_back(pointer);
       break;
     }
     default:
