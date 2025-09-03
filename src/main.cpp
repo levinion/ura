@@ -2,7 +2,7 @@
 #include <CLI/CLI.hpp>
 #include <print>
 
-#define URA_PROJECT_VERSION "0.1.1"
+#define URA_PROJECT_VERSION "0.1.4"
 
 void run() {
   auto server = ura::UraServer::get_instance();
@@ -11,7 +11,7 @@ void run() {
 }
 
 void print_version() {
-  std::println(URA_PROJECT_VERSION);
+  std::println("Ura {}", URA_PROJECT_VERSION);
 }
 
 int main(int argc, char** argv) {
