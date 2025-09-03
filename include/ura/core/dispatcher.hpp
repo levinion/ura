@@ -16,12 +16,10 @@ namespace ura {
 template<int MAXEVENTS>
 class UraDispatcher {
 public:
-  static std::unique_ptr<UraDispatcher<MAXEVENTS>>
-  init(wl_event_loop* event_loop) {
+  static std::unique_ptr<UraDispatcher<MAXEVENTS>> init() {
     auto dispatcher = std::make_unique<UraDispatcher<MAXEVENTS>>();
     dispatcher->fd = epoll_create1(0);
     assert(this->fd != -1);
-    dispatcher->event_loop = event_loop;
     return dispatcher;
   }
 
@@ -79,9 +77,7 @@ public:
       // consume the event
       uint64_t expirations;
       auto n = read(fd, &expirations, sizeof(expirations));
-      if (n != sizeof(expirations)) {
-        return false;
-      }
+      assert(n == sizeof(expirations));
       bool success = callback();
       this->remove_task(fd);
       close(fd);
@@ -91,7 +87,6 @@ public:
 
 private:
   int fd;
-  wl_event_loop* event_loop;
   std::array<epoll_event, MAXEVENTS> events;
   std::unordered_map<int, std::function<bool()>> tasks;
 };

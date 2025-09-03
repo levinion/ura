@@ -22,6 +22,7 @@ UraServer* UraServer::init() {
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
   this->ipc = UraIPC::init();
+  this->dispatcher = UraDispatcher<1024>::init();
   this->lua = Lua::init();
   this->lua->try_execute_init();
   this->lua->try_execute_hook("prepare");
@@ -291,9 +292,7 @@ void UraServer::run() {
   setenv("WAYLAND_DISPLAY", socket, true);
   log::info("Running Wayland compositor on WAYLAND_DISPLAY={}", socket);
 
-  // run event loop
   auto event_loop = wl_display_get_event_loop(this->display);
-  this->dispatcher = UraDispatcher<1024>::init(event_loop);
   // wayland event_loop
   this->dispatcher->add_task(wl_event_loop_get_fd(event_loop), [=, this]() {
     if (wl_event_loop_dispatch(event_loop, 0) == -1)
