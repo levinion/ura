@@ -195,14 +195,13 @@ bool UraOutput::configure_layers() {
 }
 
 wlr_output_mode*
-UraOutput::find_nearest_mode(int width, int height, float refresh) {
+UraOutput::find_nearest_mode(int width, int height, int refresh) {
   wlr_output_mode* nearest_mode = nullptr;
-  auto min_diff = -1.f;
+  auto min_diff = -1;
   wlr_output_mode* mode = nullptr;
   wl_list_for_each(mode, &this->output->modes, link) {
     if (mode->width == width && mode->height == height) {
-      auto diff =
-        std::abs(static_cast<float>(mode->refresh) - refresh * 1000.f);
+      auto diff = std::abs(mode->refresh - refresh);
       if (min_diff < 0 || diff < min_diff) {
         min_diff = diff;
         nearest_mode = mode;
@@ -237,28 +236,30 @@ bool UraOutput::set_mode(sol::table& mode) {
   auto _mode =
     this->mode ? this->mode.value() : *wlr_output_preferred_mode(this->output);
   auto height = server->lua->fetch<int>(mode, "height");
-  if (height && height.value() != this->output->height) {
+  if (height && height.value() != _mode.height) {
     _mode.height = height.value();
     _mode.preferred = false;
   }
   auto width = server->lua->fetch<int>(mode, "width");
-  if (width && width.value() != this->output->width) {
+  if (width && width.value() != _mode.width) {
     _mode.width = width.value();
     _mode.preferred = false;
   }
   auto refresh = server->lua->fetch<float>(mode, "refresh");
-  if (refresh && refresh.value() != this->output->refresh) {
+  if (refresh && refresh.value() != _mode.refresh) {
     _mode.refresh = refresh.value() * 1000;
     _mode.preferred = false;
   }
-  auto scale = server->lua->fetch<float>(mode, "scale");
-  if (scale && scale.value() != this->output->scale) {
-    this->output->scale = scale.value();
-  }
 
   auto result = this->set_mode(_mode);
-  if (result)
+  if (result) {
+    // apply scale only if the properties are successfully set.
+    auto scale = server->lua->fetch<float>(mode, "scale");
+    if (scale && scale.value() != this->output->scale) {
+      this->output->scale = scale.value();
+    }
     return true;
+  }
   log::warn(
     "failed to set custom mode as {}, fallback to preferred mode",
     std::format(

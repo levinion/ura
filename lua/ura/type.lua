@@ -217,9 +217,9 @@ ura = {
 
   --- @class ura.output
   output = {
-    --- @return UraOutput
+    --- @return UraOutput|nil
     get_current = function() end,
-    --- @return UraOutput
+    --- @return UraOutput|nil
     --- @param name string
     get = function(name) end,
     --- @param name string

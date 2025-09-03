@@ -356,9 +356,12 @@ void center_window(int index) {
   toplevel.value()->center();
 }
 
-sol::table get_current_output() {
+std::optional<sol::table> get_current_output() {
   auto server = UraServer::get_instance();
-  return server->view->current_output()->to_lua_table();
+  auto output = server->view->current_output();
+  if (output)
+    return output->to_lua_table();
+  return {};
 }
 
 void append_lua_package_path(std::string path) {
@@ -527,10 +530,12 @@ void redraw_current_workspace() {
   workspace->redraw();
 }
 
-sol::table get_output(std::string name) {
+std::optional<sol::table> get_output(std::string name) {
   auto server = UraServer::get_instance();
   auto output = server->view->get_output_by_name(name);
-  return output->to_lua_table();
+  if (output)
+    return output->to_lua_table();
+  return {};
 }
 
 void set_output_mode(std::string name, sol::object obj) {
@@ -539,7 +544,8 @@ void set_output_mode(std::string name, sol::object obj) {
   auto mode = obj.as<sol::table>();
   auto server = UraServer::get_instance();
   auto output = server->view->get_output_by_name(name);
-  output->set_mode(mode);
+  if (output)
+    output->set_mode(mode);
 }
 
 void spawn(std::string cmd) {

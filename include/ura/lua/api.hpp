@@ -61,8 +61,8 @@ std::optional<sol::table> get_workspace(sol::object id);
 sol::table list_workspaces();
 void redraw_current_workspace();
 // output
-sol::table get_current_output();
-sol::table get_output(std::string name);
+std::optional<sol::table> get_current_output();
+std::optional<sol::table> get_output(std::string name);
 void set_output_dpms(std::string name, bool flag);
 void set_output_mode(std::string name, sol::object mode);
 // layout
