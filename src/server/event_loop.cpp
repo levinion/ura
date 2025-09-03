@@ -295,14 +295,14 @@ void UraServer::run() {
   auto event_loop = wl_display_get_event_loop(this->display);
   this->dispatcher = UraDispatcher<1024>::init(event_loop);
   // wayland event_loop
-  dispatcher->add_task(wl_event_loop_get_fd(event_loop), [=, this]() {
+  this->dispatcher->add_task(wl_event_loop_get_fd(event_loop), [=, this]() {
     if (wl_event_loop_dispatch(event_loop, 0) == -1)
       return false;
     wl_display_flush_clients(this->display);
     return true;
   });
   // ura ipc event_loop
-  dispatcher->add_task(ipc->fd, [=, this]() {
+  this->dispatcher->add_task(ipc->fd, [=, this]() {
     ipc->try_handle();
     return true;
   });

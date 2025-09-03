@@ -112,6 +112,9 @@ ura = {
     reload = function() end,
     --- @param cmd string
     spawn = function(cmd) end,
+    --- @param f function
+    --- @param milliseconds integer
+    schedule = function(f, milliseconds) end,
     --- @param summary string
     --- @param body string
     notify = function(summary, body) end,

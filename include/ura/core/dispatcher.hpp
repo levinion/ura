@@ -2,11 +2,14 @@
 #include <sys/epoll.h>
 #include <array>
 #include <cassert>
+#include <cstdint>
+#include <ctime>
 #include <functional>
 #include <memory>
 #include <unordered_map>
 #include <vector>
 #include "ura/ura.hpp"
+#include <sys/timerfd.h>
 
 namespace ura {
 
@@ -48,6 +51,42 @@ public:
     auto ret = epoll_ctl(this->fd, EPOLL_CTL_ADD, fd, &event);
     assert(ret != -1);
     this->tasks[fd] = callback;
+  }
+
+  void remove_task(int fd) {
+    assert(this->tasks.contains(fd));
+    auto ret = epoll_ctl(this->fd, EPOLL_CTL_DEL, fd, nullptr);
+    assert(ret != -1);
+    this->tasks.erase(fd);
+  }
+
+  void schedule_task(std::function<bool()> callback, uint64_t millisecond) {
+    auto fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+    if (fd == -1)
+      return;
+    itimerspec timer_spec;
+    // ms to s and ns
+    timer_spec.it_value.tv_sec = millisecond / 1000;
+    timer_spec.it_value.tv_nsec = (millisecond % 1000) * 1000000;
+    // interval: only exec the task once
+    timer_spec.it_interval.tv_sec = 0;
+    timer_spec.it_interval.tv_nsec = 0;
+    // flag 0 means relative time
+    auto ret = timerfd_settime(fd, 0, &timer_spec, nullptr);
+    assert(ret != -1);
+
+    this->add_task(fd, [=, this]() {
+      // consume the event
+      uint64_t expirations;
+      auto n = read(fd, &expirations, sizeof(expirations));
+      if (n != sizeof(expirations)) {
+        return false;
+      }
+      bool success = callback();
+      this->remove_task(fd);
+      close(fd);
+      return success;
+    });
   }
 
 private:

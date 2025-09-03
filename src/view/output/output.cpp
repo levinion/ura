@@ -6,11 +6,9 @@
 #include "ura/util/vec.hpp"
 #include "ura/view/layer_shell.hpp"
 #include "ura/view/output.hpp"
-#include "ura/view/layer_shell.hpp"
 #include "ura/view/view.hpp"
 #include "ura/view/workspace.hpp"
 #include "ura/lua/lua.hpp"
-#include <thread>
 
 namespace ura {
 
@@ -401,11 +399,13 @@ void UraOutput::set_dpms_mode(bool flag) {
 
   auto server = UraServer::get_instance();
   wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, true);
-  auto t = std::thread([=]() {
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, false);
-  });
-  t.detach();
+  server->dispatcher->schedule_task(
+    [=]() {
+      wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, false);
+      return true;
+    },
+    1000
+  );
 }
 
 } // namespace ura

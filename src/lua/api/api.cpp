@@ -576,4 +576,21 @@ void set_pointer_properties(std::string pattern, sol::object obj) {
   }
 }
 
+void schedule(sol::protected_function f, int64_t time) {
+  if (time < 0)
+    return;
+  else if (time == 0) {
+    f();
+    return;
+  }
+  auto server = UraServer::get_instance();
+  server->dispatcher->schedule_task(
+    [=]() {
+      f();
+      return true;
+    },
+    time
+  );
+}
+
 } // namespace ura::api

@@ -31,6 +31,7 @@ impl UracilHelper {
             "ura.api",
             "ura.api.terminate",
             "ura.api.spawn",
+            "ura.api.schedule",
             "ura.api.notify",
             "ura.api.reload",
             "ura.api.notify_idle_activity",
@@ -62,6 +63,7 @@ impl UracilHelper {
             "ura.input.cursor.set_visible",
             "ura.input.cursor.is_visible",
             "ura.input.cursor.set_shape",
+            "ura.input.pointer.set_properties",
             // ura.ws
             "ura.ws",
             "ura.ws.create",
@@ -78,6 +80,7 @@ impl UracilHelper {
             "ura.output.get_current",
             "ura.output.get",
             "ura.output.set_dpms",
+            "ura.output.set_mode",
             // ura.layout
             "ura.layout",
             "ura.layout.set",
