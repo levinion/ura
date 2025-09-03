@@ -42,7 +42,7 @@ int UraWorkSpace::index() {
   std::unreachable();
 }
 
-std::optional<UraToplevel*> UraWorkSpace::get_toplevel_at(int index) {
+UraToplevel* UraWorkSpace::get_toplevel_at(int index) {
   auto toplevel = this->toplevels.get(index);
   return toplevel ? *toplevel : nullptr;
 }

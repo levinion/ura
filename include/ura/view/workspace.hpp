@@ -34,7 +34,7 @@ public:
   void enable();
   void disable();
   int index();
-  std::optional<UraToplevel*> get_toplevel_at(int index);
+  UraToplevel* get_toplevel_at(int index);
   sol::table to_lua_table();
   void add(UraToplevel* toplevel);
   void remove(UraToplevel* toplevel);

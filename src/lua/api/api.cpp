@@ -80,11 +80,9 @@ void terminate() {
 void close_window(int index) {
   auto server = UraServer::get_instance();
   auto workspace = server->view->current_output()->current_workspace;
-  auto client = workspace->get_toplevel_at(index);
-  if (client) {
-    auto toplevel = client.value();
-    if (toplevel)
-      toplevel->close();
+  auto toplevel = workspace->get_toplevel_at(index);
+  if (toplevel) {
+    toplevel->close();
   }
 }
 
@@ -133,10 +131,9 @@ void move_window_to_workspace(int window_index, sol::object workspace_id) {
   if (!output)
     return;
   auto workspace = output->current_workspace;
-  auto client = workspace->get_toplevel_at(window_index);
-  if (!client)
+  auto toplevel = workspace->get_toplevel_at(window_index);
+  if (!toplevel)
     return;
-  auto toplevel = client.value();
   if (workspace_id.is<int>()) {
     auto workspace_index = workspace_id.as<int>();
     toplevel->move_to_workspace(workspace_index);
@@ -152,14 +149,12 @@ void move_window_to_workspace_or_create(int window_index, int workspace_index) {
   if (!output)
     return;
   auto workspace = output->current_workspace;
-  auto client = workspace->get_toplevel_at(window_index);
-  if (!client)
+  auto toplevel = workspace->get_toplevel_at(window_index);
+  if (!toplevel)
     return;
-  auto toplevel = client.value();
-
-  for (int i = output->get_workspaces().size(); i <= workspace_index; i++)
+  for (int i = output->get_workspaces().size(); i <= workspace_index; i++) {
     output->create_workspace();
-
+  }
   toplevel->move_to_workspace(workspace_index);
 }
 
@@ -213,10 +208,9 @@ void focus_window(int index) {
 
 void set_window_layout(int index, std::string layout) {
   auto server = UraServer::get_instance();
-  auto client =
+  auto toplevel =
     server->view->current_output()->current_workspace->get_toplevel_at(index);
-  if (client) {
-    auto toplevel = client.value();
+  if (toplevel) {
     toplevel->set_layout(layout);
     toplevel->redraw_all_others();
   }
@@ -279,11 +273,10 @@ sol::table get_current_workspace() {
 
 std::optional<sol::table> get_window(int index) {
   auto server = UraServer::get_instance();
-  auto client =
+  auto toplevel =
     server->view->current_output()->current_workspace->get_toplevel_at(index);
-  if (!client)
+  if (!toplevel)
     return {};
-  auto toplevel = client.value();
   return toplevel->to_lua_table();
 }
 
@@ -314,7 +307,7 @@ void activate_window(sol::object workspace_id, int window_index) {
   auto toplevel = workspace->get_toplevel_at(window_index);
   if (!toplevel)
     return;
-  toplevel.value()->activate();
+  toplevel->activate();
 }
 
 sol::table list_workspaces() {
@@ -334,7 +327,7 @@ void move_window(int index, int x, int y) {
   auto toplevel = workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  toplevel.value()->move(x, y);
+  toplevel->move(x, y);
 }
 
 void resize_window(int index, int width, int height) {
@@ -343,8 +336,8 @@ void resize_window(int index, int width, int height) {
   auto toplevel = workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  toplevel.value()->resize(width, height);
-  toplevel.value()->redraw();
+  toplevel->resize(width, height);
+  toplevel->redraw();
 }
 
 void center_window(int index) {
@@ -353,7 +346,7 @@ void center_window(int index) {
   auto toplevel = workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  toplevel.value()->center();
+  toplevel->center();
 }
 
 std::optional<sol::table> get_current_output() {
@@ -479,7 +472,7 @@ void set_window_draggable(int index, bool flag) {
     server->view->current_output()->current_workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  toplevel.value()->draggable = flag;
+  toplevel->draggable = flag;
 }
 
 void set_layout(std::string name, sol::protected_function f) {
@@ -500,7 +493,7 @@ void set_window_z_index(int index, int z) {
     server->view->current_output()->current_workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  toplevel.value()->set_z_index(z);
+  toplevel->set_z_index(z);
 }
 
 void swap_window(int index, int target) {
@@ -510,9 +503,9 @@ void swap_window(int index, int target) {
   auto dst = workspace->get_toplevel_at(target);
   if (!src || !dst)
     return;
-  workspace->swap_toplevel(src.value(), dst.value());
-  src.value()->redraw();
-  dst.value()->redraw();
+  workspace->swap_toplevel(src, dst);
+  src->redraw();
+  dst->redraw();
 }
 
 void redraw_window(int index) {
@@ -521,7 +514,7 @@ void redraw_window(int index) {
   auto toplevel = workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  toplevel.value()->redraw();
+  toplevel->redraw();
 }
 
 void redraw_current_workspace() {

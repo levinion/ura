@@ -12,11 +12,11 @@ void tiling(int index) {
   auto toplevel = output->current_workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  if (toplevel.value()->first_commit_after_layout_change) {
-    toplevel.value()->draggable = false;
-    toplevel.value()->set_z_index(UraSceneLayer::Normal);
+  if (toplevel->first_commit_after_layout_change) {
+    toplevel->draggable = false;
+    toplevel->set_z_index(UraSceneLayer::Normal);
   }
-  auto geo = toplevel.value()->geometry;
+  auto geo = toplevel->geometry;
   auto usable_area = output->usable_area;
   auto width = usable_area.width;
   auto height = usable_area.height;
@@ -33,15 +33,15 @@ void tiling(int index) {
   // find mapped toplevel number
   int sum = 0;
   for (auto window : toplevels) {
-    if (window->layout == toplevel.value()->layout)
+    if (window->layout == toplevel->layout)
       sum += 1;
   }
   // find this toplevel's index
   int i = 0;
   for (auto window : toplevels) {
-    if (window->layout != toplevel.value()->layout)
+    if (window->layout != toplevel->layout)
       continue;
-    if (window != toplevel.value())
+    if (window != toplevel)
       i++;
     else
       break;
@@ -52,8 +52,8 @@ void tiling(int index) {
   auto x = usable_area.x + outer_l + (w + inner) * i;
   auto y = usable_area.y + outer_t;
 
-  toplevel.value()->resize(w, h);
-  toplevel.value()->move(x, y);
+  toplevel->resize(w, h);
+  toplevel->move(x, y);
 }
 
 void fullscreen(int index) {
@@ -63,16 +63,16 @@ void fullscreen(int index) {
     server->view->current_output()->current_workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  if (toplevel.value()->first_commit_after_layout_change) {
-    toplevel.value()->draggable = false;
-    toplevel.value()->set_z_index(UraSceneLayer::Fullscreen);
+  if (toplevel->first_commit_after_layout_change) {
+    toplevel->draggable = false;
+    toplevel->set_z_index(UraSceneLayer::Fullscreen);
   }
 
   auto geo = server->view->current_output()->logical_geometry();
   auto table = server->lua->state.create_table();
 
-  toplevel.value()->resize(geo.width, geo.height);
-  toplevel.value()->move(geo.x, geo.y);
+  toplevel->resize(geo.width, geo.height);
+  toplevel->move(geo.x, geo.y);
 }
 
 void floating(int index) {
@@ -81,9 +81,9 @@ void floating(int index) {
     server->view->current_output()->current_workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  if (toplevel.value()->first_commit_after_layout_change) {
-    toplevel.value()->draggable = true;
-    toplevel.value()->set_z_index(UraSceneLayer::Floating);
+  if (toplevel->first_commit_after_layout_change) {
+    toplevel->draggable = true;
+    toplevel->set_z_index(UraSceneLayer::Floating);
   }
 }
 } // namespace ura::layout
