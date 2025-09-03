@@ -1,6 +1,6 @@
 ---@meta
 
---- @class UraWindow: table
+--- @class UraWindow
 local UraWindow = {
   --- @type integer
   index = 0,
@@ -28,7 +28,7 @@ local UraWindow = {
   z_index = 0
 }
 
---- @class UraWorkspace: table
+--- @class UraWorkspace
 local UraWorkspace = {
   --- @type integer
   index = 0,
@@ -38,11 +38,11 @@ local UraWorkspace = {
   windows = {}
 }
 
---- @class UraOutput: table
+--- @class UraOutput
 local UraOutput = {
   --- @type string
   name = "",
-  --- @class UraOutput.size: table
+  --- @class UraOutput.size
   size = {
     --- @type number
     x = 0,
@@ -55,7 +55,7 @@ local UraOutput = {
     --- @type UraWorkspace[]
     workspaces = {}
   },
-  --- @class UraOutput.usable: table
+  --- @class UraOutput.usable
   usable = {
     --- @type number
     x = 0,
@@ -74,7 +74,7 @@ local UraOutput = {
   dpms = true,
 }
 
---- @class UraOutputMode: table
+--- @class UraOutputMode
 local UraOutputMode = {
   --- @type integer|nil
   width = 0,
@@ -86,7 +86,7 @@ local UraOutputMode = {
   scale = 0
 }
 
---- @class UraCursorTheme: table
+--- @class UraCursorTheme
 local UraCursorTheme = {
   --- @type string|nil
   theme = "",
@@ -94,7 +94,7 @@ local UraCursorTheme = {
   size = 0
 }
 
---- @class UraPointerProperties: table
+--- @class UraPointerProperties
 local UraPointerProfile = {
   ---@type "adaptive"|"flat"
   accel_profile = "adaptive",
@@ -104,9 +104,9 @@ local UraPointerProfile = {
   scroll_speed = 1,
 }
 
---- @class ura: table
+--- @class ura
 ura = {
-  --- @class ura.api: table
+  --- @class ura.api
   api = {
     terminate = function() end,
     reload = function() end,
@@ -120,7 +120,7 @@ ura = {
     set_idle_inhibitor = function(flag) end
   },
 
-  --- @class ura.win: table
+  --- @class ura.win
   win = {
     --- @param index integer
     focus = function(index) end,
@@ -167,15 +167,15 @@ ura = {
     redraw = function(index) end
   },
 
-  --- @class ura.input: table
+  --- @class ura.input
   input = {
-    --- @class ura.input.keyboard: table
+    --- @class ura.input.keyboard
     keyboard = {
       --- @param rate integer The repeat rate (keys per second).
       --- @param delay number The initial delay before repeating (in milliseconds).
       set_repeat = function(rate, delay) end,
     },
-    --- @class ura.input.cursor: table
+    --- @class ura.input.cursor
     cursor = {
       --- @param theme UraCursorTheme
       set_theme = function(theme) end,
@@ -186,7 +186,7 @@ ura = {
       --- @param name string The name of the cursor shape (e.g., "arrow", "hand").
       set_shape = function(name) end,
     },
-    --- @class ura.input.pointer: table
+    --- @class ura.input.pointer
     pointer = {
       ---@param pattern string
       ---@param properties UraPointerProperties
@@ -194,7 +194,7 @@ ura = {
     }
   },
 
-  --- @class ura.ws: table
+  --- @class ura.ws
   ws = {
     create = function() end,
     --- @param index integer The index of the workspace to switch to (0-based).
@@ -215,7 +215,7 @@ ura = {
     redraw = function() end,
   },
 
-  --- @class ura.output: table
+  --- @class ura.output
   output = {
     --- @return UraOutput
     get_current = function() end,
@@ -230,7 +230,7 @@ ura = {
     set_mode = function(name, mode) end
   },
 
-  --- @class ura.layout: table
+  --- @class ura.layout
   layout = {
     --- @param name string
     --- @param f fun(integer)
@@ -239,7 +239,7 @@ ura = {
     unset = function(name) end,
   },
 
-  --- @class ura.keymap: table
+  --- @class ura.keymap
   keymap = {
     --- wrapper of ura.keymap.set_mode, equals to ura.keymap.set_mode("normal",...)
     --- @param pattern string A string representing key (e.g. "super+shift+p")
@@ -261,14 +261,14 @@ ura = {
     get_current_mode = function() end
   },
 
-  --- @class ura.hook: table
+  --- @class ura.hook
   hook = {
     --- @param name string
     --- @param f function
     set = function(name, f) end,
   },
 
-  --- @class ura.fn: table
+  --- @class ura.fn
   fn = {
     --- @param name string The name of the environment variable.
     --- @param value string The value to set for the environment variable.
@@ -290,7 +290,7 @@ ura = {
     expand = function(path) end,
   },
 
-  --- @class ura.opt: table
+  --- @class ura.opt
   opt = {
     --- @type string
     active_border_color = "#89b4fa",
@@ -300,9 +300,9 @@ ura = {
     border_width = 1,
     --- @type boolean
     focus_follow_mouse = true,
-    --- @class ura.opt.tilling: table
+    --- @class ura.opt.tilling
     tilling = {
-      --- @class ura.opt.tilling.gap: table
+      --- @class ura.opt.tilling.gap
       gap = {
         outer = {
           --- @type number
@@ -318,7 +318,7 @@ ura = {
         inner = 10,
       },
     },
-    --- @class ura.opt.device: table
+    --- @class ura.opt.device
     device = {
       --- @type table<string,UraOutputMode>
       outputs = {},

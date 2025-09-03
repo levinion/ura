@@ -1,4 +1,6 @@
 ura.hook.set("prepare", function()
+  ura.fn.set_env("XDG_CURRENT_DESKTOP", "ura")
+  ura.fn.set_env("XDG_SESSION_TYPE", "wayland")
   ura.fn.set_env("WLR_RENDERER", "vulkan")
   ura.fn.set_env("WLR_NO_HARDWARE_CURSORS", "0")
   ura.fn.set_env("LIBVA_DRIVER_NAME", "nvidia")

@@ -11,8 +11,8 @@ ura.opt.device.outputs["DP-5"] = {
   scale = 2
 }
 
-ura.opt.mouse_move_factor = 1
-
 ura.opt.device.pointer_rules[".*"] = {
-  accel_profile = "flat"
+  accel_profile = "flat",
+  move_speed = 1,
+  scroll_speed = 1,
 }
