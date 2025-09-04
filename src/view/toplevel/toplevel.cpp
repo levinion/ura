@@ -148,13 +148,14 @@ void UraToplevel::commit() {
         this->foreign_handle,
         this->xdg_toplevel->app_id
       );
-    wlr_xdg_toplevel_set_size(this->xdg_toplevel, 0, 0);
-    return;
+    if (!this->xdg_toplevel->base) {
+      wlr_xdg_toplevel_set_size(this->xdg_toplevel, 0, 0);
+      return;
+    }
   }
 
   // second commit
   if (!this->prepared) {
-    this->prepared = true;
     auto geo = Vec4<int>::from(this->xdg_toplevel->base->geometry);
     geo.center(output->usable_area);
     this->layout_geometry["floating"] = geo;
@@ -163,16 +164,15 @@ void UraToplevel::commit() {
     this->move(geo.x, geo.y);
     server->seat->focus(this);
     server->lua->try_execute_hook("window-new", this->index());
-  }
-
-  if (this->first_apply_layout)
     this->apply_layout(true);
+    this->prepared = true;
+    this->map();
+    return;
+  }
 }
 
 void UraToplevel::apply_layout(bool recursive) {
-  if (!this->prepared)
-    return;
-  if (!this->mapped && !this->first_apply_layout)
+  if (!this->mapped && this->prepared)
     return;
   auto server = UraServer::get_instance();
   sol::protected_function layout = server->lua->layouts.contains(this->layout)
@@ -184,10 +184,6 @@ void UraToplevel::apply_layout(bool recursive) {
   auto result = layout(this->index());
   if (!result.valid())
     return;
-  if (this->first_apply_layout) {
-    this->first_apply_layout = false;
-    this->map();
-  }
   if (this->geometry != prev_geo && recursive) {
     this->redraw_all_others();
   }
@@ -430,6 +426,8 @@ void UraToplevel::map() {
 }
 
 void UraToplevel::unmap() {
+  if (!this->mapped)
+    return;
   this->mapped = false;
   wlr_scene_node_set_enabled(&this->scene_tree->node, false);
   if (this->xdg_toplevel->base->initialized)
@@ -549,9 +547,7 @@ void UraToplevel::set_layout(std::string layout) {
       this->move(geo.x, geo.y);
     }
 
-    this->redraw();
-
-    server->lua->try_execute_hook("layout-change", this->index());
+    this->redraw(false);
 
     // handle enter and leave fullscreen mode
     if (this->last_layout.value() == "fullscreen"
@@ -567,13 +563,15 @@ void UraToplevel::set_layout(std::string layout) {
         wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, true);
       wlr_foreign_toplevel_handle_v1_set_fullscreen(this->foreign_handle, true);
     }
+
+    server->lua->try_execute_hook("layout-change", this->index());
   }
 }
 
 void UraToplevel::redraw_all_others() {
   for (auto toplevel : this->workspace->toplevels) {
     if (toplevel != this) {
-      toplevel->redraw();
+      toplevel->redraw(false);
     }
   }
 }

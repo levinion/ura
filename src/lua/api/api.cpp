@@ -337,7 +337,7 @@ void resize_window(int index, int width, int height) {
   if (!toplevel)
     return;
   toplevel->resize(width, height);
-  toplevel->redraw();
+  toplevel->redraw(false);
 }
 
 void center_window(int index) {
@@ -504,8 +504,8 @@ void swap_window(int index, int target) {
   if (!src || !dst)
     return;
   workspace->swap_toplevel(src, dst);
-  src->redraw();
-  dst->redraw();
+  src->redraw(false);
+  dst->redraw(false);
 }
 
 void redraw_window(int index) {
@@ -514,7 +514,7 @@ void redraw_window(int index) {
   auto toplevel = workspace->get_toplevel_at(index);
   if (!toplevel)
     return;
-  toplevel->redraw();
+  toplevel->redraw(false);
 }
 
 void redraw_current_workspace() {

@@ -13,7 +13,7 @@ class UraWorkSpace;
 
 class UraToplevel {
 public:
-  bool mapped = false;
+  bool mapped = true;
   bool destroying = false;
   bool draggable = false;
   std::string layout = "tiling";
@@ -54,7 +54,7 @@ public:
   int index();
   void activate();
   void set_z_index(int z);
-  void redraw(bool recursive = false);
+  void redraw(bool recursive);
   void redraw_all_others();
   bool is_active();
   sol::table to_lua_table();
@@ -66,7 +66,6 @@ private:
   void apply_layout(bool recursive);
   std::unordered_map<std::string, Vec4<int>> layout_geometry;
   bool prepared = false;
-  bool first_apply_layout = true;
 };
 
 } // namespace ura
