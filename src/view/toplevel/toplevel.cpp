@@ -22,7 +22,6 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     server->view->get_scene_tree_or_create(this->z_index),
     xdg_toplevel->base
   );
-  // hide until prepared
   this->unmap();
   this->output = output->name;
   this->workspace = output->current_workspace;
@@ -148,10 +147,8 @@ void UraToplevel::commit() {
         this->foreign_handle,
         this->xdg_toplevel->app_id
       );
-    if (!this->xdg_toplevel->base) {
-      wlr_xdg_toplevel_set_size(this->xdg_toplevel, 0, 0);
-      return;
-    }
+    wlr_xdg_toplevel_set_size(this->xdg_toplevel, 0, 0);
+    return;
   }
 
   // second commit
@@ -412,7 +409,7 @@ void UraToplevel::map() {
     return;
   this->mapped = true;
   wlr_scene_node_set_enabled(&this->scene_tree->node, true);
-  if (this->xdg_toplevel->base->initialized) {
+  if (this->xdg_toplevel->base->initialized && this->foreign_handle) {
     wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
     wlr_foreign_toplevel_handle_v1_set_title(
       this->foreign_handle,
@@ -430,7 +427,7 @@ void UraToplevel::unmap() {
     return;
   this->mapped = false;
   wlr_scene_node_set_enabled(&this->scene_tree->node, false);
-  if (this->xdg_toplevel->base->initialized)
+  if (this->xdg_toplevel->base->initialized && this->foreign_handle)
     wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
 }
 
