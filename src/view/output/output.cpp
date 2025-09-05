@@ -3,6 +3,7 @@
 #include "ura/core/callback.hpp"
 #include "ura/ura.hpp"
 #include "ura/seat/seat.hpp"
+#include "ura/util/util.hpp"
 #include "ura/util/vec.hpp"
 #include "ura/view/layer_shell.hpp"
 #include "ura/view/output.hpp"
@@ -20,6 +21,13 @@ void UraOutput::init(wlr_output* _wlr_output) {
   this->name = this->output->name;
 
   auto workspaces = this->get_workspaces();
+
+  this->background = wlr_scene_rect_create(
+    server->view->get_scene_tree_or_create(UraSceneLayer::Clear),
+    0,
+    0,
+    hex2rgba("#1D727A").value().data()
+  );
 
   auto resume = false;
 
@@ -83,6 +91,13 @@ void UraOutput::init(wlr_output* _wlr_output) {
 
 UraOutput* UraOutput::from(wlr_output* output) {
   return static_cast<UraOutput*>(output->data);
+}
+
+void UraOutput::set_scale(float scale) {
+  if (this->output->scale != scale) {
+    this->output->scale = scale;
+    this->update_background();
+  }
 }
 
 void UraOutput::commit() {
@@ -254,7 +269,7 @@ bool UraOutput::set_mode(sol::table& mode) {
     // apply scale only if the properties are successfully set.
     auto scale = server->lua->fetch<float>(mode, "scale");
     if (scale && scale.value() != this->output->scale) {
-      this->output->scale = scale.value();
+      this->set_scale(scale.value());
     }
     return true;
   }
@@ -406,6 +421,24 @@ void UraOutput::set_dpms_mode(bool flag) {
     },
     1000
   );
+}
+
+void UraOutput::update_background() {
+  auto logical_geometry = this->logical_geometry();
+  if (this->background->width != logical_geometry.width
+      || this->background->height != logical_geometry.height)
+    wlr_scene_rect_set_size(
+      this->background,
+      logical_geometry.width,
+      logical_geometry.height
+    );
+  if (this->background->node.x != logical_geometry.x
+      || this->background->node.y != logical_geometry.y)
+    wlr_scene_node_set_position(
+      &this->background->node,
+      logical_geometry.x,
+      logical_geometry.y
+    );
 }
 
 } // namespace ura

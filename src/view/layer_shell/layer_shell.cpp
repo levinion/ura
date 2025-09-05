@@ -30,12 +30,7 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
   this->scene_tree = scene_surface->tree;
   layer_surface->surface->data = this;
 
-  // notify scale
-  wlr_fractional_scale_v1_notify_scale(
-    layer_surface->surface,
-    layer_surface->output->scale
-  );
-  wlr_surface_set_preferred_buffer_scale(
+  server->view->notify_scale(
     layer_surface->surface,
     layer_surface->output->scale
   );

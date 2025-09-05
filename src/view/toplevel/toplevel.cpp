@@ -29,13 +29,8 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   xdg_toplevel->base->surface->data = this;
   this->create_borders();
 
-  // notify scale
-  wlr_fractional_scale_v1_notify_scale(
-    xdg_toplevel->base->surface,
-    output->output->scale
-  );
-  wlr_surface_set_preferred_buffer_scale(
-    xdg_toplevel->base->surface,
+  server->view->notify_scale(
+    this->xdg_toplevel->base->surface,
     output->output->scale
   );
 

@@ -92,4 +92,9 @@ wlr_scene_tree* UraView::get_layer_by_type(zwlr_layer_shell_v1_layer type) {
   return layer;
 }
 
+void UraView::notify_scale(wlr_surface* surface, float scale) {
+  wlr_fractional_scale_v1_notify_scale(surface, scale);
+  wlr_surface_set_preferred_buffer_scale(surface, scale);
+}
+
 } // namespace ura

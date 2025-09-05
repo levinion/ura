@@ -11,15 +11,16 @@
 namespace ura {
 
 enum UraSceneLayer {
+  Clear = -50,
   Background = 0,
-  Bottom = 10,
-  Normal = 20,
-  Floating = 30,
-  Top = 40,
-  Fullscreen = 50,
-  Popup = 60,
-  Overlay = 70,
-  LockScreen = 80
+  Bottom = 50,
+  Normal = 100,
+  Floating = 150,
+  Top = 200,
+  Fullscreen = 250,
+  Popup = 300,
+  Overlay = 350,
+  LockScreen = 400
 };
 
 class UraView {
@@ -38,7 +39,7 @@ public:
   UraOutput* current_output();
   UraOutput* get_output_by_name(std::string& name);
   std::optional<UraClient> foreground_client(double* sx, double* sy);
-
   wlr_scene_tree* get_layer_by_type(zwlr_layer_shell_v1_layer type);
+  void notify_scale(wlr_surface* surface, float scale);
 };
 } // namespace ura

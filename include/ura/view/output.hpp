@@ -21,6 +21,7 @@ public:
   static UraOutput* from(wlr_output* output);
   void commit();
   void destroy();
+  void set_scale(float scale);
   Vec4<int> physical_geometry();
   Vec4<int> logical_geometry();
 
@@ -41,9 +42,10 @@ public:
 
   /* Layers */
   Vec4<int> usable_area;
-
+  wlr_scene_rect* background;
   UraSessionLockSurface* session_lock_surface = nullptr;
 
+  void update_background();
   bool configure_layers();
   void configure_layer(
     Vec<UraLayerShell*>& list,
