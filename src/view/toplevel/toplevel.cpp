@@ -286,7 +286,16 @@ void UraToplevel::activate() {
   auto output = server->view->get_output_by_name(this->output);
   auto current_workspace_index = output->current_workspace->index();
   auto current_toplevel_index = this->index();
-  // TODO: activate rules
+  auto flags = server->lua->try_execute_hook<bool>(
+    "pre-window-activate",
+    current_workspace_index,
+    current_toplevel_index
+  );
+  // if hook returns a false value, then stop the operation.
+  for (auto flag : flags) {
+    if (flag == false)
+      return;
+  }
   if (this->workspace->name) {
     // named workspace, move this toplevel to current workspace
     this->move_to_workspace(current_workspace_index);

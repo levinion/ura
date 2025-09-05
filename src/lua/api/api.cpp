@@ -173,6 +173,7 @@ void set_hook(std::string name, sol::protected_function f, sol::object obj) {
     p.group =
       table["group"].get<std::optional<std::string>>().value_or("group");
     p.priority = table["priority"].get<std::optional<int>>().value_or(1);
+    p.final = table["final"].get<std::optional<bool>>().value_or(false);
   }
   p.callback = f;
   auto server = UraServer::get_instance();

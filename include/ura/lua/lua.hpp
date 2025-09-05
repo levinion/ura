@@ -35,11 +35,19 @@ public:
   std::optional<std::filesystem::path> find_init_path();
   void try_execute_init();
 
+  template<typename T, typename... Args>
+  std::vector<T> try_execute_hook(std::string name, Args&&... args) {
+    if (!this->hooks.contains(name))
+      return {};
+    return this->hooks[name].execute<T>(args...);
+  }
+
   template<typename... Args>
   void try_execute_hook(std::string name, Args&&... args) {
-    if (!this->hooks.contains(name))
+    if (!this->hooks.contains(name)) {
       return;
-    this->hooks[name].execute(args...);
+    }
+    this->hooks[name].execute(std::forward<Args>(args)...);
   }
 
   template<typename T>

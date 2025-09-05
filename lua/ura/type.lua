@@ -109,7 +109,9 @@ local UraHookOption = {
   --- @type string
   group = "default",
   --- @type integer
-  priority = 1
+  priority = 1,
+  --- @type boolean
+  final = false
 }
 
 --- @class ura
@@ -275,8 +277,8 @@ ura = {
   --- @class ura.hook
   hook = {
     --- @param name string
-    --- @param f fun(...)
-    --- @param opt UraHookOption?
+    --- @param f function
+    --- @param opt [UraHookOption]
     set = function(name, f, opt) end,
   },
 
