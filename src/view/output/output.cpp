@@ -60,6 +60,8 @@ void UraOutput::init(wlr_output* _wlr_output) {
   // set usable area to full area
   this->usable_area = this->logical_geometry();
 
+  this->update_background();
+
   // add this output to scene layout
   auto output_layout_output =
     wlr_output_layout_add_auto(server->output_layout, this->output);
