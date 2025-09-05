@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <unordered_map>
 #include "ura/core/server.hpp"
+#include "ura/lua/hook.hpp"
 #include "ura/util/util.hpp"
 
 namespace ura {
@@ -18,7 +19,7 @@ public:
   sol::table ura;
   std::string lua_stdout;
   bool reset = false;
-  std::unordered_map<std::string, sol::protected_function> hooks;
+  std::unordered_map<std::string, UraHook> hooks;
   std::unordered_map<
     std::string,
     std::unordered_map<uint64_t, sol::protected_function>>
@@ -35,14 +36,10 @@ public:
   void try_execute_init();
 
   template<typename... Args>
-  std::optional<sol::object>
-  try_execute_hook(std::string name, Args&&... args) {
+  void try_execute_hook(std::string name, Args&&... args) {
     if (!this->hooks.contains(name))
-      return {};
-    auto result = this->hooks[name](std::forward<Args>(args)...);
-    if (!result.valid())
-      return {};
-    return result.template get<sol::object>();
+      return;
+    this->hooks[name].execute(args...);
   }
 
   template<typename T>

@@ -104,6 +104,14 @@ local UraPointerProfile = {
   scroll_speed = 1,
 }
 
+--- @class UraHookOption
+local UraHookOption = {
+  --- @type string
+  group = "default",
+  --- @type integer
+  priority = 1
+}
+
 --- @class ura
 ura = {
   --- @class ura.api
@@ -267,8 +275,9 @@ ura = {
   --- @class ura.hook
   hook = {
     --- @param name string
-    --- @param f function
-    set = function(name, f) end,
+    --- @param f fun(...)
+    --- @param opt UraHookOption?
+    set = function(name, f, opt) end,
   },
 
   --- @class ura.fn
