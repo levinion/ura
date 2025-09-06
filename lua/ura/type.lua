@@ -278,7 +278,7 @@ ura = {
   hook = {
     --- @param name string
     --- @param f function
-    --- @param opt [UraHookOption]
+    --- @param opt UraHookOption|nil
     set = function(name, f, opt) end,
   },
 
