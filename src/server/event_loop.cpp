@@ -257,15 +257,14 @@ void UraServer::setup_others() {
   wlr_alpha_modifier_v1_create(this->display);
 }
 
-void UraServer::check_lua_reset() {
-  auto server = UraServer::get_instance();
-  if (server->lua->reset) {
-    server->lua = Lua::init();
-    server->lua->setup();
-    server->lua->try_execute_init();
-    server->lua->try_execute_hook("reload");
-    for (auto pointer : server->seat->pointers) pointer->try_apply_rules();
-    auto output = server->view->current_output();
+void UraServer::check_and_reset_lua() {
+  if (this->lua->reset) {
+    this->lua = Lua::init();
+    this->lua->setup();
+    this->lua->try_execute_init();
+    this->lua->try_execute_hook("reload");
+    for (auto pointer : this->seat->pointers) pointer->try_apply_rules();
+    auto output = this->view->current_output();
     if (output) {
       output->try_set_custom_mode();
       output->current_workspace->redraw();
@@ -311,7 +310,7 @@ void UraServer::run() {
   while (!this->quit) {
     if (!dispatcher->dispatch())
       break;
-    this->check_lua_reset();
+    this->check_and_reset_lua();
   }
 }
 

@@ -26,7 +26,10 @@ clean:
 	sudo rm -rf /usr/share/lua/5.1/ura/
 	sudo rm -rf /etc/ura
 
-.PHONY: default install init build clean
+debug:
+	make BUILD_TYPE=Debug
+
+.PHONY: default install init build clean debug
 
 include/protocols:
 	mkdir -p $@

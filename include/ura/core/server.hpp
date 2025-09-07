@@ -58,7 +58,6 @@ public:
   void run();
   void destroy();
   void terminate();
-  void check_lua_reset();
   ~UraServer();
 
 private:
@@ -80,6 +79,7 @@ private:
   void setup_idle();
   void setup_session_lock();
   void setup_others();
+  void check_and_reset_lua();
 };
 
 } // namespace ura

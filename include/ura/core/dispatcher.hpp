@@ -19,7 +19,7 @@ public:
   static std::unique_ptr<UraDispatcher<MAXEVENTS>> init() {
     auto dispatcher = std::make_unique<UraDispatcher<MAXEVENTS>>();
     dispatcher->fd = epoll_create1(0);
-    assert(this->fd != -1);
+    assert(dispatcher->fd != -1);
     return dispatcher;
   }
 
