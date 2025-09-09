@@ -225,6 +225,8 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
     }
     server->seat->focus(client.value());
   }
+
+  server->seat->notify_idle_activity();
 }
 
 void UraCursor::destroy() {
