@@ -2,7 +2,6 @@
 
 #include <any>
 #include <expected>
-#include <functional>
 #include <memory>
 #include <sol/forward.hpp>
 #include <sol/sol.hpp>

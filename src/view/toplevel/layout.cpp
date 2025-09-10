@@ -1,6 +1,7 @@
 #include "ura/view/layout.hpp"
 #include "ura/view/output.hpp"
 #include "ura/view/view.hpp"
+#include "ura/lua/lua.hpp"
 
 namespace ura::layout {
 

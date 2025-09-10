@@ -2,6 +2,8 @@
 
 #include "ura/core/server.hpp"
 #include "ura/util/vec.hpp"
+#include <sol/sol.hpp>
+#include "ura/view/workspace.hpp"
 
 namespace ura {
 

@@ -1,9 +1,7 @@
 #pragma once
 
 #include <memory>
-#include "ura/core/log.hpp"
 #include "ura/ura.hpp"
-#include "ura/view/workspace.hpp"
 #include "ura/core/ipc.hpp"
 #include "ura/core/dispatcher.hpp"
 

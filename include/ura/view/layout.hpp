@@ -1,5 +1,4 @@
 #pragma once
-#include "ura/lua/lua.hpp"
 
 namespace ura::layout {
 void tiling(int index);

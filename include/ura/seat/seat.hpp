@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstdint>
-#include <list>
 #include <memory>
 #include <vector>
 #include "ura/seat/cursor.hpp"

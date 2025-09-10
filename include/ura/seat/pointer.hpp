@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ura/ura.hpp"
-#include "sol/sol.hpp"
+#include "sol/sol.hpp" // IWYU pragma: keep
 #include <optional>
 #include <string>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ura/ura.hpp"
+#include "ura/ura.hpp" // IWYU pragma: keep
 
 namespace ura {
 

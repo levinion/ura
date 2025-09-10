@@ -2,7 +2,6 @@
 #include "ura/core/runtime.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/ura.hpp"
-#include "ura/seat/seat.hpp"
 #include "ura/util/util.hpp"
 #include "ura/util/vec.hpp"
 #include "ura/view/layer_shell.hpp"
@@ -10,6 +9,7 @@
 #include "ura/view/view.hpp"
 #include "ura/view/workspace.hpp"
 #include "ura/lua/lua.hpp"
+#include "ura/core/log.hpp"
 
 namespace ura {
 

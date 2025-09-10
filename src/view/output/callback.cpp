@@ -3,7 +3,6 @@
 #include "ura/core/runtime.hpp"
 #include "ura/view/output.hpp"
 #include "ura/view/view.hpp"
-#include "ura/seat/seat.hpp"
 
 namespace ura {
 

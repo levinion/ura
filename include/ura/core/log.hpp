@@ -1,13 +1,11 @@
 #pragma once
 
-#include "ura/ura.hpp"
 #include "ura/util/util.hpp"
 #include "wlr/util/log.h"
 #include <fmt/base.h>
 #include <libnotify/notify.h>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
-#include <memory>
 #include <utility>
 
 namespace ura::log {

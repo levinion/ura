@@ -1,15 +1,14 @@
 #include "ura/core/server.hpp"
-#include <optional>
-#include "ura/view/view.hpp"
-#include "ura/view/client.hpp"
-#include "ura/view/output.hpp"
-#include "ura/core/runtime.hpp"
-#include "ura/seat/keyboard.hpp"
-#include "ura/view/toplevel.hpp"
-#include "ura/ura.hpp"
-#include "ura/view/layer_shell.hpp"
-#include "ura/seat/seat.hpp"
-#include "ura/lua/lua.hpp"
+#include "ura/view/view.hpp" // IWYU pragma: keep
+#include "ura/view/client.hpp" // IWYU pragma: keep
+#include "ura/view/output.hpp" // IWYU pragma: keep
+#include "ura/core/runtime.hpp" // IWYU pragma: keep
+#include "ura/seat/keyboard.hpp" // IWYU pragma: keep
+#include "ura/view/toplevel.hpp" // IWYU pragma: keep
+#include "ura/ura.hpp" // IWYU pragma: keep
+#include "ura/view/layer_shell.hpp" // IWYU pragma: keep
+#include "ura/seat/seat.hpp" // IWYU pragma: keep
+#include "ura/lua/lua.hpp" // IWYU pragma: keep
 
 namespace ura {
 

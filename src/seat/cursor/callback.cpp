@@ -1,10 +1,8 @@
 #include "ura/core/server.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/core/runtime.hpp"
-#include "ura/view/client.hpp"
 #include "ura/seat/cursor.hpp"
 #include "ura/seat/seat.hpp"
-#include "ura/lua/lua.hpp"
 
 namespace ura {
 

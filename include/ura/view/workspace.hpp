@@ -1,7 +1,6 @@
 #pragma once
 #include "ura/util/vec.hpp"
 #include "ura/view/toplevel.hpp"
-#include <list>
 
 namespace ura {
 

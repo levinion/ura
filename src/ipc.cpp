@@ -10,6 +10,7 @@
 #include <sys/un.h>
 #include <sys/types.h>
 #include <nlohmann/json.hpp>
+#include "ura/core/log.hpp"
 
 namespace ura {
 

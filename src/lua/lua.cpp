@@ -2,7 +2,6 @@
 #include "ura/core/log.hpp"
 #include "ura/lua/api.hpp"
 #include "ura/view/layout.hpp"
-#include "ura/view/view.hpp"
 #include "ura/core/server.hpp"
 #include <expected>
 #include <filesystem>

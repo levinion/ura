@@ -1,5 +1,5 @@
 #pragma once
-#include <list>
+
 #include "ura/ura.hpp"
 #include "ura/util/vec.hpp"
 
