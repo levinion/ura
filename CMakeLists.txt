@@ -1,7 +1,8 @@
 # project
 set(NAME "ura")
+set(VERSION 0.1.4)
 cmake_minimum_required(VERSION 3.10)
-project(${NAME} CXX)
+project(${NAME} VERSION ${VERSION} LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 26)
@@ -17,6 +18,11 @@ endif()
 # include header
 target_include_directories(${NAME} PRIVATE include/)
 target_include_directories(${NAME} PRIVATE include/protocols/)
+
+string(TOUPPER "${NAME}" UPPER_NAME)
+string(REPLACE "-" "_" UPPER_NAME ${UPPER_NAME})
+set(VERSION_MACRO_NAME "${UPPER_NAME}_PROJECT_VERSION")
+target_compile_definitions(${NAME} PRIVATE ${VERSION_MACRO_NAME}="${VERSION}")
 
 find_package(PkgConfig REQUIRED)
 
