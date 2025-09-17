@@ -38,6 +38,12 @@ ura.keymap.set("ctrl+right", function()
   ura.ws.switch_or_create(index + 1)
 end)
 
+for i = 0, 9 do
+  ura.keymap.set("super+" .. i, function()
+    ura.ws.switch_or_create(i)
+  end)
+end
+
 ura.keymap.set("ctrl+shift+left", function()
   local ws = ura.ws.get_current()
   local win = ura.win.get_current()

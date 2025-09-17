@@ -69,6 +69,12 @@ ura.keymap.set("ctrl+shift+right", function()
   ura.ws.switch(index + 1)
 end)
 
+for i = 0, 9 do
+  ura.keymap.set("super+" .. i, function()
+    ura.ws.switch_or_create(i)
+  end)
+end
+
 ura.keymap.set("super+h", function()
   local win = ura.win.get_current()
   if not win then return end
