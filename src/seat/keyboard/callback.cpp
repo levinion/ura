@@ -33,6 +33,8 @@ void on_new_virtual_keyboard(wl_listener* listener, void* data) {
   auto keyboard = new UraKeyboard {};
   keyboard->virt = true;
   keyboard->init(device);
+  auto server = UraServer::get_instance();
+  server->seat->keyboards.push_back(keyboard);
 }
 
 void on_new_keyboard_shortcuts_inhibitor(wl_listener* listener, void* data) {

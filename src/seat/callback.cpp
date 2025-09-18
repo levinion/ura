@@ -1,7 +1,10 @@
 #include "ura/core/server.hpp"
 #include "ura/seat/keyboard.hpp"
 #include "ura/seat/pointer.hpp"
+#include "ura/seat/tablet.hpp"
 #include "ura/seat/seat.hpp"
+#include "ura/ura.hpp"
+#include "ura/lua/lua.hpp"
 
 namespace ura {
 void on_new_input(wl_listener* listener, void* data) {
@@ -21,6 +24,17 @@ void on_new_input(wl_listener* listener, void* data) {
       server->seat->pointers.push_back(pointer);
       break;
     }
+    case WLR_INPUT_DEVICE_TABLET: {
+      server->seat->cursor->attach_device(device);
+      auto tablet = new UraTablet {};
+      tablet->init(device);
+      server->seat->tablets.push_back(tablet);
+      break;
+    }
+    case WLR_INPUT_DEVICE_TOUCH: {
+      server->seat->cursor->attach_device(device);
+      break;
+    }
     default:
       break;
   }
@@ -33,6 +47,8 @@ void on_new_input(wl_listener* listener, void* data) {
   }
 
   wlr_seat_set_capabilities(server->seat->seat, caps);
+
+  server->lua->try_execute_hook("new-input", device->name);
 }
 
 } // namespace ura

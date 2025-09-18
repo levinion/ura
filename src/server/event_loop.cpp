@@ -131,6 +131,7 @@ void UraServer::setup_popup() {
 void UraServer::setup_seat() {
   this->seat = std::make_unique<UraSeat>();
   this->seat->init();
+
   // keyboard shortcuts inhibitor protocol
   this->keyboard_shortcuts_inhibit_manager =
     wlr_keyboard_shortcuts_inhibit_v1_create(this->display);
@@ -139,14 +140,28 @@ void UraServer::setup_seat() {
     on_new_keyboard_shortcuts_inhibitor,
     nullptr
   );
+
   // relative pointer protocol
   this->relative_pointer_manager =
     wlr_relative_pointer_manager_v1_create(this->display);
+
   // pointer pointer constraints protocol
   this->pointer_constraints = wlr_pointer_constraints_v1_create(this->display);
   this->runtime->register_callback(
     &this->pointer_constraints->events.new_constraint,
     on_pointer_constraints_new_constraint,
+    nullptr
+  );
+
+  // tablet protocol
+  this->tablet_manager = wlr_tablet_v2_create(this->display);
+
+  // virtual pointer protocol
+  this->virtual_pointer_manager =
+    wlr_virtual_pointer_manager_v1_create(this->display);
+  this->runtime->register_callback(
+    &this->virtual_pointer_manager->events.new_virtual_pointer,
+    on_new_virtual_pointer,
     nullptr
   );
 }

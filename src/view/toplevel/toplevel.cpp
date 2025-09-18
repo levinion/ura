@@ -1,7 +1,6 @@
 #include "ura/view/toplevel.hpp"
 #include "ura/ura.hpp"
 #include "ura/util/vec.hpp"
-#include "ura/view/layout.hpp"
 #include "ura/core/runtime.hpp"
 #include "ura/core/server.hpp"
 #include "ura/view/output.hpp"
@@ -184,6 +183,8 @@ void UraToplevel::apply_layout(bool recursive) {
 }
 
 void UraToplevel::focus() {
+  if (!this->xdg_toplevel->base->initialized)
+    return;
   auto server = UraServer::get_instance();
   auto seat = server->seat->seat;
   auto surface = this->xdg_toplevel->base->surface;
@@ -216,6 +217,8 @@ void UraToplevel::focus() {
 }
 
 void UraToplevel::unfocus() {
+  if (!this->xdg_toplevel->base->initialized)
+    return;
   this->set_border_color(this->inactive_border_color);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
   if (!this->destroying)

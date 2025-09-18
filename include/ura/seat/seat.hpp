@@ -5,6 +5,7 @@
 #include "ura/seat/cursor.hpp"
 #include "ura/seat/keyboard.hpp"
 #include "ura/seat/pointer.hpp"
+#include "ura/seat/tablet.hpp"
 #include "ura/seat/text_input.hpp"
 #include "ura/view/toplevel.hpp"
 #include "ura/view/layer_shell.hpp"
@@ -19,6 +20,7 @@ public:
   wlr_seat* seat;
   Vec<UraKeyboard*> keyboards;
   Vec<UraPointer*> pointers;
+  Vec<UraTablet*> tablets;
   bool locked = false;
   bool keyboard_shortcuts_inhibited = false;
 

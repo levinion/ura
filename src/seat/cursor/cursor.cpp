@@ -242,7 +242,7 @@ void UraCursor::set_theme(std::string theme, int size) {
   auto server = UraServer::get_instance();
   wlr_xcursor_manager_destroy(this->cursor_mgr);
   this->cursor_mgr =
-    wlr_xcursor_manager_create(theme.empty() ? NULL : theme.data(), size);
+    wlr_xcursor_manager_create(theme.empty() ? "default" : theme.data(), size);
   if (this->visible)
     this->show();
 }

@@ -60,6 +60,10 @@ extern "C" {
 #include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_pointer_constraints_v1.h>
 #include <wlr/types/wlr_alpha_modifier_v1.h>
+#include <wlr/types/wlr_tablet_v2.h>
+#include <wlr/types/wlr_tablet_tool.h>
+#include <wlr/types/wlr_tablet_pad.h>
+#include <wlr/types/wlr_virtual_pointer_v1.h>
 #include <wlr/util/log.h>
 #include <xkbcommon/xkbcommon.h>
 }

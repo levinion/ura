@@ -1,5 +1,6 @@
 #pragma once
 
+#include <wayland-server-core.h>
 #include "ura/ura.hpp" // IWYU pragma: keep
 
 namespace ura {
@@ -31,6 +32,8 @@ void on_cursor_request_set_shape(wl_listener* listener, void* data);
 void on_seat_request_set_primary_selection(wl_listener* listener, void* data);
 void on_seat_request_start_drag(wl_listener* listener, void* data);
 void on_seat_start_drag(wl_listener* listener, void* data);
+
+// seat/pointer/callback.cpp
 void on_pointer_constraints_new_constraint(wl_listener* listener, void* data);
 void on_pointer_constraints_constraint_set_region(
   wl_listener* listener,
@@ -40,6 +43,7 @@ void on_pointer_constraints_constraint_destroy(
   wl_listener* listener,
   void* data
 );
+void on_new_virtual_pointer(wl_listener* listener, void* data);
 
 // seat/keyboard/callback.cpp
 void on_keyboard_modifiers(wl_listener* listener, void* data);
@@ -48,6 +52,13 @@ void on_keyboard_destroy(wl_listener* listener, void* data);
 void on_new_virtual_keyboard(wl_listener* listener, void* data);
 void on_new_keyboard_shortcuts_inhibitor(wl_listener* listener, void* data);
 void on_keyboard_shortcuts_inhibitor_destroy(wl_listener* listener, void* data);
+
+// seat/tablet/callback.cpp
+void on_tablet_tip(wl_listener* listener, void* data);
+void on_tablet_button(wl_listener* listener, void* data);
+void on_tablet_axis(wl_listener* listener, void* data);
+void on_tablet_proximity(wl_listener* listener, void* data);
+void on_tablet_destroy(wl_listener* listener, void* data);
 
 // view/toplevel/callback.cpp
 void on_new_toplevel(wl_listener* listener, void* data);

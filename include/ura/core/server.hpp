@@ -43,6 +43,8 @@ public:
   wlr_keyboard_shortcuts_inhibit_manager_v1* keyboard_shortcuts_inhibit_manager;
   wlr_relative_pointer_manager_v1* relative_pointer_manager;
   wlr_pointer_constraints_v1* pointer_constraints;
+  wlr_tablet_manager_v2* tablet_manager;
+  wlr_virtual_pointer_manager_v1* virtual_pointer_manager;
 
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;

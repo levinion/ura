@@ -19,6 +19,7 @@ public:
   std::string name;
   float move_speed = 1.;
   float scroll_speed = 1.;
+  bool virt = false;
 
 private:
   wlr_pointer* base;
