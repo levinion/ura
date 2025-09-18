@@ -76,20 +76,26 @@ void UraCursor::relative_move(wlr_pointer_motion_event* event) {
 void UraCursor::absolute_move(wlr_pointer_motion_absolute_event* event) {
   auto server = UraServer::get_instance();
   server->seat->notify_idle_activity();
-  double lx, ly;
-  wlr_cursor_absolute_to_layout_coords(
+  wlr_cursor_warp_absolute(
     this->cursor,
     &event->pointer->base,
     event->x,
-    event->y,
-    &lx,
-    &ly
+    event->y
   );
   if (this->mode == UraCursorMode::Move)
     this->process_cursor_mode_move();
   else if (this->mode == UraCursorMode::Resize)
     this->process_cursor_mode_resize();
   else {
+    double lx, ly;
+    wlr_cursor_absolute_to_layout_coords(
+      this->cursor,
+      &event->pointer->base,
+      event->x,
+      event->y,
+      &lx,
+      &ly
+    );
     auto dx = lx - this->cursor->x;
     auto dy = ly - this->cursor->y;
     this->process_motion(event->time_msec, dx, dy, dx, dy);
