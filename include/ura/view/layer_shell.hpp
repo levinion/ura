@@ -13,6 +13,7 @@ public:
   wlr_scene_layer_surface_v1* scene_surface;
   wlr_scene_tree* scene_tree;
   std::string output;
+  zwlr_layer_shell_v1_layer layer;
 
   void init(wlr_layer_surface_v1* layer_surface);
   static UraLayerShell* from(wlr_surface* surface);

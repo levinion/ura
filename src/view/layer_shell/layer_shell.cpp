@@ -2,6 +2,7 @@
 #include "ura/core/callback.hpp"
 #include "ura/core/server.hpp"
 #include "ura/view/layer_shell.hpp"
+#include "ura/ura.hpp"
 #include "ura/view/output.hpp"
 #include "ura/view/view.hpp"
 #include "ura/seat/seat.hpp"
@@ -19,8 +20,8 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
   this->output = output->name;
 
   // get the layer scene tree based on layer_shell's type
-  auto layer_scene_tree =
-    server->view->get_layer_by_type(layer_surface->pending.layer);
+  this->layer = layer_surface->pending.layer;
+  auto layer_scene_tree = server->view->get_layer_by_type(this->layer);
   // create a scene tree for the layer_shell's surface
   auto scene_surface =
     wlr_scene_layer_surface_v1_create(layer_scene_tree, layer_surface);
@@ -41,11 +42,6 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
     this
   );
   server->runtime->register_callback(
-    &layer_surface->surface->events.destroy,
-    on_layer_shell_surface_destroy,
-    this
-  );
-  server->runtime->register_callback(
     &layer_surface->surface->events.map,
     on_layer_shell_surface_map,
     this
@@ -53,6 +49,11 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
   server->runtime->register_callback(
     &layer_surface->surface->events.unmap,
     on_layer_shell_surface_unmap,
+    this
+  );
+  server->runtime->register_callback(
+    &layer_surface->events.destroy,
+    on_layer_shell_surface_destroy,
     this
   );
 
@@ -103,9 +104,11 @@ void UraLayerShell::commit() {
   if (this->layer_surface->initialized
       && this->layer_surface->current.committed
         & WLR_LAYER_SURFACE_V1_STATE_LAYER) {
-    auto layer_type = this->layer_surface->current.layer;
-    auto layer = server->view->get_layer_by_type(layer_type);
     // put the surface under proper layer
+    output->get_layer_list_by_type(this->layer).remove(this);
+    this->layer = this->layer_surface->pending.layer;
+    output->get_layer_list_by_type(this->layer).push_back(this);
+    auto layer = server->view->get_layer_by_type(this->layer);
     wlr_scene_node_reparent(&this->scene_tree->node, layer);
   }
 
@@ -137,17 +140,19 @@ void UraLayerShell::destroy() {
   server->runtime->remove(this);
   // remove from output's layer
   auto output = server->view->get_output_by_name(this->output);
-  if (output) {
-    auto& layer =
-      output->get_layer_list_by_type(this->layer_surface->pending.layer);
-    layer.remove(this);
+  if (!output)
+    return;
+  auto& layer =
+    output->get_layer_list_by_type(this->layer_surface->pending.layer);
+  layer.remove(this);
+  auto toplevel = output->current_workspace->focus_stack.top();
+  if (this->layer_surface->current.keyboard_interactive
+      != ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE) {
     auto toplevel = output->current_workspace->focus_stack.top();
-    if (toplevel
-        && this->layer_surface->current.keyboard_interactive
-          != ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE)
+    if (toplevel)
       server->seat->focus(toplevel.value());
-    output->configure_layers();
   }
+  output->configure_layers();
 }
 
 } // namespace ura

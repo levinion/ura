@@ -111,7 +111,7 @@ void UraServer::setup_output() {
 
 void UraServer::setup_toplevel() {
   // create xdg_shell
-  this->xdg_shell = wlr_xdg_shell_create(this->display, 3);
+  this->xdg_shell = wlr_xdg_shell_create(this->display, 6);
   // new toplevel callback
   this->runtime->register_callback(
     &this->xdg_shell->events.new_toplevel,
@@ -188,7 +188,7 @@ void UraServer::setup_decoration() {
 }
 
 void UraServer::setup_layer_shell() {
-  this->layer_shell = wlr_layer_shell_v1_create(this->display, 1);
+  this->layer_shell = wlr_layer_shell_v1_create(this->display, 4);
   this->runtime->register_callback(
     &this->layer_shell->events.new_surface,
     on_layer_shell_new_surface,

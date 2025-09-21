@@ -31,10 +31,12 @@ int UraWorkSpace::index() {
   auto server = UraServer::get_instance();
   if (this->name)
     return -1;
-
   auto output = server->view->get_output_by_name(this->output);
+  if (!output)
+    return -1;
   int i = 0;
-  for (auto& workspace : output->get_workspaces()) {
+  auto workspaces = output->get_workspaces();
+  for (auto& workspace : workspaces) {
     if (this == workspace)
       return i;
     i++;

@@ -6,10 +6,14 @@
 #include "ura/util/vec.hpp"
 #include "ura/view/layer_shell.hpp"
 #include "ura/view/output.hpp"
+#include <array>
+#include <cassert>
+#include <functional>
 #include "ura/view/view.hpp"
 #include "ura/view/workspace.hpp"
 #include "ura/lua/lua.hpp"
 #include "ura/core/log.hpp"
+#include "wlr-layer-shell-unstable-v1-protocol.h"
 
 namespace ura {
 
@@ -20,8 +24,6 @@ void UraOutput::init(wlr_output* _wlr_output) {
   this->output->data = this;
   this->name = this->output->name;
 
-  auto workspaces = this->get_workspaces();
-
   this->background = wlr_scene_rect_create(
     server->view->get_scene_tree_or_create(UraSceneLayer::Clear),
     0,
@@ -31,11 +33,11 @@ void UraOutput::init(wlr_output* _wlr_output) {
 
   auto resume = false;
 
-  if (workspaces.empty()) {
+  if (!server->view->indexed_workspaces.contains(this->name)) {
     this->current_workspace = this->create_workspace();
   } else {
     // output resume
-    this->current_workspace = workspaces.front();
+    this->current_workspace = this->get_workspaces().front();
     resume = true;
   }
   this->switch_workspace(this->current_workspace);
@@ -140,23 +142,17 @@ UraOutput::get_layer_list_by_type(zwlr_layer_shell_v1_layer type) {
 }
 
 void UraOutput::configure_layer(
-  Vec<UraLayerShell*>& list,
+  Vec<UraLayerShell*>& layer_shells,
   wlr_box* full_area,
   wlr_box* usable_area,
   bool exclusive
 ) {
-  if (list.empty())
-    return;
-  auto server = UraServer::get_instance();
-  if (server->view->current_output() != this)
-    return;
-  // auto scene_output = wlr_scene_get_scene_output(server->scene, this->output);
-  // wlr_scene_node_set_position(&layer->node, scene_output->x, scene_output->y);
-  for (auto layer_shell : list) {
-    if (!layer_shell->layer_surface || !layer_shell->layer_surface->initialized
-        || (layer_shell->layer_surface->current.exclusive_zone > 0)
-          != exclusive)
+  for (auto layer_shell : layer_shells) {
+    if (!layer_shell->layer_surface->initialized)
       continue;
+    if ((layer_shell->layer_surface->current.exclusive_zone > 0) != exclusive) {
+      continue;
+    }
     wlr_scene_layer_surface_v1_configure(
       layer_shell->scene_surface,
       full_area,
@@ -166,6 +162,9 @@ void UraOutput::configure_layer(
 }
 
 bool UraOutput::configure_layers() {
+  auto server = UraServer::get_instance();
+  if (server->view->current_output() != this)
+    return false;
   auto full_area = this->logical_geometry().to_wlr_box();
   auto usable_area = full_area;
   for (auto exclusive : { true, false }) {
@@ -317,6 +316,7 @@ Vec4<int> UraOutput::logical_geometry() {
 
 Vec<UraWorkSpace*>& UraOutput::get_workspaces() {
   auto server = UraServer::get_instance();
+  assert(server->view->indexed_workspaces.contains(this->name));
   return server->view->indexed_workspaces[this->name];
 }
 
@@ -346,13 +346,12 @@ UraWorkSpace* UraOutput::get_workspace_at(int index) {
 }
 
 UraWorkSpace* UraOutput::create_workspace() {
-  auto& workspaces = this->get_workspaces();
   auto workspace = UraWorkSpace::init();
   workspace->output = this->name;
   auto server = UraServer::get_instance();
   server->view->indexed_workspaces[this->name].push_back(workspace.get());
   server->view->workspaces.push_back(std::move(workspace));
-  return workspaces.back();
+  return this->get_workspaces().back();
 }
 
 void UraOutput::switch_workspace(int index) {
@@ -400,7 +399,7 @@ sol::table UraOutput::to_lua_table() {
   table["dpms"] = this->dpms_on;
 
   auto workspaces = server->lua->state.create_table();
-  for (auto& workspace : this->get_workspaces()) {
+  for (auto workspace : this->get_workspaces()) {
     workspaces.add(workspace->to_lua_table());
   }
   table["workspaces"] = workspaces;

@@ -57,9 +57,9 @@ void switch_workspace(int index);
 void switch_or_create_workspace(int index);
 void destroy_workspace(int index);
 int get_workspace_number();
-sol::table get_current_workspace();
+std::optional<sol::table> get_current_workspace();
 std::optional<sol::table> get_workspace(sol::object id);
-sol::table list_workspaces();
+std::optional<sol::table> list_workspaces();
 void redraw_current_workspace();
 // output
 std::optional<sol::table> get_current_output();
