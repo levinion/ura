@@ -1,6 +1,5 @@
 #pragma once
 
-#include <any>
 #include <expected>
 #include <memory>
 #include <sol/forward.hpp>
@@ -83,12 +82,7 @@ public:
 
   template<typename T>
   std::optional<T> fetch(const std::string& key) {
-    if (this->cache.contains(key))
-      return std::any_cast<T>(this->cache[key]);
-    auto result = this->fetch<T>(this->ura, key);
-    if (result)
-      this->cache[key] = result.value();
-    return result;
+    return this->fetch<T>(this->ura, key);
   }
 
   void setup();
@@ -100,8 +94,6 @@ private:
     table["f"] = f;
     return table["f"];
   }
-
-  std::unordered_map<std::string, std::any> cache;
 };
 
 } // namespace ura

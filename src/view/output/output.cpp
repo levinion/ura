@@ -168,16 +168,9 @@ bool UraOutput::configure_layers() {
   auto full_area = this->logical_geometry().to_wlr_box();
   auto usable_area = full_area;
   for (auto exclusive : { true, false }) {
-    // background
+    // overlay
     this->configure_layer(
-      this->background_surfaces,
-      &full_area,
-      &usable_area,
-      exclusive
-    );
-    // bottom
-    this->configure_layer(
-      this->bottom_surfaces,
+      this->overlay_surfaces,
       &full_area,
       &usable_area,
       exclusive
@@ -189,9 +182,16 @@ bool UraOutput::configure_layers() {
       &usable_area,
       exclusive
     );
-    // overlay
+    // bottom
     this->configure_layer(
-      this->overlay_surfaces,
+      this->bottom_surfaces,
+      &full_area,
+      &usable_area,
+      exclusive
+    );
+    // background
+    this->configure_layer(
+      this->background_surfaces,
       &full_area,
       &usable_area,
       exclusive
