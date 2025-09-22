@@ -142,8 +142,7 @@ void UraLayerShell::destroy() {
   auto output = server->view->get_output_by_name(this->output);
   if (!output)
     return;
-  auto& layer =
-    output->get_layer_list_by_type(this->layer_surface->pending.layer);
+  auto& layer = output->get_layer_list_by_type(this->layer);
   layer.remove(this);
   auto toplevel = output->current_workspace->focus_stack.top();
   if (this->layer_surface->current.keyboard_interactive
