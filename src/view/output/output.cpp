@@ -366,11 +366,17 @@ void UraOutput::switch_workspace(UraWorkSpace* workspace) {
     return;
   if (workspace == this->current_workspace)
     return;
-  auto server = UraServer::get_instance();
+  // move pinned toplevels to the target workspace
+  auto pinned = this->current_workspace->get_pinned_toplevels();
+  for (auto tp : pinned) {
+    tp->move_to_workspace(workspace->index());
+    workspace->focus_stack.move_to_bottom(tp);
+  }
   this->current_workspace->disable();
   this->current_workspace = workspace;
   this->current_workspace->enable();
   this->current_workspace->redraw();
+  auto server = UraServer::get_instance();
   server->lua->try_execute_hook("workspace-change");
 }
 

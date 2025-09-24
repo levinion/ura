@@ -14,6 +14,7 @@ public:
   void push(UraToplevel* toplevel);
   void remove(UraToplevel* toplevel);
   void move_to_top(UraToplevel* toplevel);
+  void move_to_bottom(UraToplevel* toplevel);
   bool is_top(UraToplevel* toplevel);
   bool contains(UraToplevel* toplevel);
   std::optional<UraToplevel*> find_active();
@@ -34,6 +35,7 @@ public:
   void disable();
   int index();
   UraToplevel* get_toplevel_at(int index);
+  std::vector<UraToplevel*> get_pinned_toplevels();
   sol::table to_lua_table();
   void add(UraToplevel* toplevel);
   void remove(UraToplevel* toplevel);

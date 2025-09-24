@@ -86,4 +86,13 @@ void UraWorkSpace::swap_toplevel(UraToplevel* src, UraToplevel* dst) {
 void UraWorkSpace::redraw() {
   for (auto toplevel : this->toplevels) toplevel->redraw(false);
 }
+
+std::vector<UraToplevel*> UraWorkSpace::get_pinned_toplevels() {
+  std::vector<UraToplevel*> v;
+  for (auto toplevel : this->toplevels) {
+    if (toplevel->pinned)
+      v.push_back(toplevel);
+  }
+  return v;
+}
 } // namespace ura

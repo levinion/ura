@@ -16,6 +16,7 @@ public:
   bool mapped = true;
   bool destroying = false;
   bool draggable = false;
+  bool pinned = false;
   std::string layout = "tiling";
   std::optional<std::string> last_layout;
   bool first_commit_after_layout_change = true;

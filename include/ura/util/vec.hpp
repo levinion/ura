@@ -80,6 +80,10 @@ public:
     this->v.erase(it);
   }
 
+  void push_front(T x) {
+    this->v.insert(this->v.begin(), x);
+  }
+
   void erase(auto it) {
     this->v.erase(it);
   }

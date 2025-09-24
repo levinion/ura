@@ -151,7 +151,7 @@ void UraToplevel::commit() {
     geo.center(output->usable_area);
     this->layout_geometry["floating"] = geo;
     this->geometry.width = geo.width;
-    this->geometry.width = geo.width;
+    this->geometry.height = geo.height;
     this->move(geo.x, geo.y);
     server->seat->focus(this);
     server->lua->try_execute_hook("window-new", this->index());
@@ -521,6 +521,7 @@ sol::table UraToplevel::to_lua_table() {
   table["first_commit_after_layout_change"] =
     this->first_commit_after_layout_change;
   table["z_index"] = this->z_index;
+  table["pinned"] = this->pinned;
   return table;
 }
 

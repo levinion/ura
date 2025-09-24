@@ -665,4 +665,16 @@ void schedule(sol::protected_function f, int64_t time) {
   );
 }
 
+void set_window_pinned(int index, bool flag) {
+  auto server = UraServer::get_instance();
+  auto output = server->view->current_output();
+  if (!output)
+    return;
+  auto workspace = output->current_workspace;
+  auto toplevel = workspace->get_toplevel_at(index);
+  if (toplevel) {
+    toplevel->pinned = flag;
+  }
+}
+
 } // namespace ura::api

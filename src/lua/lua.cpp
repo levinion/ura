@@ -68,6 +68,7 @@ void Lua::setup() {
   this->set("win.set_draggable", api::set_window_draggable);
   this->set("win.swap", api::swap_window);
   this->set("win.redraw", api::redraw_window);
+  this->set("win.set_pinned", api::set_window_pinned);
   // input
   this->set("input.keyboard.set_repeat", api::set_keyboard_repeat);
   this->set("input.cursor.set_theme", api::set_cursor_theme);

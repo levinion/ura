@@ -44,6 +44,7 @@ void resize_window(int index, int width, int height);
 void center_window(int index);
 void swap_window(int index, int target);
 void redraw_window(int index);
+void set_window_pinned(int index, bool flag);
 // input
 void set_keyboard_repeat(int rate, int delay);
 void set_pointer_properties(std::string pattern, sol::object object);

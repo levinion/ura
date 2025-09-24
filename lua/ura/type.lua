@@ -25,7 +25,9 @@ local UraWindow = {
   --- @type boolean
   first_commit_after_layout_change = true,
   --- @type integer
-  z_index = 0
+  z_index = 0,
+  --- @type boolean
+  pinned = false
 }
 
 --- @class UraWorkspace
@@ -177,7 +179,10 @@ ura = {
     ---@param dst integer
     swap = function(src, dst) end,
     ---@param index integer
-    redraw = function(index) end
+    redraw = function(index) end,
+    ---@param index integer
+    ---@param flag boolean
+    set_pinned = function(index, flag) end
   },
 
   --- @class ura.input
