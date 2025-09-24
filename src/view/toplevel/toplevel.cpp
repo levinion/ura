@@ -98,7 +98,7 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
 void UraToplevel::destroy() {
   auto server = UraServer::get_instance();
   this->destroying = true;
-  if (this->is_active()) {
+  if (this->is_focused()) {
     server->seat->unfocus();
     this->workspace->remove(this);
     auto top = this->workspace->focus_stack.top();
@@ -185,13 +185,13 @@ void UraToplevel::apply_layout(bool recursive) {
 void UraToplevel::focus() {
   if (!this->xdg_toplevel->base->initialized)
     return;
+  if (this->is_focused())
+    return;
+
   auto server = UraServer::get_instance();
   auto seat = server->seat->seat;
   auto surface = this->xdg_toplevel->base->surface;
   auto workspace = this->workspace;
-
-  if (this->is_active())
-    return;
 
   // make sure this is on stack
   if (!workspace->focus_stack.contains(this))
@@ -234,7 +234,7 @@ UraToplevel* UraToplevel::from(wlr_surface* surface) {
 
 void UraToplevel::move_to_workspace(std::string name) {
   auto server = UraServer::get_instance();
-  if (this->is_active())
+  if (this->is_focused())
     server->seat->unfocus();
   this->unmap();
   auto named_workspace = server->view->get_named_workspace_or_create(name);
@@ -257,7 +257,7 @@ void UraToplevel::move_to_workspace(int index) {
   if (target == this->workspace)
     return;
   // switch focus
-  if (this->is_active())
+  if (this->is_focused())
     server->seat->unfocus();
   this->workspace->remove(this);
   if (this->workspace->focus_stack.top())
@@ -483,10 +483,9 @@ void UraToplevel::create_borders() {
   }
 }
 
-bool UraToplevel::is_active() {
+bool UraToplevel::is_focused() {
   auto server = UraServer::get_instance();
-  return server->seat->seat->keyboard_state.focused_surface
-    == this->xdg_toplevel->base->surface;
+  return server->seat->focused_toplevel() == this;
 }
 
 void UraToplevel::set_border_color(std::array<float, 4>& color) {

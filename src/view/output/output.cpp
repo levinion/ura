@@ -369,8 +369,10 @@ void UraOutput::switch_workspace(UraWorkSpace* workspace) {
   // move pinned toplevels to the target workspace
   auto pinned = this->current_workspace->get_pinned_toplevels();
   for (auto tp : pinned) {
+    auto focused = tp->is_focused();
     tp->move_to_workspace(workspace->index());
-    workspace->focus_stack.move_to_bottom(tp);
+    if (!focused)
+      workspace->focus_stack.move_to_bottom(tp);
   }
   this->current_workspace->disable();
   this->current_workspace = workspace;

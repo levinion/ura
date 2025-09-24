@@ -53,7 +53,7 @@ bool UraFocusStack::contains(UraToplevel* client) {
 std::optional<UraToplevel*> UraFocusStack::find_active() {
   // find last of item.surface != client.surface
   for (auto it = this->stack.rbegin(); it != this->stack.rend(); it++) {
-    if ((*it)->is_active())
+    if ((*it)->is_focused())
       return *it;
   }
   return {};
@@ -62,7 +62,7 @@ std::optional<UraToplevel*> UraFocusStack::find_active() {
 void UraFocusStack::unfocus_all() {
   // find last of item.surface != client.surface
   for (auto it = this->stack.rbegin(); it != this->stack.rend(); it++) {
-    if ((*it)->is_active())
+    if ((*it)->is_focused())
       (*it)->unfocus();
   }
 }

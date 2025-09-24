@@ -74,7 +74,7 @@ end)
 ura.keymap.set("super+h", function()
   local win = ura.win.get_current()
   if not win then return end
-  ura.win.focus(ura.win.size() - 1)
+  ura.win.focus(win.index - 1)
 end)
 
 ura.keymap.set("super+l", function()

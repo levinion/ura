@@ -57,7 +57,7 @@ public:
   void set_z_index(int z);
   void redraw(bool recursive);
   void redraw_all_others();
-  bool is_active();
+  bool is_focused();
   sol::table to_lua_table();
   void set_layout(std::string layout);
 
