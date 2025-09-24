@@ -59,7 +59,7 @@ void destroy_workspace(int index);
 int get_workspace_number();
 std::optional<sol::table> get_current_workspace();
 std::optional<sol::table> get_workspace(sol::object id);
-std::optional<sol::table> list_workspaces();
+sol::table list_workspaces();
 void redraw_current_workspace();
 // output
 std::optional<sol::table> get_current_output();

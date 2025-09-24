@@ -218,7 +218,7 @@ ura = {
     size = function() end,
     --- @param index integer The index of the workspace to destroy (0-based).
     destroy = function(index) end,
-    --- @return UraWorkspace
+    --- @return UraWorkspace|nil
     get_current = function() end,
     --- @param id integer|string
     --- @return UraWorkspace|nil

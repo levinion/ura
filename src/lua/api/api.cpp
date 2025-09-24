@@ -353,7 +353,7 @@ void activate_window(sol::object workspace_id, int window_index) {
   toplevel->activate();
 }
 
-std::optional<sol::table> list_workspaces() {
+sol::table list_workspaces() {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
   if (!output)
