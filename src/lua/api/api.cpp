@@ -3,7 +3,6 @@
 #include <sol/forward.hpp>
 #include <unordered_set>
 #include "ura/core/log.hpp"
-#include "ura/lua/hook.hpp"
 #include "ura/lua/lua.hpp"
 #include "ura/core/server.hpp"
 #include "ura/view/output.hpp"
@@ -177,18 +176,15 @@ int get_current_workspace_index() {
   return output->current_workspace->index();
 }
 
-void set_hook(std::string name, sol::protected_function f, sol::object obj) {
-  UraPluginHook p;
-  if (obj.is<sol::table>()) {
-    auto table = obj.as<sol::table>();
-    p.group =
-      table["group"].get<std::optional<std::string>>().value_or("group");
-    p.priority = table["priority"].get<std::optional<int>>().value_or(1);
-    p.final = table["final"].get<std::optional<bool>>().value_or(false);
-  }
-  p.callback = f;
+void set_hook(std::string name, sol::protected_function f) {
   auto server = UraServer::get_instance();
-  server->lua->hooks[name].insert(std::move(p));
+  server->lua->hooks[name] = f;
+}
+
+void unset_hook(std::string name) {
+  auto server = UraServer::get_instance();
+  if (server->lua->hooks.contains(name))
+    server->lua->hooks.erase(name);
 }
 
 void set_cursor_theme(sol::object obj) {

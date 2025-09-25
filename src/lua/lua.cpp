@@ -103,6 +103,7 @@ void Lua::setup() {
   this->set("keymap.get_current_mode", api::keymap_get_current_mode);
   // hook
   this->set("hook.set", api::set_hook);
+  this->set("hook.unset", api::unset_hook);
   // fn
   this->set("fn.set_env", api::set_env);
   this->set("fn.unset_env", api::unset_env);

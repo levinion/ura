@@ -13,7 +13,8 @@ void reload();
 void spawn(std::string cmd);
 void notify(std::string summary, std::string body);
 void schedule(sol::protected_function f, int64_t time);
-void set_hook(std::string name, sol::protected_function f, sol::object obj);
+void set_hook(std::string name, sol::protected_function f);
+void unset_hook(std::string name);
 void notify_idle_activity();
 void set_idle_inhibitor(bool flag);
 // keymap

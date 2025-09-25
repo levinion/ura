@@ -2,12 +2,12 @@
 
 #include <expected>
 #include <memory>
+#include <optional>
 #include <sol/forward.hpp>
 #include <sol/sol.hpp>
 #include <filesystem>
 #include <unordered_map>
 #include "ura/core/server.hpp"
-#include "ura/lua/hook.hpp"
 #include "ura/util/util.hpp"
 
 namespace ura {
@@ -17,7 +17,7 @@ public:
   sol::table ura;
   std::string lua_stdout;
   bool reset = false;
-  std::unordered_map<std::string, UraHook> hooks;
+  std::unordered_map<std::string, sol::protected_function> hooks;
   std::unordered_map<
     std::string,
     std::unordered_map<uint64_t, sol::protected_function>>
@@ -34,18 +34,20 @@ public:
   void try_execute_init();
 
   template<typename T, typename... Args>
-  std::vector<T> try_execute_hook(std::string name, Args&&... args) {
+  std::optional<T> try_execute_hook(std::string name, Args&&... args) {
     if (!this->hooks.contains(name))
       return {};
-    return this->hooks[name].execute<T>(args...);
+    sol::safe_function_result ret = this->hooks[name](args...);
+    if (ret.valid())
+      return ret.get<std::optional<T>>();
+    return {};
   }
 
   template<typename... Args>
   void try_execute_hook(std::string name, Args&&... args) {
-    if (!this->hooks.contains(name)) {
+    if (!this->hooks.contains(name))
       return;
-    }
-    this->hooks[name].execute(std::forward<Args>(args)...);
+    this->hooks[name](args...);
   }
 
   template<typename T>
