@@ -106,15 +106,15 @@ void UraLayerShell::commit() {
         & WLR_LAYER_SURFACE_V1_STATE_LAYER) {
     // put the surface under proper layer
     output->get_layer_list_by_type(this->layer).remove(this);
-    this->layer = this->layer_surface->pending.layer;
+    this->layer = this->layer_surface->current.layer;
     output->get_layer_list_by_type(this->layer).push_back(this);
     auto layer = server->view->get_layer_by_type(this->layer);
     wlr_scene_node_reparent(&this->scene_tree->node, layer);
   }
 
   // configure size
-  auto width = this->layer_surface->pending.desired_width;
-  auto height = this->layer_surface->pending.desired_height;
+  auto width = this->layer_surface->current.desired_width;
+  auto height = this->layer_surface->current.desired_height;
 
   auto output_geo = output->logical_geometry();
   if (width == 0)

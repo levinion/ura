@@ -18,7 +18,7 @@ void on_new_toplevel_decoration(wl_listener* listener, void* data) {
     toplevel_decoration
   );
   server->runtime->register_callback(
-    &toplevel_decoration->events.request_mode,
+    &toplevel_decoration->events.destroy,
     on_toplevel_decoration_destroy,
     toplevel_decoration
   );

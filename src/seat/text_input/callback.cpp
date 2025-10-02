@@ -205,11 +205,7 @@ void on_input_method_popup_surface_destroy(wl_listener* listener, void* data) {
 void on_input_method_popup_surface_map(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto input_popup = server->runtime->fetch<UraInputMethodPopup*>(listener);
-  auto toplevel = server->seat->focused_toplevel();
-  if (!toplevel)
-    return;
-  auto parent_scene_tree = toplevel->scene_tree;
-  if (!parent_scene_tree)
+  if (input_popup->scene_tree->node.enabled)
     return;
   auto active_text_input = server->seat->text_input->get_active_text_input();
   if (!active_text_input)
@@ -221,6 +217,8 @@ void on_input_method_popup_surface_map(wl_listener* listener, void* data) {
 void on_input_method_popup_surface_unmap(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto input_popup = server->runtime->fetch<UraInputMethodPopup*>(listener);
+  if (!input_popup->scene_tree->node.enabled)
+    return;
   if (input_popup->scene_tree) {
     wlr_scene_node_set_enabled(&input_popup->scene_tree->node, false);
   }
@@ -229,7 +227,7 @@ void on_input_method_popup_surface_unmap(wl_listener* listener, void* data) {
 void on_input_method_popup_surface_commit(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto input_popup = server->runtime->fetch<UraInputMethodPopup*>(listener);
-  if (!input_popup->scene_tree || !input_popup->scene_tree->node.enabled)
+  if (!input_popup->scene_tree->node.enabled)
     return;
   auto active_text_input = server->seat->text_input->get_active_text_input();
   if (!active_text_input)

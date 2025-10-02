@@ -21,7 +21,6 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     server->view->get_scene_tree_or_create(this->z_index),
     xdg_toplevel->base
   );
-  this->unmap();
   this->output = output->name;
   this->workspace = output->current_workspace;
   this->workspace->add(this);
@@ -152,6 +151,7 @@ void UraToplevel::commit() {
     this->layout_geometry["floating"] = geo;
     this->geometry.width = geo.width;
     this->geometry.height = geo.height;
+    this->resize_borders(geo.width, geo.height);
     this->move(geo.x, geo.y);
     server->seat->focus(this);
     server->lua->try_execute_hook("window-new", this->index());
@@ -218,6 +218,8 @@ void UraToplevel::focus() {
 
 void UraToplevel::unfocus() {
   if (!this->xdg_toplevel->base->initialized)
+    return;
+  if (!this->is_focused())
     return;
   this->set_border_color(this->inactive_border_color);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
@@ -360,6 +362,15 @@ bool UraToplevel::resize(int width, int height) {
   this->geometry.width = width;
   this->geometry.height = height;
   wlr_xdg_toplevel_set_size(this->xdg_toplevel, width, height);
+  this->resize_borders(width, height);
+  this->move(this->geometry.x, this->geometry.y);
+
+  auto server = UraServer::get_instance();
+  server->lua->try_execute_hook("window-resize", this->index());
+  return true;
+}
+
+void UraToplevel::resize_borders(int width, int height) {
   auto border_width = this->border_width;
   // top border
   wlr_scene_rect_set_size(
@@ -385,11 +396,6 @@ bool UraToplevel::resize(int width, int height) {
     border_width,
     height + 2 * border_width
   );
-  this->move(this->geometry.x, this->geometry.y);
-
-  auto server = UraServer::get_instance();
-  server->lua->try_execute_hook("window-resize", this->index());
-  return true;
 }
 
 void UraToplevel::close() {
@@ -403,8 +409,6 @@ void UraToplevel::close() {
 }
 
 void UraToplevel::map() {
-  if (this->mapped)
-    return;
   this->mapped = true;
   wlr_scene_node_set_enabled(&this->scene_tree->node, true);
   if (this->xdg_toplevel->base->initialized && this->foreign_handle) {
@@ -421,8 +425,6 @@ void UraToplevel::map() {
 }
 
 void UraToplevel::unmap() {
-  if (!this->mapped)
-    return;
   this->mapped = false;
   wlr_scene_node_set_enabled(&this->scene_tree->node, false);
   if (this->xdg_toplevel->base->initialized && this->foreign_handle)
@@ -438,8 +440,14 @@ std::string UraToplevel::app_id() {
 }
 
 void UraToplevel::set_title(std::string title) {
-  this->xdg_toplevel->title = title.data();
   wlr_foreign_toplevel_handle_v1_set_title(this->foreign_handle, title.data());
+}
+
+void UraToplevel::set_app_id(std::string app_id) {
+  wlr_foreign_toplevel_handle_v1_set_app_id(
+    this->foreign_handle,
+    app_id.data()
+  );
 }
 
 void UraToplevel::set_z_index(int z_index) {
