@@ -108,6 +108,7 @@ void UraToplevel::destroy() {
   }
   server->runtime->remove(this);
   wlr_foreign_toplevel_handle_v1_destroy(this->foreign_handle);
+  this->dismiss_popups();
   this->workspace->redraw();
 }
 
@@ -227,6 +228,8 @@ void UraToplevel::unfocus() {
     wlr_xdg_toplevel_set_activated(this->xdg_toplevel, false);
   auto server = UraServer::get_instance();
   server->seat->text_input->unfocus_active_text_input();
+
+  this->dismiss_popups();
 }
 
 // get toplevel instance from wlr_surface
@@ -576,6 +579,13 @@ void UraToplevel::redraw_all_others() {
     if (toplevel != this) {
       toplevel->redraw(false);
     }
+  }
+}
+
+void UraToplevel::dismiss_popups() {
+  wlr_xdg_popup *_popup, *tmp;
+  wl_list_for_each_safe(_popup, tmp, &this->xdg_toplevel->base->popups, link) {
+    wlr_xdg_popup_destroy(_popup);
   }
 }
 } // namespace ura

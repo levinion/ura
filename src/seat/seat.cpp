@@ -2,6 +2,7 @@
 #include "ura/core/runtime.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/view/client.hpp"
+#include "ura/view/layer_shell.hpp"
 #include "ura/view/view.hpp"
 #include "ura/view/toplevel.hpp"
 #include "ura/seat/seat.hpp"
@@ -70,9 +71,13 @@ void UraSeat::unfocus() {
       && !this->seat->pointer_state.focused_surface)
     return;
   if (this->seat->keyboard_state.focused_surface) {
-    auto toplevel = this->focused_toplevel();
-    if (toplevel)
-      toplevel->unfocus();
+    auto client = this->focused_client();
+    if (client) {
+      if (client->type == UraSurfaceType::Toplevel)
+        client->transform<UraToplevel>()->unfocus();
+      else if (client->type == UraSurfaceType::LayerShell)
+        client->transform<UraLayerShell>()->unfocus();
+    }
     wlr_seat_keyboard_notify_clear_focus(seat);
   }
   if (this->seat->pointer_state.focused_surface) {

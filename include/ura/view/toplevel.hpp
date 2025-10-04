@@ -67,6 +67,7 @@ private:
   void resize_borders(int width, int height);
   void set_border_color(std::array<float, 4>& color);
   void apply_layout(bool recursive);
+  void dismiss_popups();
   std::unordered_map<std::string, Vec4<int>> layout_geometry;
   bool prepared = false;
 };

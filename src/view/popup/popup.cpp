@@ -132,5 +132,9 @@ void UraPopup::destroy() {
   auto output = server->view->current_output();
   output->popups.remove(this);
   server->runtime->remove(this);
+  wlr_xdg_popup *_popup, *tmp;
+  wl_list_for_each_safe(_popup, tmp, &this->xdg_popup->base->popups, link) {
+    wlr_xdg_popup_destroy(_popup);
+  }
 }
 } // namespace ura

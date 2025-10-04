@@ -80,6 +80,10 @@ void UraLayerShell::focus() {
   }
 }
 
+void UraLayerShell::unfocus() {
+  this->dismiss_popups();
+}
+
 void UraLayerShell::map() {
   wlr_scene_node_set_enabled(&this->scene_surface->tree->node, true);
   auto server = UraServer::get_instance();
@@ -151,7 +155,15 @@ void UraLayerShell::destroy() {
     if (toplevel)
       server->seat->focus(toplevel.value());
   }
+  this->dismiss_popups();
   output->configure_layers();
+}
+
+void UraLayerShell::dismiss_popups() {
+  wlr_xdg_popup *_popup, *tmp;
+  wl_list_for_each_safe(_popup, tmp, &this->layer_surface->popups, link) {
+    wlr_xdg_popup_destroy(_popup);
+  }
 }
 
 } // namespace ura
