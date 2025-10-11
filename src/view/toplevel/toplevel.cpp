@@ -75,6 +75,16 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
       on_toplevel_request_fullscreen,
       this
     );
+    server->runtime->register_callback(
+      &xdg_toplevel->events.set_app_id,
+      on_toplevel_set_app_id,
+      this
+    );
+    server->runtime->register_callback(
+      &xdg_toplevel->events.set_title,
+      on_toplevel_set_title,
+      this
+    );
   }
 
   // forign toplevel handle
@@ -444,6 +454,8 @@ std::string UraToplevel::app_id() {
 
 void UraToplevel::set_title(std::string title) {
   wlr_foreign_toplevel_handle_v1_set_title(this->foreign_handle, title.data());
+  auto server = UraServer::get_instance();
+  server->lua->try_execute_hook("window-title-change");
 }
 
 void UraToplevel::set_app_id(std::string app_id) {
@@ -451,6 +463,8 @@ void UraToplevel::set_app_id(std::string app_id) {
     this->foreign_handle,
     app_id.data()
   );
+  auto server = UraServer::get_instance();
+  server->lua->try_execute_hook("window-app_id-change");
 }
 
 void UraToplevel::set_z_index(int z_index) {

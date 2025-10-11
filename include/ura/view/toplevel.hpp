@@ -49,8 +49,8 @@ public:
   void unmap();
   std::string title();
   std::string app_id();
-  void set_title(std::string title);
-  void set_app_id(std::string app_id);
+  void set_title(std::string title); // inner api
+  void set_app_id(std::string app_id); // inner api
   void move_to_workspace(int index);
   void move_to_workspace(std::string name);
   int index();

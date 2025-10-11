@@ -70,6 +70,8 @@ void on_toplevel_destroy(wl_listener* listener, void* data);
 // void on_toplevel_request_resize(wl_listener* listener, void* data);
 // void on_toplevel_request_maximize(wl_listener* listener, void* data);
 void on_toplevel_request_fullscreen(wl_listener* listener, void* data);
+void on_toplevel_set_app_id(wl_listener* listener, void* data);
+void on_toplevel_set_title(wl_listener* listener, void* data);
 
 // view/toplevel/decoration.cpp
 void on_new_toplevel_decoration(wl_listener* listener, void* data);
