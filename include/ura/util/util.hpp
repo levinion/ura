@@ -6,39 +6,23 @@
 #include <string>
 #include <vector>
 #include "ura/ura.hpp"
+#include <ranges>
 
 namespace ura {
 
-inline constexpr std::vector<std::string>
-split(std::string_view s, char symbol) {
-  std::vector<std::string> v;
-  std::string t;
-  for (int i = 0; i < s.size(); i++) {
-    auto c = tolower(s[i]);
-    if (c == symbol) {
-      v.push_back(t);
-      t.clear();
-    } else {
-      t.push_back(c);
-    }
-  }
-  if (!t.empty())
-    v.push_back(t);
-  return v;
+template<typename T>
+constexpr std::vector<std::string_view> split(std::string_view s, T symbol) {
+  return s | std::views::split(symbol)
+    | std::views::transform([](auto r) { return std::string_view(r); })
+    | std::ranges::to<std::vector<std::string_view>>();
 }
 
-inline std::string join(std::vector<std::string> v, char symbol) {
-  std::string r;
-  if (v.empty())
-    return r;
-  for (int i = 0; i < v.size() - 1; i++) {
-    r += v[i] + symbol;
-  }
-  r += v[v.size() - 1];
-  return r;
+template<typename T>
+constexpr std::string join(std::vector<std::string_view>& v, T symbol) {
+  return v | std::views::join_with(symbol) | std::ranges::to<std::string>();
 }
 
-inline std::optional<std::array<float, 4>> hex2rgba(std::string hex_str) {
+inline std::optional<std::array<float, 4>> hex2rgba(std::string_view hex_str) {
   if (!hex_str.starts_with('#'))
     return {};
   hex_str = hex_str.substr(1);
@@ -46,7 +30,7 @@ inline std::optional<std::array<float, 4>> hex2rgba(std::string hex_str) {
     if (!std::isxdigit(c))
       return {};
   }
-  auto hex = std::stoul(hex_str, 0, 16);
+  auto hex = std::stoul(std::string(hex_str), 0, 16);
   auto rgba = std::array<float, 4>();
   if (hex_str.size() == 6) { // RGB
     rgba[0] = static_cast<float>((hex >> 16) & 0xFF) / 255.0f;
@@ -63,7 +47,7 @@ inline std::optional<std::array<float, 4>> hex2rgba(std::string hex_str) {
   return rgba;
 }
 
-inline std::optional<uint64_t> parse_keymap(std::string& pattern) {
+inline std::optional<uint64_t> parse_keymap(std::string_view pattern) {
   // modifiers str to modifiers bit
   auto keys = split(pattern, '+');
   if (keys.empty())
@@ -92,8 +76,10 @@ inline std::optional<uint64_t> parse_keymap(std::string& pattern) {
       }
     }
   }
-  xkb_keysym_t sym =
-    xkb_keysym_from_name(keys.back().c_str(), XKB_KEYSYM_CASE_INSENSITIVE);
+  xkb_keysym_t sym = xkb_keysym_from_name(
+    std::string(keys.back()).c_str(),
+    XKB_KEYSYM_CASE_INSENSITIVE
+  );
 
   // if shift is pressed, then upper sym should be binded
   if (mod & WLR_MODIFIER_SHIFT && sym >= XKB_KEY_a && sym <= XKB_KEY_z) {
