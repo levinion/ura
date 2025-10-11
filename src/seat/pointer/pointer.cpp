@@ -16,7 +16,7 @@ void UraPointer::init(wlr_input_device* device) {
   this->base->data = this;
   if (wlr_input_device_is_libinput(device)) {
     this->libinput_device_ = wlr_libinput_get_device_handle(device);
-    this->name = libinput_device_get_name(this->libinput_device_.value());
+    this->name = libinput_device_get_name(this->libinput_device_);
     this->try_apply_rules();
   }
 }
@@ -27,7 +27,7 @@ void UraPointer::set_accel_profile(std::string& _profile) {
     return;
   if (!this->is_libinput())
     return;
-  auto device = this->libinput_device_.value();
+  auto device = this->libinput_device_;
   if (!libinput_device_config_accel_is_available(device)
       || libinput_device_config_accel_get_profile(device) == profile.value())
     return;
@@ -35,7 +35,7 @@ void UraPointer::set_accel_profile(std::string& _profile) {
 }
 
 bool UraPointer::is_libinput() {
-  return this->libinput_device_.has_value();
+  return this->libinput_device_ != nullptr;
 }
 
 void UraPointer::try_apply_rules() {

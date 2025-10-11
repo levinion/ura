@@ -2,7 +2,6 @@
 
 #include "ura/ura.hpp"
 #include "sol/sol.hpp" // IWYU pragma: keep
-#include <optional>
 #include <string>
 
 namespace ura {
@@ -23,7 +22,7 @@ public:
 
 private:
   wlr_pointer* base;
-  std::optional<libinput_device*> libinput_device_;
+  libinput_device* libinput_device_;
 };
 
 } // namespace ura
