@@ -22,6 +22,12 @@ constexpr std::string join(std::vector<std::string_view>& v, T symbol) {
   return v | std::views::join_with(symbol) | std::ranges::to<std::string>();
 }
 
+constexpr std::string_view trim(std::string_view s) {
+  auto view = s | std::views::drop_while(isspace) | std::views::reverse
+    | std::views::drop_while(isspace) | std::views::reverse;
+  return std::string_view(view.begin().base().base(), view.end().base().base());
+}
+
 inline std::optional<std::array<float, 4>> hex2rgba(std::string_view hex_str) {
   if (!hex_str.starts_with('#'))
     return {};
@@ -49,7 +55,8 @@ inline std::optional<std::array<float, 4>> hex2rgba(std::string_view hex_str) {
 
 inline std::optional<uint64_t> parse_keymap(std::string_view pattern) {
   // modifiers str to modifiers bit
-  auto keys = split(pattern, '+');
+  auto keys = split(pattern, '+') | std::views::transform(trim)
+    | std::ranges::to<std::vector<std::string_view>>();
   if (keys.empty())
     return {};
   uint32_t mod = 0;
