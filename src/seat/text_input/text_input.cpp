@@ -4,19 +4,22 @@
 namespace ura {
 
 void UraTextInput::focus_text_input(wlr_surface* surface) {
-  // unfocus prev text_input if any
-  this->unfocus_active_text_input();
   auto it = std::find_if(
     this->text_inputs.begin(),
     this->text_inputs.end(),
-    [&](auto text_input) {
+    [=](auto text_input) {
       return wl_resource_get_client(text_input->resource)
         == wl_resource_get_client(surface->resource);
     }
   );
   if (it != this->text_inputs.end()) {
     auto text_input = *it;
-    wlr_text_input_v3_send_enter(text_input, surface);
+    if (text_input == this->get_active_text_input())
+      return;
+    else {
+      this->unfocus_active_text_input();
+      wlr_text_input_v3_send_enter(text_input, surface);
+    }
   }
 }
 
@@ -35,7 +38,8 @@ wlr_text_input_v3* UraTextInput::get_active_text_input() {
 }
 
 void UraTextInput::send_state(wlr_text_input_v3* text_input) {
-  if (!this->input_method || !text_input->focused_surface)
+  if (!this->input_method || !text_input->focused_surface
+      || !this->input_method->active)
     return;
   wlr_input_method_v2_send_surrounding_text(
     input_method,

@@ -232,10 +232,14 @@ void UraToplevel::unfocus() {
     return;
   if (!this->is_focused())
     return;
+
   this->set_border_color(this->inactive_border_color);
-  wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
-  if (!this->destroying)
+
+  if (!this->destroying) {
     wlr_xdg_toplevel_set_activated(this->xdg_toplevel, false);
+    wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
+  }
+
   auto server = UraServer::get_instance();
   server->seat->text_input->unfocus_active_text_input();
 

@@ -138,27 +138,31 @@ void UraCursor::process_motion(
 ) {
   auto server = UraServer::get_instance();
   auto seat = server->seat->seat;
-  auto cursor_follow_mouse =
+  auto focus_follow_mouse =
     server->lua->fetch<bool>("opt.focus_follow_mouse").value_or(true);
 
-  // surface local coordination
+  // get foreground surface
   double sx, sy;
   auto client = server->view->foreground_client(&sx, &sy);
+  auto surface = client ? client.value().surface : nullptr;
 
-  // unfocus if surface is none under cursor_follow_mouse mode
-  if (cursor_follow_mouse && (!client || !client.value().surface)) {
-    server->seat->unfocus();
-    return;
+  // send enter if move to another surface
+  if (surface != server->seat->seat->pointer_state.focused_surface) {
+    if (!surface) {
+      wlr_seat_pointer_notify_clear_focus(seat);
+      server->seat->cursor->set_xcursor("left_ptr");
+    } else
+      wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
   }
 
-  // focus surface based on its type
-  auto surface = client.value().surface;
-  if (surface != server->seat->seat->pointer_state.focused_surface)
-    wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
-  if (surface != server->seat->seat->keyboard_state.focused_surface) {
-    if (cursor_follow_mouse) {
+  assert(surface == server->seat->seat->pointer_state.focused_surface);
+
+  // focus if move to another surface
+  if (focus_follow_mouse) {
+    if (!surface) {
+      server->seat->unfocus();
+    } else
       server->seat->focus(client.value());
-    }
   }
 
   wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
@@ -206,8 +210,6 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
   if (event->button == 0x111) { // right button
     process_mode(UraCursorMode::Resize);
   }
-  if (this->mode != UraCursorMode::Passthrough)
-    return;
 
   // notify focused client with button pressed event
   wlr_seat_pointer_notify_button(
@@ -217,19 +219,23 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
     event->state
   );
 
+  if (this->mode != UraCursorMode::Passthrough)
+    return;
+
   // focus pressed toplevel if focus_follow_mouse is not enabled
-  auto cursor_follow_mouse =
+  auto focus_follow_mouse =
     server->lua->fetch<bool>("opt.focus_follow_mouse").value_or(true);
-  if (!cursor_follow_mouse && event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
-    // focus client
+  // only works when focus_follow_mouse is disabled
+  if (!focus_follow_mouse && event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
     double sx, sy;
     auto client = server->view->foreground_client(&sx, &sy);
-    if ((!client || !client.value().surface)
-        && server->seat->focused_client()) {
+    // unfocus if there's no surface under cursor
+    if ((!client || !client.value().surface)) {
       server->seat->unfocus();
-      return;
+    } else {
+      // focus the client under cursor
+      server->seat->focus(client.value());
     }
-    server->seat->focus(client.value());
   }
 
   server->seat->notify_idle_activity();

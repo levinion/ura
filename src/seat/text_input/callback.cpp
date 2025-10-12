@@ -38,7 +38,8 @@ void on_text_input_enable(wl_listener* listener, void* data) {
   auto text_input = static_cast<wlr_text_input_v3*>(data);
   auto input_method = server->seat->text_input->input_method;
   if (input_method) {
-    wlr_input_method_v2_send_activate(input_method);
+    if (!input_method->active)
+      wlr_input_method_v2_send_activate(input_method);
     server->seat->text_input->send_state(text_input);
   }
 }
@@ -48,8 +49,8 @@ void on_text_input_disable(wl_listener* listener, void* data) {
   auto text_input = static_cast<wlr_text_input_v3*>(data);
   auto input_method = server->seat->text_input->input_method;
   if (input_method) {
-    wlr_input_method_v2_send_deactivate(input_method);
     server->seat->text_input->send_state(text_input);
+    wlr_input_method_v2_send_deactivate(input_method);
   }
 }
 
@@ -63,7 +64,8 @@ void on_text_input_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto text_input = static_cast<wlr_text_input_v3*>(data);
   if (server->seat->text_input->input_method
-      && text_input == server->seat->text_input->get_active_text_input())
+      && text_input == server->seat->text_input->get_active_text_input()
+      && server->seat->text_input->input_method->active)
     wlr_input_method_v2_send_deactivate(server->seat->text_input->input_method);
   server->seat->text_input->text_inputs.remove(text_input);
   server->runtime->remove(text_input);
@@ -105,10 +107,7 @@ void on_input_method_destroy(wl_listener* listener, void* data) {
   auto input_method = static_cast<wlr_input_method_v2*>(data);
   server->seat->text_input->input_method = nullptr;
   server->runtime->remove(input_method);
-  if (server->seat->text_input->get_active_text_input())
-    wlr_text_input_v3_send_leave(
-      server->seat->text_input->get_active_text_input()
-    );
+  server->seat->text_input->unfocus_active_text_input();
 }
 
 void on_input_method_commit(wl_listener* listener, void* data) {

@@ -65,25 +65,19 @@ std::optional<UraClient> UraSeat::focused_client() {
   return client;
 }
 
+// this function only handles keyboard focus. pointer focus is handled by cursor
 void UraSeat::unfocus() {
   auto server = UraServer::get_instance();
-  if (!this->seat->keyboard_state.focused_surface
-      && !this->seat->pointer_state.focused_surface)
+  if (!this->seat->keyboard_state.focused_surface)
     return;
-  if (this->seat->keyboard_state.focused_surface) {
-    auto client = this->focused_client();
-    if (client) {
-      if (client->type == UraSurfaceType::Toplevel)
-        client->transform<UraToplevel>()->unfocus();
-      else if (client->type == UraSurfaceType::LayerShell)
-        client->transform<UraLayerShell>()->unfocus();
-    }
-    wlr_seat_keyboard_notify_clear_focus(seat);
+  auto client = this->focused_client();
+  if (client) {
+    if (client->type == UraSurfaceType::Toplevel)
+      client->transform<UraToplevel>()->unfocus();
+    else if (client->type == UraSurfaceType::LayerShell)
+      client->transform<UraLayerShell>()->unfocus();
   }
-  if (this->seat->pointer_state.focused_surface) {
-    wlr_seat_pointer_notify_clear_focus(seat);
-  }
-  this->cursor->set_xcursor("left_ptr");
+  wlr_seat_keyboard_notify_clear_focus(seat);
   server->lua->try_execute_hook("focus-change");
 }
 
