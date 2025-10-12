@@ -211,6 +211,9 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
     process_mode(UraCursorMode::Resize);
   }
 
+  if (this->mode != UraCursorMode::Passthrough)
+    return;
+
   // notify focused client with button pressed event
   wlr_seat_pointer_notify_button(
     server->seat->seat,
@@ -218,9 +221,6 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
     event->button,
     event->state
   );
-
-  if (this->mode != UraCursorMode::Passthrough)
-    return;
 
   // focus pressed toplevel if focus_follow_mouse is not enabled
   auto focus_follow_mouse =
