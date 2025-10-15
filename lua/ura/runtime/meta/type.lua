@@ -228,9 +228,9 @@ ura = {
 
 		--- wrapper of ura.keymap.set_mode, equals to ura.keymap.set_mode("normal",...)
 		--- @param pattern string A string representing key (e.g. "super+shift+p")
+		--- @param mode string
 		--- @param f fun() The function to execute when the keybinding is pressed.
-		--- @param opt table
-		set_keymap = function(pattern, f, opt) end,
+		set_keymap = function(pattern, mode, f) end,
 		--- wrapper of ura.keymap.unset_mode, equals to ura.keymap.unset_mode("normal",...)
 		--- @param pattern string
 		--- @param opt table

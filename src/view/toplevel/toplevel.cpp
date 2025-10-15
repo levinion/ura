@@ -1,4 +1,5 @@
 #include "ura/view/toplevel.hpp"
+#include "flexible/flexible.hpp"
 #include "ura/ura.hpp"
 #include "ura/util/vec.hpp"
 #include "ura/core/runtime.hpp"
@@ -121,7 +122,6 @@ void UraToplevel::destroy() {
   server->runtime->remove(this);
   wlr_foreign_toplevel_handle_v1_destroy(this->foreign_handle);
   this->dismiss_popups();
-  this->workspace->redraw();
 
   server->globals.erase(this->id());
 }
@@ -163,38 +163,18 @@ void UraToplevel::commit() {
   if (!this->prepared) {
     auto geo = Vec4<int>::from(this->xdg_toplevel->base->geometry);
     geo.center(output->usable_area);
-    this->layout_geometry["floating"] = geo;
     this->geometry.width = geo.width;
     this->geometry.height = geo.height;
     this->resize_borders(geo.width, geo.height);
     this->move(geo.x, geo.y);
     server->seat->focus(this);
-    server->lua->try_execute_hook("window-new", this->index());
-    this->apply_layout(true);
+    flexible::object args;
+    args.set(this->id());
+    server->lua->try_execute_hook("window-new", args);
     this->prepared = true;
     this->map();
     return;
   }
-}
-
-void UraToplevel::apply_layout(bool recursive) {
-  if (!this->mapped && this->prepared)
-    return;
-  auto server = UraServer::get_instance();
-  sol::protected_function layout = server->lua->layouts.contains(this->layout)
-    ? server->lua->layouts[this->layout]
-    : server->lua->layouts["tiling"];
-
-  auto prev_geo = this->geometry;
-
-  auto result = layout(this->index());
-  if (!result.valid())
-    return;
-  if (this->geometry != prev_geo && recursive) {
-    this->redraw_all_others();
-  }
-  if (this->first_commit_after_layout_change)
-    this->first_commit_after_layout_change = false;
 }
 
 void UraToplevel::focus() {
@@ -277,7 +257,6 @@ void UraToplevel::move_to_workspace(std::string name) {
   auto prev_workspace = this->workspace;
   this->workspace = named_workspace;
   this->workspace->toplevels.push_back(this);
-  prev_workspace->redraw();
   if (prev_workspace->focus_stack.top()) {
     server->seat->focus(prev_workspace->focus_stack.top().value());
   }
@@ -297,7 +276,6 @@ void UraToplevel::move_to_workspace(int index) {
   this->workspace->remove(this);
   if (this->workspace->focus_stack.top())
     server->seat->focus(this->workspace->focus_stack.top().value());
-  this->workspace->redraw();
   this->workspace = target;
   this->workspace->add(this);
 }
@@ -317,26 +295,22 @@ int UraToplevel::index() {
 void UraToplevel::activate() {
   auto server = UraServer::get_instance();
   auto output = server->view->get_output_by_name(this->output);
-  auto current_workspace_index = output->current_workspace->index();
-  auto current_toplevel_index = this->index();
-  auto flag = server->lua->try_execute_hook<bool>(
-    "pre-window-activate",
-    current_workspace_index,
-    current_toplevel_index
-  );
+  flexible::object args;
+  args.set(this->id());
+  auto flag = server->lua->try_execute_hook<bool>("pre-window-activate", args);
   // if hook returns a false value, then stop the operation.
   if (flag && !flag.value())
     return;
   if (this->workspace->name) {
     // named workspace, move this toplevel to current workspace
-    this->move_to_workspace(current_workspace_index);
-  } else if (this->workspace->index() != current_workspace_index) {
+    this->move_to_workspace(output->current_workspace);
+  } else if (this->workspace != output->current_workspace) {
     // indexed workspace, switch to this toplevel's workspace
     output->switch_workspace(this->workspace);
   }
   server->seat->focus(this);
   this->map();
-  server->lua->try_execute_hook("post-window-activate", current_toplevel_index);
+  server->lua->try_execute_hook("post-window-activate", args);
 }
 
 bool UraToplevel::move(int x, int y) {
@@ -383,7 +357,9 @@ bool UraToplevel::move(int x, int y) {
     return false;
 
   auto server = UraServer::get_instance();
-  server->lua->try_execute_hook("window-move", this->index());
+  flexible::object args;
+  args.set(this->id());
+  server->lua->try_execute_hook("window-move", args);
   return true;
 }
 
@@ -399,7 +375,9 @@ bool UraToplevel::resize(int width, int height) {
   this->move(this->geometry.x, this->geometry.y);
 
   auto server = UraServer::get_instance();
-  server->lua->try_execute_hook("window-resize", this->index());
+  flexible::object args;
+  args.set(this->id());
+  server->lua->try_execute_hook("window-resize", args);
   return true;
 }
 
@@ -442,6 +420,8 @@ void UraToplevel::close() {
 }
 
 void UraToplevel::map() {
+  if (this->mapped)
+    return;
   this->mapped = true;
   wlr_scene_node_set_enabled(&this->scene_tree->node, true);
   if (this->xdg_toplevel->base->initialized && this->foreign_handle) {
@@ -458,6 +438,8 @@ void UraToplevel::map() {
 }
 
 void UraToplevel::unmap() {
+  if (!this->mapped)
+    return;
   this->mapped = false;
   wlr_scene_node_set_enabled(&this->scene_tree->node, false);
   if (this->xdg_toplevel->base->initialized && this->foreign_handle)
@@ -475,7 +457,9 @@ std::string UraToplevel::app_id() {
 void UraToplevel::set_title(std::string title) {
   wlr_foreign_toplevel_handle_v1_set_title(this->foreign_handle, title.data());
   auto server = UraServer::get_instance();
-  server->lua->try_execute_hook("window-title-change");
+  flexible::object args;
+  args.set(this->id());
+  server->lua->try_execute_hook("window-title-change", args);
 }
 
 void UraToplevel::set_app_id(std::string app_id) {
@@ -484,7 +468,9 @@ void UraToplevel::set_app_id(std::string app_id) {
     app_id.data()
   );
   auto server = UraServer::get_instance();
-  server->lua->try_execute_hook("window-app_id-change");
+  flexible::object args;
+  args.set(this->id());
+  server->lua->try_execute_hook("window-app_id-change", args);
 }
 
 void UraToplevel::set_z_index(int z_index) {
@@ -494,10 +480,6 @@ void UraToplevel::set_z_index(int z_index) {
     wlr_scene_node_reparent(&this->scene_tree->node, layer);
     this->z_index = z_index;
   }
-}
-
-void UraToplevel::redraw(bool recursive) {
-  this->apply_layout(recursive);
 }
 
 void UraToplevel::create_borders() {
@@ -544,75 +526,6 @@ void UraToplevel::center() {
   auto geo = this->geometry;
   geo.center(area);
   this->move(geo.x, geo.y);
-}
-
-sol::table UraToplevel::to_lua_table() {
-  auto server = UraServer::get_instance();
-  auto table = server->lua->state.create_table();
-  table["index"] = this->index();
-  table["workspace_index"] =
-    !this->workspace->name ? this->workspace->index() : -1;
-  table["app_id"] = this->app_id();
-  table["title"] = this->title();
-  table["x"] = this->geometry.x;
-  table["y"] = this->geometry.y;
-  table["width"] = this->geometry.width;
-  table["height"] = this->geometry.height;
-  table["layout"] = this->layout;
-  table["last_layout"] = this->last_layout;
-  table["first_commit_after_layout_change"] =
-    this->first_commit_after_layout_change;
-  table["z_index"] = this->z_index;
-  return table;
-}
-
-void UraToplevel::set_layout(std::string layout) {
-  if (!this->xdg_toplevel->base->initialized)
-    return;
-
-  auto server = UraServer::get_instance();
-  if (!server->lua->layouts.contains(layout))
-    return;
-
-  if (layout != this->layout) {
-    this->last_layout = this->layout;
-    this->first_commit_after_layout_change = true;
-    this->layout = layout;
-    this->layout_geometry[this->last_layout.value()] = this->geometry;
-
-    if (this->layout_geometry.contains(this->layout)) {
-      auto geo = this->layout_geometry[this->layout];
-      this->resize(geo.width, geo.height);
-      this->move(geo.x, geo.y);
-    }
-
-    this->redraw(false);
-
-    // handle enter and leave fullscreen mode
-    if (this->last_layout.value() == "fullscreen"
-        && this->layout != "fullscreen") {
-      wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, false);
-      wlr_foreign_toplevel_handle_v1_set_fullscreen(
-        this->foreign_handle,
-        false
-      );
-    }
-    if (this->layout == "fullscreen") {
-      if (this->xdg_toplevel)
-        wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, true);
-      wlr_foreign_toplevel_handle_v1_set_fullscreen(this->foreign_handle, true);
-    }
-
-    server->lua->try_execute_hook("layout-change", this->index());
-  }
-}
-
-void UraToplevel::redraw_all_others() {
-  for (auto toplevel : this->workspace->toplevels) {
-    if (toplevel != this) {
-      toplevel->redraw(false);
-    }
-  }
 }
 
 void UraToplevel::dismiss_popups() {

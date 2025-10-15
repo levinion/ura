@@ -25,7 +25,7 @@ UraServer* UraServer::init() {
   this->dispatcher = UraDispatcher<1024>::init();
   this->lua = Lua::init();
   this->lua->try_execute_init();
-  this->lua->try_execute_hook("prepare");
+  this->lua->try_execute_hook("prepare", {});
 
   this->setup_base();
   this->setup_drm();
@@ -277,12 +277,8 @@ void UraServer::check_and_reset_lua() {
     this->lua = Lua::init();
     this->lua->setup();
     this->lua->try_execute_init();
-    this->lua->try_execute_hook("reload");
+    this->lua->try_execute_hook("reload", {});
     for (auto pointer : this->seat->pointers) pointer->try_apply_rules();
-    auto output = this->view->current_output();
-    if (output) {
-      output->current_workspace->redraw();
-    }
   }
 }
 
@@ -319,7 +315,7 @@ void UraServer::run() {
     return true;
   });
 
-  this->lua->try_execute_hook("ready");
+  this->lua->try_execute_hook("ready", {});
 
   while (!this->quit) {
     if (!dispatcher->dispatch())

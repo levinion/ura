@@ -308,4 +308,12 @@ void UraCursor::process_axis(wlr_pointer_axis_event* event) {
   );
   server->seat->notify_idle_activity();
 }
+
+std::string UraCursor::get_theme() {
+  return this->cursor_mgr->name ? this->cursor_mgr->name : "";
+}
+
+int UraCursor::get_size() {
+  return this->cursor_mgr->size;
+}
 } // namespace ura

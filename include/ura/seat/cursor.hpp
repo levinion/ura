@@ -26,6 +26,8 @@ public:
   void toggle();
   void destroy();
   void set_theme(std::string theme, int size);
+  std::string get_theme();
+  int get_size();
   Vec2<double> position();
   void reset_mode();
 

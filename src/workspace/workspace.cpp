@@ -6,7 +6,6 @@
 #include <utility>
 #include "ura/core/server.hpp"
 #include "ura/seat/seat.hpp"
-#include "ura/lua/lua.hpp"
 
 namespace ura {
 
@@ -51,19 +50,6 @@ UraToplevel* UraWorkSpace::get_toplevel_at(int index) {
   return toplevel ? *toplevel : nullptr;
 }
 
-sol::table UraWorkSpace::to_lua_table() {
-  auto server = UraServer::get_instance();
-  auto table = server->lua->state.create_table();
-  auto toplevels = server->lua->state.create_table();
-  for (auto toplevel : this->toplevels) {
-    toplevels.add(toplevel->to_lua_table());
-  }
-  table["index"] = this->index();
-  table["name"] = this->name;
-  table["windows"] = toplevels;
-  return table;
-}
-
 void UraWorkSpace::add(UraToplevel* toplevel) {
   this->toplevels.push_back(toplevel);
   this->focus_stack.push(toplevel);
@@ -83,10 +69,6 @@ void UraWorkSpace::swap_toplevel(UraToplevel* src, UraToplevel* dst) {
     return;
   *it1 = dst;
   *it2 = src;
-}
-
-void UraWorkSpace::redraw() {
-  for (auto toplevel : this->toplevels) toplevel->redraw(false);
 }
 
 UraWorkSpace* UraWorkSpace::from(uint64_t id) {

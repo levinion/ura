@@ -1,3 +1,4 @@
+#include "flexible/flexible.hpp"
 #include "ura/core/server.hpp"
 #include "ura/seat/keyboard.hpp"
 #include "ura/seat/pointer.hpp"
@@ -48,7 +49,9 @@ void on_new_input(wl_listener* listener, void* data) {
 
   wlr_seat_set_capabilities(server->seat->seat, caps);
 
-  server->lua->try_execute_hook("new-input", device->name);
+  flexible::object args;
+  args.set(device->name);
+  server->lua->try_execute_hook("new-input", args);
 }
 
 } // namespace ura

@@ -1,9 +1,8 @@
-#include "ura/lua/api.hpp"
+#include "ura/lua/api/core.hpp"
 #include <cstdint>
 #include <regex>
 #include <sol/forward.hpp>
 #include <unordered_set>
-#include <variant>
 #include "ura/core/log.hpp"
 #include "ura/lua/lua.hpp"
 #include "ura/core/server.hpp"
@@ -22,15 +21,13 @@
 #include <sys/prctl.h>
 #include "flexible/flexible.hpp"
 
-namespace ura::api {
+namespace ura::api::core {
 
-void set_keymap(std::string pattern, std::string f, std::string mode) {
+void set_keymap(std::string pattern, std::string mode, flexible::function f) {
   auto server = UraServer::get_instance();
   auto id = parse_keymap(pattern);
   if (id) {
-    auto result = server->lua->load_as_function(f);
-    if (result)
-      server->lua->keymaps[mode][id.value()] = result.value();
+    server->lua->keymaps[mode][id.value()] = f;
   }
 }
 
@@ -131,11 +128,9 @@ int get_current_workspace_index() {
   return output->current_workspace->index();
 }
 
-void set_hook(std::string name, std::string f) {
+void set_hook(std::string name, flexible::function f) {
   auto server = UraServer::get_instance();
-  auto func = server->lua->load_as_function(f);
-  if (func)
-    server->lua->hooks[name] = func.value();
+  server->lua->hooks[name] = f;
 }
 
 void unset_hook(std::string name) {
@@ -168,32 +163,6 @@ void focus_window(uint64_t id) {
   if (!toplevel)
     return;
   server->seat->focus(toplevel);
-}
-
-void set_window_layout(uint64_t id, std::string layout) {
-  auto server = UraServer::get_instance();
-  auto toplevel = UraToplevel::from(id);
-  if (!toplevel)
-    return;
-  toplevel->set_layout(layout);
-  toplevel->redraw_all_others();
-}
-
-// redirect print result to buffer
-void lua_print(sol::variadic_args args) {
-  auto server = UraServer::get_instance();
-  auto& state = server->lua->state;
-  if (args.size() == 0) {
-    server->lua->lua_stdout += '\n';
-    return;
-  }
-  std::string r;
-  for (int i = 0; i < args.size() - 1; i++) {
-    r += state["tostring"](args[i]).get<std::string>() + ' ';
-  }
-  r += state["tostring"](args[args.size() - 1]).get<std::string>();
-  r.push_back('\n');
-  server->lua->lua_stdout += r;
 }
 
 int get_workspace_number() {
@@ -255,16 +224,17 @@ uint64_t get_window(int index) {
   return toplevel->id();
 }
 
-uint64_t get_workspace(std::variant<int, std::string> obj) {
+uint64_t get_workspace(flexible::object obj) {
   auto server = UraServer::get_instance();
   UraWorkSpace* workspace = nullptr;
-  if (std::holds_alternative<int>(obj)) {
+  if (obj.is<int64_t>()) {
     auto output = server->view->current_output();
     if (!output)
       return {};
-    workspace = output->get_workspace_at(std::get<int>(obj));
-  } else if (std::holds_alternative<std::string>(obj))
-    workspace = server->view->get_named_workspace(std::get<std::string>(obj));
+    workspace = output->get_workspace_at(obj.as<int64_t>().value());
+  } else if (obj.is<std::string>())
+    workspace =
+      server->view->get_named_workspace(obj.as<std::string>().value());
   if (!workspace)
     return {};
   return workspace->id();
@@ -419,20 +389,6 @@ void set_window_draggable(uint64_t id, bool flag) {
   toplevel->draggable = flag;
 }
 
-void set_layout(std::string name, std::string f) {
-  auto server = UraServer::get_instance();
-  auto func = server->lua->load_as_function(f);
-  if (func)
-    server->lua->layouts[name] = func.value();
-}
-
-void unset_layout(std::string name) {
-  auto server = UraServer::get_instance();
-  if (server->lua->layouts.contains(name)) {
-    server->lua->layouts.erase(name);
-  }
-}
-
 void set_window_z_index(uint64_t id, int z) {
   auto server = UraServer::get_instance();
   auto toplevel = UraToplevel::from(id);
@@ -452,23 +408,6 @@ void swap_window(uint64_t id, uint64_t target) {
   if (first->workspace != second->workspace)
     return;
   first->workspace->swap_toplevel(first, second);
-}
-
-void redraw_window(uint64_t id) {
-  auto server = UraServer::get_instance();
-  auto toplevel = UraToplevel::from(id);
-  if (!toplevel)
-    return;
-  toplevel->redraw(false);
-}
-
-void redraw_current_workspace() {
-  auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return;
-  auto workspace = output->current_workspace;
-  workspace->redraw();
 }
 
 uint64_t get_output(std::string name) {
@@ -513,23 +452,42 @@ void set_pointer_properties(std::string pattern, flexible::object obj) {
   }
 }
 
-void schedule(std::string f, int64_t time) {
+void schedule(flexible::function f, int64_t time) {
   auto server = UraServer::get_instance();
-  auto func = server->lua->load_as_function(f);
-  if (!func)
-    return;
   if (time < 0)
     return;
   else if (time == 0) {
-    func.value()();
+    f({});
     return;
   }
   server->dispatcher->schedule_task(
     [=]() {
-      func.value()();
+      f({});
       return true;
     },
     time
   );
 }
-} // namespace ura::api
+
+int get_window_z_index(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  return toplevel->z_index;
+}
+
+bool is_window_draggable(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  return toplevel->draggable;
+}
+
+std::string get_cursor_theme() {
+  return UraServer::get_instance()->seat->cursor->get_theme();
+}
+
+int get_cursor_size() {
+  return UraServer::get_instance()->seat->cursor->get_size();
+}
+
+std::string get_cursor_shape() {
+  return UraServer::get_instance()->seat->cursor->xcursor_name;
+}
+} // namespace ura::api::core

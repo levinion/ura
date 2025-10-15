@@ -38,11 +38,9 @@ public:
   void disable();
   int index();
   UraToplevel* get_toplevel_at(int index);
-  sol::table to_lua_table();
   void add(UraToplevel* toplevel);
   void remove(UraToplevel* toplevel);
   void swap_toplevel(UraToplevel* src, UraToplevel* dst);
-  void redraw();
 };
 
 } // namespace ura

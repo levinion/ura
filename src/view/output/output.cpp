@@ -1,3 +1,4 @@
+#include "flexible/flexible.hpp"
 #include "ura/core/server.hpp"
 #include "ura/core/runtime.hpp"
 #include "ura/core/callback.hpp"
@@ -83,10 +84,12 @@ void UraOutput::init(wlr_output* _wlr_output) {
     configuration
   );
 
+  flexible::object args;
+  args.set(this->id());
   if (resume)
-    server->lua->try_execute_hook("output-resume", this->name);
+    server->lua->try_execute_hook("output-resume", args);
   else
-    server->lua->try_execute_hook("output-new", this->name);
+    server->lua->try_execute_hook("output-new", args);
 
   server->globals.insert(this->id());
 }
@@ -213,7 +216,6 @@ bool UraOutput::configure_layers() {
       || this->usable_area.width != usable_area.width
       || this->usable_area.height != usable_area.height) {
     this->usable_area = Vec4<int>::from(usable_area);
-    this->current_workspace->redraw();
     return true;
   }
   return false;
@@ -273,42 +275,8 @@ void UraOutput::switch_workspace(UraWorkSpace* workspace) {
   this->current_workspace->disable();
   this->current_workspace = workspace;
   this->current_workspace->enable();
-  this->current_workspace->redraw();
   auto server = UraServer::get_instance();
-  server->lua->try_execute_hook("workspace-change");
-}
-
-sol::table UraOutput::to_lua_table() {
-  auto server = UraServer::get_instance();
-  auto table = server->lua->state.create_table();
-
-  auto logical_geometry = this->logical_geometry();
-  auto size = server->lua->state.create_table();
-  size["x"] = logical_geometry.x;
-  size["y"] = logical_geometry.y;
-  size["width"] = logical_geometry.width;
-  size["height"] = logical_geometry.height;
-  table["size"] = size;
-
-  auto usable = server->lua->state.create_table();
-  usable["x"] = this->usable_area.x;
-  usable["y"] = this->usable_area.y;
-  usable["width"] = this->usable_area.width;
-  usable["height"] = this->usable_area.height;
-  table["usable"] = usable;
-
-  table["name"] = this->name;
-  table["scale"] = this->output->scale;
-  table["refresh"] = this->output->refresh;
-  table["dpms"] = this->dpms_on;
-
-  auto workspaces = server->lua->state.create_table();
-  for (auto workspace : this->get_workspaces()) {
-    workspaces.add(workspace->to_lua_table());
-  }
-  table["workspaces"] = workspaces;
-
-  return table;
+  server->lua->try_execute_hook("workspace-change", {});
 }
 
 void UraOutput::set_dpms_mode(bool flag) {

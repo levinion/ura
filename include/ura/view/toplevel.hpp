@@ -16,9 +16,6 @@ public:
   bool mapped = true;
   bool destroying = false;
   bool draggable = false;
-  std::string layout = "tiling";
-  std::optional<std::string> last_layout;
-  bool first_commit_after_layout_change = true;
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
   int z_index;
@@ -58,20 +55,15 @@ public:
   int index();
   void activate();
   void set_z_index(int z);
-  void redraw(bool recursive);
-  void redraw_all_others();
   bool is_focused();
   sol::table to_lua_table();
-  void set_layout(std::string layout);
   uint64_t id();
 
 private:
   void create_borders();
   void resize_borders(int width, int height);
   void set_border_color(std::array<float, 4>& color);
-  void apply_layout(bool recursive);
   void dismiss_popups();
-  std::unordered_map<std::string, Vec4<int>> layout_geometry;
   bool prepared = false;
 };
 

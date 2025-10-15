@@ -5,8 +5,8 @@
 #include <optional>
 #include <sol/forward.hpp>
 #include <sol/sol.hpp>
-#include <filesystem>
 #include <unordered_map>
+#include "flexible/flexible.hpp"
 #include "ura/core/server.hpp"
 #include "ura/util/util.hpp"
 
@@ -17,11 +17,10 @@ public:
   sol::table ura;
   std::string lua_stdout;
   bool reset = false;
-  std::unordered_map<std::string, sol::protected_function> hooks;
-  std::unordered_map<
-    std::string,
-    std::unordered_map<uint64_t, sol::protected_function>>
-    keymaps; // mode -> id -> func
+  std::unordered_map<std::string, flexible::function> hooks;
+  std::
+    unordered_map<std::string, std::unordered_map<uint64_t, flexible::function>>
+      keymaps; // mode -> id -> func
   std::string mode = "normal";
   std::unordered_map<std::string, sol::protected_function> layouts;
 
@@ -34,21 +33,18 @@ public:
   void try_execute_init();
   std::optional<sol::protected_function> load_as_function(std::string_view f);
 
-  template<typename T, typename... Args>
-  std::optional<T> try_execute_hook(std::string name, Args&&... args) {
+  template<typename T>
+  std::optional<T> try_execute_hook(std::string name, flexible::object args) {
     if (!this->hooks.contains(name))
       return {};
-    sol::safe_function_result ret = this->hooks[name](args...);
-    if (ret.valid())
-      return ret.get<std::optional<T>>();
-    return {};
+    auto ret = this->hooks[name](args);
+    return ret.as<T>();
   }
 
-  template<typename... Args>
-  void try_execute_hook(std::string name, Args&&... args) {
+  void try_execute_hook(std::string name, flexible::object args) {
     if (!this->hooks.contains(name))
       return;
-    this->hooks[name](args...);
+    this->hooks[name](args);
   }
 
   template<typename T>

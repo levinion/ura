@@ -32,6 +32,10 @@ public:
     return { this->x, this->y, this->width, this->height };
   }
 
+  std::array<T, 4> to_array() {
+    return { x, y, width, height };
+  }
+
   static Vec4<T> from(wlr_box& box) {
     return { box.x, box.y, box.width, box.height };
   }

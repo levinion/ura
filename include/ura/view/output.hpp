@@ -62,7 +62,6 @@ public:
   void switch_workspace(UraWorkSpace* workspace);
   void destroy_workspace(UraWorkSpace* workspace);
   UraWorkSpace* get_workspace_at(int index);
-  sol::table to_lua_table();
 };
 
 } // namespace ura

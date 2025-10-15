@@ -10,7 +10,7 @@
 #include <sys/un.h>
 #include <sys/types.h>
 #include "ura/core/log.hpp"
-#include <simdjson.h>
+#include <nlohmann/json.hpp>
 
 namespace ura {
 
@@ -105,14 +105,24 @@ void UraIPC::try_handle() {
 
 std::optional<UraIPCRequestMessage>
 UraIPCRequestMessage::from_str(std::string_view str) {
-  // simdjson::ondemand::parser parser;
-  // auto json = std::string(str);
-  // auto document = parser.iterate(simdjson::pad(json));
-  // return document.get<UraIPCRequestMessage>();
+  auto j = nlohmann::json::parse(str);
+  auto message = UraIPCRequestMessage {};
+  if (j.contains("method") && j["method"].is_string())
+    message.method = j["method"];
+  else
+    return {};
+  if (j.contains("body") && j["body"].is_string())
+    message.body = j["body"];
+  else
+    return {};
+  return message;
 }
 
 std::string UraIPCReplyMessage::to_str() {
-  // return simdjson::to_json_string(this);
+  auto j = nlohmann::json {};
+  j["status"] = this->status;
+  j["body"] = this->body;
+  return j.dump();
 }
 
 } // namespace ura

@@ -1,6 +1,7 @@
 #include "ura/lua/lua.hpp"
 #include "ura/core/log.hpp"
-#include "ura/lua/api.hpp"
+#include "ura/lua/api/core.hpp"
+#include "ura/lua/api/lua.hpp"
 #include "ura/core/server.hpp"
 #include <expected>
 #include <filesystem>
@@ -40,77 +41,65 @@ void Lua::setup() {
   auto server = UraServer::get_instance();
 
   // api
-  this->set("api.terminate", api::terminate);
-  this->set("api.reload", api::reload);
-  this->set("api.spawn", api::spawn);
-  this->set("api.notify_idle_activity", api::notify_idle_activity);
-  this->set("api.set_idle_inhibitor", api::set_idle_inhibitor);
-  this->set("api.notify", api::notify);
-  this->set("api.schedule", api::schedule);
+  this->set("api.terminate", api::core::terminate);
+  this->set("api.reload", api::core::reload);
+  this->set("api.spawn", api::core::spawn);
+  this->set("api.notify_idle_activity", api::core::notify_idle_activity);
+  this->set("api.set_idle_inhibitor", api::core::set_idle_inhibitor);
+  this->set("api.notify", api::core::notify);
+  this->set("api.schedule", api::lua::schedule);
   // window
-  this->set("api.focus_window", api::focus_window);
-  this->set("api.close_window", api::close_window);
-  this->set("api.move_window_to_workspace", api::move_window_to_workspace);
-  this->set("api.get_window_number", api::get_window_number);
-  this->set("api.get_current_window", api::get_current_window);
-  this->set("api.get_window", api::get_window);
-  this->set("api.activate_window", api::activate_window);
-  this->set("api.set_window_layout", api::set_window_layout);
-  this->set("api.set_window_z_index", api::set_window_z_index);
-  this->set("api.move_window", api::move_window);
-  this->set("api.resize_window", api::resize_window);
-  this->set("api.set_window_draggable", api::set_window_draggable);
-  this->set("api.swap_window", api::swap_window);
-  this->set("api.redraw_window", api::redraw_window);
-  // input
-  this->set("api.set_keyboard_repeat", api::set_keyboard_repeat);
-  this->set("api.set_cursor_theme", api::set_cursor_theme);
-  this->set("api.set_cursor_visible", api::set_cursor_visible);
-  this->set("api.is_cursor_visible", api::is_cursor_visible);
-  this->set("api.set_cursor_shape", api::set_cursor_shape);
-  this->set("api.set_pointer_properties", api::set_pointer_properties);
-  // workspace
-  this->set("api.create_workspace", api::create_workspace);
-  this->set("api.switch_workspace", api::switch_workspace);
-  this->set("api.destroy_workspace", api::destroy_workspace);
-  this->set("api.get_workspace_number", api::get_workspace_number);
-  this->set("api.get_current_workspace", api::get_current_workspace);
-  this->set("api.get_workspace", api::get_workspace);
-  this->set("api.redraw_current_workspace", api::redraw_current_workspace);
-  // output
-  this->set("api.get_current_output", api::get_current_output);
-  this->set("api.get_output", api::get_output);
-  this->set("api.set_output_dpms", api::set_output_dpms);
-  // layout
-  this->set("api.set_layout", api::set_layout);
-  this->set("api.unset_layout", api::unset_layout);
-  // keymap
-  this->set("api.set_keymap", api::set_keymap);
-  this->set("api.unset_keymap", api::unset_keymap);
-  this->set("api.set_keymap_mode", api::set_keymap_mode);
-  this->set("api.get_keymap_mode", api::get_keymap_mode);
-  // hook
-  this->set("api.set_hook", api::set_hook);
-  this->set("api.unset_hook", api::unset_hook);
-  // fn
-  this->set("fn.set_env", api::set_env);
-  this->set("fn.unset_env", api::unset_env);
-  this->set("fn.append_package_path", api::append_lua_package_path);
-  this->set("fn.prepend_package_path", api::prepend_lua_package_path);
-  this->set("fn.expanduser", api::expanduser);
-  this->set("fn.expandvars", api::expandvars);
-  this->set("fn.expand", api::expand);
-  // override
-  this->state.set("print", api::lua_print);
-
-  auto result = this->execute(
-    R"*(ura.fn.prepend_package_path("/usr/share/ura/runtime"))*"
-    R"*(ura.win = require("win")))*"
+  this->set("api.focus_window", api::core::focus_window);
+  this->set("api.close_window", api::core::close_window);
+  this->set(
+    "api.move_window_to_workspace",
+    api::core::move_window_to_workspace
   );
-  if (!result) {
-    log::error("{}", result.error());
-    exit(1);
-  }
+  this->set("api.get_window_number", api::core::get_window_number);
+  this->set("api.get_current_window", api::core::get_current_window);
+  this->set("api.get_window", api::core::get_window);
+  this->set("api.activate_window", api::core::activate_window);
+  this->set("api.set_window_z_index", api::core::set_window_z_index);
+  this->set("api.move_window", api::core::move_window);
+  this->set("api.resize_window", api::core::resize_window);
+  this->set("api.set_window_draggable", api::core::set_window_draggable);
+  this->set("api.swap_window", api::core::swap_window);
+  // input
+  this->set("api.set_keyboard_repeat", api::core::set_keyboard_repeat);
+  this->set("api.set_cursor_theme", api::core::set_cursor_theme);
+  this->set("api.set_cursor_visible", api::core::set_cursor_visible);
+  this->set("api.get_cursor_visible", api::core::is_cursor_visible);
+  this->set("api.set_cursor_shape", api::core::set_cursor_shape);
+  this->set("api.set_pointer_properties", api::lua::set_pointer_properties);
+  // workspace
+  this->set("api.create_workspace", api::core::create_workspace);
+  this->set("api.switch_workspace", api::core::switch_workspace);
+  this->set("api.destroy_workspace", api::core::destroy_workspace);
+  this->set("api.get_workspace_number", api::core::get_workspace_number);
+  this->set("api.get_current_workspace", api::core::get_current_workspace);
+  this->set("api.get_workspace", api::core::get_workspace);
+  // output
+  this->set("api.get_current_output", api::core::get_current_output);
+  this->set("api.get_output", api::core::get_output);
+  this->set("api.set_output_dpms", api::core::set_output_dpms);
+  // keymap
+  this->set("api.set_keymap", api::lua::set_keymap);
+  this->set("api.unset_keymap", api::core::unset_keymap);
+  this->set("api.set_keymap_mode", api::core::set_keymap_mode);
+  this->set("api.get_keymap_mode", api::core::get_keymap_mode);
+  // hook
+  this->set("api.set_hook", api::lua::set_hook);
+  this->set("api.unset_hook", api::core::unset_hook);
+  // fn
+  this->set("api.set_env", api::core::set_env);
+  this->set("api.unset_env", api::core::unset_env);
+  // this->set("fn.append_package_path", api::core::append_lua_package_path);
+  // this->set("fn.prepend_package_path", api::core::prepend_lua_package_path);
+  // this->set("fn.expanduser", api::core::expanduser);
+  // this->set("fn.expandvars", api::core::expandvars);
+  // this->set("fn.expand", api::core::expand);
+  // override
+  this->state.set("print", api::lua::print);
 }
 
 std::expected<std::string, std::string> Lua::execute(std::string_view script) {
@@ -141,7 +130,7 @@ bool Lua::try_execute_keybinding(uint64_t id) {
   auto server = UraServer::get_instance();
   if (!this->contains_keybinding(id))
     return false;
-  this->keymaps[mode][id]();
+  this->keymaps[mode][id]({});
   return true;
 }
 
@@ -160,10 +149,25 @@ std::optional<std::string> Lua::find_init_path() {
 }
 
 void Lua::try_execute_init() {
+  auto result = this->execute(
+    R"*(
+    ura.fn.prepend_package_path("/usr/share/ura/runtime/?.lua")
+    ura.win = require("win")
+  )*"
+  );
+
+  if (!result) {
+    log::error("{}", result.error());
+    UraServer::get_instance()->terminate();
+  }
+
   auto path = this->find_init_path();
-  if (!path)
-    return;
-  auto result = this->execute_file(path.value());
+  if (!path) {
+    log::error("{}", "could not found any config files, exiting...");
+    UraServer::get_instance()->terminate();
+  }
+
+  result = this->execute_file(path.value());
   if (!result) {
     log::error("{}", result.error().c_str());
     UraServer::get_instance()->terminate();
