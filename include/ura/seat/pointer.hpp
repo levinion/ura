@@ -1,5 +1,6 @@
 #pragma once
 
+#include "flexible/flexible.hpp"
 #include "ura/ura.hpp"
 #include "sol/sol.hpp" // IWYU pragma: keep
 #include <string>
@@ -13,7 +14,7 @@ public:
   void set_accel_profile(std::string& _profile);
   bool is_libinput();
   void try_apply_rules();
-  void set_properties(sol::table properties);
+  void set_properties(flexible::object& properties);
 
   std::string name;
   float move_speed = 1.;

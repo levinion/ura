@@ -1,6 +1,5 @@
 #include "ura/core/server.hpp"
 #include "ura/view/view.hpp" // IWYU pragma: keep
-#include "ura/view/client.hpp" // IWYU pragma: keep
 #include "ura/view/output.hpp" // IWYU pragma: keep
 #include "ura/core/runtime.hpp" // IWYU pragma: keep
 #include "ura/seat/keyboard.hpp" // IWYU pragma: keep

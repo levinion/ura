@@ -3,7 +3,6 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <array>
-#include <expected>
 #include <memory>
 #include <optional>
 
@@ -15,8 +14,7 @@ class UraIPCRequestMessage {
 public:
   std::string method;
   std::string body;
-  static std::expected<UraIPCRequestMessage, std::string>
-  from_str(std::string& str);
+  static std::optional<UraIPCRequestMessage> from_str(std::string_view str);
 };
 
 class UraIPCReplyMessage {

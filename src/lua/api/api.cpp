@@ -1,7 +1,9 @@
 #include "ura/lua/api.hpp"
+#include <cstdint>
 #include <regex>
 #include <sol/forward.hpp>
 #include <unordered_set>
+#include <variant>
 #include "ura/core/log.hpp"
 #include "ura/lua/lua.hpp"
 #include "ura/core/server.hpp"
@@ -18,40 +20,21 @@
 #include <pwd.h>
 #include <unistd.h>
 #include <sys/prctl.h>
+#include "flexible/flexible.hpp"
 
 namespace ura::api {
 
-void keymap_set(std::string pattern, sol::protected_function f) {
+void set_keymap(std::string pattern, std::string f, std::string mode) {
   auto server = UraServer::get_instance();
   auto id = parse_keymap(pattern);
-  if (id)
-    server->lua->keymaps["normal"][id.value()] = f;
+  if (id) {
+    auto result = server->lua->load_as_function(f);
+    if (result)
+      server->lua->keymaps[mode][id.value()] = result.value();
+  }
 }
 
-void keymap_set_mode(
-  std::string mode,
-  std::string pattern,
-  sol::protected_function f
-) {
-  auto server = UraServer::get_instance();
-  auto id = parse_keymap(pattern);
-  if (id)
-    server->lua->keymaps[mode][id.value()] = f;
-}
-
-void keymap_unset(std::string pattern) {
-  auto server = UraServer::get_instance();
-  auto id = parse_keymap(pattern);
-  if (!id)
-    return;
-  if (!server->lua->keymaps.contains("normal"))
-    return;
-  if (!server->lua->keymaps["normal"].contains(id.value()))
-    return;
-  server->lua->keymaps["normal"].erase(id.value());
-}
-
-void keymap_unset_mode(std::string mode, std::string pattern) {
+void unset_keymap(std::string pattern, std::string mode) {
   auto server = UraServer::get_instance();
   auto id = parse_keymap(pattern);
   if (!id)
@@ -63,12 +46,12 @@ void keymap_unset_mode(std::string mode, std::string pattern) {
   server->lua->keymaps[mode].erase(id.value());
 }
 
-void keymap_enter_mode(std::string mode) {
+void set_keymap_mode(std::string mode) {
   auto server = UraServer::get_instance();
   server->lua->mode = mode;
 }
 
-std::string keymap_get_current_mode() {
+std::string get_keymap_mode() {
   auto server = UraServer::get_instance();
   return server->lua->mode;
 }
@@ -77,13 +60,13 @@ void terminate() {
   UraServer::get_instance()->terminate();
 }
 
-void close_window(int index) {
+void close_window(uint64_t id) {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
   if (!output)
     return;
   auto workspace = output->current_workspace;
-  auto toplevel = workspace->get_toplevel_at(index);
+  auto toplevel = UraToplevel::from(id);
   if (toplevel) {
     toplevel->close();
   }
@@ -116,56 +99,28 @@ void create_workspace() {
   output->create_workspace();
 }
 
-void switch_workspace(int index) {
+void switch_workspace(uint64_t id) {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
   if (!output)
     return;
-  output->switch_workspace(index);
+  auto workspace = UraWorkSpace::from(id);
+  output->switch_workspace(workspace);
 }
 
-void switch_or_create_workspace(int index) {
-  auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return;
-  auto workspaces = output->get_workspaces();
-  for (int i = workspaces.size(); i <= index; i++) output->create_workspace();
-  output->switch_workspace(index);
-}
-
-void move_window_to_workspace(int window_index, sol::object workspace_id) {
+void move_window_to_workspace(uint64_t id, uint64_t workspace_id) {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
   if (!output)
     return;
   auto workspace = output->current_workspace;
-  auto toplevel = workspace->get_toplevel_at(window_index);
+  auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
-  if (workspace_id.is<int>()) {
-    auto workspace_index = workspace_id.as<int>();
-    toplevel->move_to_workspace(workspace_index);
-  } else if (workspace_id.is<std::string>()) {
-    auto workspace_name = workspace_id.as<std::string>();
-    toplevel->move_to_workspace(workspace_name);
-  }
-}
-
-void move_window_to_workspace_or_create(int window_index, int workspace_index) {
-  auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
+  auto target = UraWorkSpace::from(workspace_id);
+  if (!target)
     return;
-  auto workspace = output->current_workspace;
-  auto toplevel = workspace->get_toplevel_at(window_index);
-  if (!toplevel)
-    return;
-  auto workspaces = output->get_workspaces();
-  for (int i = workspaces.size(); i <= workspace_index; i++) {
-    output->create_workspace();
-  }
-  toplevel->move_to_workspace(workspace_index);
+  toplevel->move_to_workspace(workspace);
 }
 
 int get_current_workspace_index() {
@@ -176,9 +131,11 @@ int get_current_workspace_index() {
   return output->current_workspace->index();
 }
 
-void set_hook(std::string name, sol::protected_function f) {
+void set_hook(std::string name, std::string f) {
   auto server = UraServer::get_instance();
-  server->lua->hooks[name] = f;
+  auto func = server->lua->load_as_function(f);
+  if (func)
+    server->lua->hooks[name] = func.value();
 }
 
 void unset_hook(std::string name) {
@@ -187,17 +144,9 @@ void unset_hook(std::string name) {
     server->lua->hooks.erase(name);
 }
 
-void set_cursor_theme(sol::object obj) {
-  if (!obj.is<sol::table>())
-    return;
-  auto table = obj.as<sol::table>();
+void set_cursor_theme(std::string theme, int size) {
   auto server = UraServer::get_instance();
-  auto theme =
-    server->lua->fetch<std::string>(table, "theme").value_or("default");
-  auto size = server->lua->fetch<int>(table, "size");
-  if (!size)
-    return;
-  server->seat->cursor->set_theme(theme, size.value());
+  server->seat->cursor->set_theme(theme, size);
 }
 
 void set_cursor_visible(bool flag) {
@@ -213,31 +162,21 @@ void set_cursor_shape(std::string name) {
   server->seat->cursor->set_xcursor(name);
 }
 
-void focus_window(int index) {
+void focus_window(uint64_t id) {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return;
-  auto workspace = output->current_workspace;
-  if (index < 0 || index >= workspace->toplevels.size())
-    return;
-  auto toplevel = workspace->toplevels.get(index);
+  auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
-  server->seat->focus(*toplevel);
+  server->seat->focus(toplevel);
 }
 
-void set_window_layout(int index, std::string layout) {
+void set_window_layout(uint64_t id, std::string layout) {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
     return;
-  auto workspace = output->current_workspace;
-  auto toplevel = workspace->get_toplevel_at(index);
-  if (toplevel) {
-    toplevel->set_layout(layout);
-    toplevel->redraw_all_others();
-  }
+  toplevel->set_layout(layout);
+  toplevel->redraw_all_others();
 }
 
 // redirect print result to buffer
@@ -275,18 +214,20 @@ int get_window_number() {
   return workspace->toplevels.size();
 }
 
-void destroy_workspace(int index) {
+void destroy_workspace(uint64_t id) {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  output->destroy_workspace(index);
+  auto workspace = UraWorkSpace::from(id);
+  auto output = UraOutput::from(workspace->output);
+  if (workspace)
+    output->destroy_workspace(workspace);
 }
 
-std::optional<sol::table> get_current_window() {
+uint64_t get_current_window() {
   auto server = UraServer::get_instance();
   auto toplevel = server->seat->focused_toplevel();
   if (!toplevel)
     return {};
-  return toplevel->to_lua_table();
+  return toplevel->id();
 }
 
 bool is_cursor_visible() {
@@ -294,16 +235,16 @@ bool is_cursor_visible() {
   return server->seat->cursor->visible;
 }
 
-std::optional<sol::table> get_current_workspace() {
+uint64_t get_current_workspace() {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
   if (!output)
     return {};
   auto workspace = output->current_workspace;
-  return workspace->to_lua_table();
+  return workspace->id();
 }
 
-std::optional<sol::table> get_window(int index) {
+uint64_t get_window(int index) {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
   if (!output)
@@ -311,103 +252,54 @@ std::optional<sol::table> get_window(int index) {
   auto toplevel = output->current_workspace->get_toplevel_at(index);
   if (!toplevel)
     return {};
-  return toplevel->to_lua_table();
+  return toplevel->id();
 }
 
-std::optional<sol::table> get_workspace(sol::object id) {
+uint64_t get_workspace(std::variant<int, std::string> obj) {
   auto server = UraServer::get_instance();
   UraWorkSpace* workspace = nullptr;
-  if (id.is<int>()) {
+  if (std::holds_alternative<int>(obj)) {
     auto output = server->view->current_output();
     if (!output)
       return {};
-    workspace = output->get_workspace_at(id.as<int>());
-  } else if (id.is<std::string>())
-    workspace = server->view->get_named_workspace(id.as<std::string>());
+    workspace = output->get_workspace_at(std::get<int>(obj));
+  } else if (std::holds_alternative<std::string>(obj))
+    workspace = server->view->get_named_workspace(std::get<std::string>(obj));
   if (!workspace)
     return {};
-  return workspace->to_lua_table();
+  return workspace->id();
 }
 
-void activate_window(sol::object workspace_id, int window_index) {
+void activate_window(uint64_t id) {
   auto server = UraServer::get_instance();
-  UraWorkSpace* workspace = nullptr;
-  if (workspace_id.is<int>()) {
-    auto output = server->view->current_output();
-    if (!output)
-      return;
-    workspace = output->get_workspace_at(workspace_id.as<int>());
-  } else if (workspace_id.is<std::string>())
-    workspace = server->view->get_named_workspace_or_create(
-      workspace_id.as<std::string>()
-    );
-  if (!workspace)
-    return;
-  auto toplevel = workspace->get_toplevel_at(window_index);
+  auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
   toplevel->activate();
 }
 
-sol::table list_workspaces() {
+void move_window(uint64_t id, int x, int y) {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return {};
-  auto table = server->lua->state.create_table();
-  auto workspaces = output->get_workspaces();
-  for (auto& workspace : workspaces) {
-    table.add(workspace->to_lua_table());
-  }
-  for (auto& [_, workspace] : server->view->named_workspaces) {
-    table.add(workspace->to_lua_table());
-  }
-  return table;
-}
-
-void move_window(int index, int x, int y) {
-  auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return;
-  auto workspace = output->current_workspace;
-  auto toplevel = workspace->get_toplevel_at(index);
+  auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
   toplevel->move(x, y);
 }
 
-void resize_window(int index, int width, int height) {
+void resize_window(uint64_t id, int width, int height) {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return;
-  auto workspace = output->current_workspace;
-  auto toplevel = workspace->get_toplevel_at(index);
+  auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
   toplevel->resize(width, height);
-  toplevel->redraw(false);
 }
 
-void center_window(int index) {
-  auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return;
-  auto workspace = output->current_workspace;
-  auto toplevel = workspace->get_toplevel_at(index);
-  if (!toplevel)
-    return;
-  toplevel->center();
-}
-
-std::optional<sol::table> get_current_output() {
+uint64_t get_current_output() {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
   if (!output)
     return {};
-  return output->to_lua_table();
+  return output->id();
 }
 
 void append_lua_package_path(std::string path) {
@@ -502,9 +394,9 @@ std::string expand(std::string path) {
   return expanduser(expandvars(path));
 }
 
-void set_output_dpms(std::string name, bool flag) {
+void set_output_dpms(uint64_t id, bool flag) {
   auto server = UraServer::get_instance();
-  auto output = server->view->get_output_by_name(name);
+  auto output = UraOutput::from(id);
   if (output)
     output->set_dpms_mode(flag);
 }
@@ -519,21 +411,19 @@ void set_idle_inhibitor(bool flag) {
   server->seat->set_idle_inhibitor(flag);
 }
 
-void set_window_draggable(int index, bool flag) {
+void set_window_draggable(uint64_t id, bool flag) {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return;
-  auto workspace = output->current_workspace;
-  auto toplevel = workspace->get_toplevel_at(index);
+  auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
   toplevel->draggable = flag;
 }
 
-void set_layout(std::string name, sol::protected_function f) {
+void set_layout(std::string name, std::string f) {
   auto server = UraServer::get_instance();
-  server->lua->layouts[name] = f;
+  auto func = server->lua->load_as_function(f);
+  if (func)
+    server->lua->layouts[name] = func.value();
 }
 
 void unset_layout(std::string name) {
@@ -543,40 +433,30 @@ void unset_layout(std::string name) {
   }
 }
 
-void set_window_z_index(int index, int z) {
+void set_window_z_index(uint64_t id, int z) {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return;
-  auto workspace = output->current_workspace;
-  auto toplevel = workspace->get_toplevel_at(index);
+  auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
   toplevel->set_z_index(z);
 }
 
-void swap_window(int index, int target) {
+void swap_window(uint64_t id, uint64_t target) {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
+  auto first = UraToplevel::from(id);
+  if (!first)
     return;
-  auto workspace = output->current_workspace;
-  auto src = workspace->get_toplevel_at(index);
-  auto dst = workspace->get_toplevel_at(target);
-  if (!src || !dst)
+  auto second = UraToplevel::from(target);
+  if (!second)
     return;
-  workspace->swap_toplevel(src, dst);
-  src->redraw(false);
-  dst->redraw(false);
+  if (first->workspace != second->workspace)
+    return;
+  first->workspace->swap_toplevel(first, second);
 }
 
-void redraw_window(int index) {
+void redraw_window(uint64_t id) {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return;
-  auto workspace = output->current_workspace;
-  auto toplevel = workspace->get_toplevel_at(index);
+  auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
   toplevel->redraw(false);
@@ -591,22 +471,12 @@ void redraw_current_workspace() {
   workspace->redraw();
 }
 
-std::optional<sol::table> get_output(std::string name) {
+uint64_t get_output(std::string name) {
   auto server = UraServer::get_instance();
   auto output = server->view->get_output_by_name(name);
   if (!output)
     return {};
-  return output->to_lua_table();
-}
-
-void set_output_mode(std::string name, sol::object obj) {
-  if (!obj.is<sol::table>())
-    return;
-  auto mode = obj.as<sol::table>();
-  auto server = UraServer::get_instance();
-  auto output = server->view->get_output_by_name(name);
-  if (output)
-    output->set_mode(mode);
+  return output->id();
 }
 
 void spawn(std::string cmd) {
@@ -634,43 +504,32 @@ void notify(std::string summary, std::string body) {
   log::notify(summary, body);
 }
 
-void set_pointer_properties(std::string pattern, sol::object obj) {
-  if (!obj.is<sol::table>())
+void set_pointer_properties(std::string pattern, flexible::object obj) {
+  if (!obj.is<flexible::table>())
     return;
-  auto properties = obj.as<sol::table>();
   auto server = UraServer::get_instance();
   for (auto pointer : server->seat->match_pointers(pattern)) {
-    pointer->set_properties(properties);
+    pointer->set_properties(obj);
   }
 }
 
-void schedule(sol::protected_function f, int64_t time) {
+void schedule(std::string f, int64_t time) {
+  auto server = UraServer::get_instance();
+  auto func = server->lua->load_as_function(f);
+  if (!func)
+    return;
   if (time < 0)
     return;
   else if (time == 0) {
-    f();
+    func.value()();
     return;
   }
-  auto server = UraServer::get_instance();
   server->dispatcher->schedule_task(
     [=]() {
-      f();
+      func.value()();
       return true;
     },
     time
   );
 }
-
-void set_window_pinned(int index, bool flag) {
-  auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return;
-  auto workspace = output->current_workspace;
-  auto toplevel = workspace->get_toplevel_at(index);
-  if (toplevel) {
-    toplevel->pinned = flag;
-  }
-}
-
 } // namespace ura::api

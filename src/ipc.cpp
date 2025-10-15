@@ -9,8 +9,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/types.h>
-#include <nlohmann/json.hpp>
 #include "ura/core/log.hpp"
+#include <simdjson.h>
 
 namespace ura {
 
@@ -66,7 +66,7 @@ std::optional<UraIPCRequestMessage> UraIPC::try_read() {
   if (msg)
     return msg.value();
   else
-    log::error("IPC ERROR: {}", msg.error().data());
+    log::error("IPC ERROR");
   return {};
 }
 
@@ -103,26 +103,16 @@ void UraIPC::try_handle() {
   this->try_send(reply);
 }
 
-std::expected<UraIPCRequestMessage, std::string>
-UraIPCRequestMessage::from_str(std::string& str) {
-  auto j = nlohmann::json::parse(str);
-  auto message = UraIPCRequestMessage {};
-  if (j.contains("method") && j["method"].is_string())
-    message.method = j["method"];
-  else
-    return std::unexpected("Missing or invalid 'method' field in JSON.");
-  if (j.contains("body") && j["body"].is_string())
-    message.body = j["body"];
-  else
-    return std::unexpected("Missing or invalid 'body' field in JSON.");
-  return message;
+std::optional<UraIPCRequestMessage>
+UraIPCRequestMessage::from_str(std::string_view str) {
+  // simdjson::ondemand::parser parser;
+  // auto json = std::string(str);
+  // auto document = parser.iterate(simdjson::pad(json));
+  // return document.get<UraIPCRequestMessage>();
 }
 
 std::string UraIPCReplyMessage::to_str() {
-  auto j = nlohmann::json {};
-  j["status"] = this->status;
-  j["body"] = this->body;
-  return j.dump();
+  // return simdjson::to_json_string(this);
 }
 
 } // namespace ura

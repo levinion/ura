@@ -31,11 +31,13 @@ public:
   UraFocusStack focus_stack;
   std::optional<std::string> name;
   static std::unique_ptr<UraWorkSpace> init();
+  ~UraWorkSpace();
+  static UraWorkSpace* from(uint64_t id);
+  uint64_t id();
   void enable();
   void disable();
   int index();
   UraToplevel* get_toplevel_at(int index);
-  std::vector<UraToplevel*> get_pinned_toplevels();
   sol::table to_lua_table();
   void add(UraToplevel* toplevel);
   void remove(UraToplevel* toplevel);

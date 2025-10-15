@@ -17,12 +17,14 @@ public:
 
   void init(wlr_layer_surface_v1* layer_surface);
   static UraLayerShell* from(wlr_surface* surface);
+  static UraLayerShell* from(uint64_t id);
   void focus();
   void unfocus();
   void map();
   void unmap();
   void commit();
   void destroy();
+  uint64_t id();
 
 private:
   void dismiss_popups();

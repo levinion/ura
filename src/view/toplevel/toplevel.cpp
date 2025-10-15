@@ -102,6 +102,8 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     on_foreign_toplevel_handle_request_activate,
     this
   );
+
+  server->globals.insert(this->id());
 }
 
 void UraToplevel::destroy() {
@@ -120,6 +122,8 @@ void UraToplevel::destroy() {
   wlr_foreign_toplevel_handle_v1_destroy(this->foreign_handle);
   this->dismiss_popups();
   this->workspace->redraw();
+
+  server->globals.erase(this->id());
 }
 
 void UraToplevel::commit() {
@@ -246,9 +250,21 @@ void UraToplevel::unfocus() {
   this->dismiss_popups();
 }
 
-// get toplevel instance from wlr_surface
+// get toplevel instance from wlr_surface, it asserts the surface's role is xdg_toplevel
 UraToplevel* UraToplevel::from(wlr_surface* surface) {
   return static_cast<UraToplevel*>(surface->data);
+}
+
+UraToplevel* UraToplevel::from(uint32_t id) {
+  auto server = UraServer::get_instance();
+  if (server->globals.contains(id))
+    return reinterpret_cast<UraToplevel*>(id);
+  return nullptr;
+}
+
+void UraToplevel::move_to_workspace(UraWorkSpace* workspace) {
+  workspace->name ? this->move_to_workspace(workspace->name.value())
+                  : this->move_to_workspace(this->index());
 }
 
 void UraToplevel::move_to_workspace(std::string name) {
@@ -547,7 +563,6 @@ sol::table UraToplevel::to_lua_table() {
   table["first_commit_after_layout_change"] =
     this->first_commit_after_layout_change;
   table["z_index"] = this->z_index;
-  table["pinned"] = this->pinned;
   return table;
 }
 
@@ -605,5 +620,9 @@ void UraToplevel::dismiss_popups() {
   wl_list_for_each_safe(_popup, tmp, &this->xdg_toplevel->base->popups, link) {
     wlr_xdg_popup_destroy(_popup);
   }
+}
+
+uint64_t UraToplevel::id() {
+  return reinterpret_cast<uint64_t>(this);
 }
 } // namespace ura

@@ -71,11 +71,21 @@ bool UraPopup::init(wlr_xdg_popup* xdg_popup) {
   );
   server->runtime
     ->register_callback(&xdg_popup->events.destroy, on_popup_destroy, this);
+
+  server->globals.insert(this->id());
+
   return true;
 }
 
 UraPopup* UraPopup::from(wlr_surface* surface) {
   return static_cast<UraPopup*>(surface->data);
+}
+
+UraPopup* UraPopup::from(uint64_t id) {
+  auto server = UraServer::get_instance();
+  if (server->globals.contains(id))
+    return reinterpret_cast<UraPopup*>(id);
+  return nullptr;
 }
 
 void UraPopup::commit() {
@@ -136,5 +146,11 @@ void UraPopup::destroy() {
   wl_list_for_each_safe(_popup, tmp, &this->xdg_popup->base->popups, link) {
     wlr_xdg_popup_destroy(_popup);
   }
+  server->globals.erase(this->id());
 }
+
+uint64_t UraPopup::id() {
+  return reinterpret_cast<uint64_t>(this);
+}
+
 } // namespace ura

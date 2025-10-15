@@ -12,7 +12,6 @@
 #include "ura/view/view.hpp"
 #include "ura/view/workspace.hpp"
 #include "ura/lua/lua.hpp"
-#include "ura/core/log.hpp"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
 namespace ura {
@@ -44,9 +43,6 @@ void UraOutput::init(wlr_output* _wlr_output) {
 
   // bind render and allocator to this output
   wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
-
-  if (!this->try_set_custom_mode())
-    this->set_preferred_mode();
 
   // register callback
   server->runtime
@@ -91,10 +87,24 @@ void UraOutput::init(wlr_output* _wlr_output) {
     server->lua->try_execute_hook("output-resume", this->name);
   else
     server->lua->try_execute_hook("output-new", this->name);
+
+  server->globals.insert(this->id());
 }
 
 UraOutput* UraOutput::from(wlr_output* output) {
   return static_cast<UraOutput*>(output->data);
+}
+
+UraOutput* UraOutput::from(uint64_t id) {
+  auto server = UraServer::get_instance();
+  if (server->globals.contains(id))
+    return reinterpret_cast<UraOutput*>(id);
+  return nullptr;
+}
+
+UraOutput* UraOutput::from(std::string_view name) {
+  auto server = UraServer::get_instance();
+  return server->view->get_output_by_name(name);
 }
 
 void UraOutput::set_scale(float scale) {
@@ -120,6 +130,7 @@ void UraOutput::destroy() {
   auto server = UraServer::get_instance();
   server->runtime->remove(this);
   server->view->outputs.erase(this->name);
+  server->globals.erase(this->id());
 }
 
 Vec<UraLayerShell*>&
@@ -208,102 +219,6 @@ bool UraOutput::configure_layers() {
   return false;
 }
 
-wlr_output_mode*
-UraOutput::find_nearest_mode(int width, int height, int refresh) {
-  wlr_output_mode* nearest_mode = nullptr;
-  auto min_diff = -1;
-  wlr_output_mode* mode = nullptr;
-  wl_list_for_each(mode, &this->output->modes, link) {
-    if (mode->width == width && mode->height == height) {
-      auto diff = std::abs(mode->refresh - refresh);
-      if (min_diff < 0 || diff < min_diff) {
-        min_diff = diff;
-        nearest_mode = mode;
-      }
-    }
-  }
-  return nearest_mode;
-}
-
-bool UraOutput::set_mode(wlr_output_mode mode) {
-  auto nearest_mode =
-    this->find_nearest_mode(mode.width, mode.height, mode.refresh);
-  if (!nearest_mode)
-    return false;
-  wlr_output_state state;
-  wlr_output_state_init(&state);
-  wlr_output_state_set_enabled(&state, true);
-  wlr_output_state_set_mode(&state, nearest_mode);
-  if (wlr_output_commit_state(this->output, &state)) {
-    this->mode = *nearest_mode;
-    wlr_output_state_finish(&state);
-    this->configure_layers();
-    return true;
-  } else {
-    wlr_output_state_finish(&state);
-  }
-  return false;
-}
-
-bool UraOutput::set_mode(sol::table& mode) {
-  auto server = UraServer::get_instance();
-  auto _mode =
-    this->mode ? this->mode.value() : *wlr_output_preferred_mode(this->output);
-  auto height = server->lua->fetch<int>(mode, "height");
-  if (height && height.value() != _mode.height) {
-    _mode.height = height.value();
-    _mode.preferred = false;
-  }
-  auto width = server->lua->fetch<int>(mode, "width");
-  if (width && width.value() != _mode.width) {
-    _mode.width = width.value();
-    _mode.preferred = false;
-  }
-  auto refresh = server->lua->fetch<float>(mode, "refresh");
-  if (refresh && refresh.value() != _mode.refresh) {
-    _mode.refresh = refresh.value() * 1000;
-    _mode.preferred = false;
-  }
-
-  auto result = this->set_mode(_mode);
-  if (result) {
-    // apply scale only if the properties are successfully set.
-    auto scale = server->lua->fetch<float>(mode, "scale");
-    if (scale && scale.value() != this->output->scale) {
-      this->set_scale(scale.value());
-    }
-    return true;
-  }
-  log::warn(
-    "failed to set custom mode as {}, fallback to preferred mode",
-    std::format(
-      "{}:{}@{}Hz",
-      _mode.width,
-      _mode.height,
-      static_cast<float>(_mode.refresh) / 1000.f
-    )
-  );
-  return false;
-}
-
-bool UraOutput::try_set_custom_mode() {
-  auto server = UraServer::get_instance();
-  auto output_table = server->lua->fetch<sol::table>("opt.device.outputs");
-  if (output_table) {
-    auto custom_mode =
-      output_table.value()[this->name].get<std::optional<sol::table>>();
-    if (custom_mode) {
-      return this->set_mode(custom_mode.value());
-    }
-  }
-  return false;
-}
-
-bool UraOutput::set_preferred_mode() {
-  auto mode = wlr_output_preferred_mode(this->output);
-  return this->set_mode(*mode);
-}
-
 Vec4<int> UraOutput::physical_geometry() {
   return { 0, 0, this->output->width, this->output->height };
 }
@@ -324,19 +239,15 @@ Vec<UraWorkSpace*>& UraOutput::get_workspaces() {
  - is nonexistant
  - is active (current workspace)
  - has no toplevels */
-void UraOutput::destroy_workspace(int index) {
-  auto& workspaces = this->get_workspaces();
-  if (workspaces.size() == 1)
-    return;
-  auto workspace = this->get_workspace_at(index);
+void UraOutput::destroy_workspace(UraWorkSpace* workspace) {
   if (!workspace)
     return;
   if (!workspace->toplevels.empty())
     return;
   if (workspace == this->current_workspace)
     return;
-
-  workspaces.remove_n(index);
+  auto& workspaces = this->get_workspaces();
+  workspaces.remove(workspace);
 }
 
 UraWorkSpace* UraOutput::get_workspace_at(int index) {
@@ -354,26 +265,11 @@ UraWorkSpace* UraOutput::create_workspace() {
   return this->get_workspaces().back();
 }
 
-void UraOutput::switch_workspace(int index) {
-  auto target = this->get_workspace_at(index);
-  if (!target || target == this->current_workspace)
-    return;
-  this->switch_workspace(target);
-}
-
 void UraOutput::switch_workspace(UraWorkSpace* workspace) {
   if (!workspace)
     return;
   if (workspace == this->current_workspace)
     return;
-  // move pinned toplevels to the target workspace
-  auto pinned = this->current_workspace->get_pinned_toplevels();
-  for (auto tp : pinned) {
-    auto focused = tp->is_focused();
-    tp->move_to_workspace(workspace->index());
-    if (!focused)
-      workspace->focus_stack.move_to_bottom(tp);
-  }
   this->current_workspace->disable();
   this->current_workspace = workspace;
   this->current_workspace->enable();
@@ -448,6 +344,10 @@ void UraOutput::update_background() {
       logical_geometry.x,
       logical_geometry.y
     );
+}
+
+uint64_t UraOutput::id() {
+  return reinterpret_cast<uint64_t>(this);
 }
 
 } // namespace ura

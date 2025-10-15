@@ -16,7 +16,6 @@ public:
   bool mapped = true;
   bool destroying = false;
   bool draggable = false;
-  bool pinned = false;
   std::string layout = "tiling";
   std::optional<std::string> last_layout;
   bool first_commit_after_layout_change = true;
@@ -36,6 +35,8 @@ public:
   uint border_width;
 
   static UraToplevel* from(wlr_surface* surface);
+  static UraToplevel* from(uint32_t id);
+
   void init(wlr_xdg_toplevel* xdg_toplevel);
   void destroy();
   void commit();
@@ -51,6 +52,7 @@ public:
   std::string app_id();
   void set_title(std::string title); // inner api
   void set_app_id(std::string app_id); // inner api
+  void move_to_workspace(UraWorkSpace* workspace);
   void move_to_workspace(int index);
   void move_to_workspace(std::string name);
   int index();
@@ -61,6 +63,7 @@ public:
   bool is_focused();
   sol::table to_lua_table();
   void set_layout(std::string layout);
+  uint64_t id();
 
 private:
   void create_borders();

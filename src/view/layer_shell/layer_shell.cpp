@@ -60,10 +60,19 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
   // add this shell to output's layer
   auto& list = output->get_layer_list_by_type(layer_surface->pending.layer);
   list.push_back(this);
+
+  server->globals.insert(this->id());
 }
 
 UraLayerShell* UraLayerShell::from(wlr_surface* surface) {
   return static_cast<UraLayerShell*>(surface->data);
+}
+
+UraLayerShell* UraLayerShell::from(uint64_t id) {
+  auto server = UraServer::get_instance();
+  if (server->globals.contains(id))
+    return reinterpret_cast<UraLayerShell*>(id);
+  return nullptr;
 }
 
 void UraLayerShell::focus() {
@@ -157,6 +166,8 @@ void UraLayerShell::destroy() {
   }
   this->dismiss_popups();
   output->configure_layers();
+
+  server->globals.erase(this->id());
 }
 
 void UraLayerShell::dismiss_popups() {
@@ -164,6 +175,10 @@ void UraLayerShell::dismiss_popups() {
   wl_list_for_each_safe(_popup, tmp, &this->layer_surface->popups, link) {
     wlr_xdg_popup_destroy(_popup);
   }
+}
+
+uint64_t UraLayerShell::id() {
+  return reinterpret_cast<uint64_t>(this);
 }
 
 } // namespace ura

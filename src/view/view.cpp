@@ -37,8 +37,10 @@ UraOutput* UraView::current_output() {
   return UraOutput::from(output);
 }
 
-UraOutput* UraView::get_output_by_name(std::string& name) {
-  return this->outputs.contains(name) ? this->outputs[name] : nullptr;
+UraOutput* UraView::get_output_by_name(std::string_view name) {
+  // TODO: this should be removed when unordered_map supports string_view as a read key
+  auto key = std::string(name);
+  return this->outputs.contains(key) ? this->outputs[key] : nullptr;
 }
 
 std::optional<UraClient> UraView::foreground_client(double* sx, double* sy) {
@@ -56,20 +58,24 @@ std::optional<UraClient> UraView::foreground_client(double* sx, double* sy) {
   return UraClient::from(scene_surface->surface);
 }
 
-UraWorkSpace* UraView::get_named_workspace_or_create(std::string name) {
-  if (!this->named_workspaces.contains(name)) {
+UraWorkSpace* UraView::get_named_workspace_or_create(std::string_view name) {
+  // TODO: this should be removed when unordered_map supports string_view as a read key
+  auto key = std::string(name);
+  if (!this->named_workspaces.contains(key)) {
     auto workspace = UraWorkSpace::init();
-    workspace->name = name;
-    this->named_workspaces[name] = workspace.get();
+    workspace->name = key;
+    this->named_workspaces[key] = workspace.get();
     this->workspaces.push_back(std::move(workspace));
   }
-  return this->named_workspaces[name];
+  return this->named_workspaces[key];
 }
 
-UraWorkSpace* UraView::get_named_workspace(std::string name) {
-  if (!this->named_workspaces.contains(name))
+UraWorkSpace* UraView::get_named_workspace(std::string_view name) {
+  // TODO: this should be removed when unordered_map supports string_view as a read key
+  auto key = std::string(name);
+  if (!this->named_workspaces.contains(key))
     return nullptr;
-  return this->named_workspaces[name];
+  return this->named_workspaces[key];
 }
 
 wlr_scene_tree* UraView::get_layer_by_type(zwlr_layer_shell_v1_layer type) {

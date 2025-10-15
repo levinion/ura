@@ -11,7 +11,9 @@
 namespace ura {
 
 std::unique_ptr<UraWorkSpace> UraWorkSpace::init() {
-  return std::make_unique<UraWorkSpace>();
+  auto workspace = std::make_unique<UraWorkSpace>();
+  UraServer::get_instance()->globals.insert(workspace->id());
+  return workspace;
 }
 
 void UraWorkSpace::enable() {
@@ -87,12 +89,18 @@ void UraWorkSpace::redraw() {
   for (auto toplevel : this->toplevels) toplevel->redraw(false);
 }
 
-std::vector<UraToplevel*> UraWorkSpace::get_pinned_toplevels() {
-  std::vector<UraToplevel*> v;
-  for (auto toplevel : this->toplevels) {
-    if (toplevel->pinned)
-      v.push_back(toplevel);
-  }
-  return v;
+UraWorkSpace* UraWorkSpace::from(uint64_t id) {
+  auto server = UraServer::get_instance();
+  if (server->globals.contains(id))
+    return reinterpret_cast<UraWorkSpace*>(id);
+  return nullptr;
+}
+
+uint64_t UraWorkSpace::id() {
+  return reinterpret_cast<uint64_t>(this);
+}
+
+UraWorkSpace::~UraWorkSpace() {
+  UraServer::get_instance()->globals.erase(this->id());
 }
 } // namespace ura

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_set>
 #include "ura/ura.hpp"
 #include "ura/core/ipc.hpp"
 #include "ura/core/dispatcher.hpp"
@@ -52,6 +53,8 @@ public:
   std::unique_ptr<UraView> view;
   std::unique_ptr<UraIPC> ipc;
   std::unique_ptr<UraDispatcher<1024>> dispatcher;
+
+  std::unordered_set<uint64_t> globals;
 
   static UraServer* get_instance();
   UraServer* init();

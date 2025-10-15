@@ -1,5 +1,6 @@
 #include "ura/seat/pointer.hpp"
 #include <regex>
+#include "flexible/flexible.hpp"
 #include "ura/core/server.hpp"
 #include "ura/lua/lua.hpp"
 #include "ura/ura.hpp"
@@ -53,21 +54,23 @@ void UraPointer::try_apply_rules() {
       auto reg = std::regex(pattern);
       if (!std::regex_match(this->name, reg))
         continue;
-      this->set_properties(table);
+
+      // TODO: sol::table to flexible::table
+      // this->set_properties(table);
     }
   }
 }
 
-void UraPointer::set_properties(sol::table properties) {
-  auto profile = properties.get<std::optional<std::string>>("accel_profile");
-  if (profile)
+void UraPointer::set_properties(flexible::object& properties) {
+  if (auto profile = properties.recursive_get<std::string>("accel_profile")) {
     this->set_accel_profile(profile.value());
-  auto move_speed = properties.get<std::optional<float>>("move_speed");
-  if (move_speed)
+  }
+  if (auto move_speed = properties.recursive_get<double>("move_speed")) {
     this->move_speed = move_speed.value();
-  auto scroll_speed = properties.get<std::optional<float>>("scroll_speed");
-  if (scroll_speed)
+  }
+  if (auto scroll_speed = properties.recursive_get<double>("scroll_speed")) {
     this->scroll_speed = scroll_speed.value();
+  }
 }
 
 } // namespace ura

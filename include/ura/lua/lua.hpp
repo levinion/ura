@@ -26,12 +26,13 @@ public:
   std::unordered_map<std::string, sol::protected_function> layouts;
 
   static std::unique_ptr<Lua> init();
-  std::expected<std::string, std::string> execute(std::string script);
-  std::expected<std::string, std::string> execute_file(std::filesystem::path);
+  std::expected<std::string, std::string> execute(std::string_view script);
+  std::expected<std::string, std::string> execute_file(std::string_view path);
   bool try_execute_keybinding(uint64_t id);
   bool contains_keybinding(uint64_t id);
-  std::optional<std::filesystem::path> find_init_path();
+  std::optional<std::string> find_init_path();
   void try_execute_init();
+  std::optional<sol::protected_function> load_as_function(std::string_view f);
 
   template<typename T, typename... Args>
   std::optional<T> try_execute_hook(std::string name, Args&&... args) {

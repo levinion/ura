@@ -9,6 +9,7 @@
 
 namespace ura {
 
+// TODO: this should be visitable and modifiable from api
 enum UraSceneLayer {
   Clear = -50,
   Background = 0,
@@ -33,10 +34,10 @@ public:
 
   static std::unique_ptr<UraView> init();
   wlr_scene_tree* get_scene_tree_or_create(int z);
-  UraWorkSpace* get_named_workspace_or_create(std::string name);
-  UraWorkSpace* get_named_workspace(std::string name);
+  UraWorkSpace* get_named_workspace_or_create(std::string_view name);
+  UraWorkSpace* get_named_workspace(std::string_view name);
   UraOutput* current_output();
-  UraOutput* get_output_by_name(std::string& name);
+  UraOutput* get_output_by_name(std::string_view name);
   std::optional<UraClient> foreground_client(double* sx, double* sy);
   wlr_scene_tree* get_layer_by_type(zwlr_layer_shell_v1_layer type);
   void notify_scale(wlr_surface* surface, float scale);

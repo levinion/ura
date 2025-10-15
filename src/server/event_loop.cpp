@@ -281,7 +281,6 @@ void UraServer::check_and_reset_lua() {
     for (auto pointer : this->seat->pointers) pointer->try_apply_rules();
     auto output = this->view->current_output();
     if (output) {
-      output->try_set_custom_mode();
       output->current_workspace->redraw();
     }
   }

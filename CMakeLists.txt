@@ -1,6 +1,6 @@
 # project
 set(NAME "ura")
-set(VERSION 0.1.4)
+set(VERSION 0.2.0)
 cmake_minimum_required(VERSION 3.10)
 project(${NAME} VERSION ${VERSION} LANGUAGES CXX)
 
@@ -27,6 +27,9 @@ target_compile_definitions(${NAME} PRIVATE ${VERSION_MACRO_NAME}="${VERSION}")
 
 target_compile_definitions(${NAME} PRIVATE WLR_USE_UNSTABLE)
 
+# disable exception
+# target_compile_options(${NAME} PRIVATE -fno-exceptions)
+
 find_package(PkgConfig REQUIRED)
 
 function(target_add_dependence target pkgname)
@@ -40,8 +43,8 @@ target_add_dependence(${NAME} wayland-server)
 target_add_dependence(${NAME} xkbcommon)
 target_add_dependence(${NAME} sol2)
 target_add_dependence(${NAME} luajit)
-target_add_dependence(${NAME} nlohmann_json)
 target_add_dependence(${NAME} CLI11)
 target_add_dependence(${NAME} libnotify)
 target_add_dependence(${NAME} spdlog)
 target_add_dependence(${NAME} libinput)
+target_add_dependence(${NAME} simdjson)

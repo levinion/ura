@@ -21,6 +21,9 @@ public:
 
   void init(wlr_output* output);
   static UraOutput* from(wlr_output* output);
+  static UraOutput* from(uint64_t id);
+  static UraOutput* from(std::string_view name);
+  uint64_t id();
   void commit();
   void destroy();
   void set_scale(float scale);
@@ -29,11 +32,6 @@ public:
 
   /* Mode */
   void set_dpms_mode(bool flag);
-  bool set_mode(wlr_output_mode mode);
-  bool set_mode(sol::table& mode);
-  bool set_preferred_mode();
-  bool try_set_custom_mode();
-  wlr_output_mode* find_nearest_mode(int width, int height, int refresh);
 
   /* Surfaces */
   Vec<UraLayerShell*> bottom_surfaces;
@@ -61,9 +59,8 @@ public:
   UraWorkSpace* current_workspace = nullptr;
   UraWorkSpace* create_workspace();
   Vec<UraWorkSpace*>& get_workspaces();
-  void switch_workspace(int index);
   void switch_workspace(UraWorkSpace* workspace);
-  void destroy_workspace(int index);
+  void destroy_workspace(UraWorkSpace* workspace);
   UraWorkSpace* get_workspace_at(int index);
   sol::table to_lua_table();
 };
