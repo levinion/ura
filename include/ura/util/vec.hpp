@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <optional>
 #include <vector>
+#include "flexible/flexible.hpp"
 #include "wlr/util/box.h"
 
 namespace ura {
@@ -34,6 +35,15 @@ public:
 
   std::array<T, 4> to_array() {
     return { x, y, width, height };
+  }
+
+  flexible::object to_flexible() {
+    flexible::object obj;
+    obj.set("x", x);
+    obj.set("y", y);
+    obj.set("width", width);
+    obj.set("height", height);
+    return obj;
   }
 
   static Vec4<T> from(wlr_box& box) {

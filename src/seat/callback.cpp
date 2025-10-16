@@ -5,7 +5,7 @@
 #include "ura/seat/tablet.hpp"
 #include "ura/seat/seat.hpp"
 #include "ura/ura.hpp"
-#include "ura/lua/lua.hpp"
+#include "ura/core/state.hpp"
 
 namespace ura {
 void on_new_input(wl_listener* listener, void* data) {
@@ -51,7 +51,7 @@ void on_new_input(wl_listener* listener, void* data) {
 
   flexible::object args;
   args.set(device->name);
-  server->lua->try_execute_hook("new-input", args);
+  server->state->try_execute_hook("new-input", args);
 }
 
 } // namespace ura

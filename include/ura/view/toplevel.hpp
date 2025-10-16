@@ -32,7 +32,7 @@ public:
   uint border_width;
 
   static UraToplevel* from(wlr_surface* surface);
-  static UraToplevel* from(uint32_t id);
+  static UraToplevel* from(uint64_t id);
 
   void init(wlr_xdg_toplevel* xdg_toplevel);
   void destroy();

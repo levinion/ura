@@ -8,24 +8,29 @@
 #include "ura/core/callback.hpp"
 #include "ura/core/runtime.hpp"
 #include "ura/ura.hpp"
-#include "ura/view/workspace.hpp"
 #include "ura/view/view.hpp"
-#include "ura/lua/lua.hpp"
+#include "ura/core/lua.hpp"
 #include <sys/epoll.h>
+#include "ura/core/state.hpp"
 
 namespace ura {
 
-UraServer* UraServer::init() {
+UraServer* UraServer::init(std::unique_ptr<UraState>&& state) {
   log::init();
 
+  this->state = std::move(state);
   this->setup_signal();
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
   this->ipc = UraIPC::init();
   this->dispatcher = UraDispatcher<1024>::init();
   this->lua = Lua::init();
-  this->lua->try_execute_init();
-  this->lua->try_execute_hook("prepare", {});
+  auto result = this->lua->load_config();
+  if (!result) {
+    log::error("{}", result.error());
+    this->terminate();
+  }
+  this->state->try_execute_hook("prepare", {});
 
   this->setup_base();
   this->setup_drm();
@@ -275,10 +280,12 @@ void UraServer::setup_others() {
 void UraServer::check_and_reset_lua() {
   if (this->lua->reset) {
     this->lua = Lua::init();
-    this->lua->setup();
-    this->lua->try_execute_init();
-    this->lua->try_execute_hook("reload", {});
-    for (auto pointer : this->seat->pointers) pointer->try_apply_rules();
+    auto result = this->lua->load_config();
+    if (!result) {
+      log::notify("reload failed", result.error());
+      return;
+    }
+    this->state->try_execute_hook("reload", {});
   }
 }
 
@@ -315,7 +322,7 @@ void UraServer::run() {
     return true;
   });
 
-  this->lua->try_execute_hook("ready", {});
+  this->state->try_execute_hook("ready", {});
 
   while (!this->quit) {
     if (!dispatcher->dispatch())

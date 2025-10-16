@@ -1,7 +1,6 @@
-#include "ura/lua/lua.hpp"
-#include "ura/core/log.hpp"
-#include "ura/lua/api/core.hpp"
-#include "ura/lua/api/lua.hpp"
+#include "ura/core/lua.hpp"
+#include "ura/api/core.hpp"
+#include "ura/api/lua.hpp"
 #include "ura/core/server.hpp"
 #include <expected>
 #include <filesystem>
@@ -11,6 +10,7 @@
 #include <sol/property.hpp>
 #include <sol/state_handling.hpp>
 #include <string>
+#include "ura/core/state.hpp"
 
 namespace ura {
 
@@ -70,7 +70,15 @@ void Lua::setup() {
   this->set("api.set_cursor_visible", api::core::set_cursor_visible);
   this->set("api.get_cursor_visible", api::core::is_cursor_visible);
   this->set("api.set_cursor_shape", api::core::set_cursor_shape);
-  this->set("api.set_pointer_properties", api::lua::set_pointer_properties);
+  this->set(
+    "api.set_pointer_accel_profile",
+    api::core::set_pointer_accel_profile
+  );
+  this->set("api.set_pointer_move_speed", api::core::set_pointer_move_speed);
+  this->set(
+    "api.set_pointer_scroll_speed",
+    api::core::set_pointer_scroll_speed
+  );
   // workspace
   this->set("api.create_workspace", api::core::create_workspace);
   this->set("api.switch_workspace", api::core::switch_workspace);
@@ -82,6 +90,10 @@ void Lua::setup() {
   this->set("api.get_current_output", api::core::get_current_output);
   this->set("api.get_output", api::core::get_output);
   this->set("api.set_output_dpms", api::core::set_output_dpms);
+  this->set(
+    "api.get_output_logical_geometry",
+    api::lua::get_output_logical_geometry
+  );
   // keymap
   this->set("api.set_keymap", api::lua::set_keymap);
   this->set("api.unset_keymap", api::core::unset_keymap);
@@ -93,11 +105,11 @@ void Lua::setup() {
   // fn
   this->set("api.set_env", api::core::set_env);
   this->set("api.unset_env", api::core::unset_env);
-  // this->set("fn.append_package_path", api::core::append_lua_package_path);
-  // this->set("fn.prepend_package_path", api::core::prepend_lua_package_path);
-  // this->set("fn.expanduser", api::core::expanduser);
-  // this->set("fn.expandvars", api::core::expandvars);
-  // this->set("fn.expand", api::core::expand);
+  this->set("api.append_package_path", api::core::append_package_path);
+  this->set("api.prepend_package_path", api::core::prepend_package_path);
+  this->set("api.expanduser", api::core::expanduser);
+  this->set("api.expandvars", api::core::expandvars);
+  this->set("api.expand", api::core::expand);
   // override
   this->state.set("print", api::lua::print);
 }
@@ -123,64 +135,53 @@ std::expected<std::string, std::string> Lua::execute_file(std::string_view p) {
   if (result.valid())
     return this->lua_stdout;
   sol::error err = result;
-  return std::unexpected(err.what());
+  return std::unexpected(std::string(path) + ": " + std::string(err.what()));
 }
 
-bool Lua::try_execute_keybinding(uint64_t id) {
+std::optional<std::string> Lua::find_config_path() {
   auto server = UraServer::get_instance();
-  if (!this->contains_keybinding(id))
-    return false;
-  this->keymaps[mode][id]({});
-  return true;
-}
-
-std::optional<std::string> Lua::find_init_path() {
-  auto server = UraServer::get_instance();
+  if (server->state->config_path) {
+    return server->state->config_path;
+  }
   auto root = std::getenv("XDG_CONFIG_HOME")
     ? std::filesystem::path(std::getenv("XDG_CONFIG_HOME"))
     : std::filesystem::path(std::getenv("HOME")) / ".config";
   auto dotfile = std::filesystem::path(root) / "ura/init.lua";
-  if (std::filesystem::is_regular_file(dotfile))
+  if (std::filesystem::is_regular_file(dotfile)) {
+    server->state->config_path = dotfile;
     return dotfile;
+  }
   auto global_dotfile = std::filesystem::path("/etc/ura/init.lua");
-  if (std::filesystem::is_regular_file(global_dotfile))
+  if (std::filesystem::is_regular_file(global_dotfile)) {
+    server->state->config_path = global_dotfile;
     return global_dotfile;
+  }
   return {};
 }
 
-void Lua::try_execute_init() {
+std::expected<void, std::string> Lua::load_config() {
   auto result = this->execute(
     R"*(
-    ura.fn.prepend_package_path("/usr/share/ura/runtime/?.lua")
-    ura.win = require("win")
+    ura.api.prepend_package_path("/usr/share/ura/runtime/?.lua")
+    ura.win = require("_win")
   )*"
   );
 
   if (!result) {
-    log::error("{}", result.error());
-    UraServer::get_instance()->terminate();
+    return std::unexpected(result.error());
   }
 
-  auto path = this->find_init_path();
+  auto path = this->find_config_path();
   if (!path) {
-    log::error("{}", "could not found any config files, exiting...");
-    UraServer::get_instance()->terminate();
+    return std::unexpected("could not found any config files, exiting...");
   }
 
   result = this->execute_file(path.value());
   if (!result) {
-    log::error("{}", result.error().c_str());
-    UraServer::get_instance()->terminate();
+    return std::unexpected(result.error());
   }
-}
 
-bool Lua::contains_keybinding(uint64_t id) {
-  auto server = UraServer::get_instance();
-  if (!this->keymaps.contains(this->mode))
-    return false;
-  if (!this->keymaps[mode].contains(id))
-    return false;
-  return true;
+  return {};
 }
 
 std::optional<sol::protected_function>

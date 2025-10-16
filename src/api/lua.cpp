@@ -1,8 +1,9 @@
-#include "ura/lua/api/lua.hpp"
+#include "ura/api/lua.hpp"
 #include "flexible/flexible.hpp"
+#include "ura/api/core.hpp"
 #include "ura/core/server.hpp"
-#include "ura/lua/api/core.hpp"
-#include "ura/lua/lua.hpp"
+#include "ura/core/lua.hpp"
+#include "ura/core/state.hpp"
 
 namespace ura::api::lua {
 
@@ -21,10 +22,6 @@ void print(sol::variadic_args args) {
   r += state["tostring"](args[args.size() - 1]).get<std::string>();
   r.push_back('\n');
   server->lua->lua_stdout += r;
-}
-
-void set_pointer_properties(std::string pattern, sol::object object) {
-  return core::set_pointer_properties(pattern, flexible::object::from(object));
 }
 
 void schedule(sol::protected_function f, int64_t time) {
@@ -46,7 +43,13 @@ void schedule(sol::protected_function f, int64_t time) {
 
 void set_hook(std::string name, sol::protected_function f) {
   auto server = UraServer::get_instance();
-  server->lua->hooks[name] = f;
+  server->state->hooks[name] = [=](flexible::object obj) {
+    auto result = f(obj);
+    if (result.valid()) {
+      return flexible::object::from(result.get<sol::object>());
+    }
+    return flexible::object::init(flexible::null {});
+  };
 }
 
 void set_keymap(
@@ -57,12 +60,18 @@ void set_keymap(
   auto server = UraServer::get_instance();
   auto id = parse_keymap(pattern);
   if (id) {
-    server->lua->keymaps[mode][id.value()] = f();
+    server->state->keymaps[mode][id.value()] = [=](flexible::object obj) {
+      f(obj);
+      return flexible::object::init(flexible::null {});
+    };
+    ;
   }
 }
 
-void set_layout(std::string name, sol::protected_function f) {
-  auto server = UraServer::get_instance();
-  server->lua->layouts[name] = f();
+sol::object get_output_logical_geometry(uint64_t id) {
+  auto obj = core::get_output_logical_geometry(id);
+  auto state = UraServer::get_instance()->lua->state.lua_state();
+  return obj.to_sol(state);
 }
+
 } // namespace ura::api::lua

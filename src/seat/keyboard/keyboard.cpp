@@ -3,7 +3,7 @@
 #include "ura/seat/seat.hpp"
 #include "ura/seat/keyboard.hpp"
 #include "ura/seat/cursor.hpp"
-#include "ura/lua/lua.hpp"
+#include "ura/core/state.hpp"
 
 namespace ura {
 
@@ -113,7 +113,7 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
     }
     // exec keybinding
     if (!server->seat->locked) {
-      if (server->lua->try_execute_keybinding(id))
+      if (server->state->try_execute_keybinding(id))
         return;
     }
   }

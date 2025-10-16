@@ -8,7 +8,7 @@
 #include "ura/view/toplevel.hpp"
 #include "ura/seat/seat.hpp"
 #include "ura/seat/text_input.hpp"
-#include "ura/lua/lua.hpp"
+#include "ura/core/state.hpp"
 #include <regex>
 
 namespace ura {
@@ -79,7 +79,7 @@ void UraSeat::unfocus() {
       client->transform<UraLayerShell>()->unfocus();
   }
   wlr_seat_keyboard_notify_clear_focus(seat);
-  server->lua->try_execute_hook("focus-change", {});
+  server->state->try_execute_hook("focus-change", {});
 }
 
 void UraSeat::focus(UraClient client) {
@@ -93,7 +93,7 @@ void UraSeat::focus(UraClient client) {
     this->unfocus();
   client.focus();
   auto server = UraServer::get_instance();
-  server->lua->try_execute_hook("focus-change", {});
+  server->state->try_execute_hook("focus-change", {});
 }
 
 void UraSeat::focus(UraToplevel* toplevel) {

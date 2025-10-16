@@ -6,6 +6,7 @@
 #include <optional>
 #include <sol/forward.hpp>
 #include <sol/state.hpp>
+#include <sol/types.hpp>
 #include <string>
 #include <utility>
 #include <variant>
@@ -80,7 +81,7 @@ public:
   void set(const std::string key, T&& value) {
     auto ft = this->as<table>();
     assert(ft);
-    ft.value()[key] = value;
+    ft.value()[key].m = value;
   }
 
   template<typename T>
@@ -117,12 +118,23 @@ public:
   }
 
 private:
-  std::variant<int64_t, uint64_t, double, bool, std::string, array, table, null>
+  std::variant<
+    int,
+    int64_t,
+    uint64_t,
+    double,
+    bool,
+    std::string,
+    array,
+    table,
+    null>
     m = null {};
 
   inline nlohmann::json to_json_value() {
     if (this->is<null>())
       return {};
+    if (this->is<int>())
+      return this->as<int>().value();
     if (this->is<int64_t>())
       return this->as<int64_t>().value();
     if (this->is<uint64_t>())
@@ -152,7 +164,7 @@ private:
 
   inline static object from_json_value(nlohmann::json j) {
     if (j.is_null())
-      return {};
+      return object::init(null {});
     if (j.is_boolean())
       return object::init(j.get<bool>());
     if (j.is_number_unsigned()) {
@@ -190,6 +202,8 @@ private:
   inline sol::object to_sol_value(sol::state_view state) {
     if (this->is<null>())
       return {};
+    if (this->is<int>())
+      return sol::make_object(state, this->as<int>().value());
     if (this->is<int64_t>())
       return sol::make_object(state, this->as<int64_t>().value());
     if (this->is<uint64_t>())
@@ -218,10 +232,13 @@ private:
   }
 
   inline static object from_sol_value(sol::object obj) {
-    if (obj.is<null>())
+    if (obj.is<sol::nil_t>())
       return {};
     if (obj.is<bool>())
       return object::init(obj.as<bool>());
+    if (obj.is<int>()) {
+      return object::init(obj.as<int>());
+    }
     if (obj.is<uint64_t>()) {
       return object::init(obj.as<uint64_t>());
     }

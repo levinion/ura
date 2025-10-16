@@ -8,7 +8,8 @@
 #include "ura/core/callback.hpp"
 #include "ura/seat/seat.hpp"
 #include "ura/util/util.hpp"
-#include "ura/lua/lua.hpp"
+#include "ura/core/state.hpp"
+#include "ura/core/lua.hpp"
 #include "ura/view/view.hpp"
 
 namespace ura {
@@ -170,7 +171,7 @@ void UraToplevel::commit() {
     server->seat->focus(this);
     flexible::object args;
     args.set(this->id());
-    server->lua->try_execute_hook("window-new", args);
+    server->state->try_execute_hook("window-new", args);
     this->prepared = true;
     this->map();
     return;
@@ -235,7 +236,7 @@ UraToplevel* UraToplevel::from(wlr_surface* surface) {
   return static_cast<UraToplevel*>(surface->data);
 }
 
-UraToplevel* UraToplevel::from(uint32_t id) {
+UraToplevel* UraToplevel::from(uint64_t id) {
   auto server = UraServer::get_instance();
   if (server->globals.contains(id))
     return reinterpret_cast<UraToplevel*>(id);
@@ -297,7 +298,8 @@ void UraToplevel::activate() {
   auto output = server->view->get_output_by_name(this->output);
   flexible::object args;
   args.set(this->id());
-  auto flag = server->lua->try_execute_hook<bool>("pre-window-activate", args);
+  auto flag =
+    server->state->try_execute_hook<bool>("pre-window-activate", args);
   // if hook returns a false value, then stop the operation.
   if (flag && !flag.value())
     return;
@@ -310,7 +312,7 @@ void UraToplevel::activate() {
   }
   server->seat->focus(this);
   this->map();
-  server->lua->try_execute_hook("post-window-activate", args);
+  server->state->try_execute_hook("post-window-activate", args);
 }
 
 bool UraToplevel::move(int x, int y) {
@@ -359,7 +361,7 @@ bool UraToplevel::move(int x, int y) {
   auto server = UraServer::get_instance();
   flexible::object args;
   args.set(this->id());
-  server->lua->try_execute_hook("window-move", args);
+  server->state->try_execute_hook("window-move", args);
   return true;
 }
 
@@ -377,7 +379,7 @@ bool UraToplevel::resize(int width, int height) {
   auto server = UraServer::get_instance();
   flexible::object args;
   args.set(this->id());
-  server->lua->try_execute_hook("window-resize", args);
+  server->state->try_execute_hook("window-resize", args);
   return true;
 }
 
@@ -459,7 +461,7 @@ void UraToplevel::set_title(std::string title) {
   auto server = UraServer::get_instance();
   flexible::object args;
   args.set(this->id());
-  server->lua->try_execute_hook("window-title-change", args);
+  server->state->try_execute_hook("window-title-change", args);
 }
 
 void UraToplevel::set_app_id(std::string app_id) {
@@ -470,7 +472,7 @@ void UraToplevel::set_app_id(std::string app_id) {
   auto server = UraServer::get_instance();
   flexible::object args;
   args.set(this->id());
-  server->lua->try_execute_hook("window-app_id-change", args);
+  server->state->try_execute_hook("window-app_id-change", args);
 }
 
 void UraToplevel::set_z_index(int z_index) {

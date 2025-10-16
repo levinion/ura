@@ -1,6 +1,6 @@
 #include "ura/core/ipc.hpp"
 #include "ura/core/server.hpp"
-#include "ura/lua/lua.hpp"
+#include "ura/core/lua.hpp"
 #include <array>
 #include <cassert>
 #include <cstring>

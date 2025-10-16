@@ -1,10 +1,10 @@
-#include "ura/lua/api/core.hpp"
+#include "ura/api/core.hpp"
 #include <cstdint>
 #include <regex>
 #include <sol/forward.hpp>
 #include <unordered_set>
 #include "ura/core/log.hpp"
-#include "ura/lua/lua.hpp"
+#include "ura/core/lua.hpp"
 #include "ura/core/server.hpp"
 #include "ura/view/output.hpp"
 #include "ura/view/view.hpp"
@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <sys/prctl.h>
 #include "flexible/flexible.hpp"
+#include "ura/core/state.hpp"
 
 namespace ura::api::core {
 
@@ -27,7 +28,7 @@ void set_keymap(std::string pattern, std::string mode, flexible::function f) {
   auto server = UraServer::get_instance();
   auto id = parse_keymap(pattern);
   if (id) {
-    server->lua->keymaps[mode][id.value()] = f;
+    server->state->keymaps[mode][id.value()] = f;
   }
 }
 
@@ -36,21 +37,21 @@ void unset_keymap(std::string pattern, std::string mode) {
   auto id = parse_keymap(pattern);
   if (!id)
     return;
-  if (!server->lua->keymaps.contains(mode))
+  if (!server->state->keymaps.contains(mode))
     return;
-  if (!server->lua->keymaps[mode].contains(id.value()))
+  if (!server->state->keymaps[mode].contains(id.value()))
     return;
-  server->lua->keymaps[mode].erase(id.value());
+  server->state->keymaps[mode].erase(id.value());
 }
 
 void set_keymap_mode(std::string mode) {
   auto server = UraServer::get_instance();
-  server->lua->mode = mode;
+  server->state->keymap_mode = mode;
 }
 
 std::string get_keymap_mode() {
   auto server = UraServer::get_instance();
-  return server->lua->mode;
+  return server->state->keymap_mode;
 }
 
 void terminate() {
@@ -59,10 +60,6 @@ void terminate() {
 
 void close_window(uint64_t id) {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return;
-  auto workspace = output->current_workspace;
   auto toplevel = UraToplevel::from(id);
   if (toplevel) {
     toplevel->close();
@@ -130,13 +127,13 @@ int get_current_workspace_index() {
 
 void set_hook(std::string name, flexible::function f) {
   auto server = UraServer::get_instance();
-  server->lua->hooks[name] = f;
+  server->state->hooks[name] = f;
 }
 
 void unset_hook(std::string name) {
   auto server = UraServer::get_instance();
-  if (server->lua->hooks.contains(name))
-    server->lua->hooks.erase(name);
+  if (server->state->hooks.contains(name))
+    server->state->hooks.erase(name);
 }
 
 void set_cursor_theme(std::string theme, int size) {
@@ -272,7 +269,7 @@ uint64_t get_current_output() {
   return output->id();
 }
 
-void append_lua_package_path(std::string path) {
+void append_package_path(std::string path) {
   auto server = UraServer::get_instance();
   auto package = server->lua->state.get<std::optional<sol::table>>("package");
   if (!package)
@@ -289,7 +286,7 @@ void append_lua_package_path(std::string path) {
   package.value().set("path", result);
 }
 
-void prepend_lua_package_path(std::string path) {
+void prepend_package_path(std::string path) {
   auto server = UraServer::get_instance();
   auto package = server->lua->state.get<std::optional<sol::table>>("package");
   if (!package)
@@ -443,15 +440,6 @@ void notify(std::string summary, std::string body) {
   log::notify(summary, body);
 }
 
-void set_pointer_properties(std::string pattern, flexible::object obj) {
-  if (!obj.is<flexible::table>())
-    return;
-  auto server = UraServer::get_instance();
-  for (auto pointer : server->seat->match_pointers(pattern)) {
-    pointer->set_properties(obj);
-  }
-}
-
 void schedule(flexible::function f, int64_t time) {
   auto server = UraServer::get_instance();
   if (time < 0)
@@ -489,5 +477,31 @@ int get_cursor_size() {
 
 std::string get_cursor_shape() {
   return UraServer::get_instance()->seat->cursor->xcursor_name;
+}
+
+void set_pointer_accel_profile(std::string profile) {
+  auto server = UraServer::get_instance();
+  for (auto pointer : server->seat->pointers) {
+    pointer->set_accel_profile(profile);
+  }
+}
+
+void set_pointer_move_speed(double speed) {
+  auto server = UraServer::get_instance();
+  for (auto pointer : server->seat->pointers) {
+    pointer->move_speed = speed;
+  }
+}
+
+void set_pointer_scroll_speed(double speed) {
+  auto server = UraServer::get_instance();
+  for (auto pointer : server->seat->pointers) {
+    pointer->scroll_speed = speed;
+  }
+}
+
+flexible::object get_output_logical_geometry(uint64_t id) {
+  auto output = UraOutput::from(id);
+  return output->logical_geometry().to_flexible();
 }
 } // namespace ura::api::core

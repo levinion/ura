@@ -1,10 +1,20 @@
--- This configuration file is provided as an example only. It may not work on your system.
--- Please make sure you understand each part before using it. Do not run any code you're unfamiliar with.
--- Have a great day!
+ura.api.set_keymap("super+t", "normal", function()
+	ura.api.spawn("foot")
+end)
+ura.api.set_keymap("super+q", "normal", function()
+	local win = ura.api.get_current_window()
+	if win then
+		ura.api.close_window(win)
+	end
+end)
 
-ura.fn.prepend_package_path(ura.fn.expanduser("~/.config/ura/lua/?.lua"))
-require("keymap")
-require("hook")
-require("option")
-require("layout")
-require("rules")
+ura.api.set_keymap("super+shift+r", "normal", function()
+	ura.api.reload()
+end)
+
+ura.api.set_keymap("super+shift+e", "normal", function()
+	ura.api.terminate()
+end)
+ura.api.set_hook("prepare", function() end)
+ura.api.set_hook("startup", function() end)
+ura.api.set_hook("reload", function() end)

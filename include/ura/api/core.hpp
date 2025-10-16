@@ -39,7 +39,9 @@ void resize_window(uint64_t id, int width, int height);
 void swap_window(uint64_t id, uint64_t target);
 // input
 void set_keyboard_repeat(int rate, int delay);
-void set_pointer_properties(std::string pattern, flexible::object object);
+void set_pointer_accel_profile(std::string profile);
+void set_pointer_move_speed(double speed);
+void set_pointer_scroll_speed(double speed);
 void set_cursor_theme(std::string theme, int size);
 std::string get_cursor_theme();
 int get_cursor_size();
@@ -58,14 +60,13 @@ uint64_t get_workspace(flexible::object obj);
 uint64_t get_current_output();
 uint64_t get_output(std::string name);
 void set_output_dpms(uint64_t id, bool flag);
+flexible::object get_output_logical_geometry(uint64_t id);
 // fn
 void set_env(std::string name, std::string value);
 void unset_env(std::string name);
-
-// TODO: impl in lua
-// void append_lua_package_path(std::string path);
-// void prepend_lua_package_path(std::string path);
-// std::string expanduser(std::string path);
-// std::string expandvars(std::string path);
-// std::string expand(std::string path);
+void append_package_path(std::string path);
+void prepend_package_path(std::string path);
+std::string expanduser(std::string path);
+std::string expandvars(std::string path);
+std::string expand(std::string path);
 } // namespace ura::api::core

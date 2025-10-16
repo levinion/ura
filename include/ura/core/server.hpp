@@ -16,6 +16,7 @@ class UraRuntime;
 class UraSeat;
 class Lua;
 class UraView;
+class UraState;
 
 class UraServer {
 public:
@@ -47,6 +48,7 @@ public:
   wlr_tablet_manager_v2* tablet_manager;
   wlr_virtual_pointer_manager_v1* virtual_pointer_manager;
 
+  std::unique_ptr<UraState> state;
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;
   std::unique_ptr<UraSeat> seat;
@@ -57,7 +59,7 @@ public:
   std::unordered_set<uint64_t> globals;
 
   static UraServer* get_instance();
-  UraServer* init();
+  UraServer* init(std::unique_ptr<UraState>&& state);
   void run();
   void destroy();
   void terminate();

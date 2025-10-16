@@ -7,7 +7,7 @@
 #include "ura/ura.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/seat/seat.hpp"
-#include "ura/lua/lua.hpp"
+#include "ura/core/lua.hpp"
 
 namespace ura {
 

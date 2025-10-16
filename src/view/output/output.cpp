@@ -12,7 +12,7 @@
 #include <functional>
 #include "ura/view/view.hpp"
 #include "ura/view/workspace.hpp"
-#include "ura/lua/lua.hpp"
+#include "ura/core/state.hpp"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 
 namespace ura {
@@ -87,9 +87,9 @@ void UraOutput::init(wlr_output* _wlr_output) {
   flexible::object args;
   args.set(this->id());
   if (resume)
-    server->lua->try_execute_hook("output-resume", args);
+    server->state->try_execute_hook("output-resume", args);
   else
-    server->lua->try_execute_hook("output-new", args);
+    server->state->try_execute_hook("output-new", args);
 
   server->globals.insert(this->id());
 }
@@ -276,7 +276,7 @@ void UraOutput::switch_workspace(UraWorkSpace* workspace) {
   this->current_workspace = workspace;
   this->current_workspace->enable();
   auto server = UraServer::get_instance();
-  server->lua->try_execute_hook("workspace-change", {});
+  server->state->try_execute_hook("workspace-change", {});
 }
 
 void UraOutput::set_dpms_mode(bool flag) {
