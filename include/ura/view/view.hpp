@@ -28,14 +28,14 @@ public:
   wlr_scene* scene;
   std::map<int, wlr_scene_tree*> layers;
   std::unordered_map<std::string, UraOutput*> outputs;
-  Vec<std::unique_ptr<UraWorkSpace>> workspaces;
-  std::unordered_map<std::string, Vec<UraWorkSpace*>> indexed_workspaces;
-  std::unordered_map<std::string, UraWorkSpace*> named_workspaces;
+  Vec<std::unique_ptr<UraWorkspace>> workspaces;
+  std::unordered_map<std::string, Vec<UraWorkspace*>> indexed_workspaces;
+  std::unordered_map<std::string, UraWorkspace*> named_workspaces;
 
   static std::unique_ptr<UraView> init();
   wlr_scene_tree* get_scene_tree_or_create(int z);
-  UraWorkSpace* get_named_workspace_or_create(std::string_view name);
-  UraWorkSpace* get_named_workspace(std::string_view name);
+  UraWorkspace* get_named_workspace_or_create(std::string_view name);
+  UraWorkspace* get_named_workspace(std::string_view name);
   UraOutput* current_output();
   UraOutput* get_output_by_name(std::string_view name);
   std::optional<UraClient> foreground_client(double* sx, double* sy);

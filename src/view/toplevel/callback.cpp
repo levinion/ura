@@ -1,8 +1,10 @@
+#include "flexible/flexible.hpp"
 #include "ura/view/toplevel.hpp"
 #include "ura/view/view.hpp"
 #include "ura/core/runtime.hpp"
 #include "ura/core/server.hpp"
 #include "ura/core/callback.hpp"
+#include "ura/core/state.hpp"
 
 namespace ura {
 // create a new toplevel
@@ -63,10 +65,9 @@ void on_toplevel_destroy(wl_listener* listener, void* data) {
 void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  // TODO: request fullscreen
-  // toplevel->layout != "fullscreen"
-  //   ? toplevel->set_layout("fullscreen")
-  //   : toplevel->set_layout(toplevel->last_layout.value_or("tiling"));
+  auto args = flexible::create_table();
+  args.set("id", toplevel->id());
+  server->state->try_execute_hook("window-request-fullscreen", args);
 }
 
 void on_toplevel_set_app_id(wl_listener* listener, void* data) {

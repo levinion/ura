@@ -28,6 +28,13 @@ constexpr std::string_view trim(std::string_view s) {
   return std::string_view(view.begin().base().base(), view.end().base().base());
 }
 
+constexpr std::string ltrim(const std::string& s, char char_to_remove) {
+  return s | std::views::drop_while([char_to_remove](char c) {
+           return c == char_to_remove;
+         })
+    | std::ranges::to<std::string>();
+}
+
 inline std::optional<std::array<float, 4>> hex2rgba(std::string_view hex_str) {
   if (!hex_str.starts_with('#'))
     return {};

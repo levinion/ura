@@ -84,14 +84,14 @@ void UraOutput::init(wlr_output* _wlr_output) {
     configuration
   );
 
-  flexible::object args;
-  args.set(this->id());
+  auto args = flexible::create_table();
+  args.set("id", this->id());
   if (resume)
     server->state->try_execute_hook("output-resume", args);
   else
     server->state->try_execute_hook("output-new", args);
 
-  server->globals.insert(this->id());
+  server->globals[this->id()] = UraGlobalType::Output;
 }
 
 UraOutput* UraOutput::from(wlr_output* output) {
@@ -100,7 +100,8 @@ UraOutput* UraOutput::from(wlr_output* output) {
 
 UraOutput* UraOutput::from(uint64_t id) {
   auto server = UraServer::get_instance();
-  if (server->globals.contains(id))
+  if (server->globals.contains(id)
+      && server->globals[id].type == UraGlobalType::Output)
     return reinterpret_cast<UraOutput*>(id);
   return nullptr;
 }
@@ -115,6 +116,10 @@ void UraOutput::set_scale(float scale) {
     this->output->scale = scale;
     this->update_background();
   }
+}
+
+float UraOutput::scale() {
+  return this->output->scale;
 }
 
 void UraOutput::commit() {
@@ -231,7 +236,7 @@ Vec4<int> UraOutput::logical_geometry() {
   return { 0, 0, width, height };
 }
 
-Vec<UraWorkSpace*>& UraOutput::get_workspaces() {
+Vec<UraWorkspace*>& UraOutput::get_workspaces() {
   auto server = UraServer::get_instance();
   assert(server->view->indexed_workspaces.contains(this->name));
   return server->view->indexed_workspaces[this->name];
@@ -241,7 +246,7 @@ Vec<UraWorkSpace*>& UraOutput::get_workspaces() {
  - is nonexistant
  - is active (current workspace)
  - has no toplevels */
-void UraOutput::destroy_workspace(UraWorkSpace* workspace) {
+void UraOutput::destroy_workspace(UraWorkspace* workspace) {
   if (!workspace)
     return;
   if (!workspace->toplevels.empty())
@@ -252,14 +257,14 @@ void UraOutput::destroy_workspace(UraWorkSpace* workspace) {
   workspaces.remove(workspace);
 }
 
-UraWorkSpace* UraOutput::get_workspace_at(int index) {
+UraWorkspace* UraOutput::get_workspace_at(int index) {
   auto& workspaces = this->get_workspaces();
   auto workspace = workspaces.get(index);
   return workspace ? *workspace : nullptr;
 }
 
-UraWorkSpace* UraOutput::create_workspace() {
-  auto workspace = UraWorkSpace::init();
+UraWorkspace* UraOutput::create_workspace() {
+  auto workspace = UraWorkspace::init();
   workspace->output = this->name;
   auto server = UraServer::get_instance();
   server->view->indexed_workspaces[this->name].push_back(workspace.get());
@@ -267,8 +272,10 @@ UraWorkSpace* UraOutput::create_workspace() {
   return this->get_workspaces().back();
 }
 
-void UraOutput::switch_workspace(UraWorkSpace* workspace) {
+void UraOutput::switch_workspace(UraWorkspace* workspace) {
   if (!workspace)
+    return;
+  if (workspace->name)
     return;
   if (workspace == this->current_workspace)
     return;

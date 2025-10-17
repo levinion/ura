@@ -9,7 +9,6 @@
 #include "ura/seat/seat.hpp"
 #include "ura/util/util.hpp"
 #include "ura/core/state.hpp"
-#include "ura/core/lua.hpp"
 #include "ura/view/view.hpp"
 
 namespace ura {
@@ -105,7 +104,7 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     this
   );
 
-  server->globals.insert(this->id());
+  server->globals[this->id()] = UraGlobalType::Toplevel;
 }
 
 void UraToplevel::destroy() {
@@ -168,13 +167,15 @@ void UraToplevel::commit() {
     this->geometry.height = geo.height;
     this->resize_borders(geo.width, geo.height);
     this->move(geo.x, geo.y);
+
     server->seat->focus(this);
-    flexible::object args;
-    args.set(this->id());
+
+    auto args = flexible::create_table();
+    args.set("id", this->id());
     server->state->try_execute_hook("window-new", args);
+
     this->prepared = true;
     this->map();
-    return;
   }
 }
 
@@ -238,14 +239,15 @@ UraToplevel* UraToplevel::from(wlr_surface* surface) {
 
 UraToplevel* UraToplevel::from(uint64_t id) {
   auto server = UraServer::get_instance();
-  if (server->globals.contains(id))
+  if (server->globals.contains(id)
+      && server->globals[id].type == UraGlobalType::Toplevel)
     return reinterpret_cast<UraToplevel*>(id);
   return nullptr;
 }
 
-void UraToplevel::move_to_workspace(UraWorkSpace* workspace) {
+void UraToplevel::move_to_workspace(UraWorkspace* workspace) {
   workspace->name ? this->move_to_workspace(workspace->name.value())
-                  : this->move_to_workspace(this->index());
+                  : this->move_to_workspace(workspace->index());
 }
 
 void UraToplevel::move_to_workspace(std::string name) {
@@ -296,8 +298,8 @@ int UraToplevel::index() {
 void UraToplevel::activate() {
   auto server = UraServer::get_instance();
   auto output = server->view->get_output_by_name(this->output);
-  flexible::object args;
-  args.set(this->id());
+  auto args = flexible::create_table();
+  args.set("id", this->id());
   auto flag =
     server->state->try_execute_hook<bool>("pre-window-activate", args);
   // if hook returns a false value, then stop the operation.
@@ -316,10 +318,9 @@ void UraToplevel::activate() {
 }
 
 bool UraToplevel::move(int x, int y) {
-  bool changed = false;
+  this->move_borders(x, y);
 
   if (x != this->geometry.x || y != this->geometry.y) {
-    changed = true;
     this->geometry.x = x;
     this->geometry.y = y;
     wlr_scene_node_set_position(
@@ -327,42 +328,16 @@ bool UraToplevel::move(int x, int y) {
       this->geometry.x,
       this->geometry.y
     );
+
+    auto server = UraServer::get_instance();
+    auto args = flexible::create_table();
+    args.set("id", this->id());
+    server->state->try_execute_hook("window-move", args);
+
+    return true;
   }
 
-  auto border_width = this->border_width;
-  // top border
-  wlr_scene_node_set_position(
-    &this->borders[0]->node,
-    -border_width,
-    -border_width
-  );
-  // right border
-  wlr_scene_node_set_position(
-    &this->borders[1]->node,
-    this->geometry.width,
-    -border_width
-  );
-  // bottom border
-  wlr_scene_node_set_position(
-    &this->borders[2]->node,
-    -border_width,
-    this->geometry.height
-  );
-  // left border
-  wlr_scene_node_set_position(
-    &this->borders[3]->node,
-    -border_width,
-    -border_width
-  );
-
-  if (!changed)
-    return false;
-
-  auto server = UraServer::get_instance();
-  flexible::object args;
-  args.set(this->id());
-  server->state->try_execute_hook("window-move", args);
-  return true;
+  return false;
 }
 
 bool UraToplevel::resize(int width, int height) {
@@ -377,8 +352,8 @@ bool UraToplevel::resize(int width, int height) {
   this->move(this->geometry.x, this->geometry.y);
 
   auto server = UraServer::get_instance();
-  flexible::object args;
-  args.set(this->id());
+  auto args = flexible::create_table();
+  args.set("id", this->id());
   server->state->try_execute_hook("window-resize", args);
   return true;
 }
@@ -459,8 +434,8 @@ std::string UraToplevel::app_id() {
 void UraToplevel::set_title(std::string title) {
   wlr_foreign_toplevel_handle_v1_set_title(this->foreign_handle, title.data());
   auto server = UraServer::get_instance();
-  flexible::object args;
-  args.set(this->id());
+  auto args = flexible::create_table();
+  args.set("id", this->id());
   server->state->try_execute_hook("window-title-change", args);
 }
 
@@ -470,8 +445,8 @@ void UraToplevel::set_app_id(std::string app_id) {
     app_id.data()
   );
   auto server = UraServer::get_instance();
-  flexible::object args;
-  args.set(this->id());
+  auto args = flexible::create_table();
+  args.set("id", this->id());
   server->state->try_execute_hook("window-app_id-change", args);
 }
 
@@ -487,13 +462,13 @@ void UraToplevel::set_z_index(int z_index) {
 void UraToplevel::create_borders() {
   auto server = UraServer::get_instance();
   auto active_border_color =
-    server->lua->fetch<std::string>("opt.active_border_color")
+    server->state->get_option<std::string>("active_border_color")
       .value_or("#89b4fa");
   auto inactive_border_color =
-    server->lua->fetch<std::string>("opt.inactive_border_color")
+    server->state->get_option<std::string>("inactive_border_color")
       .value_or("#00000000");
-
-  this->border_width = server->lua->fetch<uint>("opt.border_width").value_or(1);
+  this->border_width =
+    server->state->get_option<int>("border_width").value_or(1);
   this->active_border_color =
     hex2rgba(active_border_color)
       .value_or({ 137.f / 255.f, 180.f / 255.f, 250.f / 255.f, 1.f });
@@ -539,5 +514,43 @@ void UraToplevel::dismiss_popups() {
 
 uint64_t UraToplevel::id() {
   return reinterpret_cast<uint64_t>(this);
+}
+
+void UraToplevel::set_fullscreen(bool flag) {
+  wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, flag);
+  if (this->foreign_handle)
+    wlr_foreign_toplevel_handle_v1_set_fullscreen(this->foreign_handle, flag);
+}
+
+bool UraToplevel::is_fullscreen() {
+  return this->xdg_toplevel->current.fullscreen;
+}
+
+void UraToplevel::move_borders(int x, int y) {
+  auto border_width = this->border_width;
+  // top border
+  wlr_scene_node_set_position(
+    &this->borders[0]->node,
+    -border_width,
+    -border_width
+  );
+  // right border
+  wlr_scene_node_set_position(
+    &this->borders[1]->node,
+    this->geometry.width,
+    -border_width
+  );
+  // bottom border
+  wlr_scene_node_set_position(
+    &this->borders[2]->node,
+    -border_width,
+    this->geometry.height
+  );
+  // left border
+  wlr_scene_node_set_position(
+    &this->borders[3]->node,
+    -border_width,
+    -border_width
+  );
 }
 } // namespace ura

@@ -24,15 +24,15 @@ private:
   Vec<UraToplevel*> stack;
 };
 
-class UraWorkSpace {
+class UraWorkspace {
 public:
   Vec<UraToplevel*> toplevels;
   std::string output;
   UraFocusStack focus_stack;
   std::optional<std::string> name;
-  static std::unique_ptr<UraWorkSpace> init();
-  ~UraWorkSpace();
-  static UraWorkSpace* from(uint64_t id);
+  static std::unique_ptr<UraWorkspace> init();
+  ~UraWorkspace();
+  static UraWorkspace* from(uint64_t id);
   uint64_t id();
   void enable();
   void disable();

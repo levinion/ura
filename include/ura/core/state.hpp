@@ -17,20 +17,36 @@ public:
       keymaps; // mode -> id -> func
   std::string keymap_mode = "normal";
   std::optional<std::string> config_path;
+  std::unordered_map<std::string, flexible::object> options;
 
-  static std::unique_ptr<UraState> init();
+  static std::unique_ptr<UraState>
+  init(std::optional<std::string>&& config_path);
 
   template<typename T>
   std::optional<T> try_execute_hook(std::string name, flexible::object args) {
     if (!this->hooks.contains(name))
       return {};
     auto ret = this->hooks[name](args);
-    return ret.as<T>();
+    if (!ret.valid())
+      return {};
+    auto obj = ret.get<flexible::object>();
+    if (obj.is<T>())
+      return obj.as<T>();
+    return {};
   }
 
   void try_execute_hook(std::string name, flexible::object args);
   bool try_execute_keybinding(uint64_t id);
   bool contains_keybinding(uint64_t id);
+  void set_option(std::string_view key, flexible::object& value);
+
+  template<typename T>
+  std::optional<T> get_option(std::string_view key) {
+    if (!this->options.contains(std::string(key))) {
+      return {};
+    }
+    return this->options[std::string(key)].as<std::optional<T>>();
+  }
 };
 
 } // namespace ura

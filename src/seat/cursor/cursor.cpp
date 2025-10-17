@@ -7,7 +7,7 @@
 #include "ura/ura.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/seat/seat.hpp"
-#include "ura/core/lua.hpp"
+#include "ura/core/state.hpp"
 
 namespace ura {
 
@@ -139,7 +139,7 @@ void UraCursor::process_motion(
   auto server = UraServer::get_instance();
   auto seat = server->seat->seat;
   auto focus_follow_mouse =
-    server->lua->fetch<bool>("opt.focus_follow_mouse").value_or(true);
+    server->state->get_option<bool>("focus_follow_mouse").value_or(true);
 
   // get foreground surface
   double sx, sy;
@@ -224,7 +224,7 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
 
   // focus pressed toplevel if focus_follow_mouse is not enabled
   auto focus_follow_mouse =
-    server->lua->fetch<bool>("opt.focus_follow_mouse").value_or(true);
+    server->state->get_option<bool>("focus_follow_mouse").value_or(true);
   // only works when focus_follow_mouse is disabled
   if (!focus_follow_mouse && event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
     double sx, sy;

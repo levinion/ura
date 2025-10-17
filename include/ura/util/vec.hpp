@@ -38,7 +38,7 @@ public:
   }
 
   flexible::object to_flexible() {
-    flexible::object obj;
+    flexible::table obj = flexible::create_table();
     obj.set("x", x);
     obj.set("y", y);
     obj.set("width", width);

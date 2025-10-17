@@ -9,18 +9,18 @@
 namespace ura {
 
 class UraOutput;
-class UraWorkSpace;
+class UraWorkspace;
 
 class UraToplevel {
 public:
-  bool mapped = true;
+  bool mapped = false;
   bool destroying = false;
-  bool draggable = false;
+  bool draggable = true;
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
   int z_index;
   std::string output;
-  UraWorkSpace* workspace;
+  UraWorkspace* workspace;
   wlr_xdg_toplevel_decoration_v1* decoration;
   wlr_foreign_toplevel_handle_v1* foreign_handle;
   Vec4<int> geometry;
@@ -49,7 +49,7 @@ public:
   std::string app_id();
   void set_title(std::string title); // inner api
   void set_app_id(std::string app_id); // inner api
-  void move_to_workspace(UraWorkSpace* workspace);
+  void move_to_workspace(UraWorkspace* workspace);
   void move_to_workspace(int index);
   void move_to_workspace(std::string name);
   int index();
@@ -58,9 +58,12 @@ public:
   bool is_focused();
   sol::table to_lua_table();
   uint64_t id();
+  void set_fullscreen(bool flag);
+  bool is_fullscreen();
 
 private:
   void create_borders();
+  void move_borders(int x, int y);
   void resize_borders(int width, int height);
   void set_border_color(std::array<float, 4>& color);
   void dismiss_popups();

@@ -49,8 +49,8 @@ void on_new_input(wl_listener* listener, void* data) {
 
   wlr_seat_set_capabilities(server->seat->seat, caps);
 
-  flexible::object args;
-  args.set(device->name);
+  auto args = flexible::create_table();
+  args.set("name", device->name);
   server->state->try_execute_hook("new-input", args);
 }
 

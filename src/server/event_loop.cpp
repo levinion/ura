@@ -16,9 +16,8 @@
 namespace ura {
 
 UraServer* UraServer::init(std::unique_ptr<UraState>&& state) {
-  log::init();
-
   this->state = std::move(state);
+  log::init();
   this->setup_signal();
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
@@ -279,6 +278,8 @@ void UraServer::setup_others() {
 
 void UraServer::check_and_reset_lua() {
   if (this->lua->reset) {
+    auto config_path = this->state->config_path;
+    this->state = UraState::init(std::move(config_path));
     this->lua = Lua::init();
     auto result = this->lua->load_config();
     if (!result) {

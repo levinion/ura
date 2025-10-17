@@ -6,11 +6,14 @@
 #include <filesystem>
 #include <format>
 #include <memory>
+#include "ura/core/log.hpp"
 #include <sol/forward.hpp>
 #include <sol/property.hpp>
 #include <sol/state_handling.hpp>
 #include <string>
 #include "ura/core/state.hpp"
+#include "ura/util/util.hpp"
+#include <filesystem>
 
 namespace ura {
 
@@ -37,79 +40,96 @@ std::unique_ptr<Lua> Lua::init() {
   return lua;
 };
 
+#define LUAAPI(name, f) flexible::set(this->ura, name, f)
+
 void Lua::setup() {
   auto server = UraServer::get_instance();
 
   // api
-  this->set("api.terminate", api::core::terminate);
-  this->set("api.reload", api::core::reload);
-  this->set("api.spawn", api::core::spawn);
-  this->set("api.notify_idle_activity", api::core::notify_idle_activity);
-  this->set("api.set_idle_inhibitor", api::core::set_idle_inhibitor);
-  this->set("api.notify", api::core::notify);
-  this->set("api.schedule", api::lua::schedule);
+  LUAAPI("api.terminate", api::core::terminate);
+  LUAAPI("api.reload", api::core::reload);
+  LUAAPI("api.spawn", api::core::spawn);
+  LUAAPI("api.notify_idle_activity", api::core::notify_idle_activity);
+  LUAAPI("api.set_idle_inhibitor", api::core::set_idle_inhibitor);
+  LUAAPI("api.notify", api::core::notify);
+  LUAAPI("api.schedule", api::core::schedule);
   // window
-  this->set("api.focus_window", api::core::focus_window);
-  this->set("api.close_window", api::core::close_window);
-  this->set(
-    "api.move_window_to_workspace",
-    api::core::move_window_to_workspace
-  );
-  this->set("api.get_window_number", api::core::get_window_number);
-  this->set("api.get_current_window", api::core::get_current_window);
-  this->set("api.get_window", api::core::get_window);
-  this->set("api.activate_window", api::core::activate_window);
-  this->set("api.set_window_z_index", api::core::set_window_z_index);
-  this->set("api.move_window", api::core::move_window);
-  this->set("api.resize_window", api::core::resize_window);
-  this->set("api.set_window_draggable", api::core::set_window_draggable);
-  this->set("api.swap_window", api::core::swap_window);
+  LUAAPI("api.focus_window", api::core::focus_window);
+  LUAAPI("api.close_window", api::core::close_window);
+  LUAAPI("api.move_window_to_workspace", api::core::move_window_to_workspace);
+  LUAAPI("api.get_window_number", api::core::get_window_number);
+  LUAAPI("api.get_current_window", api::core::get_current_window);
+  LUAAPI("api.get_window", api::core::get_window);
+  LUAAPI("api.get_window_index", api::core::get_window_index);
+  LUAAPI("api.activate_window", api::core::activate_window);
+  LUAAPI("api.set_window_z_index", api::core::set_window_z_index);
+  LUAAPI("api.move_window", api::core::move_window);
+  LUAAPI("api.resize_window", api::core::resize_window);
+  LUAAPI("api.set_window_draggable", api::core::set_window_draggable);
+  LUAAPI("api.is_window_draggable", api::core::is_window_draggable);
+  LUAAPI("api.swap_window", api::core::swap_window);
+  LUAAPI("api.get_window_app_id", api::core::get_window_app_id);
+  LUAAPI("api.get_window_title", api::core::get_window_title);
+  LUAAPI("api.set_window_fullscreen", api::core::set_window_fullscreen);
+  LUAAPI("api.is_window_fullscreen", api::core::is_window_fullscreen);
+  LUAAPI("api.get_window_geometry", api::core::get_window_geometry);
+  LUAAPI("api.get_window_workspace", api::core::get_window_workspace);
+  LUAAPI("api.get_window_output", api::core::get_window_output);
   // input
-  this->set("api.set_keyboard_repeat", api::core::set_keyboard_repeat);
-  this->set("api.set_cursor_theme", api::core::set_cursor_theme);
-  this->set("api.set_cursor_visible", api::core::set_cursor_visible);
-  this->set("api.get_cursor_visible", api::core::is_cursor_visible);
-  this->set("api.set_cursor_shape", api::core::set_cursor_shape);
-  this->set(
-    "api.set_pointer_accel_profile",
-    api::core::set_pointer_accel_profile
-  );
-  this->set("api.set_pointer_move_speed", api::core::set_pointer_move_speed);
-  this->set(
-    "api.set_pointer_scroll_speed",
-    api::core::set_pointer_scroll_speed
-  );
+  LUAAPI("api.set_keyboard_repeat", api::core::set_keyboard_repeat);
+  LUAAPI("api.set_cursor_theme", api::core::set_cursor_theme);
+  LUAAPI("api.set_cursor_visible", api::core::set_cursor_visible);
+  LUAAPI("api.get_cursor_visible", api::core::is_cursor_visible);
+  LUAAPI("api.set_cursor_shape", api::core::set_cursor_shape);
+  LUAAPI("api.set_pointer_accel_profile", api::core::set_pointer_accel_profile);
+  LUAAPI("api.set_pointer_move_speed", api::core::set_pointer_move_speed);
+  LUAAPI("api.set_pointer_scroll_speed", api::core::set_pointer_scroll_speed);
   // workspace
-  this->set("api.create_workspace", api::core::create_workspace);
-  this->set("api.switch_workspace", api::core::switch_workspace);
-  this->set("api.destroy_workspace", api::core::destroy_workspace);
-  this->set("api.get_workspace_number", api::core::get_workspace_number);
-  this->set("api.get_current_workspace", api::core::get_current_workspace);
-  this->set("api.get_workspace", api::core::get_workspace);
+  LUAAPI("api.create_workspace", api::core::create_workspace);
+  LUAAPI("api.switch_workspace", api::core::switch_workspace);
+  LUAAPI("api.destroy_workspace", api::core::destroy_workspace);
+  LUAAPI("api.get_workspace_number", api::core::get_workspace_number);
+  LUAAPI("api.get_current_workspace", api::core::get_current_workspace);
+  LUAAPI("api.get_workspace", api::core::get_workspace);
+  LUAAPI("api.get_workspace_index", api::core::get_workspace_index);
+  LUAAPI("api.is_workspace_named", api::core::is_workspace_named);
+  LUAAPI("api.get_workspace_name", api::core::get_workspace_name);
   // output
-  this->set("api.get_current_output", api::core::get_current_output);
-  this->set("api.get_output", api::core::get_output);
-  this->set("api.set_output_dpms", api::core::set_output_dpms);
-  this->set(
+  LUAAPI("api.get_current_output", api::core::get_current_output);
+  LUAAPI("api.get_output", api::core::get_output);
+  LUAAPI("api.set_output_dpms", api::core::set_output_dpms);
+  LUAAPI(
     "api.get_output_logical_geometry",
-    api::lua::get_output_logical_geometry
+    api::core::get_output_logical_geometry
   );
+  LUAAPI(
+    "api.get_output_usable_geometry",
+    api::core::get_output_usable_geometry
+  );
+  LUAAPI("api.get_output_scale", api::core::get_output_scale);
   // keymap
-  this->set("api.set_keymap", api::lua::set_keymap);
-  this->set("api.unset_keymap", api::core::unset_keymap);
-  this->set("api.set_keymap_mode", api::core::set_keymap_mode);
-  this->set("api.get_keymap_mode", api::core::get_keymap_mode);
+  LUAAPI("api.set_keymap", api::core::set_keymap);
+  LUAAPI("api.unset_keymap", api::core::unset_keymap);
+  LUAAPI("api.set_keymap_mode", api::core::set_keymap_mode);
+  LUAAPI("api.get_keymap_mode", api::core::get_keymap_mode);
   // hook
-  this->set("api.set_hook", api::lua::set_hook);
-  this->set("api.unset_hook", api::core::unset_hook);
+  LUAAPI("api.set_hook", api::core::set_hook);
+  LUAAPI("api.unset_hook", api::core::unset_hook);
   // fn
-  this->set("api.set_env", api::core::set_env);
-  this->set("api.unset_env", api::core::unset_env);
-  this->set("api.append_package_path", api::core::append_package_path);
-  this->set("api.prepend_package_path", api::core::prepend_package_path);
-  this->set("api.expanduser", api::core::expanduser);
-  this->set("api.expandvars", api::core::expandvars);
-  this->set("api.expand", api::core::expand);
+  LUAAPI("api.set_env", api::core::set_env);
+  LUAAPI("api.unset_env", api::core::unset_env);
+  LUAAPI("api.append_package_path", api::core::append_package_path);
+  LUAAPI("api.prepend_package_path", api::core::prepend_package_path);
+  LUAAPI("api.expanduser", api::core::expanduser);
+  LUAAPI("api.expandvars", api::core::expandvars);
+  LUAAPI("api.expand", api::core::expand);
+  LUAAPI("api.to_json", api::core::to_json);
+  LUAAPI("api.parse_json", api::core::parse_json);
+  // opt
+  LUAAPI("api.set_option", api::core::set_option);
+  LUAAPI("api.get_option", api::core::get_option);
+  LUAAPI("api.set_userdata", api::core::set_userdata);
+  LUAAPI("api.get_userdata", api::core::get_userdata);
   // override
   this->state.set("print", api::lua::print);
 }
@@ -160,15 +180,34 @@ std::optional<std::string> Lua::find_config_path() {
 }
 
 std::expected<void, std::string> Lua::load_config() {
-  auto result = this->execute(
-    R"*(
-    ura.api.prepend_package_path("/usr/share/ura/runtime/?.lua")
-    ura.win = require("_win")
-  )*"
-  );
+  auto runtime = std::filesystem::path("/usr/share/ura/runtime");
 
-  if (!result) {
-    return std::unexpected(result.error());
+  if (!std::filesystem::is_directory(runtime))
+    return std::unexpected("runtime not found");
+
+  std::vector<std::string> modules;
+  for (auto& entry : std::filesystem::directory_iterator(runtime)) {
+    if (entry.is_directory()) {
+      auto basename = entry.path().filename();
+      if (basename != "_meta")
+        modules.push_back(basename);
+    } else if (entry.is_regular_file()) {
+      auto path = entry.path();
+      if (path.has_extension() && path.extension() == ".lua") {
+        modules.push_back(path.stem());
+      }
+    }
+  }
+
+  api::core::prepend_package_path("/usr/share/ura/runtime/?.lua");
+
+  for (auto& module : modules) {
+    auto code = std::format("ura.{}=require('{}')", ltrim(module, '_'), module);
+    auto result = this->execute(code);
+    if (!result) {
+      return std::unexpected(result.error());
+    }
+    log::info("[ura] load module: {}", module);
   }
 
   auto path = this->find_config_path();
@@ -176,7 +215,7 @@ std::expected<void, std::string> Lua::load_config() {
     return std::unexpected("could not found any config files, exiting...");
   }
 
-  result = this->execute_file(path.value());
+  auto result = this->execute_file(path.value());
   if (!result) {
     return std::unexpected(result.error());
   }

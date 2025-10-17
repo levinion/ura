@@ -14,7 +14,7 @@ init: CMakeLists.txt include/protocols $(PROTOCOL_HEADERS)
 	cmake -B build -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
 
 build: init
-	cmake --build build -j
+	cmake --build build -j$(shell nproc)
 
 clean:
 	rm -rf build

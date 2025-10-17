@@ -45,11 +45,33 @@ ura.api = {
 	move_window_to_workspace = function(id, workspace_id) end,
 	--- @return integer|nil
 	get_current_window = function() end,
+	--- @param workspace_id integer
 	--- @param index integer
 	--- @return integer|nil
-	get_window = function(index) end,
+	get_window = function(workspace_id, index) end,
+	--- @param id integer
+	--- @return integer|nil
+	get_window_index = function(id) end,
+	--- @param id integer
+	--- @return integer|nil
+	get_window_workspace = function(id) end,
+	--- @param id integer
+	--- @return integer|nil
+	get_window_output = function(id) end,
 	--- @param id integer
 	focus_window = function(id) end,
+
+	--- @comment
+	--- Clear = -50,
+	--- Background = 0,
+	--- Bottom = 50,
+	--- Normal = 100,
+	--- Floating = 150,
+	--- Top = 200,
+	--- Fullscreen = 250,
+	--- Popup = 300,
+	--- Overlay = 350,
+	--- LockScreen = 400
 	--- @param id integer
 	--- @param z integer
 	set_window_z_index = function(id, z) end,
@@ -57,10 +79,10 @@ ura.api = {
 	--- @param flag boolean
 	set_window_draggable = function(id, flag) end,
 	--- @param id integer
-	--- @return integer
+	--- @return integer|nil
 	get_window_z_index = function(id) end,
 	--- @param id integer
-	--- @return boolean
+	--- @return boolean|nil
 	is_window_draggable = function(id) end,
 	--- @param id integer
 	activate_window = function(id) end,
@@ -75,6 +97,15 @@ ura.api = {
 	--- @param id integer
 	--- @param target integer
 	swap_window = function(id, target) end,
+	---@param id integer
+	---@param flag boolean
+	set_window_fullscreen = function(id, flag) end,
+	---@param id integer
+	---@return boolean|nil
+	is_window_fullscreen = function(id) end,
+	---@param id any
+	---@return table|nil
+	get_window_geometry = function(id) end,
 
 	-- input
 	--- @param rate integer
@@ -108,13 +139,23 @@ ura.api = {
 	switch_workspace = function(id) end,
 	--- @param id integer
 	destroy_workspace = function(id) end,
-	--- @return integer
-	get_workspace_number = function() end,
+	--- @param workspace_id integer
+	--- @return integer|nil
+	get_workspace_number = function(workspace_id) end,
 	--- @return integer|nil
 	get_current_workspace = function() end,
 	--- @param obj table|integer|string
 	--- @return integer|nil
 	get_workspace = function(obj) end,
+	--- @param id integer
+	--- @return integer|nil
+	get_workspace_index = function(id) end,
+	--- @param id integer
+	--- @return boolean|nil
+	is_workspace_named = function(id) end,
+	--- @param id integer
+	--- @return string|nil
+	get_workspace_name = function(id) end,
 
 	-- output
 	--- @return integer|nil
@@ -126,8 +167,14 @@ ura.api = {
 	--- @param flag boolean
 	set_output_dpms = function(id, flag) end,
 	--- @param id integer
-	--- @return table
+	--- @return table|nil
 	get_output_logical_geometry = function(id) end,
+	--- @param id integer
+	--- @return table|nil
+	get_output_usable_geometry = function(id) end,
+	--- @param id integer
+	--- @return number|nil
+	get_output_scale = function(id) end,
 
 	-- fn
 	--- @param name string
@@ -148,4 +195,24 @@ ura.api = {
 	--- @param path string
 	--- @return string
 	expand = function(path) end,
+	--- @param value any
+	--- @return string
+	to_json = function(value) end,
+	--- @param str string
+	--- @return any
+	parse_json = function(str) end,
+
+	-- opt
+	---@param key string
+	---@param value any
+	set_option = function(key, value) end,
+	---@param key string
+	---@return any
+	get_option = function(key) end,
+	---@param id integer
+	---@param value any
+	set_userdata = function(id, value) end,
+	---@param id integer
+	---@return any
+	get_userdata = function(id) end,
 }

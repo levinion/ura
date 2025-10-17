@@ -29,6 +29,7 @@ public:
   void set_scale(float scale);
   Vec4<int> physical_geometry();
   Vec4<int> logical_geometry();
+  float scale();
 
   /* Mode */
   void set_dpms_mode(bool flag);
@@ -56,12 +57,12 @@ public:
   Vec<UraLayerShell*>& get_layer_list_by_type(zwlr_layer_shell_v1_layer type);
 
   /* Workspaces */
-  UraWorkSpace* current_workspace = nullptr;
-  UraWorkSpace* create_workspace();
-  Vec<UraWorkSpace*>& get_workspaces();
-  void switch_workspace(UraWorkSpace* workspace);
-  void destroy_workspace(UraWorkSpace* workspace);
-  UraWorkSpace* get_workspace_at(int index);
+  UraWorkspace* current_workspace = nullptr;
+  UraWorkspace* create_workspace();
+  Vec<UraWorkspace*>& get_workspaces();
+  void switch_workspace(UraWorkspace* workspace);
+  void destroy_workspace(UraWorkspace* workspace);
+  UraWorkspace* get_workspace_at(int index);
 };
 
 } // namespace ura

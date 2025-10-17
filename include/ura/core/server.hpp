@@ -1,10 +1,11 @@
 #pragma once
 
 #include <memory>
-#include <unordered_set>
 #include "ura/ura.hpp"
 #include "ura/core/ipc.hpp"
 #include "ura/core/dispatcher.hpp"
+#include <sol/sol.hpp>
+#include <nlohmann/json.hpp>
 
 namespace ura {
 // extern
@@ -17,6 +18,16 @@ class UraSeat;
 class Lua;
 class UraView;
 class UraState;
+
+enum class UraGlobalType { Toplevel, Workspace, Output, LayerShell, Popup };
+
+class UraGlobal {
+public:
+  UraGlobal() = default;
+  UraGlobal(UraGlobalType&& t) : type(t) {};
+  UraGlobalType type;
+  nlohmann::json userdata;
+};
 
 class UraServer {
 public:
@@ -56,7 +67,7 @@ public:
   std::unique_ptr<UraIPC> ipc;
   std::unique_ptr<UraDispatcher<1024>> dispatcher;
 
-  std::unordered_set<uint64_t> globals;
+  std::unordered_map<uint64_t, UraGlobal> globals;
 
   static UraServer* get_instance();
   UraServer* init(std::unique_ptr<UraState>&& state);

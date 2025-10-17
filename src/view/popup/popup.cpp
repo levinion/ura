@@ -72,7 +72,7 @@ bool UraPopup::init(wlr_xdg_popup* xdg_popup) {
   server->runtime
     ->register_callback(&xdg_popup->events.destroy, on_popup_destroy, this);
 
-  server->globals.insert(this->id());
+  server->globals[this->id()] = UraGlobalType::Popup;
 
   return true;
 }
@@ -83,7 +83,8 @@ UraPopup* UraPopup::from(wlr_surface* surface) {
 
 UraPopup* UraPopup::from(uint64_t id) {
   auto server = UraServer::get_instance();
-  if (server->globals.contains(id))
+  if (server->globals.contains(id)
+      && server->globals[id].type == UraGlobalType::Popup)
     return reinterpret_cast<UraPopup*>(id);
   return nullptr;
 }

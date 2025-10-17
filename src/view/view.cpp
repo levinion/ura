@@ -58,11 +58,11 @@ std::optional<UraClient> UraView::foreground_client(double* sx, double* sy) {
   return UraClient::from(scene_surface->surface);
 }
 
-UraWorkSpace* UraView::get_named_workspace_or_create(std::string_view name) {
+UraWorkspace* UraView::get_named_workspace_or_create(std::string_view name) {
   // TODO: this should be removed when unordered_map supports string_view as a read key
   auto key = std::string(name);
   if (!this->named_workspaces.contains(key)) {
-    auto workspace = UraWorkSpace::init();
+    auto workspace = UraWorkspace::init();
     workspace->name = key;
     this->named_workspaces[key] = workspace.get();
     this->workspaces.push_back(std::move(workspace));
@@ -70,7 +70,7 @@ UraWorkSpace* UraView::get_named_workspace_or_create(std::string_view name) {
   return this->named_workspaces[key];
 }
 
-UraWorkSpace* UraView::get_named_workspace(std::string_view name) {
+UraWorkspace* UraView::get_named_workspace(std::string_view name) {
   // TODO: this should be removed when unordered_map supports string_view as a read key
   auto key = std::string(name);
   if (!this->named_workspaces.contains(key))

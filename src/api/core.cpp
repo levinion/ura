@@ -98,23 +98,18 @@ void switch_workspace(uint64_t id) {
   auto output = server->view->current_output();
   if (!output)
     return;
-  auto workspace = UraWorkSpace::from(id);
+  auto workspace = UraWorkspace::from(id);
   output->switch_workspace(workspace);
 }
 
 void move_window_to_workspace(uint64_t id, uint64_t workspace_id) {
-  auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return;
-  auto workspace = output->current_workspace;
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
-  auto target = UraWorkSpace::from(workspace_id);
+  auto target = UraWorkspace::from(workspace_id);
   if (!target)
     return;
-  toplevel->move_to_workspace(workspace);
+  toplevel->move_to_workspace(target);
 }
 
 int get_current_workspace_index() {
@@ -171,24 +166,23 @@ int get_workspace_number() {
   return workspaces.size();
 }
 
-int get_window_number() {
+std::optional<int> get_window_number(uint64_t workspace_id) {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return -1;
-  auto workspace = output->current_workspace;
+  auto workspace = UraWorkspace::from(workspace_id);
+  if (!workspace)
+    return {};
   return workspace->toplevels.size();
 }
 
 void destroy_workspace(uint64_t id) {
   auto server = UraServer::get_instance();
-  auto workspace = UraWorkSpace::from(id);
+  auto workspace = UraWorkspace::from(id);
   auto output = UraOutput::from(workspace->output);
   if (workspace)
     output->destroy_workspace(workspace);
 }
 
-uint64_t get_current_window() {
+std::optional<uint64_t> get_current_window() {
   auto server = UraServer::get_instance();
   auto toplevel = server->seat->focused_toplevel();
   if (!toplevel)
@@ -201,7 +195,7 @@ bool is_cursor_visible() {
   return server->seat->cursor->visible;
 }
 
-uint64_t get_current_workspace() {
+std::optional<uint64_t> get_current_workspace() {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
   if (!output)
@@ -210,28 +204,27 @@ uint64_t get_current_workspace() {
   return workspace->id();
 }
 
-uint64_t get_window(int index) {
+std::optional<uint64_t> get_window(uint64_t workspace_id, int index) {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
+  auto workspace = UraWorkspace::from(workspace_id);
+  if (!workspace)
     return {};
-  auto toplevel = output->current_workspace->get_toplevel_at(index);
+  auto toplevel = workspace->get_toplevel_at(index);
   if (!toplevel)
     return {};
   return toplevel->id();
 }
 
-uint64_t get_workspace(flexible::object obj) {
+std::optional<uint64_t> get_workspace(flexible::object obj) {
   auto server = UraServer::get_instance();
-  UraWorkSpace* workspace = nullptr;
-  if (obj.is<int64_t>()) {
+  UraWorkspace* workspace = nullptr;
+  if (obj.is<int>()) {
     auto output = server->view->current_output();
     if (!output)
       return {};
-    workspace = output->get_workspace_at(obj.as<int64_t>().value());
+    workspace = output->get_workspace_at(obj.as<int>());
   } else if (obj.is<std::string>())
-    workspace =
-      server->view->get_named_workspace(obj.as<std::string>().value());
+    workspace = server->view->get_named_workspace(obj.as<std::string>());
   if (!workspace)
     return {};
   return workspace->id();
@@ -261,7 +254,7 @@ void resize_window(uint64_t id, int width, int height) {
   toplevel->resize(width, height);
 }
 
-uint64_t get_current_output() {
+std::optional<uint64_t> get_current_output() {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
   if (!output)
@@ -407,7 +400,7 @@ void swap_window(uint64_t id, uint64_t target) {
   first->workspace->swap_toplevel(first, second);
 }
 
-uint64_t get_output(std::string name) {
+std::optional<uint64_t> get_output(std::string name) {
   auto server = UraServer::get_instance();
   auto output = server->view->get_output_by_name(name);
   if (!output)
@@ -457,13 +450,17 @@ void schedule(flexible::function f, int64_t time) {
   );
 }
 
-int get_window_z_index(uint64_t id) {
+std::optional<int> get_window_z_index(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
   return toplevel->z_index;
 }
 
-bool is_window_draggable(uint64_t id) {
+std::optional<bool> is_window_draggable(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
   return toplevel->draggable;
 }
 
@@ -502,6 +499,136 @@ void set_pointer_scroll_speed(double speed) {
 
 flexible::object get_output_logical_geometry(uint64_t id) {
   auto output = UraOutput::from(id);
+  if (!output)
+    return {};
   return output->logical_geometry().to_flexible();
 }
+
+flexible::object get_output_usable_geometry(uint64_t id) {
+  auto output = UraOutput::from(id);
+  if (!output)
+    return {};
+  return output->usable_area.to_flexible();
+}
+
+std::optional<float> get_output_scale(uint64_t id) {
+  auto output = UraOutput::from(id);
+  if (!output)
+    return {};
+  return output->scale();
+}
+
+std::optional<int> get_window_index(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->index();
+}
+
+std::optional<int> get_workspace_index(uint64_t id) {
+  auto workspace = UraWorkspace::from(id);
+  if (!workspace)
+    return {};
+  return workspace->index();
+}
+
+std::optional<std::string> get_window_app_id(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->app_id();
+}
+
+std::optional<std::string> get_window_title(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->title();
+}
+
+void set_window_fullscreen(uint64_t id, bool flag) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return;
+  toplevel->set_fullscreen(flag);
+}
+
+std::optional<bool> is_window_fullscreen(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->is_fullscreen();
+}
+
+flexible::object get_window_geometry(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->geometry.to_flexible();
+}
+
+std::optional<bool> is_workspace_named(uint64_t id) {
+  auto workspace = UraWorkspace::from(id);
+  if (!workspace)
+    return {};
+  return workspace->name.has_value();
+}
+
+std::optional<std::string> get_workspace_name(uint64_t id) {
+  auto workspace = UraWorkspace::from(id);
+  if (!workspace)
+    return {};
+  return workspace->name;
+}
+
+std::optional<uint64_t> get_window_workspace(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->workspace->id();
+}
+
+std::optional<uint64_t> get_window_output(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  auto output = UraOutput::from(toplevel->output);
+  if (!output)
+    return {};
+  return output->id();
+}
+
+void set_option(std::string key, flexible::object obj) {
+  auto server = UraServer::get_instance();
+  server->state->set_option(key, obj);
+}
+
+flexible::object get_option(std::string key) {
+  auto server = UraServer::get_instance();
+  return server->state->get_option<flexible::object>(key).value_or(
+    flexible::nil {}
+  );
+}
+
+void set_userdata(uint64_t id, flexible::object obj) {
+  auto server = UraServer::get_instance();
+  if (server->globals.contains(id))
+    server->globals[id].userdata = flexible::to_json(obj);
+}
+
+flexible::object get_userdata(uint64_t id) {
+  auto server = UraServer::get_instance();
+  if (server->globals.contains(id))
+    return flexible::from(server->globals[id].userdata);
+  return {};
+}
+
+std::string to_json(flexible::object obj) {
+  return flexible::to_json(obj).dump();
+}
+
+flexible::object parse_json(std::string str) {
+  return flexible::from_str(str);
+}
+
 } // namespace ura::api::core

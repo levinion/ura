@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <sol/sol.hpp>
 #include <string>
 #include "flexible/flexible.hpp"
@@ -24,19 +25,27 @@ void set_keymap_mode(std::string mode);
 std::string get_keymap_mode();
 // win
 void close_window(uint64_t id);
-int get_window_number();
+std::optional<int> get_window_number(uint64_t workspace_id);
 void move_window_to_workspace(uint64_t id, uint64_t workspace_id);
-uint64_t get_current_window();
-uint64_t get_window(int index);
+std::optional<uint64_t> get_current_window();
+std::optional<uint64_t> get_window(uint64_t workspace_id, int index);
+std::optional<uint64_t> get_window_output(uint64_t id);
+std::optional<int> get_window_index(uint64_t id);
 void focus_window(uint64_t id);
 void set_window_z_index(uint64_t id, int z);
 void set_window_draggable(uint64_t id, bool flag);
-int get_window_z_index(uint64_t id);
-bool is_window_draggable(uint64_t id);
+std::optional<int> get_window_z_index(uint64_t id);
+std::optional<bool> is_window_draggable(uint64_t id);
 void activate_window(uint64_t id);
 void move_window(uint64_t id, int x, int y);
 void resize_window(uint64_t id, int width, int height);
 void swap_window(uint64_t id, uint64_t target);
+std::optional<std::string> get_window_app_id(uint64_t id);
+std::optional<std::string> get_window_title(uint64_t id);
+void set_window_fullscreen(uint64_t id, bool flag);
+std::optional<bool> is_window_fullscreen(uint64_t id);
+flexible::object get_window_geometry(uint64_t id);
+std::optional<uint64_t> get_window_workspace(uint64_t id);
 // input
 void set_keyboard_repeat(int rate, int delay);
 void set_pointer_accel_profile(std::string profile);
@@ -54,13 +63,18 @@ void create_workspace();
 void switch_workspace(uint64_t id);
 void destroy_workspace(uint64_t id);
 int get_workspace_number();
-uint64_t get_current_workspace();
-uint64_t get_workspace(flexible::object obj);
+std::optional<uint64_t> get_current_workspace();
+std::optional<uint64_t> get_workspace(flexible::object obj);
+std::optional<int> get_workspace_index(uint64_t id);
+std::optional<std::string> get_workspace_name(uint64_t id);
+std::optional<bool> is_workspace_named(uint64_t id);
 // output
-uint64_t get_current_output();
-uint64_t get_output(std::string name);
+std::optional<uint64_t> get_current_output();
+std::optional<uint64_t> get_output(std::string name);
 void set_output_dpms(uint64_t id, bool flag);
 flexible::object get_output_logical_geometry(uint64_t id);
+flexible::object get_output_usable_geometry(uint64_t id);
+std::optional<float> get_output_scale(uint64_t id);
 // fn
 void set_env(std::string name, std::string value);
 void unset_env(std::string name);
@@ -69,4 +83,11 @@ void prepend_package_path(std::string path);
 std::string expanduser(std::string path);
 std::string expandvars(std::string path);
 std::string expand(std::string path);
+std::string to_json(flexible::object obj);
+flexible::object parse_json(std::string str);
+// opt
+void set_option(std::string key, flexible::object obj);
+flexible::object get_option(std::string key);
+void set_userdata(uint64_t id, flexible::object obj);
+flexible::object get_userdata(uint64_t id);
 } // namespace ura::api::core

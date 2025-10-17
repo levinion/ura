@@ -2,6 +2,7 @@
 #include "ura/core/server.hpp"
 #include "ura/ura.hpp"
 #include "ura/core/callback.hpp"
+#include "ura/core/state.hpp"
 
 namespace ura {
 // toplevel/foreign.cpp
@@ -24,9 +25,9 @@ void on_foreign_toplevel_handle_request_fullscreen(
     static_cast<wlr_foreign_toplevel_handle_v1_fullscreen_event*>(data);
   auto server = UraServer::get_instance();
   auto toplevel = static_cast<UraToplevel*>(event->toplevel->data);
-  // TODO:
-  // toplevel->layout != "fullscreen"
-  //   ? toplevel->set_layout("fullscreen")
-  //   : toplevel->set_layout(toplevel->last_layout.value_or("tiling"));
+
+  auto args = flexible::create_table();
+  args.set("id", toplevel->id());
+  server->state->try_execute_hook("window-request-fullscreen", args);
 }
 } // namespace ura

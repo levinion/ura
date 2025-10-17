@@ -1,274 +1,138 @@
 #pragma once
 
 #include <cassert>
-#include <functional>
 #include <nlohmann/detail/value_t.hpp>
+#include <nlohmann/json_fwd.hpp>
 #include <optional>
 #include <sol/forward.hpp>
+#include <sol/object.hpp>
 #include <sol/state.hpp>
 #include <sol/types.hpp>
 #include <string>
+#include <string_view>
 #include <utility>
-#include <variant>
 #include <vector>
-#include <unordered_map>
+#include "ura/core/server.hpp"
+#include "ura/core/lua.hpp"
 #include "ura/util/util.hpp"
 #include <nlohmann/json.hpp>
 #include <sol/sol.hpp>
 
 namespace flexible {
 
-class object;
-using array = std::vector<object>;
-using table = std::unordered_map<std::string, object>;
-using function = std::function<object(object)>;
+using object = sol::object;
+using table = sol::table;
+using function = sol::protected_function;
+using nil = sol::nil_t;
+using json = nlohmann::json;
 
-struct null {};
+static sol::table create_table() {
+  return ura::UraServer::get_instance()->lua->state.create_table();
+}
 
-class object {
-public:
-  template<typename T>
-  static object init(T&& m) {
-    auto obj = object();
-    obj.m = m;
-    return std::move(obj);
+template<typename T>
+void set(table t, std::string_view key, T&& value) {
+  auto keys = ura::split(key, '.');
+  auto current_table = t;
+  for (size_t i = 0; i < keys.size() - 1; ++i) {
+    auto& k = keys[i];
+    current_table = current_table[k].get_or_create<sol::table>();
   }
+  current_table[keys.back()] = value;
+}
 
-  template<typename T>
-  bool is() {
-    return std::holds_alternative<T>(this->m);
-  }
-
-  template<typename T>
-  std::optional<T> as() {
-    if (!this->is<T>())
+template<typename T>
+std::optional<T> get(table t, std::string_view key) {
+  auto keys = ura::split(key, '.');
+  auto current_table = t;
+  for (size_t i = 0; i < keys.size() - 1; ++i) {
+    auto& k = keys[i];
+    auto next_table = current_table.get<std::optional<sol::table>>(k);
+    if (!next_table)
       return {};
-    return std::get<T>(this->m);
+    current_table = next_table.value();
   }
-
-  template<typename T>
-  std::optional<T> get(const std::string key) {
-    if (auto ft = this->as<table>()) {
-      if (!ft->contains(key))
-        return {};
-      return (*ft)[key].as<T>();
-    }
+  if (!current_table.is<sol::table>())
     return {};
-  }
+  return current_table.get<std::optional<T>>(keys.back());
+}
 
-  template<typename T>
-  std::optional<T> recursive_get(const std::string keys) {
-    auto v = ura::split(keys, '.');
-    auto current = this;
-    for (int i = 0; i < v.size() - 1; i++) {
-      if (auto ft = current->as<table>()) {
-        auto key = std::string(v[i]);
-        if (!ft->contains(key))
-          return {};
-        current = &(*ft)[key];
-      }
-      return current->get<T>(std::string(v[v.size() - 1]));
-    }
+static json to_json(object obj) {
+  if (obj.is<sol::nil_t>())
     return {};
-  }
-
-  template<typename T>
-  void set(T&& value) {
-    this->m = value;
-  }
-
-  template<typename T>
-  void set(const std::string key, T&& value) {
-    auto ft = this->as<table>();
-    assert(ft);
-    ft.value()[key].m = value;
-  }
-
-  template<typename T>
-  void recursive_set(const std::string keys, T&& value) {
-    assert(this->is<table>());
-    auto v = ura::split(keys, '.');
-    auto current = this;
-    for (int i = 0; i < v.size() - 1; i++) {
-      if (auto ft = current->as<table>()) {
-        auto key = std::string(v[i]);
-        if (!ft->contains(key))
-          (*ft)[key] = object::init(table());
-        current = &(*ft)[key];
-      }
-      return current->set<T>(std::string(v[v.size() - 1]));
+  if (obj.is<int>())
+    return obj.as<int>();
+  if (obj.is<uint64_t>())
+    return obj.as<uint64_t>();
+  if (obj.is<double>())
+    return obj.as<double>();
+  if (obj.is<std::string>())
+    return obj.as<std::string>();
+  if (obj.is<sol::table>()) {
+    auto src = obj.as<table>();
+    bool is_array = true;
+    for (auto& [key, _] : src) {
+      if (!key.is<int>())
+        is_array = false;
     }
-  }
-
-  inline std::string to_json() {
-    return this->to_json_value().dump();
-  }
-
-  inline static object from(std::string_view str) {
-    auto j = nlohmann::json::parse(str);
-    return object::from_json_value(j);
-  }
-
-  inline sol::object to_sol(sol::state_view state) noexcept {
-    return this->to_sol_value(state);
-  }
-
-  inline static object from(sol::object obj) {
-    return object::from_sol_value(obj);
-  }
-
-private:
-  std::variant<
-    int,
-    int64_t,
-    uint64_t,
-    double,
-    bool,
-    std::string,
-    array,
-    table,
-    null>
-    m = null {};
-
-  inline nlohmann::json to_json_value() {
-    if (this->is<null>())
-      return {};
-    if (this->is<int>())
-      return this->as<int>().value();
-    if (this->is<int64_t>())
-      return this->as<int64_t>().value();
-    if (this->is<uint64_t>())
-      return this->as<uint64_t>().value();
-    if (this->is<double>())
-      return this->as<double>().value();
-    if (this->is<std::string>())
-      return this->as<std::string>().value();
-    if (this->is<array>()) {
-      auto src = this->as<array>().value();
-      auto dst = nlohmann::json::array();
-      for (auto& v : src) {
-        dst.push_back(v.to_json_value());
-      }
-      return dst;
-    }
-    if (this->is<table>()) {
-      auto src = this->as<table>().value();
+    if (!is_array) {
       auto dst = nlohmann::json::object();
       for (auto& [key, v] : src) {
-        dst[key] = v.to_json_value();
+        if (key.is<std::string>())
+          dst[key.as<std::string>()] = to_json(v);
+        if (key.is<int>()) {
+          dst[std::to_string(key.as<int>())] = to_json(v);
+        }
+      }
+      return dst;
+    } else {
+      auto dst = nlohmann::json::array();
+      for (auto& [_, v] : src) {
+        dst.push_back(to_json(v));
       }
       return dst;
     }
-    std::unreachable();
   }
+  return {};
+}
 
-  inline static object from_json_value(nlohmann::json j) {
-    if (j.is_null())
-      return object::init(null {});
-    if (j.is_boolean())
-      return object::init(j.get<bool>());
-    if (j.is_number_unsigned()) {
-      return object::init(j.get<uint64_t>());
-    }
-    if (j.is_number_integer()) {
-      return object::init(j.get<int64_t>());
-    }
-    if (j.is_number_float()) {
-      return object::init(j.get<double>());
-    }
-    if (j.is_string()) {
-      return object::init(j.get<std::string>());
-    }
-    if (j.is_array()) {
-      auto src = j.array();
-      array dst;
-      dst.reserve(src.size());
-      for (auto& v : src) {
-        dst.push_back(object::from_json_value(v));
-      }
-      return object::init(dst);
-    }
-    if (j.is_object()) {
-      auto src = j.object();
-      table dst;
-      for (auto& [k, v] : src.items()) {
-        dst[k] = object::from_json_value(v);
-      }
-      return object::init(dst);
-    }
-    std::unreachable();
+static flexible::object from(json j) {
+  auto state = ura::UraServer::get_instance()->lua->state.lua_state();
+  if (j.is_null())
+    return flexible::nil {};
+  if (j.is_boolean())
+    return sol::make_object(state, j.get<bool>());
+  if (j.is_number_integer())
+    return sol::make_object(state, j.get<int>());
+  if (j.is_number_unsigned())
+    return sol::make_object(state, j.get<uint64_t>());
+  if (j.is_number_float())
+    return sol::make_object(state, j.get<double>());
+  if (j.is_string()) {
+    return sol::make_object(state, j.get<std::string>());
   }
+  if (j.is_array()) {
+    auto src = j.array();
+    auto dst = create_table();
+    for (auto& v : src) {
+      dst.add(from(v));
+    }
+    return dst;
+  }
+  if (j.is_object()) {
+    auto src = j.object();
+    auto dst = create_table();
+    for (auto& [k, v] : src.items()) {
+      dst[k] = from(v);
+    }
+    return dst;
+  }
+  return flexible::nil {};
+}
 
-  inline sol::object to_sol_value(sol::state_view state) {
-    if (this->is<null>())
-      return {};
-    if (this->is<int>())
-      return sol::make_object(state, this->as<int>().value());
-    if (this->is<int64_t>())
-      return sol::make_object(state, this->as<int64_t>().value());
-    if (this->is<uint64_t>())
-      return sol::make_object(state, this->as<uint64_t>().value());
-    if (this->is<double>())
-      return sol::make_object(state, this->as<double>().value());
-    if (this->is<std::string>())
-      return sol::make_object(state, this->as<std::string>().value());
-    if (this->is<array>()) {
-      auto src = this->as<array>().value();
-      auto dst = state.create_table();
-      for (auto& v : src) {
-        dst.set(v.to_sol_value(state));
-      }
-      return dst;
-    }
-    if (this->is<table>()) {
-      auto src = this->as<table>().value();
-      auto dst = state.create_table();
-      for (auto& [key, v] : src) {
-        dst.set(key, v.to_sol_value(state));
-      }
-      return dst;
-    }
-    std::unreachable();
-  }
+static object from_str(std::string_view str) {
+  auto result = nlohmann::json::parse(str);
+  return from(result);
+}
 
-  inline static object from_sol_value(sol::object obj) {
-    if (obj.is<sol::nil_t>())
-      return {};
-    if (obj.is<bool>())
-      return object::init(obj.as<bool>());
-    if (obj.is<int>()) {
-      return object::init(obj.as<int>());
-    }
-    if (obj.is<uint64_t>()) {
-      return object::init(obj.as<uint64_t>());
-    }
-    if (obj.is<int64_t>()) {
-      return object::init(obj.as<int64_t>());
-    }
-    if (obj.is<double>()) {
-      return object::init(obj.as<double>());
-    }
-    if (obj.is<std::string>()) {
-      return object::init(obj.as<std::string>());
-    }
-    if (obj.is<std::vector<sol::object>>()) {
-      auto src = obj.as<std::vector<sol::object>>();
-      array dst;
-      dst.reserve(src.size());
-      for (auto& v : src) {
-        dst.push_back(object::from_sol_value(v));
-      }
-      return object::init(dst);
-    }
-    if (obj.is<sol::table>()) {
-      auto src = obj.as<sol::table>();
-      table dst;
-      for (auto& [k, v] : src.pairs()) {
-        dst[k.as<std::string>()] = object::from_sol_value(v);
-      }
-      return object::init(dst);
-    }
-    std::unreachable();
-  }
-};
 } // namespace flexible
