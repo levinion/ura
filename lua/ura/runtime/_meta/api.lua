@@ -38,8 +38,6 @@ ura.api = {
 	-- win
 	--- @param id integer
 	close_window = function(id) end,
-	--- @return integer
-	get_window_number = function() end,
 	--- @param id integer
 	--- @param workspace_id integer
 	move_window_to_workspace = function(id, workspace_id) end,
@@ -60,8 +58,10 @@ ura.api = {
 	get_window_output = function(id) end,
 	--- @param id integer
 	focus_window = function(id) end,
+	--- @param workspace_id integer
+	--- @return table|nil
+	get_windows = function(workspace_id) end,
 
-	--- @comment
 	--- Clear = -50,
 	--- Background = 0,
 	--- Bottom = 50,
@@ -81,6 +81,12 @@ ura.api = {
 	--- @param id integer
 	--- @return integer|nil
 	get_window_z_index = function(id) end,
+	--- @param id integer
+	--- @return string|nil
+	get_window_app_id = function(id) end,
+	--- @param id integer
+	--- @return string|nil
+	get_window_title = function(id) end,
 	--- @param id integer
 	--- @return boolean|nil
 	is_window_draggable = function(id) end,
@@ -134,19 +140,22 @@ ura.api = {
 	get_cursor_shape = function() end,
 
 	-- ws
-	create_workspace = function() end,
+	create_indexed_workspace = function() end,
+	---@param name string
+	create_named_workspace = function(name) end,
 	--- @param id integer
 	switch_workspace = function(id) end,
 	--- @param id integer
 	destroy_workspace = function(id) end,
-	--- @param workspace_id integer
-	--- @return integer|nil
-	get_workspace_number = function(workspace_id) end,
 	--- @return integer|nil
 	get_current_workspace = function() end,
-	--- @param obj table|integer|string
+	--- @param output_id integer
+	--- @param index integer
 	--- @return integer|nil
-	get_workspace = function(obj) end,
+	get_indexed_workspace = function(output_id, index) end,
+	--- @param name string
+	--- @return integer|nil
+	get_named_workspace = function(name) end,
 	--- @param id integer
 	--- @return integer|nil
 	get_workspace_index = function(id) end,
@@ -156,6 +165,13 @@ ura.api = {
 	--- @param id integer
 	--- @return string|nil
 	get_workspace_name = function(id) end,
+	--- @return table|nil
+	get_workspaces = function() end,
+	--- @param output_id integer
+	--- @return table|nil
+	get_indexed_workspaces = function(output_id) end,
+	--- @return table|nil
+	get_named_workspaces = function() end,
 
 	-- output
 	--- @return integer|nil

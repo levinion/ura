@@ -23,8 +23,11 @@ namespace flexible {
 using object = sol::object;
 using table = sol::table;
 using function = sol::protected_function;
-using nil = sol::nil_t;
 using json = nlohmann::json;
+
+static sol::nil_t nil() {
+  return sol::nil;
+}
 
 static sol::table create_table() {
   return ura::UraServer::get_instance()->lua->state.create_table();
@@ -68,12 +71,16 @@ static json to_json(object obj) {
     return obj.as<double>();
   if (obj.is<std::string>())
     return obj.as<std::string>();
+  if (obj.is<sol::function>())
+    return "<lua function>";
   if (obj.is<sol::table>()) {
     auto src = obj.as<table>();
     bool is_array = true;
     for (auto& [key, _] : src) {
-      if (!key.is<int>())
+      if (!key.is<int>()) {
         is_array = false;
+        break;
+      }
     }
     if (!is_array) {
       auto dst = nlohmann::json::object();
@@ -99,7 +106,7 @@ static json to_json(object obj) {
 static flexible::object from(json j) {
   auto state = ura::UraServer::get_instance()->lua->state.lua_state();
   if (j.is_null())
-    return flexible::nil {};
+    return sol::nil;
   if (j.is_boolean())
     return sol::make_object(state, j.get<bool>());
   if (j.is_number_integer())
@@ -112,22 +119,23 @@ static flexible::object from(json j) {
     return sol::make_object(state, j.get<std::string>());
   }
   if (j.is_array()) {
-    auto src = j.array();
+    auto src = j;
     auto dst = create_table();
+    int i = 1;
     for (auto& v : src) {
-      dst.add(from(v));
+      dst[i++] = from(v);
     }
     return dst;
   }
   if (j.is_object()) {
-    auto src = j.object();
+    auto src = j;
     auto dst = create_table();
     for (auto& [k, v] : src.items()) {
       dst[k] = from(v);
     }
     return dst;
   }
-  return flexible::nil {};
+  return sol::nil;
 }
 
 static object from_str(std::string_view str) {

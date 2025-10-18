@@ -36,6 +36,7 @@ public:
   wlr_scene_tree* get_scene_tree_or_create(int z);
   UraWorkspace* get_named_workspace_or_create(std::string_view name);
   UraWorkspace* get_named_workspace(std::string_view name);
+  void create_named_workspace(std::string_view name);
   UraOutput* current_output();
   UraOutput* get_output_by_name(std::string_view name);
   std::optional<UraClient> foreground_client(double* sx, double* sy);

@@ -85,12 +85,18 @@ void unset_env(std::string name) {
   unsetenv(name.data());
 }
 
-void create_workspace() {
+// TODO: need a output here
+void create_indexed_workspace() {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
   if (!output)
     return;
   output->create_workspace();
+}
+
+void create_named_workspace(std::string name) {
+  auto server = UraServer::get_instance();
+  server->view->create_named_workspace(name);
 }
 
 void switch_workspace(uint64_t id) {
@@ -157,23 +163,6 @@ void focus_window(uint64_t id) {
   server->seat->focus(toplevel);
 }
 
-int get_workspace_number() {
-  auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  if (!output)
-    return -1;
-  auto workspaces = output->get_workspaces();
-  return workspaces.size();
-}
-
-std::optional<int> get_window_number(uint64_t workspace_id) {
-  auto server = UraServer::get_instance();
-  auto workspace = UraWorkspace::from(workspace_id);
-  if (!workspace)
-    return {};
-  return workspace->toplevels.size();
-}
-
 void destroy_workspace(uint64_t id) {
   auto server = UraServer::get_instance();
   auto workspace = UraWorkspace::from(id);
@@ -215,16 +204,20 @@ std::optional<uint64_t> get_window(uint64_t workspace_id, int index) {
   return toplevel->id();
 }
 
-std::optional<uint64_t> get_workspace(flexible::object obj) {
+std::optional<uint64_t> get_indexed_workspace(uint64_t output_id, int index) {
   auto server = UraServer::get_instance();
-  UraWorkspace* workspace = nullptr;
-  if (obj.is<int>()) {
-    auto output = server->view->current_output();
-    if (!output)
-      return {};
-    workspace = output->get_workspace_at(obj.as<int>());
-  } else if (obj.is<std::string>())
-    workspace = server->view->get_named_workspace(obj.as<std::string>());
+  auto output = UraOutput::from(output_id);
+  if (!output)
+    return {};
+  auto workspace = output->get_workspace_at(index);
+  if (!workspace)
+    return {};
+  return workspace->id();
+}
+
+std::optional<uint64_t> get_named_workspace(std::string name) {
+  auto server = UraServer::get_instance();
+  auto workspace = server->view->get_named_workspace(name);
   if (!workspace)
     return {};
   return workspace->id();
@@ -606,7 +599,7 @@ void set_option(std::string key, flexible::object obj) {
 flexible::object get_option(std::string key) {
   auto server = UraServer::get_instance();
   return server->state->get_option<flexible::object>(key).value_or(
-    flexible::nil {}
+    flexible::nil()
   );
 }
 
@@ -629,6 +622,39 @@ std::string to_json(flexible::object obj) {
 
 flexible::object parse_json(std::string str) {
   return flexible::from_str(str);
+}
+
+flexible::object get_windows(uint64_t workspace_id) {
+  auto workspace = UraWorkspace::from(workspace_id);
+  if (!workspace)
+    return {};
+  auto table = flexible::create_table();
+  for (auto toplevel : workspace->toplevels) table.add(toplevel->id());
+  return table;
+}
+
+flexible::object get_workspaces() {
+  auto server = UraServer::get_instance();
+  auto table = flexible::create_table();
+  for (auto& workspace : server->view->workspaces) table.add(workspace->id());
+  return table;
+}
+
+flexible::object get_indexed_workspaces(uint64_t output_id) {
+  auto output = UraOutput::from(output_id);
+  if (!output)
+    return {};
+  auto table = flexible::create_table();
+  for (auto workspace : output->get_workspaces()) table.add(workspace->id());
+  return table;
+}
+
+flexible::object get_named_workspaces() {
+  auto server = UraServer::get_instance();
+  auto table = flexible::create_table();
+  for (auto& [name, workspace] : server->view->named_workspaces)
+    table.set(name, workspace->id());
+  return table;
 }
 
 } // namespace ura::api::core

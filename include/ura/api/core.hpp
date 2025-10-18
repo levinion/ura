@@ -25,10 +25,10 @@ void set_keymap_mode(std::string mode);
 std::string get_keymap_mode();
 // win
 void close_window(uint64_t id);
-std::optional<int> get_window_number(uint64_t workspace_id);
 void move_window_to_workspace(uint64_t id, uint64_t workspace_id);
 std::optional<uint64_t> get_current_window();
 std::optional<uint64_t> get_window(uint64_t workspace_id, int index);
+flexible::object get_windows(uint64_t workspace_id);
 std::optional<uint64_t> get_window_output(uint64_t id);
 std::optional<int> get_window_index(uint64_t id);
 void focus_window(uint64_t id);
@@ -59,15 +59,20 @@ bool is_cursor_visible();
 void set_cursor_shape(std::string name);
 std::string get_cursor_shape();
 // ws
-void create_workspace();
+void create_indexed_workspace();
+void create_named_workspace(std::string name);
 void switch_workspace(uint64_t id);
 void destroy_workspace(uint64_t id);
-int get_workspace_number();
 std::optional<uint64_t> get_current_workspace();
-std::optional<uint64_t> get_workspace(flexible::object obj);
+std::optional<uint64_t> get_indexed_workspace(uint64_t output_id, int index);
+std::optional<uint64_t> get_named_workspace(std::string name);
 std::optional<int> get_workspace_index(uint64_t id);
 std::optional<std::string> get_workspace_name(uint64_t id);
 std::optional<bool> is_workspace_named(uint64_t id);
+flexible::object get_workspaces();
+flexible::object get_indexed_workspaces(uint64_t output_id);
+flexible::object get_named_workspaces();
+
 // output
 std::optional<uint64_t> get_current_output();
 std::optional<uint64_t> get_output(std::string name);

@@ -1,0 +1,5 @@
+local win = ura.api.get_current_window()
+local scratchpad = ura.api.get_named_workspace("scratchpad")
+assert(win)
+assert(scratchpad)
+ura.api.move_window_to_workspace(win, scratchpad)

@@ -4,5 +4,6 @@
 ura.hook = {
 	---@param name string
 	---@param f function
-	set = function(name, f) end,
+	---@param opt table|nil
+	set = function(name, f, opt) end,
 }

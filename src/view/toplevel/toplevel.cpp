@@ -124,6 +124,9 @@ void UraToplevel::destroy() {
   this->dismiss_popups();
 
   server->globals.erase(this->id());
+  auto args = flexible::create_table();
+  args.set("id", this->id());
+  server->state->try_execute_hook("window-close", args);
 }
 
 void UraToplevel::commit() {
@@ -172,10 +175,9 @@ void UraToplevel::commit() {
 
     auto args = flexible::create_table();
     args.set("id", this->id());
-    server->state->try_execute_hook("window-new", args);
-
     this->prepared = true;
     this->map();
+    server->state->try_execute_hook("window-new", args);
   }
 }
 

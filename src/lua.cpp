@@ -57,12 +57,12 @@ void Lua::setup() {
   LUAAPI("api.focus_window", api::core::focus_window);
   LUAAPI("api.close_window", api::core::close_window);
   LUAAPI("api.move_window_to_workspace", api::core::move_window_to_workspace);
-  LUAAPI("api.get_window_number", api::core::get_window_number);
   LUAAPI("api.get_current_window", api::core::get_current_window);
   LUAAPI("api.get_window", api::core::get_window);
   LUAAPI("api.get_window_index", api::core::get_window_index);
   LUAAPI("api.activate_window", api::core::activate_window);
   LUAAPI("api.set_window_z_index", api::core::set_window_z_index);
+  LUAAPI("api.get_window_z_index", api::core::get_window_z_index);
   LUAAPI("api.move_window", api::core::move_window);
   LUAAPI("api.resize_window", api::core::resize_window);
   LUAAPI("api.set_window_draggable", api::core::set_window_draggable);
@@ -75,6 +75,7 @@ void Lua::setup() {
   LUAAPI("api.get_window_geometry", api::core::get_window_geometry);
   LUAAPI("api.get_window_workspace", api::core::get_window_workspace);
   LUAAPI("api.get_window_output", api::core::get_window_output);
+  LUAAPI("api.get_windows", api::core::get_windows);
   // input
   LUAAPI("api.set_keyboard_repeat", api::core::set_keyboard_repeat);
   LUAAPI("api.set_cursor_theme", api::core::set_cursor_theme);
@@ -85,15 +86,19 @@ void Lua::setup() {
   LUAAPI("api.set_pointer_move_speed", api::core::set_pointer_move_speed);
   LUAAPI("api.set_pointer_scroll_speed", api::core::set_pointer_scroll_speed);
   // workspace
-  LUAAPI("api.create_workspace", api::core::create_workspace);
+  LUAAPI("api.get_current_workspace", api::core::get_current_workspace);
   LUAAPI("api.switch_workspace", api::core::switch_workspace);
   LUAAPI("api.destroy_workspace", api::core::destroy_workspace);
-  LUAAPI("api.get_workspace_number", api::core::get_workspace_number);
-  LUAAPI("api.get_current_workspace", api::core::get_current_workspace);
-  LUAAPI("api.get_workspace", api::core::get_workspace);
+  LUAAPI("api.create_indexed_workspace", api::core::create_indexed_workspace);
+  LUAAPI("api.get_indexed_workspace", api::core::get_indexed_workspace);
   LUAAPI("api.get_workspace_index", api::core::get_workspace_index);
+  LUAAPI("api.create_named_workspace", api::core::create_named_workspace);
+  LUAAPI("api.get_named_workspace", api::core::get_named_workspace);
   LUAAPI("api.is_workspace_named", api::core::is_workspace_named);
   LUAAPI("api.get_workspace_name", api::core::get_workspace_name);
+  LUAAPI("api.get_workspaces", api::core::get_workspaces);
+  LUAAPI("api.get_named_workspaces", api::core::get_named_workspaces);
+  LUAAPI("api.get_indexed_workspaces", api::core::get_indexed_workspaces);
   // output
   LUAAPI("api.get_current_output", api::core::get_current_output);
   LUAAPI("api.get_output", api::core::get_output);
