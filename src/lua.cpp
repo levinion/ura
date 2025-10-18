@@ -6,13 +6,11 @@
 #include <filesystem>
 #include <format>
 #include <memory>
-#include "ura/core/log.hpp"
 #include <sol/forward.hpp>
 #include <sol/property.hpp>
 #include <sol/state_handling.hpp>
 #include <string>
 #include "ura/core/state.hpp"
-#include "ura/util/util.hpp"
 #include <filesystem>
 
 namespace ura {
@@ -173,12 +171,10 @@ std::optional<std::string> Lua::find_config_path() {
     : std::filesystem::path(std::getenv("HOME")) / ".config";
   auto dotfile = std::filesystem::path(root) / "ura/init.lua";
   if (std::filesystem::is_regular_file(dotfile)) {
-    server->state->config_path = dotfile;
     return dotfile;
   }
   auto global_dotfile = std::filesystem::path("/etc/ura/init.lua");
   if (std::filesystem::is_regular_file(global_dotfile)) {
-    server->state->config_path = global_dotfile;
     return global_dotfile;
   }
   return {};
