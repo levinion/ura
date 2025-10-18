@@ -16,5 +16,5 @@ ura.fn = {
   ---@param str string
   ---@param pat string
   ---@return table
-  split = function(str, pat) end
+  split = function(str, pat) end,
 }

@@ -1,10 +1,12 @@
 #include "ura/view/workspace.hpp"
+#include "flexible/flexible.hpp"
 #include "ura/view/output.hpp"
 #include "ura/view/view.hpp"
 #include <algorithm>
 #include <memory>
 #include <utility>
 #include "ura/core/server.hpp"
+#include "ura/core/state.hpp"
 #include "ura/seat/seat.hpp"
 
 namespace ura {
@@ -70,6 +72,12 @@ void UraWorkspace::swap_toplevel(UraToplevel* src, UraToplevel* dst) {
     return;
   *it1 = dst;
   *it2 = src;
+
+  auto server = UraServer::get_instance();
+  auto args = flexible::create_table();
+  args.set("src", src->id());
+  args.set("dst", dst->id());
+  server->state->try_execute_hook("window-swap", args);
 }
 
 UraWorkspace* UraWorkspace::from(uint64_t id) {

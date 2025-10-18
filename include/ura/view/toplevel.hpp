@@ -56,7 +56,6 @@ public:
   void activate();
   void set_z_index(int z);
   bool is_focused();
-  sol::table to_lua_table();
   uint64_t id();
   void set_fullscreen(bool flag);
   bool is_fullscreen();

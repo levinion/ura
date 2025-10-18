@@ -90,7 +90,7 @@ Here are some examples:
 The `prepare` hook runs after the Lua module is initialized, but before compositor resources are created. You can use this hook to set global environment variables:
 
 ```lua
-ura.hook.set("prepare", function()
+ura.hook.set("prepare", function(_)
   ura.fn.set_env("WLR_RENDERER", "vulkan")
   ura.fn.set_env("WLR_NO_HARDWARE_CURSORS", "0")
   ura.fn.set_env("LIBVA_DRIVER_NAME", "nvidia")
@@ -101,7 +101,7 @@ end)
 Use the `ready` hook (note: hook names may change across versions) to start applications just before the compositor starts running:
 
 ```lua
-ura.hook.set("ready", function()
+ura.hook.set("ready", function(_)
   ura.fn.set_env("DISPLAY", ":0")
   ura.api.spawn("xwayland-satellite")
 end)
@@ -110,11 +110,11 @@ end)
 The `focus-change` and `workspace-change` hooks are triggered when focus or workspace changes. You can notify desktop components (e.g., custom modules in waybar) to update:
 
 ```lua
-ura.hook.set("focus-change", function()
+ura.hook.set("focus-change", function(_)
   ura.api.spawn("pkill -SIGRTMIN+9 waybar")
 end)
 
-ura.hook.set("workspace-change", function()
+ura.hook.set("workspace-change", function(_)
   ura.api.spawn("pkill -SIGRTMIN+8 waybar")
 end)
 ```
@@ -122,31 +122,48 @@ end)
 The `window-new` hook is triggered when a new top-level window is created and focused. You can use it to apply window-specific styling:
 
 ```lua
-ura.hook.set("window-new", function(index)
-  local win = ura.win.get(index)
-  if not win then return end
-  if string.match(win.app_id, "fzfmenu") then
-    ura.win.set_layout(win.index, "floating")
-    ura.win.resize(win.index, 1000, 600)
-    ura.win.center(win.index)
-  end
-end)
+ura.hook.set("window-new", function(e)
+	local app_id = ura.api.get_window_app_id(e.id)
+	assert(app_id)
+	if string.match(app_id, "fzfmenu") then
+		ura.layout.set(e.id, "floating")
+		ura.api.resize_window(e.id, 1000, 600)
+		ura.win.center(e.id)
+	end
+end, {})
 ```
+
+More hooks could be found in the WIKI (TODO)。
 
 ## Layout
 
-The layout module in Ura lets you create custom layout algorithms. Here's a simple example that makes a window fill the entire usable area of the screen (just like maximizing).
+The layout module in Ura lets you create custom layout algorithms. This is how ura implement the fullscreen layout.
 
 ```lua
-ura.layout.set("my-tiling", function(index)
-  local output = ura.output.get_current()
-  ura.win.resize(index, output.usable.width, output.usable.height)
-  ura.win.move(index, output.usable.x, output.usable.y)
+ura.layout.register("fullscreen", {
+  enter = function(win)
+    ura.api.set_window_draggable(win, false)
+    ura.api.set_window_z_index(win, 250)
+    ura.api.set_window_fullscreen(win, true)
+  end,
+  apply = function(win)
+    local output = ura.api.get_window_output(win)
+    assert(output)
+    local geo = ura.api.get_output_logical_geometry(output)
+    assert(geo)
+    ura.api.resize_window(win, geo.width, geo.height)
+    ura.api.move_window(win, geo.x, geo.y)
+  end,
+  leave = function(win)
+    ura.api.set_window_fullscreen(win, false)
+  end,
+})
 end)
 ```
-Used with the window-new hook, this allows you to apply a custom layout algorithm when a new window is created. The default layout algorithms include tiling, floating, and fullscreen. Of these, tiling is a simple horizontal tiling algorithm.
 
-More examples are available at: [examples](/examples/)
+Used with the window-new hook, this allows you to apply a custom layout algorithm when a new window is created. The default layout algorithms include tiling, floating, and fullscreen. Of these, tiling is a simple horizontal tiling algorithm. The buildin layout algorithms are at [lua/ura/_runtime/layout.lua](/lua/ura/_runtime/layout.lua)
+
+More configuration examples are available at: [examples](/examples/)
 
 For more infomation, please visit [Ura Wiki](https://github.com/levinion/ura/wiki)
 

@@ -88,19 +88,19 @@ end)
 `prepare` 钩子运行于 Lua 模块初始化之后，此时尚未创建合成器运行所需的各种资源，因此可以在此设置全局环境变量：
 
 ```lua
-ura.hook.set("prepare", function()
-  ura.fn.set_env("WLR_RENDERER", "vulkan")
-  ura.fn.set_env("WLR_NO_HARDWARE_CURSORS", "0")
-  ura.fn.set_env("LIBVA_DRIVER_NAME", "nvidia")
-  ura.fn.set_env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
+ura.hook.set("prepare", function(_)
+  ura.api.set_env("WLR_RENDERER", "vulkan")
+  ura.api.set_env("WLR_NO_HARDWARE_CURSORS", "0")
+  ura.api.set_env("LIBVA_DRIVER_NAME", "nvidia")
+  ura.api.set_env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
 end)
 ```
 
 在 Wayland 建立 Socket，合成器开始运行前，通过 `ready` 钩子（钩子名称可能随版本发生变化，下同）启动应用程序：
 
 ```lua
-ura.hook.set("ready", function()
-  ura.fn.set_env("DISPLAY", ":0")
+ura.hook.set("ready", function(_)
+  ura.api.set_env("DISPLAY", ":0")
   ura.api.spawn("xwayland-satellite")
 end)
 ```
@@ -108,11 +108,11 @@ end)
 `focus-change` 和 `workspace-change` 分别发生于焦点和工作区发生变化，此时可以通知桌面组件，如 waybar 自定义模块，进行更新：
 
 ```lua
-ura.hook.set("focus-change", function()
+ura.hook.set("focus-change", function(_)
   ura.api.spawn("pkill -SIGRTMIN+9 waybar")
 end)
 
-ura.hook.set("workspace-change", function()
+ura.hook.set("workspace-change", function(_)
   ura.api.spawn("pkill -SIGRTMIN+8 waybar")
 end)
 ```
@@ -120,30 +120,46 @@ end)
 `window-new` 发生于新的顶级窗口创建和聚焦后，此时可以设置窗口样式：
 
 ```lua
-ura.hook.set("window-new", function(index)
-  local win = ura.win.get(index)
-  if not win then return end
-  if string.match(win.app_id, "fzfmenu") then
-    ura.win.set_layout(win.index, "floating")
-    ura.win.resize(win.index, 1000, 600)
-    ura.win.center(win.index)
-  end
-end)
+ura.hook.set("window-new", function(e)
+	local app_id = ura.api.get_window_app_id(e.id)
+	assert(app_id)
+	if string.match(app_id, "fzfmenu") then
+		ura.layout.set(e.id, "floating")
+		ura.api.resize_window(e.id, 1000, 600)
+		ura.win.center(e.id)
+	end
+end, {})
 ```
+
+更多钩子可见文档（待完成）。
 
 ## 布局
 
-Ura 的 `layout` 模块允许用户自定义布局算法。以下是一个最简单的布局算法，它只是让窗口填满屏幕的可用区域（或称最大化）。
+Ura 的 `layout` 模块允许用户自定义布局算法。以下是全屏布局的实现方式。
 
 ```lua
-ura.layout.set("my-tiling", function(index)
-  local output = ura.output.get_current()
-  ura.win.resize(index, output.usable.width, output.usable.height)
-  ura.win.move(index, output.usable.x, output.usable.y)
+ura.layout.register("fullscreen", {
+  enter = function(win)
+    ura.api.set_window_draggable(win, false)
+    ura.api.set_window_z_index(win, 250)
+    ura.api.set_window_fullscreen(win, true)
+  end,
+  apply = function(win)
+    local output = ura.api.get_window_output(win)
+    assert(output)
+    local geo = ura.api.get_output_logical_geometry(output)
+    assert(geo)
+    ura.api.resize_window(win, geo.width, geo.height)
+    ura.api.move_window(win, geo.x, geo.y)
+  end,
+  leave = function(win)
+    ura.api.set_window_fullscreen(win, false)
+  end,
+})
 end)
 ```
 
-与 `window-new` hook 配合使用可以在窗口创建时应用用户自定义的布局算法。默认布局算法包括：`tiling`、`floating`、`fullscreen`。其中`tiling`是一个简单的水平平铺算法。
+与 `window-new` hook 配合使用可以在窗口创建时应用用户自定义的布局算法。默认布局算法包括：`tiling`、`floating`、`fullscreen`。其中`tiling`是一个简单的水平平铺算法。预设的布局算法可见：[lua/ura/_runtime/layout.lua](/lua/ura/_runtime/layout.lua)
 
 更多示例可以参见：[examples](/examples/)。
 

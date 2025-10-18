@@ -185,34 +185,16 @@ std::optional<std::string> Lua::find_config_path() {
 }
 
 std::expected<void, std::string> Lua::load_config() {
-  auto runtime = std::filesystem::path("/usr/share/ura/runtime");
+  auto runtime = std::filesystem::path("/usr/share/ura/_runtime");
 
   if (!std::filesystem::is_directory(runtime))
     return std::unexpected("runtime not found");
 
-  std::vector<std::string> modules;
-  for (auto& entry : std::filesystem::directory_iterator(runtime)) {
-    if (entry.is_directory()) {
-      auto basename = entry.path().filename();
-      if (basename != "_meta")
-        modules.push_back(basename);
-    } else if (entry.is_regular_file()) {
-      auto path = entry.path();
-      if (path.has_extension() && path.extension() == ".lua") {
-        modules.push_back(path.stem());
-      }
-    }
-  }
-
-  api::core::prepend_package_path("/usr/share/ura/runtime/?.lua");
-
-  for (auto& module : modules) {
-    auto code = std::format("ura.{}=require('{}')", ltrim(module, '_'), module);
-    auto result = this->execute(code);
-    if (!result) {
-      return std::unexpected(result.error());
-    }
-    log::info("[ura] load module: {}", module);
+  api::core::prepend_package_path("/usr/share/ura/?/init.lua");
+  api::core::prepend_package_path("/usr/share/ura/?.lua");
+  auto result = this->execute("require('_runtime')");
+  if (!result) {
+    return std::unexpected(result.error());
   }
 
   auto path = this->find_config_path();
@@ -220,7 +202,7 @@ std::expected<void, std::string> Lua::load_config() {
     return std::unexpected("could not found any config files, exiting...");
   }
 
-  auto result = this->execute_file(path.value());
+  result = this->execute_file(path.value());
   if (!result) {
     return std::unexpected(result.error());
   }
