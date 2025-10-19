@@ -76,9 +76,16 @@ end
 
 ---@param ns string
 function M.remove(ns)
-  for _, hook in pairs(M.HOOKS) do
-    hook = ura.fn.filter(hook, function(_, value)
-      return value ~= ns
+  for name, hook in pairs(M.HOOKS) do
+    M.HOOKS[name] = ura.fn.filter(hook, function(_, value)
+      return value.ns ~= ns
+    end)
+    ura.api.set_hook(name, function(e)
+      for _, v in ipairs(M.HOOKS[name]) do
+        if v.enabled then
+          v.func(e)
+        end
+      end
     end)
   end
 end

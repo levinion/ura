@@ -72,7 +72,7 @@ function M.split(str, pat)
 end
 
 ---@param tbl table
----@param f fun(index: integer, value: any)
+---@param f fun(index: integer, value: any):table
 function M.filter(tbl, f)
   local r = {}
   for i, v in ipairs(tbl) do
@@ -80,6 +80,7 @@ function M.filter(tbl, f)
       table.insert(r, v)
     end
   end
+  return r
 end
 
 return M
