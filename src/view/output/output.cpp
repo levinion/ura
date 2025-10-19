@@ -221,6 +221,9 @@ bool UraOutput::configure_layers() {
       || this->usable_area.width != usable_area.width
       || this->usable_area.height != usable_area.height) {
     this->usable_area = Vec4<int>::from(usable_area);
+    auto args = flexible::create_table();
+    args.set("id", this->id());
+    server->state->try_execute_hook("output-usable-geometry-change", args);
     return true;
   }
   return false;

@@ -3,7 +3,7 @@ local M = {}
 M.HOOKS = {}
 
 ---@param name string
----@param f function
+---@param f fun(e: table):any
 ---@param opt table|nil
 function M.set(name, f, opt)
   local hook = { func = f }

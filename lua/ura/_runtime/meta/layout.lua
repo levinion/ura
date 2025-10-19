@@ -2,6 +2,8 @@
 
 --- @class ura.layout
 ura.layout = {
+  ---@type table
+  LAYOUTS = {},
   ---@param id integer
   apply = function(id) end,
   ---@param id integer

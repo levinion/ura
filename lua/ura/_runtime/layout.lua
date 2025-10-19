@@ -60,6 +60,18 @@ function M.leave(win)
   end
 end
 
+---@param ws integer
+function M.apply_workspace(ws)
+  local windows = ura.api.get_windows(ws)
+  assert(windows)
+  for index = 0, #windows - 1 do
+    local w = ura.api.get_window(ws, index)
+    if w then
+      M.apply(w)
+    end
+  end
+end
+
 M.register("fullscreen", {
   enter = function(win)
     ura.api.set_window_draggable(win, false)
@@ -78,6 +90,12 @@ M.register("fullscreen", {
     ura.api.set_window_fullscreen(win, false)
   end,
 })
+
+ura.hook.set("output-usable-geometry-change", function(_)
+  local ws = ura.api.get_current_workspace()
+  assert(ws)
+  M.apply_workspace(ws)
+end, { ns = "layout.fullscreen", priority = 40, desc = "re-apply layout as usable geometry change" })
 
 M.register("floating", {
   enter = function(win)
@@ -170,70 +188,39 @@ ura.hook.set("window-new", function(e)
   M.set(win, "tiling")
   local ws = ura.api.get_current_workspace()
   assert(ws)
-  local windows = ura.api.get_windows(ws)
-  assert(windows)
-  for index = 0, #windows - 1 do
-    local w = ura.api.get_window(ws, index)
-    if w and w ~= win then
-      M.apply(w)
-    end
-  end
+  M.apply_workspace(ws)
 end, { ns = "layout.tiling", priority = 100, desc = "set tiling as the fallback layout" })
 
 ura.hook.set("window-resize", function(e)
-  local win = e.id
-  assert(win)
+  assert(M.get(e.id) == "tiling")
   local ws = ura.api.get_current_workspace()
   assert(ws)
-  local windows = ura.api.get_windows(ws)
-  assert(windows)
-  for index = 0, #windows - 1 do
-    local w = ura.api.get_window(ws, index)
-    if w and w ~= win then
-      M.apply(w)
-    end
-  end
+  M.apply_workspace(ws)
 end, { ns = "layout.tiling", priority = 40, desc = "re-apply layout as window resized" })
 
-ura.hook.set("window-close", function(e)
-  local win = e.id
-  assert(win)
+ura.hook.set("window-close", function(_)
+  -- we don't know this window's layout since it is destroyed
+  -- we have to apply all of the windows
   local ws = ura.api.get_current_workspace()
   assert(ws)
-  local windows = ura.api.get_windows(ws)
-  assert(windows)
-  for index = 0, #windows - 1 do
-    local w = ura.api.get_window(ws, index)
-    if w and w ~= win then
-      M.apply(w)
-    end
-  end
+  M.apply_workspace(ws)
 end, { ns = "layout.tiling", priority = 40, desc = "re-apply layout as window closed" })
 
 ura.hook.set("workspace-change", function(_)
   local ws = ura.api.get_current_workspace()
   assert(ws)
-  local windows = ura.api.get_windows(ws)
-  assert(windows)
-  for index = 0, #windows - 1 do
-    local w = ura.api.get_window(ws, index)
-    if w then
-      M.apply(w)
-    end
-  end
+  M.apply_workspace(ws)
 end, { ns = "layout.tiling", priority = 40, desc = "re-apply layout as workspace changed" })
 
 ura.hook.set("window-swap", function(_)
   local ws = ura.api.get_current_workspace()
   assert(ws)
-  local windows = ura.api.get_windows(ws)
-  assert(windows)
-  for index = 0, #windows - 1 do
-    local w = ura.api.get_window(ws, index)
-    if w then
-      M.apply(w)
-    end
-  end
+  M.apply_workspace(ws)
 end, { ns = "layout.tiling", priority = 40, desc = "re-apply layout as window's index is changed" })
 
+ura.hook.set("output-usable-geometry-change", function(_)
+  local ws = ura.api.get_current_workspace()
+  assert(ws)
+  M.apply_workspace(ws)
+end, { ns = "layout.tiling", priority = 40, desc = "re-apply layout as usable geometry change" })
 return M

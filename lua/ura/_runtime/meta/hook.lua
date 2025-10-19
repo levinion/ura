@@ -5,7 +5,7 @@ ura.hook = {
   ---@type table
   HOOK = {},
   ---@param name string
-  ---@param f function
+  ---@param f fun(e: table):any
   ---@param opt table|nil
   set = function(name, f, opt) end,
   ---@param ns string
