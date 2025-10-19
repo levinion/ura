@@ -63,6 +63,8 @@ std::optional<T> get(table t, std::string_view key) {
 static json to_json(object obj) {
   if (obj.is<sol::nil_t>())
     return {};
+  if (obj.is<bool>())
+    return obj.as<bool>();
   if (obj.is<int>())
     return obj.as<int>();
   if (obj.is<uint64_t>())

@@ -71,4 +71,15 @@ function M.split(str, pat)
   return t
 end
 
+---@param tbl table
+---@param f fun(index: integer, value: any)
+function M.filter(tbl, f)
+  local r = {}
+  for i, v in ipairs(tbl) do
+    if f(i, v) == true then
+      table.insert(r, v)
+    end
+  end
+end
+
 return M

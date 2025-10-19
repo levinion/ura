@@ -17,4 +17,7 @@ ura.fn = {
   ---@param pat string
   ---@return table
   split = function(str, pat) end,
+  ---@param tbl table
+  ---@param f fun(index: integer, value: any):boolean
+  filter = function(tbl, f) end,
 }
