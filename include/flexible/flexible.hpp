@@ -141,7 +141,9 @@ static flexible::object from(json j) {
 }
 
 static object from_str(std::string_view str) {
-  auto result = nlohmann::json::parse(str);
+  auto result = nlohmann::json::parse(str, nullptr, false, false);
+  if (result.is_discarded())
+    return {};
   return from(result);
 }
 

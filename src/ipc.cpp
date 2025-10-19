@@ -122,7 +122,7 @@ std::string UraIPCReplyMessage::to_str() {
   auto j = nlohmann::json {};
   j["status"] = this->status;
   j["body"] = this->body;
-  return j.dump();
+  return j.dump(-1, ' ', false, nlohmann::detail::error_handler_t::ignore);
 }
 
 } // namespace ura

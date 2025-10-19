@@ -617,7 +617,8 @@ flexible::object get_userdata(uint64_t id) {
 }
 
 std::string to_json(flexible::object obj) {
-  return flexible::to_json(obj).dump();
+  return flexible::to_json(obj)
+    .dump(-1, ' ', false, nlohmann::detail::error_handler_t::ignore);
 }
 
 flexible::object parse_json(std::string str) {

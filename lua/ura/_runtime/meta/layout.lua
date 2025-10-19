@@ -19,4 +19,6 @@ ura.layout = {
   ---@param win integer
   ---@return string|nil
   get = function(win) end,
+  ---@param id integer
+  apply_workspace = function(id) end,
 }
