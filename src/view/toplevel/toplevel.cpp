@@ -559,6 +559,7 @@ void UraToplevel::move_borders(int x, int y) {
 bool UraToplevel::mapped() {
   if (!this->xdg_toplevel->base->initialized)
     return false;
-  return this->xdg_toplevel->base->surface->mapped;
+  return this->xdg_toplevel->base->surface->mapped
+    && this->scene_tree->node.enabled;
 }
 } // namespace ura
