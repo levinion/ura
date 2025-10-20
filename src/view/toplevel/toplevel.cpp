@@ -299,13 +299,15 @@ int UraToplevel::index() {
 
 void UraToplevel::activate() {
   auto server = UraServer::get_instance();
-  auto output = server->view->get_output_by_name(this->output);
   auto args = flexible::create_table();
   args.set("id", this->id());
   auto flag =
     server->state->try_execute_hook<bool>("pre-window-activate", args);
   // if hook returns a false value, then stop the operation.
   if (flag && !flag.value())
+    return;
+  auto output = server->view->get_output_by_name(this->output);
+  if (!output)
     return;
   if (this->workspace->name) {
     // named workspace, move this toplevel to current workspace
@@ -399,9 +401,8 @@ void UraToplevel::close() {
 }
 
 void UraToplevel::map() {
-  if (this->mapped)
+  if (this->mapped())
     return;
-  this->mapped = true;
   wlr_scene_node_set_enabled(&this->scene_tree->node, true);
   if (this->xdg_toplevel->base->initialized && this->foreign_handle) {
     wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
@@ -417,9 +418,8 @@ void UraToplevel::map() {
 }
 
 void UraToplevel::unmap() {
-  if (!this->mapped)
+  if (!this->mapped())
     return;
-  this->mapped = false;
   wlr_scene_node_set_enabled(&this->scene_tree->node, false);
   if (this->xdg_toplevel->base->initialized && this->foreign_handle)
     wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
@@ -554,5 +554,11 @@ void UraToplevel::move_borders(int x, int y) {
     -border_width,
     -border_width
   );
+}
+
+bool UraToplevel::mapped() {
+  if (!this->xdg_toplevel->base->initialized)
+    return false;
+  return this->xdg_toplevel->base->surface->mapped;
 }
 } // namespace ura

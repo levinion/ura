@@ -13,7 +13,6 @@ class UraWorkspace;
 
 class UraToplevel {
 public:
-  bool mapped = false;
   bool destroying = false;
   bool draggable = true;
   wlr_xdg_toplevel* xdg_toplevel;
@@ -43,6 +42,7 @@ public:
   bool resize(int width, int height);
   void center();
   void close();
+  bool mapped();
   void map();
   void unmap();
   std::string title();
