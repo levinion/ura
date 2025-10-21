@@ -40,9 +40,9 @@ git clone https://github.com/levinion/ura.git
 cd ura
 make
 
-cd uracil 
+cd shell 
 cargo build --release
-sudo install -Dm755 target/release/uracil /usr/bin/uracil
+sudo install -Dm755 target/release/ura-shell /usr/bin/ura-shell
 ```
 
 ### AUR

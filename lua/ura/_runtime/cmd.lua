@@ -110,6 +110,7 @@ function M.switch_next()
   local target = ura.api.get_indexed_workspace(output, index + 1)
   assert(target)
   ura.api.switch_workspace(target)
+  ura.api.destroy_workspace(ws)
 end
 
 function M.move_to_prev()
@@ -145,6 +146,7 @@ function M.move_to_next()
   assert(target)
   ura.api.move_window_to_workspace(win, target)
   ura.api.switch_workspace(target)
+  ura.api.destroy_workspace(ws)
 end
 
 return M

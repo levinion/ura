@@ -22,6 +22,11 @@ constexpr std::string join(std::vector<std::string_view>& v, T symbol) {
   return v | std::views::join_with(symbol) | std::ranges::to<std::string>();
 }
 
+template<typename T>
+constexpr std::string join(std::vector<std::string>& v, T symbol) {
+  return v | std::views::join_with(symbol) | std::ranges::to<std::string>();
+}
+
 constexpr std::string_view trim(std::string_view s) {
   auto view = s | std::views::drop_while(isspace) | std::views::reverse
     | std::views::drop_while(isspace) | std::views::reverse;

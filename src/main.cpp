@@ -3,17 +3,27 @@
 #include <CLI/CLI.hpp>
 #include <print>
 #include <string>
+#include <utility>
 
 int main(int argc, char** argv) {
+  if (argc > 1 && !std::string(argv[1]).starts_with('-')) {
+    argv = &argv[1];
+    auto cmd = "ura-" + std::string(argv[0]);
+    argv[0] = cmd.data();
+    execvp(argv[0], argv);
+    std::unreachable();
+  }
   bool version = false;
   std::optional<std::string> config_path;
 
   auto cli =
     CLI::App { "A highly customizable Wayland compositor driven by Lua ",
                "ura" };
+
   cli.add_flag("-v,--version", version, "Show version information");
   cli.add_option("-c,--config", config_path, "Set configuration file path")
     ->check(CLI::ExistingFile);
+
   CLI11_PARSE(cli, argc, argv);
 
   if (version) {

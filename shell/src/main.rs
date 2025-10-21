@@ -1,12 +1,9 @@
 mod ipc;
-mod shell;
 
 use std::path::PathBuf;
 
 use anyhow::{Result, anyhow};
-use clap::Parser;
-
-use crate::shell::UracilShell;
+use clap::{CommandFactory, Parser};
 
 #[derive(Parser)]
 struct Cli {
@@ -15,12 +12,6 @@ struct Cli {
     path: Option<String>,
     #[clap(trailing_var_arg = true, allow_hyphen_values = true)]
     args: Vec<String>,
-}
-
-fn shell_mode() -> Result<()> {
-    let mut shell = UracilShell::new()?;
-    shell.run()?;
-    Ok(())
 }
 
 fn oneshot(code: String, args: Vec<String>) -> Result<()> {
@@ -55,12 +46,15 @@ fn oneshot_file(path: String, args: Vec<String>) -> Result<()> {
 }
 
 fn main() -> Result<()> {
+    let mut cmd = Cli::command();
     let cli = Cli::parse();
     match cli.code {
         Some(code) => oneshot(code, cli.args)?,
         None => match cli.path {
             Some(path) => oneshot_file(path, cli.args)?,
-            None => shell_mode()?,
+            None => {
+                cmd.print_help()?;
+            }
         },
     }
     Ok(())
