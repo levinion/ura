@@ -97,6 +97,10 @@ ura.hook.set("output-usable-geometry-change", function(_)
   M.apply_workspace(ws)
 end, { ns = "layout.fullscreen", priority = 40, desc = "re-apply layout as usable geometry change" })
 
+ura.hook.set("window-request-fullscreen", function(e)
+  M.set(e.id, "fullscreen")
+end, { ns = "layout.fullscreen", priority = 40, desc = "re-apply layout as usable geometry change" })
+
 M.register("floating", {
   enter = function(win)
     ura.api.set_window_draggable(win, true)
@@ -222,4 +226,11 @@ ura.hook.set("output-usable-geometry-change", function(_)
   assert(ws)
   M.apply_workspace(ws)
 end, { ns = "layout.tiling", priority = 40, desc = "re-apply layout as usable geometry change" })
+
+ura.hook.set("window-remove", function(_)
+  local ws = ura.api.get_current_workspace()
+  assert(ws)
+  M.apply_workspace(ws)
+end, { ns = "layout.tiling", priority = 40, desc = "re-apply layout as window removed" })
+
 return M

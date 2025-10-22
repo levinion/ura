@@ -1,0 +1,16 @@
+#compdef ura
+
+# Save this file as _stor in /usr/local/share/zsh/site-functions or in any
+# other folder in $fpath.  E.g. save it in a folder called ~/.zfunc and add a
+# line containing `fpath=(~/.zfunc $fpath)` somewhere before `compinit` in your
+# ~/.zshrc.
+
+__ura() {
+  _arguments -s \
+    {-v,--version}"[Show version information]" \
+    {-h,--help}"[Print this help message and exit]" \
+    {-c,--config}"[Set configuration file path]" \
+    '*:filename:_files'
+}
+
+__ura

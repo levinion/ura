@@ -8,6 +8,8 @@ install: build
 	sudo install -Dm644 ./assets/ura.desktop /usr/share/wayland-sessions/
 	sudo install -d /etc/ura
 	sudo install -Dm644 ./assets/init.lua /etc/ura/
+	sudo install -d /usr/share/zsh/site-functions
+	sudo install -Dm644 ./assets/completions/zsh/_ura /usr/share/zsh/site-functions/
 	${MAKE} lib
 
 init: CMakeLists.txt include/protocols $(PROTOCOL_HEADERS)

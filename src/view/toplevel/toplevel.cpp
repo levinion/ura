@@ -265,6 +265,9 @@ void UraToplevel::move_to_workspace(std::string name) {
   if (prev_workspace->focus_stack.top()) {
     server->seat->focus(prev_workspace->focus_stack.top().value());
   }
+  auto args = flexible::create_table();
+  args.set("id", this->id());
+  server->state->try_execute_hook("window-remove", args);
 }
 
 void UraToplevel::move_to_workspace(int index) {
@@ -283,6 +286,9 @@ void UraToplevel::move_to_workspace(int index) {
     server->seat->focus(this->workspace->focus_stack.top().value());
   this->workspace = target;
   this->workspace->add(this);
+  auto args = flexible::create_table();
+  args.set("id", this->id());
+  server->state->try_execute_hook("window-remove", args);
 }
 
 int UraToplevel::index() {
@@ -519,6 +525,8 @@ uint64_t UraToplevel::id() {
 }
 
 void UraToplevel::set_fullscreen(bool flag) {
+  if (!this->xdg_toplevel->base->initialized)
+    return;
   wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, flag);
   if (this->foreign_handle)
     wlr_foreign_toplevel_handle_v1_set_fullscreen(this->foreign_handle, flag);
