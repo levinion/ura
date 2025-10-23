@@ -158,8 +158,11 @@ void UraToplevel::commit() {
         this->foreign_handle,
         this->xdg_toplevel->app_id
       );
-    wlr_xdg_toplevel_set_size(this->xdg_toplevel, 0, 0);
-    return;
+    if (this->xdg_toplevel->base->current.geometry.width == 0
+        || this->xdg_toplevel->base->current.geometry.height == 0) {
+      wlr_xdg_toplevel_set_size(this->xdg_toplevel, 0, 0);
+      return;
+    }
   }
 
   // second commit
@@ -170,8 +173,6 @@ void UraToplevel::commit() {
     this->geometry.height = geo.height;
     this->resize_borders(geo.width, geo.height);
     this->move(geo.x, geo.y);
-
-    server->seat->focus(this);
 
     auto args = flexible::create_table();
     args.set("id", this->id());

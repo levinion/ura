@@ -11,7 +11,8 @@ int main(int argc, char** argv) {
     auto cmd = "ura-" + std::string(argv[0]);
     argv[0] = cmd.data();
     execvp(argv[0], argv);
-    std::unreachable();
+    std::println("ura: command not found: {}", cmd);
+    return 1;
   }
   bool version = false;
   std::optional<std::string> config_path;

@@ -233,4 +233,8 @@ ura.hook.set("window-remove", function(_)
   M.apply_workspace(ws)
 end, { ns = "layout.tiling", priority = 40, desc = "re-apply layout as window removed" })
 
+ura.hook.set("window-new", function(e)
+  ura.api.focus_window(e.id)
+end, { ns = "focus", priority = 0, desc = "focus when window created" })
+
 return M
