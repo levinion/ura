@@ -51,6 +51,7 @@ void Lua::setup() {
   LUAAPI("api.set_idle_inhibitor", api::core::set_idle_inhibitor);
   LUAAPI("api.notify", api::core::notify);
   LUAAPI("api.schedule", api::core::schedule);
+  LUAAPI("api.eval", api::core::eval);
   // window
   LUAAPI("api.focus_window", api::core::focus_window);
   LUAAPI("api.close_window", api::core::close_window);

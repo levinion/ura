@@ -22,7 +22,6 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     server->view->get_scene_tree_or_create(this->z_index),
     xdg_toplevel->base
   );
-  this->output = output->name;
   this->workspace = output->current_workspace;
   this->workspace->add(this);
   xdg_toplevel->base->surface->data = this;
@@ -131,7 +130,7 @@ void UraToplevel::destroy() {
 
 void UraToplevel::commit() {
   auto server = UraServer::get_instance();
-  auto output = server->view->get_output_by_name(this->output);
+  auto output = server->view->get_output_by_name(this->workspace->output);
   if (!output)
     return;
   if (!this->xdg_toplevel->base->initialized) {
@@ -313,15 +312,20 @@ void UraToplevel::activate() {
   // if hook returns a false value, then stop the operation.
   if (flag && !flag.value())
     return;
-  auto output = server->view->get_output_by_name(this->output);
-  if (!output)
-    return;
   if (this->workspace->name) {
     // named workspace, move this toplevel to current workspace
+    auto output = server->view->current_output();
+    if (!output)
+      return;
     this->move_to_workspace(output->current_workspace);
-  } else if (this->workspace != output->current_workspace) {
+  } else {
     // indexed workspace, switch to this toplevel's workspace
-    output->switch_workspace(this->workspace);
+    auto output = server->view->get_output_by_name(this->workspace->output);
+    if (!output)
+      return;
+    if (this->workspace != output->current_workspace) {
+      output->switch_workspace(this->workspace);
+    }
   }
   server->seat->focus(this);
   this->map();
@@ -399,7 +403,7 @@ void UraToplevel::resize_borders(int width, int height) {
 
 void UraToplevel::close() {
   auto server = UraServer::get_instance();
-  auto output = server->view->get_output_by_name(this->output);
+  auto output = server->view->get_output_by_name(this->workspace->output);
   wlr_xdg_toplevel_send_close(this->xdg_toplevel);
   wlr_foreign_toplevel_handle_v1_output_leave(
     this->foreign_handle,
@@ -507,7 +511,7 @@ void UraToplevel::set_border_color(std::array<float, 4>& color) {
 
 void UraToplevel::center() {
   auto server = UraServer::get_instance();
-  auto output = server->view->get_output_by_name(this->output);
+  auto output = server->view->get_output_by_name(this->workspace->output);
   auto area = output->logical_geometry();
   auto geo = this->geometry;
   geo.center(area);

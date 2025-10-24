@@ -585,7 +585,7 @@ std::optional<uint64_t> get_window_output(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
-  auto output = UraOutput::from(toplevel->output);
+  auto output = UraOutput::from(toplevel->workspace->output);
   if (!output)
     return {};
   return output->id();
@@ -656,6 +656,12 @@ flexible::object get_named_workspaces() {
   for (auto& [name, workspace] : server->view->named_workspaces)
     table.set(name, workspace->id());
   return table;
+}
+
+void eval(std::string code) {
+  auto server = UraServer::get_instance();
+  auto result = server->lua->execute(code);
+  // TODO: handle result
 }
 
 } // namespace ura::api::core

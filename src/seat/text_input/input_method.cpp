@@ -22,7 +22,7 @@ void UraInputMethodPopup::constrain(wlr_text_input_v3* text_input) {
 
   // constrain to current screen
   auto server = UraServer::get_instance();
-  auto output = server->view->get_output_by_name(parent->output);
+  auto output = server->view->get_output_by_name(parent->workspace->output);
   if (!output)
     return;
   auto geo = output->logical_geometry();
