@@ -91,10 +91,10 @@ The `prepare` hook runs after the Lua module is initialized, but before composit
 
 ```lua
 ura.hook.set("prepare", function(_)
-  ura.fn.set_env("WLR_RENDERER", "vulkan")
-  ura.fn.set_env("WLR_NO_HARDWARE_CURSORS", "0")
-  ura.fn.set_env("LIBVA_DRIVER_NAME", "nvidia")
-  ura.fn.set_env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
+  ura.api.set_env("WLR_RENDERER", "vulkan")
+  ura.api.set_env("WLR_NO_HARDWARE_CURSORS", "0")
+  ura.api.set_env("LIBVA_DRIVER_NAME", "nvidia")
+  ura.api.set_env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
 end)
 ```
 
@@ -102,7 +102,7 @@ Use the `ready` hook (note: hook names may change across versions) to start appl
 
 ```lua
 ura.hook.set("ready", function(_)
-  ura.fn.set_env("DISPLAY", ":0")
+  ura.api.set_env("DISPLAY", ":0")
   ura.api.spawn("xwayland-satellite")
 end)
 ```

@@ -25,10 +25,11 @@ clean:
 
 clean-all: clean
 	sudo rm -rf /usr/bin/ura
-	sudo rm -rf /usr/bin/ura-shell
+	sudo rm -rf /usr/bin/ura-*
 	sudo rm -rf /usr/share/wayland-sessions/ura.desktop
 	sudo rm -rf /etc/ura
 	sudo rm -rf /usr/share/ura
+	sudo rm -rf /usr/share/zsh/site-functions/_ura
 
 debug:
 	make BUILD_TYPE=Debug
