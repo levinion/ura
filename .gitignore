@@ -2,3 +2,4 @@
 /include/protocols/
 /shell/target
 /.cache
+.ruff_cache/

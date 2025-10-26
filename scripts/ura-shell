@@ -1,0 +1,57 @@
+#!/bin/python
+
+import argparse
+import os
+import socket
+import json
+import pathlib
+import tempfile
+
+URA_SOCKET = "/tmp/ura-socket"
+URA_CLIENT_SOCKET = tempfile.mktemp()
+
+
+def eval(code: str, args: list[str] = list()):
+    if len(args) > 0:
+        s = "local arg={}"
+        for i, arg in enumerate(args):
+            s += f"arg[{i}]='{arg}'\n"
+        code = s + code
+
+    client = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+    client.bind(URA_CLIENT_SOCKET)
+    client.connect(URA_SOCKET)
+    client.settimeout(5)
+
+    msg = {"method": "execute", "body": code}
+    client.sendto(json.dumps(msg).encode(), URA_SOCKET)
+
+    data, _ = client.recvfrom(4096)
+    client.close()
+    os.remove(URA_CLIENT_SOCKET)
+
+    j = json.loads(data.decode())
+    print(j["body"].strip())
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--code", type=str)
+    parser.add_argument("arguments", nargs="*", type=str)
+    args = parser.parse_args()
+
+    if args.code is not None:
+        eval(args.code)
+        return
+
+    if len(args.arguments) > 0:
+        file = pathlib.Path(args.arguments[0])
+        content = file.read_text(encoding="utf-8")
+        eval(content, args.arguments)
+        return
+
+    parser.print_help()
+
+
+if __name__ == "__main__":
+    main()

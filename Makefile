@@ -5,6 +5,7 @@ PROTOCOL_HEADERS = $(patsubst protocols/%.xml,include/protocols/%-protocol.h,$(P
 
 install: build
 	sudo install -Dm755 ./build/ura /usr/bin/ura
+	sudo install -Dm755 ./scripts/* /usr/bin/
 	sudo install -Dm644 ./assets/ura.desktop /usr/share/wayland-sessions/
 	sudo install -d /etc/ura
 	sudo install -Dm644 ./assets/init.lua /etc/ura/
