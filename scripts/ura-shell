@@ -8,12 +8,12 @@ import pathlib
 import tempfile
 
 URA_SOCKET = "/tmp/ura-socket"
-URA_CLIENT_SOCKET = tempfile.mktemp()
+URA_CLIENT_SOCKET = tempfile.NamedTemporaryFile().name
 
 
 def eval(code: str, args: list[str] = list()):
     if len(args) > 0:
-        s = "local arg={}"
+        s = "local arg={}\n"
         for i, arg in enumerate(args):
             s += f"arg[{i}]='{arg}'\n"
         code = s + code

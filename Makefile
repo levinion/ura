@@ -14,7 +14,7 @@ install: build
 	${MAKE} lib
 
 init: CMakeLists.txt include/protocols $(PROTOCOL_HEADERS)
-	cmake -B build -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
+	cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
 
 build: init
 	cmake --build build -j$(shell nproc)
