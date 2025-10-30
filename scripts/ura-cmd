@@ -1,0 +1,45 @@
+#!/bin/bash
+
+case "$1" in
+"close")
+  ura-shell -c "ura.cmd.close()"
+  ;;
+"focus-prev")
+  ura-shell -c "ura.cmd.focus_prev()"
+  ;;
+"focus-next")
+  ura-shell -c "ura.cmd.focus_next()"
+  ;;
+"swap-prev")
+  ura-shell -c "ura.cmd.swap_prev()"
+  ;;
+"swap-next")
+  ura-shell -c "ura.cmd.swap_next()"
+  ;;
+"switch-prev")
+  ura-shell -c "ura.cmd.switch_prev()"
+  ;;
+"switch-next")
+  ura-shell -c "ura.cmd.switch_next()"
+  ;;
+"move-to-prev")
+  ura-shell -c "ura.cmd.move_to_prev()"
+  ;;
+"move-to-next")
+  ura-shell -c "ura.cmd.move_to_next()"
+  ;;
+"toggle-layout")
+  [[ -n "$2" ]] &&
+    ura-shell -c "ura.cmd.toggle_layout([[$2]])"
+  ;;
+"list-commands")
+  echo "$PATH" | tr ':' '\n' |
+    xargs -I 'PATH' find PATH -name 'ura-*' 2>/dev/null |
+    xargs -n1 basename |
+    sed 's/ura-//'
+  ;;
+*)
+  echo "Command not found: $1"
+  exit 1
+  ;;
+esac

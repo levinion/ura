@@ -1,0 +1,15 @@
+#compdef ura-shell
+
+# Save this file as _stor in /usr/local/share/zsh/site-functions or in any
+# other folder in $fpath.  E.g. save it in a folder called ~/.zfunc and add a
+# line containing `fpath=(~/.zfunc $fpath)` somewhere before `compinit` in your
+# ~/.zshrc.
+
+_ura-shell() {
+  _arguments -s \
+    {-h,--help}"[Print this help message and exit]" \
+    {-c,--code}"[Code passed in]" \
+    '*:filename:_files'
+}
+
+_ura-shell "$@"
