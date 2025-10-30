@@ -10,7 +10,7 @@ install: build
 	sudo install -d /etc/ura
 	sudo install -Dm644 ./assets/init.lua /etc/ura/
 	sudo install -d /usr/share/zsh/site-functions
-	sudo install -Dm644 ./assets/completions/zsh/_ura /usr/share/zsh/site-functions/
+	sudo install -Dm644 ./assets/completions/zsh/* /usr/share/zsh/site-functions/
 	${MAKE} lib
 
 init: CMakeLists.txt include/protocols $(PROTOCOL_HEADERS)

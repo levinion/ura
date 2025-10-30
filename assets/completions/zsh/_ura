@@ -5,12 +5,24 @@
 # line containing `fpath=(~/.zfunc $fpath)` somewhere before `compinit` in your
 # ~/.zshrc.
 
-__ura() {
+_ura() {
   _arguments -s \
     {-v,--version}"[Show version information]" \
     {-h,--help}"[Print this help message and exit]" \
     {-c,--config}"[Set configuration file path]" \
-    '*:filename:_files'
+    '1: :->commands' \
+    '*:: :->args'
+
+  case "$state" in
+  commands)
+    local subcommands=($(ura-cmd list-commands))
+    _describe 'subcommands' subcommands
+    ;;
+  args)
+    local command="ura-${words[1]}"
+    _"$command" "$@"
+    ;;
+  esac
 }
 
-__ura
+_ura "$@"

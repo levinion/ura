@@ -1,0 +1,35 @@
+#compdef ura-cmd
+
+# Save this file as _stor in /usr/local/share/zsh/site-functions or in any
+# other folder in $fpath.  E.g. save it in a folder called ~/.zfunc and add a
+# line containing `fpath=(~/.zfunc $fpath)` somewhere before `compinit` in your
+# ~/.zshrc.
+
+_ura_cmd_commands() {
+  local ura_cmd_commands=(
+    "toggle-layout"
+    "close"
+    "focus-prev"
+    "focus-next"
+    "swap-prev"
+    "swap-next"
+    "switch-prev"
+    "switch-next"
+    "move-to-prev"
+    "move-to-next"
+    "list-commands"
+  )
+  _describe -t command 'command' ura_cmd_commands
+}
+
+_ura_cmd() {
+  _arguments -C \
+    '1: :->commands' \
+    '*:: :->args'
+
+  case "$state" in
+  commands) _alternative 'common-commands:common:_ura_cmd_commands' ;;
+  esac
+}
+
+_ura_cmd "$@"
