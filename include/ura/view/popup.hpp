@@ -14,6 +14,9 @@ public:
   void commit();
   void destroy();
   uint64_t id();
+
+private:
+  void unconstrain();
 };
 
 } // namespace ura

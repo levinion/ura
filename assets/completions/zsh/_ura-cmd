@@ -18,6 +18,7 @@ _ura_cmd_commands() {
     "move-to-prev"
     "move-to-next"
     "list-commands"
+    "focus-follow-mouse"
   )
   _describe -t command 'command' ura_cmd_commands
 }
