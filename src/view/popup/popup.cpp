@@ -2,6 +2,7 @@
 #include "ura/core/server.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/view/popup.hpp"
+#include "ura/ura.hpp"
 #include "ura/view/layer_shell.hpp"
 #include "ura/view/toplevel.hpp"
 #include "ura/view/output.hpp"
@@ -89,7 +90,7 @@ UraPopup* UraPopup::from(uint64_t id) {
   return nullptr;
 }
 
-void UraPopup::commit() {
+void UraPopup::unconstrain() {
   if (!this->xdg_popup->base->initial_commit)
     return;
 
@@ -97,45 +98,46 @@ void UraPopup::commit() {
   auto output = server->view->current_output();
   auto box = output->logical_geometry().to_wlr_box();
 
-  if (!this->xdg_popup->parent) {
-    wlr_xdg_popup_unconstrain_from_box(this->xdg_popup, &box);
-    return;
+  auto current = this->xdg_popup->parent;
+
+  while (current) {
+    auto parent = UraClient::from(current);
+    switch (parent.type) {
+      case UraSurfaceType::Toplevel: {
+        // try parse popup's parent as a toplevel
+        auto toplevel = parent.transform<UraToplevel>();
+        int lx, ly;
+        wlr_scene_node_coords(&toplevel->scene_tree->node, &lx, &ly);
+        box.x = -lx;
+        box.y = -ly;
+        break;
+      }
+      case UraSurfaceType::LayerShell: {
+        // try parse popup's parent as a layer_shell
+        auto layer_shell = parent.transform<UraLayerShell>();
+        int lx, ly;
+        wlr_scene_node_coords(&layer_shell->scene_tree->node, &lx, &ly);
+        box.x = -lx;
+        box.y = -ly;
+        break;
+      }
+      case UraSurfaceType::Popup: {
+        auto popup = parent.transform<UraPopup>();
+        current = popup->xdg_popup->parent;
+        break;
+      }
+      default:
+        break;
+    }
+    if (parent.type != UraSurfaceType::Popup)
+      break;
   }
 
-  auto client = UraClient::from(this->xdg_popup->parent);
-  switch (client.type) {
-    case UraSurfaceType::Toplevel: {
-      // try parse popup's parent as a toplevel
-      auto toplevel = client.transform<UraToplevel>();
-      int lx, ly;
-      wlr_scene_node_coords(&toplevel->scene_tree->node, &lx, &ly);
-      box.x = -lx;
-      box.y = -ly;
-      wlr_xdg_popup_unconstrain_from_box(this->xdg_popup, &box);
-      break;
-    }
-    case UraSurfaceType::LayerShell: {
-      // try parse popup's parent as a layer_shell
-      auto layer_shell = client.transform<UraLayerShell>();
-      int lx, ly;
-      wlr_scene_node_coords(&layer_shell->scene_tree->node, &lx, &ly);
-      box.x = -lx;
-      box.y = -ly;
-      wlr_xdg_popup_unconstrain_from_box(this->xdg_popup, &box);
-      break;
-    }
-    case UraSurfaceType::Popup: {
-      auto popup = client.transform<UraPopup>();
-      int lx, ly;
-      wlr_scene_node_coords(&popup->scene_tree->node, &lx, &ly);
-      box.x = -lx;
-      box.y = -ly;
-      wlr_xdg_popup_unconstrain_from_box(this->xdg_popup, &box);
-      break;
-    }
-    default:
-      break;
-  }
+  wlr_xdg_popup_unconstrain_from_box(this->xdg_popup, &box);
+}
+
+void UraPopup::commit() {
+  this->unconstrain();
 }
 
 void UraPopup::destroy() {
