@@ -182,14 +182,20 @@ std::optional<std::string> Lua::find_config_path() {
 }
 
 std::expected<void, std::string> Lua::load_config() {
-  auto runtime = std::filesystem::path("/usr/share/ura/_runtime");
+  auto runtime = std::filesystem::path("/usr/share/ura/runtime");
 
   if (!std::filesystem::is_directory(runtime))
     return std::unexpected("runtime not found");
 
-  api::core::prepend_package_path("/usr/share/ura/?/init.lua");
-  api::core::prepend_package_path("/usr/share/ura/?.lua");
-  auto result = this->execute("require('_runtime')");
+  api::core::prepend_package_path("/usr/share/ura/runtime/lua/?/init.lua");
+  api::core::prepend_package_path("/usr/share/ura/runtime/lua/?.lua");
+  api::core::prepend_package_path(
+    api::core::expanduser("~/.config/ura/lua/?/init.lua")
+  );
+  api::core::prepend_package_path(
+    api::core::expanduser("~/.config/ura/lua/?.lua")
+  );
+  auto result = this->execute("require('ura')");
   if (!result) {
     return std::unexpected(result.error());
   }
