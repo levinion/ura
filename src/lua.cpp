@@ -170,7 +170,7 @@ std::optional<std::string> Lua::find_config_path() {
   auto root = std::getenv("XDG_CONFIG_HOME")
     ? std::filesystem::path(std::getenv("XDG_CONFIG_HOME"))
     : std::filesystem::path(std::getenv("HOME")) / ".config";
-  auto dotfile = std::filesystem::path(root) / "ura/init.lua";
+  auto dotfile = root / "ura/init.lua";
   if (std::filesystem::is_regular_file(dotfile)) {
     return dotfile;
   }

@@ -7,7 +7,7 @@ import json
 import pathlib
 import tempfile
 
-URA_SOCKET = "/tmp/ura-socket"
+URA_SOCKET = os.getenv("URA_SOCKET_PATH") or exit(1)
 URA_CLIENT_SOCKET = tempfile.NamedTemporaryFile().name
 
 

@@ -8,8 +8,6 @@
 
 namespace ura {
 
-#define URA_SOCKET_PATH "/tmp/ura-socket"
-
 class UraIPCRequestMessage {
 public:
   std::string method;
@@ -37,6 +35,7 @@ private:
   std::array<char, 4096> buf;
   sockaddr_un client_addr;
   socklen_t client_len;
+  std::string socket_path;
 };
 
 } // namespace ura
