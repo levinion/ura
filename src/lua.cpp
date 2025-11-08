@@ -189,12 +189,7 @@ std::expected<void, std::string> Lua::load_config() {
 
   api::core::prepend_package_path("/usr/share/ura/runtime/lua/?/init.lua");
   api::core::prepend_package_path("/usr/share/ura/runtime/lua/?.lua");
-  api::core::prepend_package_path(
-    api::core::expanduser("~/.config/ura/lua/?/init.lua")
-  );
-  api::core::prepend_package_path(
-    api::core::expanduser("~/.config/ura/lua/?.lua")
-  );
+
   auto result = this->execute("require('ura')");
   if (!result) {
     return std::unexpected(result.error());

@@ -20,4 +20,7 @@ ura.fn = {
   ---@param tbl table
   ---@param f fun(index: integer, value: any):boolean
   filter = function(tbl, f) end,
+  ---@param cmd string
+  ---@return string
+  shell = function(cmd) end,
 }
