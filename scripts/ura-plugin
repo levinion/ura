@@ -1,0 +1,47 @@
+#!/bin/python
+
+import argparse
+import os
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest="command")
+    subparsers.add_parser("list", help="list plugins")
+    install = subparsers.add_parser("install", help="install a plugin")
+    install.add_argument("url", type=str)
+    uninstall = subparsers.add_parser("uninstall", help="uninstall a plugin")
+    uninstall.add_argument("plugin", type=str)
+    args = parser.parse_args()
+
+    match args.command:
+        case "list":
+            try:
+                entrys = os.listdir(os.path.expanduser("~/.local/share/ura"))
+                for entry in entrys:
+                    if os.path.isdir(entry):
+                        print(entry)
+            except FileNotFoundError:
+                pass
+            except Exception as e:
+                print(e)
+        case "install":
+            os.makedirs(os.path.expanduser("~/.local/share/ura"), exist_ok=True)
+            os.execvp(
+                "git",
+                [
+                    "git",
+                    "-C",
+                    os.path.expanduser("~/.local/share/ura"),
+                    "clone",
+                    args.url,
+                ],
+            )
+        case "uninstall":
+            pass
+        case _:
+            parser.print_help()
+
+
+if __name__ == "__main__":
+    main()

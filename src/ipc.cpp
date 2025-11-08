@@ -4,6 +4,7 @@
 #include <array>
 #include <cassert>
 #include <cstring>
+#include <filesystem>
 #include <memory>
 #include <fcntl.h>
 #include <sys/socket.h>
@@ -14,12 +15,27 @@
 
 namespace ura {
 
+std::string get_socket_path() {
+  auto runtime_dir = getenv("XDG_RUNTIME_DIR");
+  assert(runtime_dir);
+  auto dir = std::filesystem::path(runtime_dir);
+  for (int i = 0;; i++) {
+    auto socket_path = dir / std::format("ura-socket-{}", i);
+    if (std::filesystem::exists(socket_path))
+      continue;
+    setenv("URA_SOCKET_PATH", socket_path.c_str(), true);
+    return socket_path;
+  }
+}
+
 std::unique_ptr<UraIPC> UraIPC::init() {
   int ret;
   auto ipc = std::make_unique<UraIPC>();
   auto fd = socket(AF_UNIX, SOCK_DGRAM, 0);
   assert(fd != -1);
   ipc->fd = fd;
+
+  ipc->socket_path = get_socket_path();
 
   auto flags = fcntl(fd, F_GETFL, 0);
   assert(flags != -1);
@@ -31,11 +47,11 @@ std::unique_ptr<UraIPC> UraIPC::init() {
   server_addr.sun_family = AF_UNIX;
   strncpy(
     server_addr.sun_path,
-    URA_SOCKET_PATH,
+    ipc->socket_path.c_str(),
     sizeof(server_addr.sun_path) - 1
   );
 
-  unlink(URA_SOCKET_PATH);
+  unlink(ipc->socket_path.c_str());
   ret = bind(fd, (sockaddr*)&server_addr, sizeof(server_addr));
   assert(ret != -1);
   return ipc;
@@ -44,7 +60,7 @@ std::unique_ptr<UraIPC> UraIPC::init() {
 UraIPC::~UraIPC() {
   if (this->fd != -1)
     close(fd);
-  unlink(URA_SOCKET_PATH);
+  unlink(this->socket_path.c_str());
 }
 
 std::optional<UraIPCRequestMessage> UraIPC::try_read() {

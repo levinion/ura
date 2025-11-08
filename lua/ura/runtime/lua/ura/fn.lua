@@ -83,4 +83,13 @@ function M.filter(tbl, f)
   return r
 end
 
+---@param cmd string
+---@return string
+function M.shell(cmd)
+  local pfile = assert(io.popen(cmd, "r"))
+  local output = pfile:read("*a")
+  pfile:close()
+  return output
+end
+
 return M
