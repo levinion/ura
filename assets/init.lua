@@ -1,3 +1,7 @@
+require("builtin.layout.tiling").setup()
+require("builtin.layout.fullscreen").setup()
+require("builtin.layout.floating").setup()
+
 ura.keymap.set("super+t", function()
   ura.api.spawn("foot")
 end)

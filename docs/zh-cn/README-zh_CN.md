@@ -159,9 +159,9 @@ ura.layout.register("fullscreen", {
 end)
 ```
 
-与 `window-new` hook 配合使用可以在窗口创建时应用用户自定义的布局算法。默认布局算法包括：`tiling`、`floating`、`fullscreen`。其中`tiling`是一个简单的水平平铺算法。预设的布局算法可见：[lua/ura/_runtime/layout.lua](/lua/ura/_runtime/layout.lua)
+与 `window-new` hook 配合使用可以在窗口创建时应用用户自定义的布局算法。默认布局算法包括：`tiling`、`floating`、`fullscreen`。其中`tiling`是一个简单的水平平铺算法。预设的布局算法可见：[layout](/lua/ura/plugins/builtin/lua/builtin/layout/)
 
-更多示例可以参见：[examples](/examples/)。
+更多示例可以参见：[examples](https://github.com/levinion/dotfiles/tree/main/user/ura/.config/ura)。
 
 如果想要了解更多信息，请访问 [Ura Wiki](https://github.com/levinion/ura/wiki)
 

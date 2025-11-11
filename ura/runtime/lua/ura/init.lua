@@ -1,0 +1,12 @@
+ura.opt = require("ura.opt")
+ura.fn = require("ura.fn")
+ura.hook = require("ura.hook")
+ura.keymap = require("ura.keymap")
+ura.layout = require("ura.layout")
+ura.win = require("ura.win")
+ura.cmd = require("ura.cmd")
+
+ura.fn.load_dir("/usr/share/ura/plugins")
+ura.fn.load_dir("~/.local/share/ura/plugins")
+ura.fn.load("~/.config/ura")
+ura.fn.load("$XDG_CONFIG_HOME/ura")
