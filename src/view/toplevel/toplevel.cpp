@@ -157,6 +157,7 @@ void UraToplevel::commit() {
         this->foreign_handle,
         this->xdg_toplevel->app_id
       );
+    // let the client to decide its size
     if (this->xdg_toplevel->base->current.geometry.width == 0
         || this->xdg_toplevel->base->current.geometry.height == 0) {
       wlr_xdg_toplevel_set_size(this->xdg_toplevel, 0, 0);
@@ -166,7 +167,14 @@ void UraToplevel::commit() {
 
   // second commit
   if (!this->prepared) {
-    auto geo = Vec4<int>::from(this->xdg_toplevel->base->geometry);
+    // set a default size if the given size is invalid
+    // if (this->xdg_toplevel->base->current.geometry.width == 0
+    //     || this->xdg_toplevel->base->current.geometry.height == 0) {
+    //   wlr_xdg_toplevel_set_size(this->xdg_toplevel, 800, 600);
+    //   return;
+    // }
+
+    auto geo = Vec4<int>::from(this->xdg_toplevel->base->current.geometry);
     geo.center(output->usable_area);
     this->geometry.width = geo.width;
     this->geometry.height = geo.height;

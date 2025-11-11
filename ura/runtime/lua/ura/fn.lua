@@ -92,4 +92,20 @@ function M.shell(cmd)
   return output
 end
 
+---@param path string
+function M.load(path)
+  ura.api.prepend_package_path(ura.api.expand(path .. "/lua/?/init.lua"))
+  ura.api.prepend_package_path(ura.api.expand(path .. "/lua/?.lua"))
+end
+
+---@param path string
+function M.load_dir(path)
+  local output = ura.fn.shell("find " .. path .. " -maxdepth 1")
+  local plugins = ura.fn.split(output, "\n")
+  for _, plugin in ipairs(plugins) do
+    ura.api.prepend_package_path(plugin .. "/lua/?/init.lua")
+    ura.api.prepend_package_path(plugin .. "/lua/?.lua")
+  end
+end
+
 return M

@@ -161,9 +161,9 @@ ura.layout.register("fullscreen", {
 end)
 ```
 
-Used with the window-new hook, this allows you to apply a custom layout algorithm when a new window is created. The default layout algorithms include tiling, floating, and fullscreen. Of these, tiling is a simple horizontal tiling algorithm. The buildin layout algorithms are at [lua/ura/_runtime/layout.lua](/lua/ura/_runtime/layout.lua)
+Used with the window-new hook, this allows you to apply a custom layout algorithm when a new window is created. The default layout algorithms include tiling, floating, and fullscreen. Of these, tiling is a simple horizontal tiling algorithm. The buildin layout algorithms are at [layout](/lua/ura/plugins/builtin/lua/builtin/layout/)
 
-More configuration examples are available at: [examples](/examples/)
+More configuration examples are available at: [examples](https://github.com/levinion/dotfiles/tree/main/user/ura/.config/ura)
 
 For more infomation, please visit [Ura Wiki](https://github.com/levinion/ura/wiki)
 

@@ -5,7 +5,6 @@ PROTOCOL_HEADERS = $(patsubst protocols/%.xml,include/protocols/%-protocol.h,$(P
 
 install: build
 	sudo install -Dm755 ./build/ura /usr/bin/ura
-	sudo install -Dm755 ./scripts/* /usr/bin/
 	sudo install -Dm644 ./assets/ura.desktop /usr/share/wayland-sessions/
 	sudo install -d /etc/ura
 	sudo install -Dm644 ./assets/init.lua /etc/ura/
@@ -24,8 +23,6 @@ clean:
 	rm -rf include/protocols
 
 clean-all: clean
-	sudo rm -rf /usr/bin/ura
-	sudo rm -rf /usr/bin/ura-*
 	sudo rm -rf /usr/share/wayland-sessions/ura.desktop
 	sudo rm -rf /etc/ura
 	sudo rm -rf /usr/share/ura
@@ -34,12 +31,9 @@ clean-all: clean
 debug:
 	make BUILD_TYPE=Debug
 
-rsync:
-	rsync -avz --delete --filter=':- .gitignore' -e 'ssh -p 2222' . maruka@127.0.0.1:~/ura
-
 lib:
 	sudo rm -rf /usr/share/ura
-	sudo cp -r lua/ura /usr/share/
+	sudo cp -r ura /usr/share/
 
 .PHONY: default install init build clean clean-all debug rsync lib
 
@@ -48,4 +42,3 @@ include/protocols:
 
 include/protocols/%-protocol.h: ./protocols/%.xml
 	wayland-scanner server-header $< $@
-

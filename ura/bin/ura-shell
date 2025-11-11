@@ -7,11 +7,11 @@ import json
 import pathlib
 import tempfile
 
-URA_SOCKET = os.getenv("URA_SOCKET_PATH") or exit(1)
-URA_CLIENT_SOCKET = tempfile.NamedTemporaryFile().name
 
+def eval(code: str, args: list[str] = []):
+    URA_SOCKET = os.getenv("URA_SOCKET_PATH") or exit(1)
+    URA_CLIENT_SOCKET = tempfile.NamedTemporaryFile().name
 
-def eval(code: str, args: list[str] = list()):
     if len(args) > 0:
         s = "local arg={}\n"
         for i, arg in enumerate(args):
