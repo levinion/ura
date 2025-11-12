@@ -36,7 +36,7 @@ case "$1" in
   echo "$PATH" | tr ':' '\n' |
     xargs -I 'PATH' find PATH -name 'ura-*' 2>/dev/null |
     xargs -n1 basename |
-    sed 's/ura-//'
+    sed 's/ura-//' | sort | uniq
   ;;
 "focus-follow-mouse")
   if [[ -n "$2" ]]; then

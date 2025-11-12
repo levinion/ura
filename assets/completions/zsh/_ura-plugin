@@ -1,0 +1,27 @@
+#compdef ura-plugin
+
+# Save this file as _stor in /usr/local/share/zsh/site-functions or in any
+# other folder in $fpath.  E.g. save it in a folder called ~/.zfunc and add a
+# line containing `fpath=(~/.zfunc $fpath)` somewhere before `compinit` in your
+# ~/.zshrc.
+
+_ura_plugin_commands() {
+  local ura_plugin_commands=(
+    "list"
+    "install"
+    "uninstall"
+  )
+  _describe -t command 'command' ura_plugin_commands
+}
+
+_ura_plugin() {
+  _arguments -C \
+    '1: :->commands' \
+    '*:: :->args'
+
+  case "$state" in
+  commands) _alternative 'common-commands:common:_ura_plugin_commands' ;;
+  esac
+}
+
+_ura_plugin "$@"
