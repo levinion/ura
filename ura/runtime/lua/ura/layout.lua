@@ -72,4 +72,15 @@ function M.apply_workspace(ws)
   end
 end
 
+---@param win integer
+---@param layout string
+function M.toggle(win, layout)
+  local old = ura.layout.get(win)
+  if old ~= layout then
+    ura.layout.set(win, layout)
+  else
+    ura.layout.set(win, ura.opt["layout.default"] or "tiling")
+  end
+end
+
 return M

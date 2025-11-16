@@ -27,7 +27,7 @@ function M.setup()
   end, { ns = "layout.fullscreen", priority = 40, desc = "re-apply layout as usable geometry change" })
 
   ura.hook.set("window-request-fullscreen", function(e)
-    ura.layout.set(e.id, "fullscreen")
+    ura.layout.toggle(e.id, "fullscreen")
   end, { ns = "layout.fullscreen", priority = 40, desc = "re-apply layout as usable geometry change" })
 end
 
