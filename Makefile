@@ -34,7 +34,7 @@ debug:
 lib:
 	sudo rm -rf /usr/share/ura
 	sudo cp -r ura /usr/share/
-	sudo chmod +x /usr/share/ura/bin/*
+	sudo chmod 755 /usr/share/ura/bin/*
 
 .PHONY: default install init build clean clean-all debug rsync lib
 

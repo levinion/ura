@@ -77,6 +77,7 @@ void UraSeat::unfocus() {
       client->transform<UraToplevel>()->unfocus();
     else if (client->type == UraSurfaceType::LayerShell)
       client->transform<UraLayerShell>()->unfocus();
+    server->seat->cursor->set_xcursor("left_ptr");
   }
   wlr_seat_keyboard_notify_clear_focus(seat);
   server->state->try_execute_hook("focus-change", {});

@@ -4,12 +4,7 @@ local M = {}
 function M.toggle_layout(layout)
   local win = ura.api.get_current_window()
   assert(win)
-  local old = ura.layout.get(win)
-  if old ~= layout then
-    ura.layout.set(win, layout)
-  else
-    ura.layout.set(win, ura.opt["layout.default"] or "tiling")
-  end
+  ura.layout.toggle(win, layout)
 end
 
 function M.close()

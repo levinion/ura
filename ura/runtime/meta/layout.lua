@@ -20,5 +20,8 @@ ura.layout = {
   ---@return string|nil
   get = function(win) end,
   ---@param id integer
+  ---@param layout string
+  toggle = function(id, layout) end,
+  ---@param id integer
   apply_workspace = function(id) end,
 }
