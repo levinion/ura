@@ -52,6 +52,11 @@ case "$1" in
     ura shell -c "print(ura.opt.focus_follow_mouse)"
   fi
   ;;
+"set-pointer-accel-profile")
+  if [[ -n "$2" ]]; then
+    ura shell -c "ura.api.set_pointer_accel_profile(\"$2\")"
+  fi
+  ;;
 *)
   echo "Command not found: $1"
   exit 1

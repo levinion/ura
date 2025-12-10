@@ -19,6 +19,7 @@ _ura_cmd_commands() {
     "move-to-next"
     "list-commands"
     "focus-follow-mouse"
+    "set-pointer-accel-profile"
   )
   _describe -t command 'command' ura_cmd_commands
 }
