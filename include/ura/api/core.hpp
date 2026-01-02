@@ -49,9 +49,9 @@ flexible::object get_window_geometry(uint64_t id);
 std::optional<uint64_t> get_window_workspace(uint64_t id);
 // input
 void set_keyboard_repeat(int rate, int delay);
-void set_pointer_accel_profile(std::string profile);
-void set_pointer_move_speed(double speed);
-void set_pointer_scroll_speed(double speed);
+void set_pointer_accel_profile(std::string profile, std::string glob);
+void set_pointer_move_speed(double speed, std::string glob);
+void set_pointer_scroll_speed(double speed, std::string glob);
 void set_cursor_theme(std::string theme, int size);
 std::string get_cursor_theme();
 int get_cursor_size();

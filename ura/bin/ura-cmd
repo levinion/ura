@@ -54,7 +54,15 @@ case "$1" in
   ;;
 "set-pointer-accel-profile")
   if [[ -n "$2" ]]; then
-    ura shell -c "ura.api.set_pointer_accel_profile(\"$2\")"
+    if [[ -n "$3" ]]; then
+      ura shell -c "ura.api.set_pointer_accel_profile(\"$2\", \"$3\")"
+    else
+      echo 'invalid arguments, expects: set-pointer-accel-profile <profile> <glob>'
+      exit 1
+    fi
+  else
+    echo 'invalid arguments, expects: set-pointer-accel-profile <profile> <glob>'
+    exit 1
   fi
   ;;
 *)

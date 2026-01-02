@@ -21,6 +21,7 @@
 #include <sys/prctl.h>
 #include "flexible/flexible.hpp"
 #include "ura/core/state.hpp"
+#include <fnmatch.h>
 
 namespace ura::api::core {
 
@@ -469,24 +470,27 @@ std::string get_cursor_shape() {
   return UraServer::get_instance()->seat->cursor->xcursor_name;
 }
 
-void set_pointer_accel_profile(std::string profile) {
+void set_pointer_accel_profile(std::string profile, std::string glob) {
   auto server = UraServer::get_instance();
   for (auto pointer : server->seat->pointers) {
-    pointer->set_accel_profile(profile);
+    if (!fnmatch(glob.c_str(), pointer->name.c_str(), 0))
+      pointer->set_accel_profile(profile);
   }
 }
 
-void set_pointer_move_speed(double speed) {
+void set_pointer_move_speed(double speed, std::string glob) {
   auto server = UraServer::get_instance();
   for (auto pointer : server->seat->pointers) {
-    pointer->move_speed = speed;
+    if (!fnmatch(glob.c_str(), pointer->name.c_str(), 0))
+      pointer->move_speed = speed;
   }
 }
 
-void set_pointer_scroll_speed(double speed) {
+void set_pointer_scroll_speed(double speed, std::string glob) {
   auto server = UraServer::get_instance();
   for (auto pointer : server->seat->pointers) {
-    pointer->scroll_speed = speed;
+    if (!fnmatch(glob.c_str(), pointer->name.c_str(), 0))
+      pointer->scroll_speed = speed;
   }
 }
 

@@ -118,11 +118,14 @@ ura.api = {
   --- @param delay integer
   set_keyboard_repeat = function(rate, delay) end,
   --- @param profile string
-  set_pointer_accel_profile = function(profile) end,
+  --- @param glob string
+  set_pointer_accel_profile = function(profile, glob) end,
   --- @param speed number
-  set_pointer_move_speed = function(speed) end,
+  --- @param glob string
+  set_pointer_move_speed = function(speed, glob) end,
   --- @param speed number
-  set_pointer_scroll_speed = function(speed) end,
+  --- @param glob string
+  set_pointer_scroll_speed = function(speed, glob) end,
   --- @param theme string
   --- @param size integer
   set_cursor_theme = function(theme, size) end,
