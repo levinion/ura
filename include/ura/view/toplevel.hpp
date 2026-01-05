@@ -58,6 +58,10 @@ public:
   uint64_t id();
   void set_fullscreen(bool flag);
   bool is_fullscreen();
+  UraOutput* output();
+  double scale();
+  void set_scale(double scale);
+  void update_scale(); // a shortcut of set_scale(scale())
 
 private:
   void create_borders();

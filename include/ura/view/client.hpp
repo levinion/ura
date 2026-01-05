@@ -15,6 +15,8 @@ class UraClient {
 public:
   UraSurfaceType type;
   wlr_surface* surface;
+  std::optional<double> sx; // offset from cursor to left-up corner
+  std::optional<double> sy;
 
   template<typename T>
   T* transform() {

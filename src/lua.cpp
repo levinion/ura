@@ -98,6 +98,7 @@ void Lua::setup() {
   LUAAPI("api.get_workspaces", api::core::get_workspaces);
   LUAAPI("api.get_named_workspaces", api::core::get_named_workspaces);
   LUAAPI("api.get_indexed_workspaces", api::core::get_indexed_workspaces);
+  LUAAPI("api.set_workspace_scale", api::core::set_workspace_scale);
   // output
   LUAAPI("api.get_current_output", api::core::get_current_output);
   LUAAPI("api.get_output", api::core::get_output);

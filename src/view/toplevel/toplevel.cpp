@@ -27,10 +27,7 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   xdg_toplevel->base->surface->data = this;
   this->create_borders();
 
-  server->view->notify_scale(
-    this->xdg_toplevel->base->surface,
-    output->output->scale
-  );
+  this->update_scale();
 
   // register callback
   {
@@ -130,7 +127,7 @@ void UraToplevel::destroy() {
 
 void UraToplevel::commit() {
   auto server = UraServer::get_instance();
-  auto output = server->view->get_output_by_name(this->workspace->output);
+  auto output = this->output();
   if (!output)
     return;
   if (!this->xdg_toplevel->base->initialized) {
@@ -174,8 +171,10 @@ void UraToplevel::commit() {
     //   return;
     // }
 
+    // init geometry with given value then put it center
     auto geo = Vec4<int>::from(this->xdg_toplevel->base->current.geometry);
-    geo.center(output->usable_area);
+    auto area = this->workspace->geometry().value();
+    geo.center(area);
     this->geometry.width = geo.width;
     this->geometry.height = geo.height;
     this->resize_borders(geo.width, geo.height);
@@ -328,7 +327,7 @@ void UraToplevel::activate() {
     this->move_to_workspace(output->current_workspace);
   } else {
     // indexed workspace, switch to this toplevel's workspace
-    auto output = server->view->get_output_by_name(this->workspace->output);
+    auto output = this->output();
     if (!output)
       return;
     if (this->workspace != output->current_workspace) {
@@ -364,8 +363,18 @@ bool UraToplevel::move(int x, int y) {
 }
 
 bool UraToplevel::resize(int width, int height) {
-  if (width <= 0 || height <= 0)
-    return false;
+  if (this->xdg_toplevel->current.max_width > 0) {
+    width = std::min(width, this->xdg_toplevel->current.max_width);
+  }
+  if (this->xdg_toplevel->current.min_width > 0) {
+    width = std::max(width, this->xdg_toplevel->current.min_width);
+  }
+  if (this->xdg_toplevel->current.max_height > 0) {
+    height = std::min(height, this->xdg_toplevel->current.max_height);
+  }
+  if (this->xdg_toplevel->current.min_height > 0) {
+    height = std::max(height, this->xdg_toplevel->current.min_height);
+  }
   if (width == this->geometry.width && height == this->geometry.height)
     return false;
   this->geometry.width = width;
@@ -411,12 +420,13 @@ void UraToplevel::resize_borders(int width, int height) {
 
 void UraToplevel::close() {
   auto server = UraServer::get_instance();
-  auto output = server->view->get_output_by_name(this->workspace->output);
   wlr_xdg_toplevel_send_close(this->xdg_toplevel);
-  wlr_foreign_toplevel_handle_v1_output_leave(
-    this->foreign_handle,
-    output->output
-  );
+  auto output = this->output();
+  if (output)
+    wlr_foreign_toplevel_handle_v1_output_leave(
+      this->foreign_handle,
+      output->output
+    );
 }
 
 void UraToplevel::map() {
@@ -519,10 +529,11 @@ void UraToplevel::set_border_color(std::array<float, 4>& color) {
 
 void UraToplevel::center() {
   auto server = UraServer::get_instance();
-  auto output = server->view->get_output_by_name(this->workspace->output);
-  auto area = output->logical_geometry();
+  auto area = this->workspace->geometry();
+  if (!area)
+    return;
   auto geo = this->geometry;
-  geo.center(area);
+  geo.center(area.value());
   this->move(geo.x, geo.y);
 }
 
@@ -583,4 +594,26 @@ bool UraToplevel::mapped() {
   return this->xdg_toplevel->base->surface->mapped
     && this->scene_tree->node.enabled;
 }
+
+UraOutput* UraToplevel::output() {
+  return this->workspace->output();
+}
+
+double UraToplevel::scale() {
+  auto server = UraServer::get_instance();
+  auto output = this->output();
+  if (output)
+    return output->scale() * this->workspace->scale;
+  return this->workspace->scale;
+}
+
+void UraToplevel::set_scale(double scale) {
+  auto server = UraServer::get_instance();
+  server->view->notify_scale(this->xdg_toplevel->base->surface, scale);
+}
+
+void UraToplevel::update_scale() {
+  this->set_scale(this->scale());
+}
+
 } // namespace ura

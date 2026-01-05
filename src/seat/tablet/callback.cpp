@@ -81,7 +81,7 @@ void on_tablet_proximity(wl_listener* listener, void* data) {
 
   switch (event->state) {
     case WLR_TABLET_TOOL_PROXIMITY_IN: {
-      auto client = server->view->foreground_client(nullptr, nullptr);
+      auto client = server->view->foreground_client();
       if (!client)
         return;
       wlr_tablet_v2_tablet_tool_notify_proximity_in(

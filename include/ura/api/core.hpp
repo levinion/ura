@@ -73,6 +73,7 @@ std::optional<bool> is_workspace_named(uint64_t id);
 flexible::object get_workspaces();
 flexible::object get_indexed_workspaces(uint64_t output_id);
 flexible::object get_named_workspaces();
+void set_workspace_scale(uint64_t id, double scale);
 
 // output
 std::optional<uint64_t> get_current_output();

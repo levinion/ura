@@ -43,10 +43,12 @@ UraOutput* UraView::get_output_by_name(std::string_view name) {
   return this->outputs.contains(key) ? this->outputs[key] : nullptr;
 }
 
-std::optional<UraClient> UraView::foreground_client(double* sx, double* sy) {
+std::optional<UraClient> UraView::foreground_client() {
   auto server = UraServer::get_instance();
   auto pos = server->seat->cursor->position();
-  auto node = wlr_scene_node_at(&this->scene->tree.node, pos.x, pos.y, sx, sy);
+  double sx, sy;
+  auto node =
+    wlr_scene_node_at(&this->scene->tree.node, pos.x, pos.y, &sx, &sy);
   if (!node || node->type != WLR_SCENE_NODE_BUFFER) {
     return {};
   }
@@ -55,7 +57,10 @@ std::optional<UraClient> UraView::foreground_client(double* sx, double* sy) {
   if (!scene_surface) {
     return {};
   }
-  return UraClient::from(scene_surface->surface);
+  auto client = UraClient::from(scene_surface->surface);
+  client.sx = sx;
+  client.sy = sy;
+  return client;
 }
 
 UraWorkspace* UraView::get_named_workspace_or_create(std::string_view name) {
@@ -103,9 +108,9 @@ wlr_scene_tree* UraView::get_layer_by_type(zwlr_layer_shell_v1_layer type) {
   return layer;
 }
 
-void UraView::notify_scale(wlr_surface* surface, float scale) {
+void UraView::notify_scale(wlr_surface* surface, double scale) {
   wlr_fractional_scale_v1_notify_scale(surface, scale);
-  wlr_surface_set_preferred_buffer_scale(surface, scale);
+  wlr_surface_set_preferred_buffer_scale(surface, ceil(scale));
 }
 
 } // namespace ura

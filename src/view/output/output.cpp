@@ -268,7 +268,7 @@ UraWorkspace* UraOutput::get_workspace_at(int index) {
 
 UraWorkspace* UraOutput::create_workspace() {
   auto workspace = UraWorkspace::init();
-  workspace->output = this->name;
+  workspace->output_name = this->name;
   auto server = UraServer::get_instance();
   server->view->indexed_workspaces[this->name].push_back(workspace.get());
   server->view->workspaces.push_back(std::move(workspace));

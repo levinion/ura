@@ -39,8 +39,8 @@ public:
   void create_named_workspace(std::string_view name);
   UraOutput* current_output();
   UraOutput* get_output_by_name(std::string_view name);
-  std::optional<UraClient> foreground_client(double* sx, double* sy);
+  std::optional<UraClient> foreground_client();
   wlr_scene_tree* get_layer_by_type(zwlr_layer_shell_v1_layer type);
-  void notify_scale(wlr_surface* surface, float scale);
+  void notify_scale(wlr_surface* surface, double scale);
 };
 } // namespace ura

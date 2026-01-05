@@ -167,7 +167,7 @@ void focus_window(uint64_t id) {
 void destroy_workspace(uint64_t id) {
   auto server = UraServer::get_instance();
   auto workspace = UraWorkspace::from(id);
-  auto output = UraOutput::from(workspace->output);
+  auto output = workspace->output();
   if (workspace)
     output->destroy_workspace(workspace);
 }
@@ -589,7 +589,7 @@ std::optional<uint64_t> get_window_output(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
-  auto output = UraOutput::from(toplevel->workspace->output);
+  auto output = toplevel->workspace->output();
   if (!output)
     return {};
   return output->id();
@@ -666,6 +666,12 @@ void eval(std::string code) {
   auto server = UraServer::get_instance();
   auto result = server->lua->execute(code);
   // TODO: handle result
+}
+
+void set_workspace_scale(uint64_t id, double scale) {
+  auto workspace = UraWorkspace::from(id);
+  if (workspace)
+    workspace->set_scale(scale);
 }
 
 } // namespace ura::api::core

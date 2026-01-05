@@ -142,8 +142,7 @@ void UraCursor::process_motion(
     server->state->get_option<bool>("focus_follow_mouse").value_or(true);
 
   // get foreground surface
-  double sx, sy;
-  auto client = server->view->foreground_client(&sx, &sy);
+  auto client = server->view->foreground_client();
   auto surface = client ? client.value().surface : nullptr;
 
   // send enter if move to another surface
@@ -152,7 +151,12 @@ void UraCursor::process_motion(
       wlr_seat_pointer_notify_clear_focus(seat);
       server->seat->cursor->set_xcursor("left_ptr");
     } else
-      wlr_seat_pointer_notify_enter(seat, surface, sx, sy);
+      wlr_seat_pointer_notify_enter(
+        seat,
+        surface,
+        client->sx.value(),
+        client->sy.value()
+      );
   }
 
   assert(surface == server->seat->seat->pointer_state.focused_surface);
@@ -165,7 +169,16 @@ void UraCursor::process_motion(
       server->seat->focus(client.value());
   }
 
-  wlr_seat_pointer_notify_motion(seat, time_msec, sx, sy);
+  if (!surface)
+    return;
+
+  wlr_seat_pointer_notify_motion(
+    seat,
+    time_msec,
+    client->sx.value(),
+    client->sy.value()
+  );
+
   wlr_relative_pointer_manager_v1_send_relative_motion(
     server->relative_pointer_manager,
     server->seat->seat,
@@ -227,8 +240,7 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
     server->state->get_option<bool>("focus_follow_mouse").value_or(true);
   // only works when focus_follow_mouse is disabled
   if (!focus_follow_mouse && event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
-    double sx, sy;
-    auto client = server->view->foreground_client(&sx, &sy);
+    auto client = server->view->foreground_client();
     // unfocus if there's no surface under cursor
     if ((!client || !client.value().surface)) {
       server->seat->unfocus();

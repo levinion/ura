@@ -35,7 +35,7 @@ int UraWorkspace::index() {
   auto server = UraServer::get_instance();
   if (this->name)
     return -1;
-  auto output = server->view->get_output_by_name(this->output);
+  auto output = server->view->get_output_by_name(this->output_name);
   if (!output)
     return -1;
   int i = 0;
@@ -94,5 +94,24 @@ uint64_t UraWorkspace::id() {
 
 UraWorkspace::~UraWorkspace() {
   UraServer::get_instance()->globals.erase(this->id());
+}
+
+void UraWorkspace::set_scale(double scale) {
+  this->scale = scale;
+  for (auto toplevel : this->toplevels) {
+    toplevel->update_scale();
+  }
+}
+
+UraOutput* UraWorkspace::output() {
+  auto server = UraServer::get_instance();
+  return server->view->get_output_by_name(this->output_name);
+}
+
+std::optional<Vec4<int>> UraWorkspace::geometry() {
+  auto output = this->output();
+  if (!output)
+    return {};
+  return output->usable_area;
 }
 } // namespace ura

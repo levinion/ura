@@ -175,6 +175,9 @@ ura.api = {
   get_indexed_workspaces = function(output_id) end,
   --- @return table|nil
   get_named_workspaces = function() end,
+  --- @param id integer
+  --- @param scale number
+  set_workspace_scale = function(id, scale) end,
 
   -- output
   --- @return integer|nil
