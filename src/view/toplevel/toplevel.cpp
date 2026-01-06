@@ -51,11 +51,6 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
       on_toplevel_destroy,
       this
     );
-    // server->runtime->register_callback(
-    //   &xdg_toplevel->events.request_move,
-    //   on_toplevel_request_move,
-    //   toplevel
-    // );
     //
     // server->runtime->register_callback(
     //   &xdg_toplevel->events.request_resize,
@@ -363,15 +358,15 @@ bool UraToplevel::move(int x, int y) {
 }
 
 bool UraToplevel::resize(int width, int height) {
-  if (this->xdg_toplevel->current.max_width > 0) {
-    width = std::min(width, this->xdg_toplevel->current.max_width);
-  }
+  // if (this->xdg_toplevel->current.max_width > 0) {
+  //   width = std::min(width, this->xdg_toplevel->current.max_width);
+  // }
   if (this->xdg_toplevel->current.min_width > 0) {
     width = std::max(width, this->xdg_toplevel->current.min_width);
   }
-  if (this->xdg_toplevel->current.max_height > 0) {
-    height = std::min(height, this->xdg_toplevel->current.max_height);
-  }
+  // if (this->xdg_toplevel->current.max_height > 0) {
+  //   height = std::min(height, this->xdg_toplevel->current.max_height);
+  // }
   if (this->xdg_toplevel->current.min_height > 0) {
     height = std::max(height, this->xdg_toplevel->current.min_height);
   }

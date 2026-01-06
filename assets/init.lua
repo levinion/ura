@@ -42,22 +42,6 @@ ura.keymap.set("ctrl+shift+right", function()
   ura.cmd.move_to_next()
 end)
 
-ura.keymap.set("super+h", function()
-  ura.cmd.focus_prev()
-end)
-
-ura.keymap.set("super+l", function()
-  ura.cmd.focus_next()
-end)
-
-ura.keymap.set("super+shift+h", function()
-  ura.cmd.swap_prev()
-end)
-
-ura.keymap.set("super+shift+l", function()
-  ura.cmd.swap_next()
-end)
-
 ura.api.set_hook("prepare", function() end)
 
 ura.api.set_hook("ready", function() end)

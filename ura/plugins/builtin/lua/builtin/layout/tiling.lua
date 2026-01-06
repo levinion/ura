@@ -88,21 +88,13 @@ local function master_stack(opt)
         ura.api.focus_window(win)
       end
     end)
-    -- down stack
+    -- focus next
     ura.keymap.set("super+j", function()
-      local current = ura.api.get_current_window()
-      assert(current)
-      if ura.api.get_window_index(current) > 0 then
-        ura.cmd.focus_next()
-      end
+      ura.cmd.focus_next()
     end)
-    -- up stack
+    -- focus prev
     ura.keymap.set("super+k", function()
-      local current = ura.api.get_current_window()
-      assert(current)
-      if ura.api.get_window_index(current) > 1 then
-        ura.cmd.focus_prev()
-      end
+      ura.cmd.focus_prev()
     end)
     -- move to master
     ura.keymap.set("super+shift+h", function()
