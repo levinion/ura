@@ -67,6 +67,7 @@ void Lua::setup() {
   LUAAPI("api.set_window_draggable", api::core::set_window_draggable);
   LUAAPI("api.is_window_draggable", api::core::is_window_draggable);
   LUAAPI("api.swap_window", api::core::swap_window);
+  LUAAPI("api.insert_window", api::core::insert_window);
   LUAAPI("api.get_window_app_id", api::core::get_window_app_id);
   LUAAPI("api.get_window_title", api::core::get_window_title);
   LUAAPI("api.set_window_fullscreen", api::core::set_window_fullscreen);

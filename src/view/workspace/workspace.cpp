@@ -64,6 +64,8 @@ void UraWorkspace::remove(UraToplevel* toplevel) {
 }
 
 void UraWorkspace::swap_toplevel(UraToplevel* src, UraToplevel* dst) {
+  if (src == dst)
+    return;
   auto it1 = std::find(this->toplevels.begin(), this->toplevels.end(), src);
   if (it1 == this->toplevels.end())
     return;
@@ -78,6 +80,32 @@ void UraWorkspace::swap_toplevel(UraToplevel* src, UraToplevel* dst) {
   args.set("src", src->id());
   args.set("dst", dst->id());
   server->state->try_execute_hook("window-swap", args);
+}
+
+void UraWorkspace::insert_toplevel(UraToplevel* src, UraToplevel* dst) {
+  if (src == dst)
+    return;
+  auto it1 = std::find(this->toplevels.begin(), this->toplevels.end(), src);
+  if (it1 == this->toplevels.end())
+    return;
+  auto it2 = std::find(this->toplevels.begin(), this->toplevels.end(), dst);
+  if (it2 == this->toplevels.end())
+    return;
+  if (it1 > it2) {
+    for (auto it = it1; it > it2; it--) {
+      std::swap(*it, *(it - 1));
+    }
+  } else {
+    for (auto it = it2; it < it1; it++) {
+      std::swap(*it, *(it + 1));
+    }
+  }
+
+  auto server = UraServer::get_instance();
+  auto args = flexible::create_table();
+  args.set("src", src->id());
+  args.set("dst", dst->id());
+  server->state->try_execute_hook("window-insert", args);
 }
 
 UraWorkspace* UraWorkspace::from(uint64_t id) {

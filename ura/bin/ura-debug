@@ -1,0 +1,22 @@
+#!/usr/bin/bash
+
+case "$1" in
+"hook")
+  ura-shell -c "print(ura.api.to_json(ura.hook.HOOKS))" | jq
+  ;;
+"layout")
+  ura-shell -c "print(ura.api.to_json(ura.layout.LAYOUTS))" | jq
+  ;;
+"-h" | "--help" | *)
+  echo Usage:
+  echo 'ura-debug [Commands]'
+  echo 'ura-debug [Options]'
+  echo
+  echo Commands:
+  echo hook
+  echo layout
+  echo
+  echo Options:
+  echo -h, --help Print this help message and exit
+  ;;
+esac

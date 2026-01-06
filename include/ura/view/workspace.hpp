@@ -42,6 +42,7 @@ public:
   void add(UraToplevel* toplevel);
   void remove(UraToplevel* toplevel);
   void swap_toplevel(UraToplevel* src, UraToplevel* dst);
+  void insert_toplevel(UraToplevel* src, UraToplevel* dst);
   void set_scale(double scale);
   UraOutput* output();
   std::optional<Vec4<int>> geometry();

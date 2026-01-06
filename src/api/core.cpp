@@ -366,7 +366,6 @@ void set_idle_inhibitor(bool flag) {
 }
 
 void set_window_draggable(uint64_t id, bool flag) {
-  auto server = UraServer::get_instance();
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
@@ -374,7 +373,6 @@ void set_window_draggable(uint64_t id, bool flag) {
 }
 
 void set_window_z_index(uint64_t id, int z) {
-  auto server = UraServer::get_instance();
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
@@ -382,7 +380,6 @@ void set_window_z_index(uint64_t id, int z) {
 }
 
 void swap_window(uint64_t id, uint64_t target) {
-  auto server = UraServer::get_instance();
   auto first = UraToplevel::from(id);
   if (!first)
     return;
@@ -672,6 +669,18 @@ void set_workspace_scale(uint64_t id, double scale) {
   auto workspace = UraWorkspace::from(id);
   if (workspace)
     workspace->set_scale(scale);
+}
+
+void insert_window(uint64_t id, uint64_t target) {
+  auto first = UraToplevel::from(id);
+  if (!first)
+    return;
+  auto second = UraToplevel::from(target);
+  if (!second)
+    return;
+  if (first->workspace != second->workspace)
+    return;
+  first->workspace->insert_toplevel(first, second);
 }
 
 } // namespace ura::api::core

@@ -1,6 +1,8 @@
 local M = {}
 
 local function master_stack(opt)
+  ura.opt["m_fact"] = opt and opt.m_fact or 0.7
+
   ura.layout.register("tiling", {
     enter = function(win)
       ura.api.set_window_draggable(win, false)
@@ -21,7 +23,7 @@ local function master_stack(opt)
       local outer_t = opt and opt.outer_t or 10
       local outer_b = opt and opt.outer_b or 10
       local inner = opt and opt.inner or 10
-      local m_fact = opt and opt.master_factor or 0.6
+      local m_fact = ura.opt["m_fact"] or 0.7
 
       local tiling_wins = {}
       local win_index = -1
@@ -105,7 +107,7 @@ local function master_stack(opt)
         assert(ws)
         local main = ura.api.get_window(ws, 0)
         assert(main)
-        ura.api.swap_window(current, main)
+        ura.api.insert_window(current, main)
       end
     end)
     -- move to stack
@@ -116,6 +118,39 @@ local function master_stack(opt)
         ura.cmd.swap_next()
       end
     end)
+
+    ura.keymap.set("super+left", function()
+      if ura.opt.m_fact == nil then
+        ura.opt.m_fact = 0.7
+      end
+      ura.opt["m_fact"] = math.max(ura.opt["m_fact"] - 0.05, 0.1)
+      local ws = ura.api.get_current_workspace()
+      assert(ws)
+      ura.layout.apply_workspace(ws)
+    end)
+
+    ura.keymap.set("super+right", function()
+      if ura.opt.m_fact == nil then
+        ura.opt.m_fact = 0.7
+      end
+      ura.opt["m_fact"] = math.min(ura.opt["m_fact"] + 0.05, 0.9)
+      local ws = ura.api.get_current_workspace()
+      assert(ws)
+      ura.layout.apply_workspace(ws)
+    end)
+  end
+
+  if opt and opt.new_window_as_master == true then
+    ura.hook.set("window-new", function(e)
+      local current = e.id
+      if ura.api.get_window_index(current) ~= 0 then
+        local ws = ura.api.get_current_workspace()
+        assert(ws)
+        local main = ura.api.get_window(ws, 0)
+        assert(main)
+        ura.api.insert_window(current, main)
+      end
+    end, { ns = "layout.tiling", priority = 200, desc = "move new window to main" })
   end
 end
 
@@ -280,8 +315,10 @@ function M.setup(opt)
     master_stack(opt)
   elseif opt and opt.type == "spiral" then
     spiral(opt)
-  else
+  elseif opt and opt.type == "vertical" then
     vertical(opt)
+  else
+    master_stack(opt)
   end
 
   ura.hook.set("window-new", function(e)
@@ -317,6 +354,12 @@ function M.setup(opt)
   end, { ns = "layout.tiling", priority = 40, desc = "re-apply layout as workspace changed" })
 
   ura.hook.set("window-swap", function(_)
+    local ws = ura.api.get_current_workspace()
+    assert(ws)
+    ura.layout.apply_workspace(ws)
+  end, { ns = "layout.tiling", priority = 40, desc = "re-apply layout as window's index is changed" })
+
+  ura.hook.set("window-insert", function(_)
     local ws = ura.api.get_current_workspace()
     assert(ws)
     ura.layout.apply_workspace(ws)

@@ -103,6 +103,9 @@ ura.api = {
   --- @param id integer
   --- @param target integer
   swap_window = function(id, target) end,
+  --- @param id integer
+  --- @param target integer
+  insert_window = function(id, target) end,
   ---@param id integer
   ---@param flag boolean
   set_window_fullscreen = function(id, flag) end,

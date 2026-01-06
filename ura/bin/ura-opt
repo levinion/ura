@@ -1,0 +1,20 @@
+#!/usr/bin/bash
+
+case "$1" in
+"-h" | "--help" | "")
+  echo Usage:
+  echo ura-opt [OPT_NAME]
+  echo ura-opt [OPT_NAME] [OPT_VALUE]
+  echo
+  echo Options:
+  echo -h, --help Print this help message and exit
+  ;;
+*)
+  if [[ -n "$2" ]]; then
+    ura-shell -c "ura.opt.$1 = $2"
+    ura-shell -c "print(ura.opt.$1)"
+  else
+    ura-shell -c "print(ura.opt.$1)"
+  fi
+  ;;
+esac

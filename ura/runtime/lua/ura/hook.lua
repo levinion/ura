@@ -31,14 +31,6 @@ function M.set(name, f, opt)
 
   local exist = false
 
-  for _, v in ipairs(M.HOOKS[name]) do
-    if v.ns == hook.ns then
-      v = hook
-      exist = true
-      break
-    end
-  end
-
   if not exist then
     table.insert(M.HOOKS[name], hook)
   end

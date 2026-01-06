@@ -41,6 +41,7 @@ void activate_window(uint64_t id);
 void move_window(uint64_t id, int x, int y);
 void resize_window(uint64_t id, int width, int height);
 void swap_window(uint64_t id, uint64_t target);
+void insert_window(uint64_t id, uint64_t target);
 std::optional<std::string> get_window_app_id(uint64_t id);
 std::optional<std::string> get_window_title(uint64_t id);
 void set_window_fullscreen(uint64_t id, bool flag);
