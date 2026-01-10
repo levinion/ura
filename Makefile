@@ -13,9 +13,10 @@ endif
 
 sudo-install:
 	sudo $(MAKE) clean
+	sudo $(MAKE) build
 	sudo $(MAKE) install
 
-install: build
+install:
 	install -Dm755 ./build/ura $(DESTDIR)/usr/bin/ura
 	install -Dm644 ./assets/ura.desktop $(DESTDIR)/usr/share/wayland-sessions/
 	install -d $(DESTDIR)/etc/ura
