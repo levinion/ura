@@ -59,6 +59,7 @@ UraToplevel* UraSeat::focused_toplevel() {
   return nullptr;
 }
 
+// only layer_shell and toplevel can be focused
 std::optional<UraClient> UraSeat::focused_client() {
   if (!this->seat->keyboard_state.focused_surface)
     return {};
@@ -86,6 +87,7 @@ void UraSeat::unfocus() {
 void UraSeat::focus(UraClient client) {
   if (!client.surface || client.type == UraSurfaceType::Popup
       || client.type == UraSurfaceType::SessionLock
+      || client.type == UraSurfaceType::Null
       || client.type == UraSurfaceType::Unknown
       || this->seat->keyboard_state.focused_surface == client.surface)
     return;

@@ -2,6 +2,7 @@
 #include "ura/view/popup.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/core/runtime.hpp"
+#include "ura/view/client.hpp" // IWYU pragma: keep
 
 namespace ura {
 void on_new_popup(wl_listener* listener, void* data) {

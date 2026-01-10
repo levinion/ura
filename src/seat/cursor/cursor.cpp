@@ -164,7 +164,8 @@ void UraCursor::process_motion(
   // focus if move to another surface
   if (focus_follow_mouse) {
     if (!surface) {
-      server->seat->unfocus();
+      if (server->state->get_option<bool>("unfocus_on_leave").value_or(false))
+        server->seat->unfocus();
     } else
       server->seat->focus(client.value());
   }
@@ -295,9 +296,13 @@ void UraCursor::process_cursor_mode_move() {
 void UraCursor::process_cursor_mode_resize() {
   auto server = UraServer::get_instance();
   auto toplevel = server->seat->focused_toplevel();
-  if (!toplevel || !toplevel->draggable)
+  if (!toplevel || !toplevel->draggable) {
+    if (toplevel->xdg_toplevel->current.resizing)
+      wlr_xdg_toplevel_set_resizing(toplevel->xdg_toplevel, false);
     this->reset_mode();
-  else {
+  } else {
+    if (!toplevel->xdg_toplevel->current.resizing)
+      wlr_xdg_toplevel_set_resizing(toplevel->xdg_toplevel, true);
     toplevel->resize(
       this->anchor.width + this->position().x - this->grab.x,
       this->anchor.height + this->position().y - this->grab.y

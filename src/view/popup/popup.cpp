@@ -2,6 +2,7 @@
 #include "ura/core/server.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/view/popup.hpp"
+#include <memory>
 #include "ura/ura.hpp"
 #include "ura/view/layer_shell.hpp"
 #include "ura/view/toplevel.hpp"
@@ -16,6 +17,7 @@ bool UraPopup::init(wlr_xdg_popup* xdg_popup) {
   auto output = server->view->current_output();
   if (xdg_popup->parent) {
     auto client = UraClient::from(xdg_popup->parent);
+    this->parent = std::make_unique<UraClient>(client);
     switch (client.type) {
       case UraSurfaceType::Toplevel: {
         auto toplevel = client.transform<UraToplevel>();
@@ -154,6 +156,18 @@ void UraPopup::destroy() {
 
 uint64_t UraPopup::id() {
   return reinterpret_cast<uint64_t>(this);
+}
+
+void UraPopup::unfocus() {
+  if (!this->parent)
+    return;
+  auto parent = this->parent.get();
+  if (parent->type == UraSurfaceType::Toplevel)
+    parent->transform<UraToplevel>()->unfocus();
+  else if (parent->type == UraSurfaceType::LayerShell)
+    parent->transform<UraLayerShell>()->unfocus();
+  else if (parent->type == UraSurfaceType::Popup)
+    parent->transform<UraPopup>()->unfocus();
 }
 
 } // namespace ura

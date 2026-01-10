@@ -7,7 +7,14 @@
 #include "ura/view/session_lock.hpp"
 
 namespace ura {
-enum class UraSurfaceType { Toplevel, LayerShell, Popup, SessionLock, Unknown };
+enum class UraSurfaceType {
+  Toplevel,
+  LayerShell,
+  Popup,
+  SessionLock,
+  Unknown,
+  Null
+};
 
 UraSurfaceType get_surface_type(wlr_surface* surface);
 
@@ -54,6 +61,13 @@ public:
     } else {
       std::unreachable();
     }
+    return client;
+  }
+
+  static UraClient null() {
+    auto client = UraClient();
+    client.type = UraSurfaceType::Null;
+    client.surface = nullptr;
     return client;
   }
 

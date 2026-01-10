@@ -3,6 +3,8 @@
 namespace ura {
 
 UraSurfaceType get_surface_type(wlr_surface* surface) {
+  if (!surface)
+    return UraSurfaceType::Null;
   if (wlr_xdg_toplevel_try_from_wlr_surface(surface))
     return UraSurfaceType::Toplevel;
   if (wlr_layer_surface_v1_try_from_wlr_surface(surface))
