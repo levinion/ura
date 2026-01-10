@@ -39,10 +39,6 @@ Make dependencies include:
 git clone https://github.com/levinion/ura.git
 cd ura
 make
-
-cd shell 
-cargo build --release
-sudo install -Dm755 target/release/ura-shell /usr/bin/ura-shell
 ```
 
 ### AUR
@@ -130,7 +126,7 @@ ura.hook.set("window-new", function(e)
 		ura.api.resize_window(e.id, 1000, 600)
 		ura.win.center(e.id)
 	end
-end, {})
+end)
 ```
 
 More hooks could be found in the WIKI (TODO)。
@@ -161,7 +157,7 @@ ura.layout.register("fullscreen", {
 end)
 ```
 
-Used with the window-new hook, this allows you to apply a custom layout algorithm when a new window is created. The default layout algorithms include tiling, floating, and fullscreen. Of these, tiling is a simple horizontal tiling algorithm. The buildin layout algorithms are at [layout](/lua/ura/plugins/builtin/lua/builtin/layout/)
+Used with the window-new hook, this allows you to apply a custom layout algorithm when a new window is created. The builtin layout algorithms include tiling, floating, and fullscreen. The buildin layout algorithms are at [layout](/ura/plugins/builtin/lua/builtin/layout/)
 
 More configuration examples are available at: [examples](https://github.com/levinion/dotfiles/tree/main/user/ura/.config/ura)
 

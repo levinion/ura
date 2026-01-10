@@ -3,40 +3,54 @@ BUILD_TYPE ?= Release
 PROTOCOL_FILES = $(wildcard protocols/*.xml)
 PROTOCOL_HEADERS = $(patsubst protocols/%.xml,include/protocols/%-protocol.h,$(PROTOCOL_FILES))
 
+ifneq ($(shell command -v ninja),)
+    NINJA := -G Ninja 
+endif
+
+ifneq ($(shell command -v sccache),)
+    LAUNCHER := -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+endif
+
+sudo-install:
+	sudo $(MAKE) clean
+	sudo $(MAKE) install
+
 install: build
-	sudo install -Dm755 ./build/ura /usr/bin/ura
-	sudo install -Dm644 ./assets/ura.desktop /usr/share/wayland-sessions/
-	sudo install -d /etc/ura
-	sudo install -Dm644 ./assets/init.lua /etc/ura/
-	sudo install -d /usr/share/zsh/site-functions
-	sudo install -Dm644 ./assets/completions/zsh/* /usr/share/zsh/site-functions/
-	${MAKE} lib
+	install -Dm755 ./build/ura $(DESTDIR)/usr/bin/ura
+	install -Dm644 ./assets/ura.desktop $(DESTDIR)/usr/share/wayland-sessions/
+	install -d $(DESTDIR)/etc/ura
+	install -Dm644 ./assets/init.lua $(DESTDIR)/etc/ura/
+	install -d $(DESTDIR)/usr/share/zsh/site-functions
+	install -Dm644 ./assets/completions/zsh/* $(DESTDIR)/usr/share/zsh/site-functions/
+	cp -r ura $(DESTDIR)/usr/share/
+	chmod 755 $(DESTDIR)/usr/share/ura/bin/*
 
 init: CMakeLists.txt include/protocols $(PROTOCOL_HEADERS)
-	cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
+	cmake -B build \
+		$(NINJA) \
+		$(LAUNCHER) \
+		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
 
 build: init
 	cmake --build build -j$(shell nproc)
 
-clean:
+clean-dev:
 	rm -rf build
 	rm -rf include/protocols
 
-clean-all: clean
-	sudo rm -rf /usr/share/wayland-sessions/ura.desktop
-	sudo rm -rf /etc/ura
-	sudo rm -rf /usr/share/ura
-	sudo rm -rf /usr/share/zsh/site-functions/_ura
+clean:
+	rm $(DESTDIR)/usr/bin/ura
+	rm $(DESTDIR)/usr/share/wayland-sessions/ura.desktop
+	rm -rf $(DESTDIR)/etc/ura
+	rm -rf $(DESTDIR)/usr/share/ura
+	rm -rf $(DESTDIR)/usr/share/zsh/site-functions/_ura*
+
+clean-all: clean clean-dev
 
 debug:
-	make BUILD_TYPE=Debug
+	$(MAKE) BUILD_TYPE=Debug
 
-lib:
-	sudo rm -rf /usr/share/ura
-	sudo cp -r ura /usr/share/
-	sudo chmod 755 /usr/share/ura/bin/*
-
-.PHONY: default install init build clean clean-all debug rsync lib
+.PHONY: sudo-install install init build clean-dev clean clean-all debug
 
 include/protocols:
 	mkdir -p $@
