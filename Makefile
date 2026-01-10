@@ -18,6 +18,7 @@ sudo-install:
 
 install:
 	install -Dm755 ./build/ura $(DESTDIR)/usr/bin/ura
+	install -d $(DESTDIR)/usr/share/wayland-sessions/
 	install -Dm644 ./assets/ura.desktop $(DESTDIR)/usr/share/wayland-sessions/
 	install -d $(DESTDIR)/etc/ura
 	install -Dm644 ./assets/init.lua $(DESTDIR)/etc/ura/
@@ -40,8 +41,8 @@ clean-dev:
 	rm -rf include/protocols
 
 clean:
-	rm $(DESTDIR)/usr/bin/ura
-	rm $(DESTDIR)/usr/share/wayland-sessions/ura.desktop
+	rm -f $(DESTDIR)/usr/bin/ura
+	rm -f $(DESTDIR)/usr/share/wayland-sessions/ura.desktop
 	rm -rf $(DESTDIR)/etc/ura
 	rm -rf $(DESTDIR)/usr/share/ura
 	rm -rf $(DESTDIR)/usr/share/zsh/site-functions/_ura*
