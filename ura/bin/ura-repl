@@ -1,7 +1,43 @@
 #!/bin/bash
 
+_EDITOR="${EDITOR:-nvim}"
+
+show_help() {
+  cat <<EOF
+Usage: ura-repl [COMMAND]
+
+A utility to quickly edit and execute temporary Lua scripts.
+
+Commands/Flags:
+  --zen         Start Neovim in ZenMode (distraction-free)
+  -h, --help    Display this help message
+EOF
+}
+
+# Argument handling
+if [[ -n "$1" ]]; then
+  case "$1" in
+  -h | --help)
+    show_help
+    exit 0
+    ;;
+  "--zen")
+    if [[ "$_EDITOR" == "nvim" ]]; then
+      _LAUNCH_CMD=("nvim" "-c" "lua require('zen-mode').open({ window = { width = 1, height = 1 }})")
+    else
+      _LAUNCH_CMD=("$_EDITOR")
+    fi
+    ;;
+  *)
+    _LAUNCH_CMD=("$_EDITOR")
+    ;;
+  esac
+else
+  _LAUNCH_CMD=("$_EDITOR")
+fi
+
 TEMP_FILE="$(mktemp).lua"
-$EDITOR "$TEMP_FILE"
+"${_LAUNCH_CMD[@]}" "$TEMP_FILE"
 [[ -f "$TEMP_FILE" ]] && {
   ura shell "$TEMP_FILE" && rm "$TEMP_FILE"
   exit 0

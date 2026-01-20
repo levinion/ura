@@ -1,7 +1,7 @@
 local M = {}
 
 local function master_stack(opt)
-  ura.opt["m_fact"] = opt and opt.m_fact or 0.7
+  ura.opt["m_fact"] = opt and opt.m_fact or 0.5
 
   ura.layout.register("tiling", {
     enter = function(win)
@@ -23,7 +23,7 @@ local function master_stack(opt)
       local outer_t = opt and opt.outer_t or 10
       local outer_b = opt and opt.outer_b or 10
       local inner = opt and opt.inner or 10
-      local m_fact = ura.opt["m_fact"] or 0.7
+      local m_fact = ura.opt["m_fact"] or 0.5
 
       local tiling_wins = {}
       local win_index = -1
@@ -121,7 +121,7 @@ local function master_stack(opt)
 
     ura.keymap.set("super+left", function()
       if ura.opt.m_fact == nil then
-        ura.opt.m_fact = 0.7
+        ura.opt.m_fact = 0.5
       end
       ura.opt["m_fact"] = math.max(ura.opt["m_fact"] - 0.05, 0.1)
       local ws = ura.api.get_current_workspace()
@@ -131,7 +131,7 @@ local function master_stack(opt)
 
     ura.keymap.set("super+right", function()
       if ura.opt.m_fact == nil then
-        ura.opt.m_fact = 0.7
+        ura.opt.m_fact = 0.5
       end
       ura.opt["m_fact"] = math.min(ura.opt["m_fact"] + 0.05, 0.9)
       local ws = ura.api.get_current_workspace()

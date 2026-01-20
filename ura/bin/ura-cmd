@@ -1,6 +1,34 @@
 #!/bin/bash
 
+show_help() {
+  cat <<EOF
+Usage: ura-cmd <command> [arguments]
+
+A control script for ura-shell to manage windows and layouts.
+
+Commands:
+  close                              Close the currently focused window.
+  focus-prev | focus-next            Move focus to the previous or next window.
+  swap-prev | swap-next              Swap the current window with the previous or next one.
+  switch-prev | switch-next          Switch to the previous or next workspace/view.
+  move-to-prev | move-to-next        Move the current window to the previous or next workspace.
+  toggle-layout <layout>             Toggle a specific layout (e.g., floating, tiling).
+  list-commands                      List all available 'ura-*' command scripts in PATH.
+  focus-follow-mouse [val]           Get or set focus-follow-mouse (true/1 or false/0).
+  set-pointer-accel-profile <p> <g>  Set pointer acceleration profile for a device glob.
+  help, -h, --help                   Show this help message.
+
+Examples:
+  ura-cmd toggle-layout tiling
+  ura-cmd focus-follow-mouse true
+  ura-cmd set-pointer-accel-profile flat "Logitech*"
+EOF
+}
+
 case "$1" in
+"" | "help" | "-h" | "--help")
+  show_help
+  ;;
 "close")
   ura-shell -c "ura.cmd.close()"
   ;;
