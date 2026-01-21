@@ -245,7 +245,7 @@ local function spiral(opt)
   end
 end
 
-local function vertical(opt)
+local function horizontal(opt)
   ura.layout.register("tiling", {
     enter = function(win)
       ura.api.set_window_draggable(win, false)
@@ -315,8 +315,8 @@ function M.setup(opt)
     master_stack(opt)
   elseif opt and opt.type == "spiral" then
     spiral(opt)
-  elseif opt and opt.type == "vertical" then
-    vertical(opt)
+  elseif opt and opt.type == "horizontal" then
+    horizontal(opt)
   else
     master_stack(opt)
   end
