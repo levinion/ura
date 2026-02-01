@@ -11,6 +11,7 @@
 #include <sol/state_handling.hpp>
 #include <string>
 #include "ura/core/state.hpp"
+#include "ura/util/util.hpp"
 #include <filesystem>
 
 namespace ura {
@@ -144,7 +145,7 @@ std::expected<std::string, std::string> Lua::execute(std::string_view script) {
   this->lua_stdout.clear();
   auto result = this->state.safe_script(script, sol::script_pass_on_error);
   if (result.valid())
-    return this->lua_stdout;
+    return std::string(trim(this->lua_stdout));
   sol::error err = result;
   return std::unexpected(err.what());
 }
@@ -159,7 +160,7 @@ std::expected<std::string, std::string> Lua::execute_file(std::string_view p) {
     );
   auto result = this->state.safe_script_file(path, sol::script_pass_on_error);
   if (result.valid())
-    return this->lua_stdout;
+    return std::string(trim(this->lua_stdout));
   sol::error err = result;
   return std::unexpected(std::string(path) + ": " + std::string(err.what()));
 }
