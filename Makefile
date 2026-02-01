@@ -17,7 +17,9 @@ sudo-install:
 	sudo $(MAKE) install
 
 install:
+	install -d $(DESTDIR) /usr/bin
 	install -Dm755 ./build/ura $(DESTDIR)/usr/bin/
+	install -d $(DESTDIR) /usr/share/wayland-sessions
 	install -Dm644 ./assets/ura.desktop $(DESTDIR)/usr/share/wayland-sessions/
 	install -d $(DESTDIR)/etc/ura
 	install -Dm644 ./assets/init.lua $(DESTDIR)/etc/ura/
