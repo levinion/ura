@@ -136,4 +136,6 @@ void on_new_surface(wl_listener* listener, void* data);
 void on_surface_commit(wl_listener* listener, void* data);
 void on_surface_destroy(wl_listener* listener, void* data);
 
+// ipc.cpp
+void on_ura_ipc_request(wl_listener* listener, void* data);
 } // namespace ura

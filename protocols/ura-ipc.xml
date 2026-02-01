@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="ura_ipc">
+
+  <copyright>
+    Copyright 2025 © levinion
+  </copyright>
+
+  <interface name="ura_ipc" version="1">
+    <description summary="ipc">
+      This interface allows sending ipc requests to control compositor.
+    </description>
+
+    <request name="call">
+      <description summary="execute a script">
+        Client can send request by giving method name and arguments in json using this method.
+      </description>
+      <arg name="script" type="string" summary="lua script"/>
+    </request>
+
+    <event name="reply">
+      <description summary="reply handle results">
+        Server will reply handle results using this method.
+      </description>
+      <arg name="status" type="int" summary="status code"/>
+      <arg name="msg" type="string" summary="detailed output"/>
+    </event>
+
+    <request name="destroy" type="destructor">
+      <description summary="destory the object"/>
+    </request>
+  </interface>
+
+</protocol>

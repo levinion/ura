@@ -2,10 +2,10 @@
 
 #include <memory>
 #include "ura/ura.hpp"
-#include "ura/core/ipc.hpp"
 #include "ura/core/dispatcher.hpp"
 #include <sol/sol.hpp>
 #include <nlohmann/json.hpp>
+#include "ipc.hpp"
 
 namespace ura {
 // extern
@@ -58,13 +58,13 @@ public:
   wlr_pointer_constraints_v1* pointer_constraints;
   wlr_tablet_manager_v2* tablet_manager;
   wlr_virtual_pointer_manager_v1* virtual_pointer_manager;
+  ura_ipc* ipc;
 
   std::unique_ptr<UraState> state;
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;
   std::unique_ptr<UraSeat> seat;
   std::unique_ptr<UraView> view;
-  std::unique_ptr<UraIPC> ipc;
   std::unique_ptr<UraDispatcher<1024>> dispatcher;
 
   std::unordered_map<uint64_t, UraGlobal> globals;
@@ -79,6 +79,7 @@ public:
 private:
   static UraServer* instance;
   bool quit = false;
+  void setup_ipc();
   void setup_signal();
   void setup_seat();
   void setup_toplevel();

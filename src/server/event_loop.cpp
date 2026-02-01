@@ -2,7 +2,6 @@
 #include "ura/core/dispatcher.hpp"
 #include "ura/core/log.hpp"
 #include "ura/seat/cursor.hpp"
-#include "ura/core/ipc.hpp"
 #include "ura/seat/seat.hpp"
 #include "ura/core/server.hpp"
 #include "ura/core/callback.hpp"
@@ -21,7 +20,6 @@ UraServer* UraServer::init(std::unique_ptr<UraState>&& state) {
   this->setup_signal();
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
-  this->ipc = UraIPC::init();
   this->dispatcher = UraDispatcher<1024>::init();
   this->lua = Lua::init();
   auto result = this->lua->load_config();
@@ -32,6 +30,7 @@ UraServer* UraServer::init(std::unique_ptr<UraState>&& state) {
   this->state->try_execute_hook("prepare", {});
 
   this->setup_base();
+  this->setup_ipc();
   this->setup_drm();
   this->setup_compositor();
   this->setup_output();
@@ -317,12 +316,6 @@ void UraServer::run() {
     wl_display_flush_clients(this->display);
     return true;
   });
-  // ura ipc event_loop
-  this->dispatcher->add_task(ipc->fd, [=, this]() {
-    ipc->try_handle();
-    return true;
-  });
-
   this->state->try_execute_hook("ready", {});
 
   while (!this->quit) {
@@ -352,7 +345,16 @@ void UraServer::setup_signal() {
   sa.sa_handler = [](int signo) { while (waitpid(-1, NULL, WNOHANG) > 0); };
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
-  sigaction(SIGCHLD, &sa, 0);
+  sigaction(SIGCHLD, &sa, nullptr);
+}
+
+void UraServer::setup_ipc() {
+  this->ipc = ura_ipc_create(this->display);
+  this->runtime->register_callback(
+    &this->ipc->events.request,
+    on_ura_ipc_request,
+    nullptr
+  );
 }
 
 } // namespace ura

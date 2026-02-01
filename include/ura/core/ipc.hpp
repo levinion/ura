@@ -1,41 +1,27 @@
 #pragma once
-
-#include <sys/un.h>
-#include <unistd.h>
-#include <array>
-#include <memory>
-#include <optional>
+#include "ura-ipc-protocol.h"
 
 namespace ura {
 
-class UraIPCRequestMessage {
-public:
-  std::string method;
-  std::string body;
-  static std::optional<UraIPCRequestMessage> from_str(std::string_view str);
+struct ura_ipc_request_event {
+  struct wl_resource* resource;
+  const char* script;
 };
 
-class UraIPCReplyMessage {
-public:
-  std::string status;
-  std::string body;
-  std::string to_str();
+struct ura_ipc {
+  struct wl_global* global;
+
+  struct {
+    struct wl_signal request;
+    struct wl_signal destroy;
+  } events;
+
+  void* data;
+
+  struct {
+    struct wl_listener display_destroy;
+  } WLR_PRIVATE;
 };
 
-class UraIPC {
-public:
-  int fd;
-  static std::unique_ptr<UraIPC> init();
-  ~UraIPC();
-  void try_handle();
-
-private:
-  std::optional<UraIPCRequestMessage> try_read();
-  void try_send(UraIPCReplyMessage& message);
-  std::array<char, 4096> buf;
-  sockaddr_un client_addr;
-  socklen_t client_len;
-  std::string socket_path;
-};
-
+ura_ipc* ura_ipc_create(wl_display* display);
 } // namespace ura

@@ -3,3 +3,4 @@
 /shell/target
 /.cache
 .ruff_cache/
+/src/ipc.c
