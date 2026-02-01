@@ -32,6 +32,8 @@ Make dependencies include:
 - make
 - cmake
 - pkgconf
+- ninja (可选)
+- sccache (可选)
 
 ```shell
 git clone https://github.com/levinion/ura.git

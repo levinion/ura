@@ -1,144 +1,81 @@
 #include "ura/core/ipc.hpp"
+#include "ura-ipc-protocol.h"
 #include "ura/core/server.hpp"
 #include "ura/core/lua.hpp"
-#include <array>
-#include <cassert>
-#include <cstring>
-#include <filesystem>
-#include <memory>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <sys/types.h>
-#include "ura/core/log.hpp"
-#include <nlohmann/json.hpp>
 
 namespace ura {
 
-std::string get_socket_path() {
-  auto runtime_dir = getenv("XDG_RUNTIME_DIR");
-  assert(runtime_dir);
-  auto dir = std::filesystem::path(runtime_dir);
-  for (int i = 0;; i++) {
-    auto socket_path = dir / std::format("ura-socket-{}", i);
-    if (std::filesystem::exists(socket_path))
-      continue;
-    setenv("URA_SOCKET_PATH", socket_path.c_str(), true);
-    return socket_path;
-  }
+void ura_ipc_handle_call_method(
+  wl_client* client,
+  wl_resource* resource,
+  const char* script
+) {
+  auto ipc = (ura_ipc*)wl_resource_get_user_data(resource);
+
+  ura_ipc_request_event event = { .resource = resource, .script = script };
+
+  wl_signal_emit(&ipc->events.request, &event);
 }
 
-std::unique_ptr<UraIPC> UraIPC::init() {
-  int ret;
-  auto ipc = std::make_unique<UraIPC>();
-  auto fd = socket(AF_UNIX, SOCK_DGRAM, 0);
-  assert(fd != -1);
-  ipc->fd = fd;
+static const struct ura_ipc_interface ura_ipc_impl = {
+  .call = ura_ipc_handle_call_method,
+  .destroy =
+    [](struct wl_client* c, struct wl_resource* r) { wl_resource_destroy(r); },
+};
 
-  ipc->socket_path = get_socket_path();
+void ura_ipc_bind(
+  struct wl_client* client,
+  void* data,
+  uint32_t version,
+  uint32_t id
+) {
+  auto ipc = (ura_ipc*)data;
 
-  auto flags = fcntl(fd, F_GETFL, 0);
-  assert(flags != -1);
-  ret = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-  assert(ret != -1);
+  wl_resource* resource =
+    wl_resource_create(client, &ura_ipc_interface, version, id);
+  if (!resource) {
+    wl_client_post_no_memory(client);
+    return;
+  }
+  wl_resource_set_implementation(resource, &ura_ipc_impl, ipc, nullptr);
+}
 
-  sockaddr_un server_addr {};
-  memset(&server_addr, 0, sizeof(server_addr));
-  server_addr.sun_family = AF_UNIX;
-  strncpy(
-    server_addr.sun_path,
-    ipc->socket_path.c_str(),
-    sizeof(server_addr.sun_path) - 1
-  );
+void handle_display_destroy(wl_listener* listener, void* data) {
+  ura_ipc* ipc = wl_container_of(listener, ipc, WLR_PRIVATE.display_destroy);
+  wl_signal_emit(&ipc->events.destroy, ipc);
+  wl_global_destroy(ipc->global);
+  free(ipc);
+}
 
-  unlink(ipc->socket_path.c_str());
-  ret = bind(fd, (sockaddr*)&server_addr, sizeof(server_addr));
-  assert(ret != -1);
+ura_ipc* ura_ipc_create(wl_display* display) {
+  auto ipc = new ura_ipc;
+  if (!ipc)
+    return nullptr;
+
+  wl_signal_init(&ipc->events.request);
+  wl_signal_init(&ipc->events.destroy);
+
+  ipc->global =
+    wl_global_create(display, &ura_ipc_interface, 1, ipc, ura_ipc_bind);
+  if (!ipc->global) {
+    free(ipc);
+    return nullptr;
+  }
+
+  ipc->WLR_PRIVATE.display_destroy.notify = handle_display_destroy;
+  wl_display_add_destroy_listener(display, &ipc->WLR_PRIVATE.display_destroy);
+
   return ipc;
 }
 
-UraIPC::~UraIPC() {
-  if (this->fd != -1)
-    close(fd);
-  unlink(this->socket_path.c_str());
-}
-
-std::optional<UraIPCRequestMessage> UraIPC::try_read() {
-  memset(&this->client_addr, 0, sizeof(this->client_addr));
-  this->client_len = sizeof(this->client_addr);
-  auto len = recvfrom(
-    this->fd,
-    &this->buf,
-    this->buf.size(),
-    0,
-    (sockaddr*)&this->client_addr,
-    &client_len
-  );
-  if (len == -1) {
-    return {};
-  }
-  auto message = std::string(buf.begin(), buf.begin() + len);
-  auto msg = UraIPCRequestMessage::from_str(message);
-  if (msg)
-    return msg.value();
-  else
-    log::error("IPC ERROR");
-  return {};
-}
-
-void UraIPC::try_send(UraIPCReplyMessage& message) {
-  auto msg = message.to_str();
-  auto status = sendto(
-    this->fd,
-    msg.data(),
-    msg.size(),
-    0,
-    (struct sockaddr*)&this->client_addr,
-    this->client_len
-  );
-  if (status == -1) {
-    perror("ipc: send failed");
-  }
-}
-
-void UraIPC::try_handle() {
-  auto request = this->try_read();
-  if (!request)
-    return;
-  auto code = request->body;
+void on_ura_ipc_request(wl_listener* listener, void* data) {
+  auto event = static_cast<ura_ipc_request_event*>(data);
   auto server = UraServer::get_instance();
-  auto reply = UraIPCReplyMessage {};
-  auto result = server->lua->execute(code);
+  auto result = server->lua->execute(event->script);
   if (result) {
-    reply.status = "success";
-    reply.body = result.value();
+    ura_ipc_send_reply(event->resource, 0, result.value().c_str());
   } else {
-    reply.status = "fail";
-    reply.body = result.error();
+    ura_ipc_send_reply(event->resource, -1, result.error().c_str());
   }
-  this->try_send(reply);
 }
-
-std::optional<UraIPCRequestMessage>
-UraIPCRequestMessage::from_str(std::string_view str) {
-  auto j = nlohmann::json::parse(str);
-  auto message = UraIPCRequestMessage {};
-  if (j.contains("method") && j["method"].is_string())
-    message.method = j["method"];
-  else
-    return {};
-  if (j.contains("body") && j["body"].is_string())
-    message.body = j["body"];
-  else
-    return {};
-  return message;
-}
-
-std::string UraIPCReplyMessage::to_str() {
-  auto j = nlohmann::json {};
-  j["status"] = this->status;
-  j["body"] = this->body;
-  return j.dump(-1, ' ', false, nlohmann::detail::error_handler_t::ignore);
-}
-
 } // namespace ura

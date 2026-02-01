@@ -2,13 +2,13 @@
 set(NAME "ura")
 set(VERSION 0.2.1)
 cmake_minimum_required(VERSION 3.10)
-project(${NAME} VERSION ${VERSION} LANGUAGES CXX)
+project(${NAME} VERSION ${VERSION} LANGUAGES C CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 26)
 
 # src
-file(GLOB_RECURSE SRC src/*.cpp)
+file(GLOB_RECURSE SRC src/*.c src/*.cpp)
 add_executable(${NAME} ${SRC})
 
 if(CMAKE_BUILD_TYPE MATCHES 'Release')

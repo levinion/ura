@@ -1,0 +1,11 @@
+[package]
+name = "ura-shell"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.100"
+clap = { version = "4.5.56", features = ["derive"] }
+wayland-backend = "0.3.12"
+wayland-client = "0.31"
+wayland-scanner = "0.31"

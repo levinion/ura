@@ -34,7 +34,7 @@ static sol::table create_table() {
 }
 
 template<typename T>
-void set(table t, std::string_view key, T&& value) {
+void set(table& t, std::string_view key, T&& value) {
   auto keys = ura::split(key, '.');
   auto current_table = t;
   for (size_t i = 0; i < keys.size() - 1; ++i) {
@@ -45,7 +45,7 @@ void set(table t, std::string_view key, T&& value) {
 }
 
 template<typename T>
-std::optional<T> get(table t, std::string_view key) {
+std::optional<T> get(table& t, std::string_view key) {
   auto keys = ura::split(key, '.');
   auto current_table = t;
   for (size_t i = 0; i < keys.size() - 1; ++i) {
@@ -60,7 +60,7 @@ std::optional<T> get(table t, std::string_view key) {
   return current_table.get<std::optional<T>>(keys.back());
 }
 
-static json to_json(object obj) {
+static json to_json(object& obj) {
   if (obj.is<sol::nil_t>())
     return {};
   if (obj.is<bool>())
@@ -105,7 +105,7 @@ static json to_json(object obj) {
   return {};
 }
 
-static flexible::object from(json j) {
+static flexible::object from(json& j) {
   auto state = ura::UraServer::get_instance()->lua->state.lua_state();
   if (j.is_null())
     return sol::nil;
