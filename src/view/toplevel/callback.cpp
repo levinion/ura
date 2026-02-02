@@ -1,4 +1,4 @@
-#include "flexible/flexible.hpp"
+#include "ura/util/flexible.hpp"
 #include "ura/view/toplevel.hpp"
 #include "ura/view/view.hpp"
 #include "ura/core/runtime.hpp"

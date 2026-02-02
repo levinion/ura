@@ -1,66 +1,18 @@
-#pragma once
-
-#include <cassert>
-#include <nlohmann/detail/value_t.hpp>
-#include <nlohmann/json_fwd.hpp>
-#include <optional>
-#include <sol/forward.hpp>
-#include <sol/object.hpp>
-#include <sol/state.hpp>
-#include <sol/types.hpp>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
+#include "ura/util/flexible.hpp"
 #include "ura/core/server.hpp"
 #include "ura/core/lua.hpp"
-#include "ura/util/util.hpp"
-#include <nlohmann/json.hpp>
-#include <sol/sol.hpp>
 
 namespace flexible {
 
-using object = sol::object;
-using table = sol::table;
-using function = sol::protected_function;
-using json = nlohmann::json;
-
-static sol::nil_t nil() {
+sol::nil_t nil() {
   return sol::nil;
 }
 
-static sol::table create_table() {
+sol::table create_table() {
   return ura::UraServer::get_instance()->lua->state.create_table();
 }
 
-template<typename T>
-void set(table& t, std::string_view key, T&& value) {
-  auto keys = ura::split(key, '.');
-  auto current_table = t;
-  for (size_t i = 0; i < keys.size() - 1; ++i) {
-    auto& k = keys[i];
-    current_table = current_table[k].get_or_create<sol::table>();
-  }
-  current_table[keys.back()] = value;
-}
-
-template<typename T>
-std::optional<T> get(table& t, std::string_view key) {
-  auto keys = ura::split(key, '.');
-  auto current_table = t;
-  for (size_t i = 0; i < keys.size() - 1; ++i) {
-    auto& k = keys[i];
-    auto next_table = current_table.get<std::optional<sol::table>>(k);
-    if (!next_table)
-      return {};
-    current_table = next_table.value();
-  }
-  if (!current_table.is<sol::table>())
-    return {};
-  return current_table.get<std::optional<T>>(keys.back());
-}
-
-static json to_json(object& obj) {
+json to_json(object& obj) {
   if (obj.is<sol::nil_t>())
     return {};
   if (obj.is<bool>())
@@ -105,7 +57,7 @@ static json to_json(object& obj) {
   return {};
 }
 
-static flexible::object from(json& j) {
+flexible::object from(json& j) {
   auto state = ura::UraServer::get_instance()->lua->state.lua_state();
   if (j.is_null())
     return sol::nil;
@@ -140,11 +92,10 @@ static flexible::object from(json& j) {
   return sol::nil;
 }
 
-static object from_str(std::string_view str) {
+object from_str(std::string_view str) {
   auto result = nlohmann::json::parse(str, nullptr, false, false);
   if (result.is_discarded())
     return {};
   return from(result);
 }
-
 } // namespace flexible

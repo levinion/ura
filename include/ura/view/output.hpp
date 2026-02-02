@@ -57,7 +57,7 @@ public:
   Vec<UraLayerShell*>& get_layer_list_by_type(zwlr_layer_shell_v1_layer type);
 
   /* Workspaces */
-  UraWorkspace* current_workspace = nullptr;
+  UraWorkspace* current_workspace();
   UraWorkspace* create_workspace();
   Vec<UraWorkspace*>& get_workspaces();
   void switch_workspace(UraWorkspace* workspace);

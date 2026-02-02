@@ -1,5 +1,5 @@
 #include "ura/view/toplevel.hpp"
-#include "flexible/flexible.hpp"
+#include "ura/util/flexible.hpp"
 #include "ura/ura.hpp"
 #include "ura/util/vec.hpp"
 #include "ura/core/runtime.hpp"
@@ -22,7 +22,7 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     server->view->get_scene_tree_or_create(this->z_index),
     xdg_toplevel->base
   );
-  this->workspace = output->current_workspace;
+  this->workspace = output->current_workspace();
   this->workspace->add(this);
   xdg_toplevel->base->surface->data = this;
   this->create_borders();
@@ -319,13 +319,13 @@ void UraToplevel::activate() {
     auto output = server->view->current_output();
     if (!output)
       return;
-    this->move_to_workspace(output->current_workspace);
+    this->move_to_workspace(output->current_workspace());
   } else {
     // indexed workspace, switch to this toplevel's workspace
     auto output = this->output();
     if (!output)
       return;
-    if (this->workspace != output->current_workspace) {
+    if (this->workspace != output->current_workspace()) {
       output->switch_workspace(this->workspace);
     }
   }

@@ -1,4 +1,4 @@
-#include "flexible/flexible.hpp"
+#include "ura/util/flexible.hpp"
 #include "ura/core/server.hpp"
 #include "ura/core/runtime.hpp"
 #include "ura/core/callback.hpp"
@@ -34,13 +34,10 @@ void UraOutput::init(wlr_output* _wlr_output) {
   auto resume = false;
 
   if (!server->view->indexed_workspaces.contains(this->name)) {
-    this->current_workspace = this->create_workspace();
+    server->view->current_workspace[this->name] = this->create_workspace();
   } else {
-    // output resume
-    this->current_workspace = this->get_workspaces().front();
     resume = true;
   }
-  this->switch_workspace(this->current_workspace);
 
   // bind render and allocator to this output
   wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
@@ -254,7 +251,7 @@ void UraOutput::destroy_workspace(UraWorkspace* workspace) {
     return;
   if (!workspace->toplevels.empty())
     return;
-  if (workspace == this->current_workspace)
+  if (workspace == this->current_workspace())
     return;
   auto& workspaces = this->get_workspaces();
   workspaces.remove(workspace);
@@ -280,12 +277,12 @@ void UraOutput::switch_workspace(UraWorkspace* workspace) {
     return;
   if (workspace->name)
     return;
-  if (workspace == this->current_workspace)
+  if (workspace == this->current_workspace())
     return;
-  this->current_workspace->disable();
-  this->current_workspace = workspace;
-  this->current_workspace->enable();
+  this->current_workspace()->disable();
   auto server = UraServer::get_instance();
+  server->view->current_workspace[this->name] = workspace;
+  this->current_workspace()->enable();
   server->state->try_execute_hook("workspace-change", {});
 }
 
@@ -326,6 +323,13 @@ void UraOutput::update_background() {
 
 uint64_t UraOutput::id() {
   return reinterpret_cast<uint64_t>(this);
+}
+
+UraWorkspace* UraOutput::current_workspace() {
+  auto server = UraServer::get_instance();
+  if (!server->view->current_workspace.contains(this->name))
+    return nullptr;
+  return server->view->current_workspace[this->name];
 }
 
 } // namespace ura

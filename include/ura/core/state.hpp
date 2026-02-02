@@ -5,7 +5,7 @@
 #include <sol/forward.hpp>
 #include <sol/sol.hpp>
 #include <unordered_map>
-#include "flexible/flexible.hpp"
+#include "ura/util/flexible.hpp"
 
 namespace ura {
 

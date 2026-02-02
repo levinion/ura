@@ -1,4 +1,4 @@
-#include "flexible/flexible.hpp"
+#include "ura/util/flexible.hpp"
 #include "ura/core/server.hpp"
 #include "ura/core/runtime.hpp"
 #include "ura/core/callback.hpp"
@@ -9,7 +9,6 @@
 #include "ura/seat/seat.hpp"
 #include "ura/seat/text_input.hpp"
 #include "ura/core/state.hpp"
-#include <regex>
 
 namespace ura {
 void UraSeat::init() {
@@ -122,13 +121,4 @@ void UraSeat::set_idle_inhibitor(bool flag) {
   wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, flag);
 }
 
-std::vector<UraPointer*> UraSeat::match_pointers(std::string& pattern) {
-  std::vector<UraPointer*> v;
-  auto reg = std::regex(pattern);
-  for (auto pointer : this->pointers) {
-    if (std::regex_match(pointer->name, reg))
-      v.push_back(pointer);
-  }
-  return v;
-}
 } // namespace ura

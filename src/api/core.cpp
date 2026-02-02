@@ -19,7 +19,7 @@
 #include <pwd.h>
 #include <unistd.h>
 #include <sys/prctl.h>
-#include "flexible/flexible.hpp"
+#include "ura/util/flexible.hpp"
 #include "ura/core/state.hpp"
 #include <fnmatch.h>
 
@@ -124,7 +124,7 @@ int get_current_workspace_index() {
   auto output = server->view->current_output();
   if (!output)
     return -1;
-  return output->current_workspace->index();
+  return output->current_workspace()->index();
 }
 
 void set_hook(std::string name, flexible::function f) {
@@ -190,7 +190,7 @@ std::optional<uint64_t> get_current_workspace() {
   auto output = server->view->current_output();
   if (!output)
     return {};
-  auto workspace = output->current_workspace;
+  auto workspace = output->current_workspace();
   return workspace->id();
 }
 
@@ -470,7 +470,8 @@ std::string get_cursor_shape() {
 void set_pointer_accel_profile(std::string profile, std::string glob) {
   auto server = UraServer::get_instance();
   for (auto pointer : server->seat->pointers) {
-    if (!fnmatch(glob.c_str(), pointer->name.c_str(), 0))
+    auto name = pointer->name();
+    if (name && !fnmatch(glob.c_str(), name.value().c_str(), 0))
       pointer->set_accel_profile(profile);
   }
 }
@@ -478,7 +479,8 @@ void set_pointer_accel_profile(std::string profile, std::string glob) {
 void set_pointer_move_speed(double speed, std::string glob) {
   auto server = UraServer::get_instance();
   for (auto pointer : server->seat->pointers) {
-    if (!fnmatch(glob.c_str(), pointer->name.c_str(), 0))
+    auto name = pointer->name();
+    if (name && !fnmatch(glob.c_str(), name.value().c_str(), 0))
       pointer->move_speed = speed;
   }
 }
@@ -486,7 +488,8 @@ void set_pointer_move_speed(double speed, std::string glob) {
 void set_pointer_scroll_speed(double speed, std::string glob) {
   auto server = UraServer::get_instance();
   for (auto pointer : server->seat->pointers) {
-    if (!fnmatch(glob.c_str(), pointer->name.c_str(), 0))
+    auto name = pointer->name();
+    if (name && !fnmatch(glob.c_str(), name.value().c_str(), 0))
       pointer->scroll_speed = speed;
   }
 }

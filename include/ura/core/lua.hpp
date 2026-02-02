@@ -20,7 +20,6 @@ public:
   std::expected<std::string, std::string> execute_file(std::string_view path);
   std::optional<std::string> find_config_path();
   std::expected<void, std::string> load_config();
-  std::optional<sol::protected_function> load_as_function(std::string_view f);
 
 private:
   void setup();

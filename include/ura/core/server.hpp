@@ -3,9 +3,8 @@
 #include <memory>
 #include "ura/ura.hpp"
 #include "ura/core/dispatcher.hpp"
-#include <sol/sol.hpp>
-#include <nlohmann/json.hpp>
 #include "ipc.hpp"
+#include "ura/util/flexible.hpp"
 
 namespace ura {
 // extern
@@ -26,7 +25,7 @@ public:
   UraGlobal() = default;
   UraGlobal(UraGlobalType&& t) : type(t) {};
   UraGlobalType type;
-  nlohmann::json userdata;
+  flexible::json userdata;
 };
 
 class UraServer {

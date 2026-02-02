@@ -69,6 +69,6 @@ void UraFocusStack::unfocus_all() {
 
 void UraFocusStack::move_to_bottom(UraToplevel* toplevel) {
   this->remove(toplevel);
-  this->stack.push_front(toplevel);
+  this->stack.insert(this->stack.begin(), toplevel);
 }
 } // namespace ura

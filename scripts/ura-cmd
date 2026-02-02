@@ -69,21 +69,21 @@ case "$1" in
 "focus-follow-mouse")
   if [[ -n "$2" ]]; then
     case "$2" in
-    "false" | "0") ura shell -c "ura.opt.focus_follow_mouse=false" ;;
-    "true" | "1") ura shell -c "ura.opt.focus_follow_mouse=true" ;;
+    "false" | "0") ura-shell -c "ura.opt.focus_follow_mouse=false" ;;
+    "true" | "1") ura-shell -c "ura.opt.focus_follow_mouse=true" ;;
     *)
       echo invalid arguments: "$2", expects: "false|true|0|1"
       exit 1
       ;;
     esac
   else
-    ura shell -c "print(ura.opt.focus_follow_mouse)"
+    ura-shell -c "print(ura.opt.focus_follow_mouse)"
   fi
   ;;
 "set-pointer-accel-profile")
   if [[ -n "$2" ]]; then
     if [[ -n "$3" ]]; then
-      ura shell -c "ura.api.set_pointer_accel_profile(\"$2\", \"$3\")"
+      ura-shell -c "ura.api.set_pointer_accel_profile(\"$2\", \"$3\")"
     else
       echo 'invalid arguments, expects: set-pointer-accel-profile <profile> <glob>'
       exit 1

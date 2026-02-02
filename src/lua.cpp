@@ -211,13 +211,4 @@ std::expected<void, std::string> Lua::load_config() {
   return {};
 }
 
-std::optional<sol::protected_function>
-Lua::load_as_function(std::string_view f) {
-  auto server = UraServer::get_instance();
-  auto result = server->lua->state.load(f);
-  if (!result.valid())
-    return {};
-  return result;
-}
-
 } // namespace ura

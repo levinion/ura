@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 #include "ura/seat/cursor.hpp"
 #include "ura/seat/keyboard.hpp"
 #include "ura/seat/pointer.hpp"
@@ -33,8 +32,6 @@ public:
   void focus(UraLayerShell* layer_shell);
   void notify_idle_activity();
   void set_idle_inhibitor(bool flag);
-
-  std::vector<UraPointer*> match_pointers(std::string& pattern);
 };
 
 } // namespace ura

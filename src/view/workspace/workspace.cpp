@@ -1,5 +1,5 @@
 #include "ura/view/workspace.hpp"
-#include "flexible/flexible.hpp"
+#include "ura/util/flexible.hpp"
 #include "ura/view/output.hpp"
 #include "ura/view/view.hpp"
 #include <algorithm>

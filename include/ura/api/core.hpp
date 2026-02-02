@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <sol/sol.hpp>
 #include <string>
-#include "flexible/flexible.hpp"
+#include "ura/util/flexible.hpp"
 
 namespace ura::api::core {
 // api

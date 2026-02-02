@@ -1,9 +1,7 @@
 #pragma once
 
-#include <algorithm>
-#include <optional>
 #include <vector>
-#include "flexible/flexible.hpp"
+#include "ura/util/flexible.hpp"
 #include "wlr/util/box.h"
 
 namespace ura {
@@ -62,85 +60,18 @@ public:
 };
 
 template<typename T>
-class Vec {
-public:
-  template<typename U>
-  void push_back(U&& x) {
-    this->v.push_back(std::forward<U>(x));
-  }
+struct Vec: public std::vector<T> {
+  using std::vector<T>::vector;
 
-  // Find the first element equals to x. Gernerally elements should be unique.
-  constexpr std::optional<size_t> search(T& x) {
-    for (int i = 0; i < this->v.size(); i++) {
-      if (x == this->v[i]) {
-        return i;
-      }
+  std::optional<T> get(int index) {
+    if (index < 0 || index >= this->size()) {
+      return {};
     }
-    return {};
+    return (*this)[index];
   }
 
-  constexpr size_t size() {
-    return this->v.size();
+  void remove(T v) {
+    std::erase(*this, v);
   }
-
-  void remove(T x) {
-    auto it = std::remove(this->v.begin(), this->v.end(), x);
-    this->v.erase(it, this->v.end());
-  }
-
-  void remove_n(int index) {
-    auto it = this->v.begin();
-    std::advance(it, index);
-    this->v.erase(it);
-  }
-
-  void push_front(T x) {
-    this->v.insert(this->v.begin(), x);
-  }
-
-  void erase(auto it) {
-    this->v.erase(it);
-  }
-
-  void pop_back() {
-    this->v.pop_back();
-  }
-
-  std::vector<T>::iterator begin() {
-    return this->v.begin();
-  }
-
-  std::vector<T>::iterator end() {
-    return this->v.end();
-  }
-
-  std::vector<T>::reverse_iterator rbegin() {
-    return this->v.rbegin();
-  }
-
-  std::vector<T>::reverse_iterator rend() {
-    return this->v.rend();
-  }
-
-  constexpr bool empty() {
-    return this->v.empty();
-  }
-
-  T& back() {
-    return this->v.back();
-  }
-
-  T& front() {
-    return this->v.front();
-  }
-
-  T* get(int index) {
-    if (index < 0 || index >= this->v.size())
-      return nullptr;
-    return &this->v[index];
-  }
-
-private:
-  std::vector<T> v;
 };
 } // namespace ura

@@ -1,4 +1,4 @@
-#include "flexible/flexible.hpp"
+#include "ura/util/flexible.hpp"
 #include "ura/core/server.hpp"
 #include "ura/seat/keyboard.hpp"
 #include "ura/seat/pointer.hpp"
