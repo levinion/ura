@@ -255,6 +255,14 @@ void UraOutput::destroy_workspace(UraWorkspace* workspace) {
     return;
   auto& workspaces = this->get_workspaces();
   workspaces.remove(workspace);
+  auto server = UraServer::get_instance();
+  auto it = std::find_if(
+    server->view->workspaces.begin(),
+    server->view->workspaces.end(),
+    [workspace](auto& ptr) { return ptr.get() == workspace; }
+  );
+  if (it != server->view->workspaces.end())
+    server->view->workspaces.erase(it);
 }
 
 UraWorkspace* UraOutput::get_workspace_at(int index) {

@@ -99,3 +99,7 @@ flexible::object get_option(std::string key);
 void set_userdata(uint64_t id, flexible::object obj);
 flexible::object get_userdata(uint64_t id);
 } // namespace ura::api::core
+
+namespace ura::api::lua {
+void print(sol::variadic_args va);
+} // namespace ura::api::lua

@@ -1,6 +1,5 @@
 #include "ura/core/lua.hpp"
-#include "ura/api/core.hpp"
-#include "ura/api/lua.hpp"
+#include "ura/api.hpp"
 #include "ura/core/server.hpp"
 #include <expected>
 #include <filesystem>
