@@ -18,7 +18,6 @@ public:
   bool is_top(UraToplevel* toplevel);
   bool contains(UraToplevel* toplevel);
   std::optional<UraToplevel*> find_active();
-  void unfocus_all();
 
 private:
   Vec<UraToplevel*> stack;

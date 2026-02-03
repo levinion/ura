@@ -12,7 +12,6 @@ void on_foreign_toplevel_handle_request_activate(
 ) {
   auto event =
     static_cast<wlr_foreign_toplevel_handle_v1_activated_event*>(data);
-  auto server = UraServer::get_instance();
   auto toplevel = static_cast<UraToplevel*>(event->toplevel->data);
   toplevel->activate();
 }

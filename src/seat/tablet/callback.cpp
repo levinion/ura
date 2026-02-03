@@ -1,4 +1,5 @@
 #include "ura/core/callback.hpp"
+#include <utility>
 #include "tablet-v2-protocol.h"
 #include "ura/core/runtime.hpp"
 #include "ura/seat/seat.hpp"
@@ -42,6 +43,8 @@ void on_tablet_button(wl_listener* listener, void* data) {
       state = ZWP_TABLET_PAD_V2_BUTTON_STATE_RELEASED;
       break;
     }
+    default:
+      std::unreachable();
   };
 
   wlr_tablet_v2_tablet_tool_notify_button(tool, event->button, state);

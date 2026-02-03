@@ -158,7 +158,6 @@ void UraLayerShell::destroy() {
     return;
   auto& layer = output->get_layer_list_by_type(this->layer);
   layer.remove(this);
-  auto toplevel = output->current_workspace()->focus_stack.top();
   if (this->layer_surface->current.keyboard_interactive
       != ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE) {
     auto toplevel = output->current_workspace()->focus_stack.top();

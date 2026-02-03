@@ -13,7 +13,7 @@ void print(sol::variadic_args args) {
     return;
   }
   std::string r;
-  for (int i = 0; i < args.size() - 1; i++) {
+  for (std::size_t i = 0; i < args.size() - 1; i++) {
     r += state["tostring"](args[i]).get<std::string>() + ' ';
   }
   r += state["tostring"](args[args.size() - 1]).get<std::string>();

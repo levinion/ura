@@ -42,8 +42,6 @@ std::unique_ptr<Lua> Lua::init() {
 #define LUAAPI(name, f) flexible::set(this->ura, name, f)
 
 void Lua::setup() {
-  auto server = UraServer::get_instance();
-
   // api
   LUAAPI("api.terminate", api::core::terminate);
   LUAAPI("api.reload", api::core::reload);

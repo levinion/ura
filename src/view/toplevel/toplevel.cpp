@@ -294,7 +294,6 @@ void UraToplevel::move_to_workspace(int index) {
 }
 
 int UraToplevel::index() {
-  auto server = UraServer::get_instance();
   int index = 0;
   auto& toplevels = this->workspace->toplevels;
   for (auto toplevel : toplevels) {
@@ -416,7 +415,6 @@ void UraToplevel::resize_borders(int width, int height) {
 }
 
 void UraToplevel::close() {
-  auto server = UraServer::get_instance();
   wlr_xdg_toplevel_send_close(this->xdg_toplevel);
   auto output = this->output();
   if (output)
@@ -525,7 +523,6 @@ void UraToplevel::set_border_color(std::array<float, 4>& color) {
 }
 
 void UraToplevel::center() {
-  auto server = UraServer::get_instance();
   auto area = this->workspace->geometry();
   if (!area)
     return;
@@ -597,7 +594,6 @@ UraOutput* UraToplevel::output() {
 }
 
 double UraToplevel::scale() {
-  auto server = UraServer::get_instance();
   auto output = this->output();
   if (output)
     return output->scale() * this->workspace->scale;

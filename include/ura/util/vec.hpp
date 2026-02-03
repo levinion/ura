@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <vector>
 #include "ura/util/flexible.hpp"
 #include "wlr/util/box.h"
@@ -64,7 +65,7 @@ struct Vec: public std::vector<T> {
   using std::vector<T>::vector;
 
   std::optional<T> get(int index) {
-    if (index < 0 || index >= this->size()) {
+    if (index < 0 || static_cast<std::size_t>(index) >= this->size()) {
       return {};
     }
     return (*this)[index];

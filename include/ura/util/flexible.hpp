@@ -28,7 +28,7 @@ template<typename T>
 void set(table& t, std::string_view key, T&& value) {
   auto keys = ura::split(key, '.');
   auto current_table = t;
-  for (size_t i = 0; i < keys.size() - 1; ++i) {
+  for (std::size_t i = 0; i < keys.size() - 1; ++i) {
     auto& k = keys[i];
     current_table = current_table[k].get_or_create<sol::table>();
   }
@@ -39,7 +39,7 @@ template<typename T>
 std::optional<T> get(table& t, std::string_view key) {
   auto keys = ura::split(key, '.');
   auto current_table = t;
-  for (size_t i = 0; i < keys.size() - 1; ++i) {
+  for (std::size_t i = 0; i < keys.size() - 1; ++i) {
     auto& k = keys[i];
     auto next_table = current_table.get<std::optional<sol::table>>(k);
     if (!next_table)

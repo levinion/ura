@@ -73,7 +73,7 @@ inline std::optional<uint64_t> parse_keymap(std::string_view pattern) {
     return {};
   uint32_t mod = 0;
   if (keys.size() > 1) {
-    for (int i = 0; i < keys.size() - 1; i++) {
+    for (std::size_t i = 0; i < keys.size() - 1; i++) {
       auto m = keys[i];
       if (m == "super" || m == "mod" || m == "cmd" || m == "command"
           || m == "logo" || m == "win") {

@@ -44,7 +44,7 @@ void handle_display_destroy(wl_listener* listener, void* data) {
   ura_ipc* ipc = wl_container_of(listener, ipc, WLR_PRIVATE.display_destroy);
   wl_signal_emit(&ipc->events.destroy, ipc);
   wl_global_destroy(ipc->global);
-  free(ipc);
+  delete ipc;
 }
 
 ura_ipc* ura_ipc_create(wl_display* display) {
@@ -58,7 +58,7 @@ ura_ipc* ura_ipc_create(wl_display* display) {
   ipc->global =
     wl_global_create(display, &ura_ipc_interface, 1, ipc, ura_ipc_bind);
   if (!ipc->global) {
-    free(ipc);
+    delete ipc;
     return nullptr;
   }
 

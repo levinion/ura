@@ -27,8 +27,7 @@ target_compile_definitions(${NAME} PRIVATE ${VERSION_MACRO_NAME}="${VERSION}")
 
 target_compile_definitions(${NAME} PRIVATE WLR_USE_UNSTABLE)
 
-# disable exception
-# target_compile_options(${NAME} PRIVATE -fno-exceptions)
+target_compile_options(${NAME} PRIVATE -Wall)
 
 find_package(PkgConfig REQUIRED)
 

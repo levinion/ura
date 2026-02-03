@@ -6,7 +6,6 @@
 
 namespace ura {
 void on_layer_shell_new_surface(wl_listener* listener, void* data) {
-  auto server = UraServer::get_instance();
   auto layer_surface = static_cast<wlr_layer_surface_v1*>(data);
   auto layer_shell = new UraLayerShell {};
   layer_shell->init(layer_surface);

@@ -60,7 +60,6 @@ void terminate() {
 }
 
 void close_window(uint64_t id) {
-  auto server = UraServer::get_instance();
   auto toplevel = UraToplevel::from(id);
   if (toplevel) {
     toplevel->close();
@@ -165,7 +164,6 @@ void focus_window(uint64_t id) {
 }
 
 void destroy_workspace(uint64_t id) {
-  auto server = UraServer::get_instance();
   auto workspace = UraWorkspace::from(id);
   auto output = workspace->output();
   if (workspace)
@@ -195,7 +193,6 @@ std::optional<uint64_t> get_current_workspace() {
 }
 
 std::optional<uint64_t> get_window(uint64_t workspace_id, int index) {
-  auto server = UraServer::get_instance();
   auto workspace = UraWorkspace::from(workspace_id);
   if (!workspace)
     return {};
@@ -206,7 +203,6 @@ std::optional<uint64_t> get_window(uint64_t workspace_id, int index) {
 }
 
 std::optional<uint64_t> get_indexed_workspace(uint64_t output_id, int index) {
-  auto server = UraServer::get_instance();
   auto output = UraOutput::from(output_id);
   if (!output)
     return {};
@@ -225,7 +221,6 @@ std::optional<uint64_t> get_named_workspace(std::string name) {
 }
 
 void activate_window(uint64_t id) {
-  auto server = UraServer::get_instance();
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
@@ -233,7 +228,6 @@ void activate_window(uint64_t id) {
 }
 
 void move_window(uint64_t id, int x, int y) {
-  auto server = UraServer::get_instance();
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
@@ -241,7 +235,6 @@ void move_window(uint64_t id, int x, int y) {
 }
 
 void resize_window(uint64_t id, int width, int height) {
-  auto server = UraServer::get_instance();
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
@@ -349,7 +342,6 @@ std::string expand(std::string path) {
 }
 
 void set_output_dpms(uint64_t id, bool flag) {
-  auto server = UraServer::get_instance();
   auto output = UraOutput::from(id);
   if (output)
     output->set_dpms_mode(flag);

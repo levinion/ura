@@ -59,7 +59,7 @@ void UraWorkspace::add(UraToplevel* toplevel) {
 }
 
 void UraWorkspace::remove(UraToplevel* toplevel) {
-  this->toplevels.remove(toplevel);
+  std::erase(this->toplevels, toplevel);
   this->focus_stack.remove(toplevel);
 }
 

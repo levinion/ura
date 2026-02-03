@@ -44,14 +44,14 @@ public:
     epoll_event event {};
     event.events = EPOLLIN;
     event.data.fd = fd;
-    auto ret = epoll_ctl(this->fd, EPOLL_CTL_ADD, fd, &event);
+    [[maybe_unused]] auto ret = epoll_ctl(this->fd, EPOLL_CTL_ADD, fd, &event);
     assert(ret != -1);
     this->tasks[fd] = callback;
   }
 
   void remove_task(int fd) {
     assert(this->tasks.contains(fd));
-    auto ret = epoll_ctl(this->fd, EPOLL_CTL_DEL, fd, nullptr);
+    [[maybe_unused]] auto ret = epoll_ctl(this->fd, EPOLL_CTL_DEL, fd, nullptr);
     assert(ret != -1);
     this->tasks.erase(fd);
   }
@@ -68,13 +68,13 @@ public:
     timer_spec.it_interval.tv_sec = 0;
     timer_spec.it_interval.tv_nsec = 0;
     // flag 0 means relative time
-    auto ret = timerfd_settime(fd, 0, &timer_spec, nullptr);
+    [[maybe_unused]] auto ret = timerfd_settime(fd, 0, &timer_spec, nullptr);
     assert(ret != -1);
 
     this->add_task(fd, [=, this]() {
       // consume the event
       uint64_t expirations;
-      auto n = read(fd, &expirations, sizeof(expirations));
+      [[maybe_unused]] auto n = read(fd, &expirations, sizeof(expirations));
       assert(n == sizeof(expirations));
       bool success = callback();
       this->remove_task(fd);

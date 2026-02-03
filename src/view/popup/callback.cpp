@@ -6,7 +6,6 @@
 
 namespace ura {
 void on_new_popup(wl_listener* listener, void* data) {
-  auto server = UraServer::get_instance();
   auto xdg_popup = static_cast<wlr_xdg_popup*>(data);
   auto popup = new UraPopup {};
   if (!popup->init(xdg_popup)) {

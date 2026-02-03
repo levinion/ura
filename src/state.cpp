@@ -4,7 +4,6 @@
 namespace ura {
 
 bool UraState::try_execute_keybinding(uint64_t id) {
-  auto server = UraServer::get_instance();
   if (!this->contains_keybinding(id))
     return false;
   this->keymaps[this->keymap_mode][id]({});
@@ -12,7 +11,6 @@ bool UraState::try_execute_keybinding(uint64_t id) {
 }
 
 bool UraState::contains_keybinding(uint64_t id) {
-  auto server = UraServer::get_instance();
   if (!this->keymaps.contains(this->keymap_mode))
     return false;
   if (!this->keymaps[this->keymap_mode].contains(id))

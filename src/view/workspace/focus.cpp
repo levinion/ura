@@ -59,14 +59,6 @@ std::optional<UraToplevel*> UraFocusStack::find_active() {
   return {};
 }
 
-void UraFocusStack::unfocus_all() {
-  // find last of item.surface != client.surface
-  for (auto it = this->stack.rbegin(); it != this->stack.rend(); it++) {
-    if ((*it)->is_focused())
-      (*it)->unfocus();
-  }
-}
-
 void UraFocusStack::move_to_bottom(UraToplevel* toplevel) {
   this->remove(toplevel);
   this->stack.insert(this->stack.begin(), toplevel);

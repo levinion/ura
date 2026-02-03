@@ -1,2 +1,2 @@
 CompileFlags:
-  Add: [-std=c++26]
+  Add: ["-std=c++26", "-Wall"]

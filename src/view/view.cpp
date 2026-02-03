@@ -1,4 +1,5 @@
 #include "ura/view/view.hpp"
+#include <utility>
 #include "ura/view/client.hpp"
 #include "ura/seat/cursor.hpp"
 #include "ura/seat/seat.hpp"
@@ -9,7 +10,6 @@ namespace ura {
 
 std::unique_ptr<UraView> UraView::init() {
   auto view = std::make_unique<UraView>();
-  auto server = UraServer::get_instance();
   view->scene = wlr_scene_create();
   return view;
 }
@@ -104,6 +104,8 @@ wlr_scene_tree* UraView::get_layer_by_type(zwlr_layer_shell_v1_layer type) {
     case ZWLR_LAYER_SHELL_V1_LAYER_TOP:
       layer = server->view->get_scene_tree_or_create(UraSceneLayer::Top);
       break;
+    default:
+      std::unreachable();
   }
   return layer;
 }

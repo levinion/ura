@@ -7,7 +7,6 @@
 namespace ura {
 
 void on_new_output(wl_listener* listener, void* data) {
-  auto server = UraServer::get_instance();
   auto _wlr_output = static_cast<wlr_output*>(data);
   auto output = new UraOutput();
   output->init(_wlr_output);

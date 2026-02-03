@@ -58,7 +58,7 @@ clean-all: clean clean-dev
 debug:
 	$(MAKE) BUILD_TYPE=Debug
 
-.PHONY: sudo-install install init build clean-dev clean clean-all debug
+.PHONY: sudo-install install init build build-shell clean-dev clean clean-all debug
 
 include/protocols:
 	mkdir -p $@
