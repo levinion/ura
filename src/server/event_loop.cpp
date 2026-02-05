@@ -270,6 +270,8 @@ void UraServer::setup_others() {
   wlr_viewporter_create(this->display);
   wlr_single_pixel_buffer_manager_v1_create(this->display);
   wlr_screencopy_manager_v1_create(this->display);
+  wlr_ext_image_copy_capture_manager_v1_create(this->display, 1);
+  wlr_ext_output_image_capture_source_manager_v1_create(this->display, 1);
   wlr_data_control_manager_v1_create(this->display);
   wlr_presentation_create(this->display, this->backend, 2);
   wlr_alpha_modifier_v1_create(this->display);
