@@ -63,31 +63,6 @@ std::optional<UraClient> UraView::foreground_client() {
   return client;
 }
 
-UraWorkspace* UraView::get_named_workspace_or_create(std::string_view name) {
-  // TODO: this should be removed when unordered_map supports string_view as a read key
-  auto key = std::string(name);
-  if (!this->named_workspaces.contains(key)) {
-    this->create_named_workspace(key);
-  }
-  return this->named_workspaces[key];
-}
-
-void UraView::create_named_workspace(std::string_view name) {
-  auto key = std::string(name);
-  auto workspace = UraWorkspace::init();
-  workspace->name = key;
-  this->named_workspaces[key] = workspace.get();
-  this->workspaces.push_back(std::move(workspace));
-}
-
-UraWorkspace* UraView::get_named_workspace(std::string_view name) {
-  // TODO: this should be removed when unordered_map supports string_view as a read key
-  auto key = std::string(name);
-  if (!this->named_workspaces.contains(key))
-    return nullptr;
-  return this->named_workspaces[key];
-}
-
 wlr_scene_tree* UraView::get_layer_by_type(zwlr_layer_shell_v1_layer type) {
   wlr_scene_tree* layer;
   auto server = UraServer::get_instance();

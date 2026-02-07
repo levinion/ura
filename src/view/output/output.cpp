@@ -7,13 +7,16 @@
 #include "ura/util/vec.hpp"
 #include "ura/view/layer_shell.hpp"
 #include "ura/view/output.hpp"
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <functional>
+#include <ranges>
 #include "ura/view/view.hpp"
 #include "ura/view/workspace.hpp"
 #include "ura/core/state.hpp"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
+#include "ura/seat/seat.hpp"
 
 namespace ura {
 
@@ -30,14 +33,6 @@ void UraOutput::init(wlr_output* _wlr_output) {
     0,
     hex2rgba("#1D727A").value().data()
   );
-
-  auto resume = false;
-
-  if (!server->view->indexed_workspaces.contains(this->name)) {
-    server->view->current_workspace[this->name] = this->create_workspace();
-  } else {
-    resume = true;
-  }
 
   // bind render and allocator to this output
   wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
@@ -70,6 +65,7 @@ void UraOutput::init(wlr_output* _wlr_output) {
     scene_output
   );
 
+  auto resume = server->view->outputs.contains(this->name);
   server->view->outputs[name] = this;
 
   auto configuration = wlr_output_configuration_v1_create();
@@ -83,10 +79,12 @@ void UraOutput::init(wlr_output* _wlr_output) {
 
   auto args = flexible::create_table();
   args.set("id", this->id());
+
   if (resume)
     server->state->try_execute_hook("output-resume", args);
-  else
+  else {
     server->state->try_execute_hook("output-new", args);
+  }
 
   server->globals[this->id()] = UraGlobalType::Output;
 }
@@ -236,64 +234,6 @@ Vec4<int> UraOutput::logical_geometry() {
   return { 0, 0, width, height };
 }
 
-Vec<UraWorkspace*>& UraOutput::get_workspaces() {
-  auto server = UraServer::get_instance();
-  assert(server->view->indexed_workspaces.contains(this->name));
-  return server->view->indexed_workspaces[this->name];
-}
-
-/* destroy workspace unless it:
- - is nonexistant
- - is active (current workspace)
- - has no toplevels */
-void UraOutput::destroy_workspace(UraWorkspace* workspace) {
-  if (!workspace)
-    return;
-  if (!workspace->toplevels.empty())
-    return;
-  if (workspace == this->current_workspace())
-    return;
-  auto& workspaces = this->get_workspaces();
-  workspaces.remove(workspace);
-  auto server = UraServer::get_instance();
-  auto it = std::find_if(
-    server->view->workspaces.begin(),
-    server->view->workspaces.end(),
-    [workspace](auto& ptr) { return ptr.get() == workspace; }
-  );
-  if (it != server->view->workspaces.end())
-    server->view->workspaces.erase(it);
-}
-
-UraWorkspace* UraOutput::get_workspace_at(int index) {
-  auto& workspaces = this->get_workspaces();
-  auto workspace = workspaces.get(index);
-  return workspace ? *workspace : nullptr;
-}
-
-UraWorkspace* UraOutput::create_workspace() {
-  auto workspace = UraWorkspace::init();
-  workspace->output_name = this->name;
-  auto server = UraServer::get_instance();
-  server->view->indexed_workspaces[this->name].push_back(workspace.get());
-  server->view->workspaces.push_back(std::move(workspace));
-  return this->get_workspaces().back();
-}
-
-void UraOutput::switch_workspace(UraWorkspace* workspace) {
-  if (!workspace)
-    return;
-  if (workspace->name)
-    return;
-  if (workspace == this->current_workspace())
-    return;
-  this->current_workspace()->disable();
-  auto server = UraServer::get_instance();
-  server->view->current_workspace[this->name] = workspace;
-  this->current_workspace()->enable();
-  server->state->try_execute_hook("workspace-change", {});
-}
-
 void UraOutput::set_dpms_mode(bool flag) {
   wlr_output_state wlr_state {};
   this->dpms_on = flag;
@@ -333,11 +273,37 @@ uint64_t UraOutput::id() {
   return reinterpret_cast<uint64_t>(this);
 }
 
-UraWorkspace* UraOutput::current_workspace() {
+void UraOutput::set_tags(Vec<std::string>&& tags) {
+  this->tags = tags;
   auto server = UraServer::get_instance();
-  if (!server->view->current_workspace.contains(this->name))
-    return nullptr;
-  return server->view->current_workspace[this->name];
+  for (auto toplevel : server->view->toplevels
+         | std::views::filter([this](auto v) { return v->output() == this; })) {
+    if (toplevel->is_tag_matched()) {
+      toplevel->map();
+    } else {
+      toplevel->unmap();
+    }
+  }
+  this->focus_lru();
+
+  auto args = flexible::create_table();
+  args.add("id", this->id());
+  server->state->try_execute_hook("output-tags-change", args);
+}
+
+void UraOutput::focus_lru() {
+  auto server = UraServer::get_instance();
+  auto toplevels = server->view->toplevels
+    | std::views::filter([](auto v) { return v->mapped(); })
+    | std::ranges::to<std::vector<UraToplevel*>>();
+  if (toplevels.empty()) {
+    server->seat->unfocus();
+    return;
+  }
+  std::sort(toplevels.begin(), toplevels.end(), [](auto a, auto b) {
+    return a->lru > b->lru;
+  });
+  server->seat->focus(toplevels.front());
 }
 
 } // namespace ura

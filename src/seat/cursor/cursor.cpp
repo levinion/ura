@@ -138,8 +138,6 @@ void UraCursor::process_motion(
 ) {
   auto server = UraServer::get_instance();
   auto seat = server->seat->seat;
-  auto focus_follow_mouse =
-    server->state->get_option<bool>("focus_follow_mouse").value_or(true);
 
   // get foreground surface
   auto client = server->view->foreground_client();
@@ -159,36 +157,48 @@ void UraCursor::process_motion(
       );
   }
 
-  assert(surface == server->seat->seat->pointer_state.focused_surface);
+  if (surface) {
+    wlr_seat_pointer_notify_motion(
+      seat,
+      time_msec,
+      client->sx.value(),
+      client->sy.value()
+    );
+
+    wlr_relative_pointer_manager_v1_send_relative_motion(
+      server->relative_pointer_manager,
+      server->seat->seat,
+      static_cast<uint64_t>(time_msec) * 1000,
+      dx,
+      dy,
+      dx_unaccel,
+      dy_unaccel
+    );
+  }
+
+  auto focus_follow_mouse =
+    server->state->get_option<bool>("focus_follow_mouse").value_or(true);
 
   // focus if move to another surface
   if (focus_follow_mouse) {
+    static bool focus_inhibitor = false;
+    if (focus_inhibitor)
+      return;
+    focus_inhibitor = true;
     if (!surface) {
       if (server->state->get_option<bool>("unfocus_on_leave").value_or(false))
         server->seat->unfocus();
-    } else
+    } else {
       server->seat->focus(client.value());
+    }
+    server->dispatcher->schedule_task(
+      []() {
+        focus_inhibitor = false;
+        return true;
+      },
+      100
+    );
   }
-
-  if (!surface)
-    return;
-
-  wlr_seat_pointer_notify_motion(
-    seat,
-    time_msec,
-    client->sx.value(),
-    client->sy.value()
-  );
-
-  wlr_relative_pointer_manager_v1_send_relative_motion(
-    server->relative_pointer_manager,
-    server->seat->seat,
-    static_cast<uint64_t>(time_msec) * 1000,
-    dx,
-    dy,
-    dx_unaccel,
-    dy_unaccel
-  );
 }
 
 void UraCursor::process_button(wlr_pointer_button_event* event) {

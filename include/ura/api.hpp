@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <sol/sol.hpp>
 #include <string>
+#include <vector>
 #include "ura/util/flexible.hpp"
 
 namespace ura::api::core {
@@ -26,12 +27,8 @@ void set_keymap_mode(std::string mode);
 std::string get_keymap_mode();
 // win
 void close_window(uint64_t id);
-void move_window_to_workspace(uint64_t id, uint64_t workspace_id);
 std::optional<uint64_t> get_current_window();
-std::optional<uint64_t> get_window(uint64_t workspace_id, int index);
-flexible::object get_windows(uint64_t workspace_id);
 std::optional<uint64_t> get_window_output(uint64_t id);
-std::optional<int> get_window_index(uint64_t id);
 void focus_window(uint64_t id);
 void set_window_z_index(uint64_t id, int z);
 void set_window_draggable(uint64_t id, bool flag);
@@ -40,14 +37,15 @@ std::optional<bool> is_window_draggable(uint64_t id);
 void activate_window(uint64_t id);
 void move_window(uint64_t id, int x, int y);
 void resize_window(uint64_t id, int width, int height);
-void swap_window(uint64_t id, uint64_t target);
-void insert_window(uint64_t id, uint64_t target);
 std::optional<std::string> get_window_app_id(uint64_t id);
 std::optional<std::string> get_window_title(uint64_t id);
 void set_window_fullscreen(uint64_t id, bool flag);
 std::optional<bool> is_window_fullscreen(uint64_t id);
 flexible::object get_window_geometry(uint64_t id);
-std::optional<uint64_t> get_window_workspace(uint64_t id);
+void set_window_tags(uint64_t id, std::vector<std::string> tags);
+flexible::object get_window_tags(uint64_t id);
+flexible::object get_all_windows();
+
 // input
 void set_keyboard_repeat(int rate, int delay);
 void set_pointer_accel_profile(std::string profile, std::string glob);
@@ -60,29 +58,18 @@ void set_cursor_visible(bool flag);
 bool is_cursor_visible();
 void set_cursor_shape(std::string name);
 std::string get_cursor_shape();
-// ws
-void create_indexed_workspace();
-void create_named_workspace(std::string name);
-void switch_workspace(uint64_t id);
-void destroy_workspace(uint64_t id);
-std::optional<uint64_t> get_current_workspace();
-std::optional<uint64_t> get_indexed_workspace(uint64_t output_id, int index);
-std::optional<uint64_t> get_named_workspace(std::string name);
-std::optional<int> get_workspace_index(uint64_t id);
-std::optional<std::string> get_workspace_name(uint64_t id);
-std::optional<bool> is_workspace_named(uint64_t id);
-flexible::object get_workspaces();
-flexible::object get_indexed_workspaces(uint64_t output_id);
-flexible::object get_named_workspaces();
-void set_workspace_scale(uint64_t id, double scale);
 
 // output
 std::optional<uint64_t> get_current_output();
 std::optional<uint64_t> get_output(std::string name);
+std::optional<std::string> get_output_name(uint64_t id);
 void set_output_dpms(uint64_t id, bool flag);
 flexible::object get_output_logical_geometry(uint64_t id);
 flexible::object get_output_usable_geometry(uint64_t id);
 std::optional<float> get_output_scale(uint64_t id);
+void set_output_tags(uint64_t id, std::vector<std::string> tags);
+flexible::object get_output_tags(uint64_t id);
+
 // fn
 void set_env(std::string name, std::string value);
 void unset_env(std::string name);

@@ -38,29 +38,13 @@ ura.api = {
   -- win
   --- @param id integer
   close_window = function(id) end,
-  --- @param id integer
-  --- @param workspace_id integer
-  move_window_to_workspace = function(id, workspace_id) end,
   --- @return integer|nil
   get_current_window = function() end,
-  --- @param workspace_id integer
-  --- @param index integer
-  --- @return integer|nil
-  get_window = function(workspace_id, index) end,
-  --- @param id integer
-  --- @return integer|nil
-  get_window_index = function(id) end,
-  --- @param id integer
-  --- @return integer|nil
-  get_window_workspace = function(id) end,
   --- @param id integer
   --- @return integer|nil
   get_window_output = function(id) end,
   --- @param id integer
   focus_window = function(id) end,
-  --- @param workspace_id integer
-  --- @return table|nil
-  get_windows = function(workspace_id) end,
 
   --- Clear = -50,
   --- Background = 0,
@@ -101,20 +85,21 @@ ura.api = {
   --- @param height integer
   resize_window = function(id, width, height) end,
   --- @param id integer
-  --- @param target integer
-  swap_window = function(id, target) end,
-  --- @param id integer
-  --- @param target integer
-  insert_window = function(id, target) end,
-  ---@param id integer
-  ---@param flag boolean
+  --- @param flag boolean
   set_window_fullscreen = function(id, flag) end,
-  ---@param id integer
-  ---@return boolean|nil
+  --- @param id integer
+  --- @return boolean|nil
   is_window_fullscreen = function(id) end,
-  ---@param id any
-  ---@return table|nil
+  --- @param id any
+  --- @return table|nil
   get_window_geometry = function(id) end,
+  --- @param id integer
+  --- @param tags table<string>
+  set_window_tags = function(id, tags) end,
+  --- @param id integer
+  get_window_tags = function(id) end,
+  --- @return table<integer>
+  get_all_windows = function() end,
 
   -- input
   --- @param rate integer
@@ -145,49 +130,14 @@ ura.api = {
   --- @return string
   get_cursor_shape = function() end,
 
-  -- ws
-  create_indexed_workspace = function() end,
-  ---@param name string
-  create_named_workspace = function(name) end,
-  --- @param id integer
-  switch_workspace = function(id) end,
-  --- @param id integer
-  destroy_workspace = function(id) end,
-  --- @return integer|nil
-  get_current_workspace = function() end,
-  --- @param output_id integer
-  --- @param index integer
-  --- @return integer|nil
-  get_indexed_workspace = function(output_id, index) end,
-  --- @param name string
-  --- @return integer|nil
-  get_named_workspace = function(name) end,
-  --- @param id integer
-  --- @return integer|nil
-  get_workspace_index = function(id) end,
-  --- @param id integer
-  --- @return boolean|nil
-  is_workspace_named = function(id) end,
-  --- @param id integer
-  --- @return string|nil
-  get_workspace_name = function(id) end,
-  --- @return table|nil
-  get_workspaces = function() end,
-  --- @param output_id integer
-  --- @return table|nil
-  get_indexed_workspaces = function(output_id) end,
-  --- @return table|nil
-  get_named_workspaces = function() end,
-  --- @param id integer
-  --- @param scale number
-  set_workspace_scale = function(id, scale) end,
-
   -- output
   --- @return integer|nil
   get_current_output = function() end,
   --- @param name string
   --- @return integer|nil
   get_output = function(name) end,
+  --- @return string|nil
+  get_output_name = function() end,
   --- @param id integer
   --- @param flag boolean
   set_output_dpms = function(id, flag) end,
@@ -200,6 +150,12 @@ ura.api = {
   --- @param id integer
   --- @return number|nil
   get_output_scale = function(id) end,
+  --- @param id integer
+  --- @param tags table< string>
+  set_output_tags = function(id, tags) end,
+  --- @param id integer
+  --- @return table<string>
+  get_output_tags = function(id) end,
 
   -- fn
   --- @param name string

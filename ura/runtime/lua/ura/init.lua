@@ -3,7 +3,7 @@ ura.fn = require("ura.fn")
 ura.hook = require("ura.hook")
 ura.keymap = require("ura.keymap")
 ura.layout = require("ura.layout")
-ura.win = require("ura.win")
+ura.class = require("ura.class")
 ura.cmd = require("ura.cmd")
 
 ura.fn.load_dir("/usr/share/ura/plugins")

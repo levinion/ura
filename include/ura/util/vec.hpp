@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <vector>
 #include "ura/util/flexible.hpp"
@@ -73,6 +74,18 @@ struct Vec: public std::vector<T> {
 
   void remove(T v) {
     std::erase(*this, v);
+  }
+
+  bool contains(T v) {
+    return std::find(this->begin(), this->end(), v) != this->end();
+  }
+
+  flexible::object to_table() {
+    auto table = flexible::create_table();
+    for (auto v : *this) {
+      table.add(v);
+    }
+    return table;
   }
 };
 } // namespace ura

@@ -4,24 +4,19 @@
 ura.layout = {
   ---@type table
   LAYOUTS = {},
-  ---@param id integer
-  apply = function(id) end,
-  ---@param id integer
-  enter = function(id) end,
-  ---@param id integer
-  leave = function(id) end,
+  ---@param win UraWindow
+  apply = function(win) end,
+  ---@param win UraWindow
+  enter = function(win) end,
+  ---@param win UraWindow
+  leave = function(win) end,
   ---@param name string
   ---@param opt table
   register = function(name, opt) end,
-  ---@param win integer
+  ---@param win UraWindow
   ---@param layout string
   set = function(win, layout) end,
-  ---@param win integer
+  ---@param win UraWindow
   ---@return string|nil
   get = function(win) end,
-  ---@param id integer
-  ---@param layout string
-  toggle = function(id, layout) end,
-  ---@param id integer
-  apply_workspace = function(id) end,
 }

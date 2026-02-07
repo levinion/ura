@@ -47,11 +47,9 @@ void on_session_lock_unlock(wl_listener* listener, void* data) {
   server->seat->unfocus();
   wlr_scene_node_set_enabled(&lock->scene_tree->node, false);
   server->seat->cursor->show();
-  if (server->view->current_output()->current_workspace()->focus_stack.top())
-    server->seat->focus(server->view->current_output()
-                          ->current_workspace()
-                          ->focus_stack.top()
-                          .value());
+  auto output = server->view->current_output();
+  if (output)
+    output->focus_lru();
 }
 
 void on_session_lock_new_surface(wl_listener* listener, void* data) {

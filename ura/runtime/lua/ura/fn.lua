@@ -8,14 +8,6 @@ function M.merge(dst, src)
   end
 end
 
----@param id integer
----@param tbl table
-function M.update_userdata(id, tbl)
-  local userdata = ura.api.get_userdata(id) or {}
-  ura.fn.merge(userdata, tbl)
-  ura.api.set_userdata(id, userdata)
-end
-
 ---@param variable any
 ---@param path string
 ---@param typ type
@@ -106,6 +98,46 @@ function M.load_dir(path)
     ura.api.prepend_package_path(plugin .. "/lua/?/init.lua")
     ura.api.prepend_package_path(plugin .. "/lua/?.lua")
   end
+end
+
+---@param t table
+---@param value any
+---@return boolean
+function M.icontains(t, value)
+  for _, v in ipairs(t) do
+    if v == value then
+      return true
+    end
+  end
+  return false
+end
+
+---@param t table
+---@param value any
+---@return boolean
+function M.contains(t, value)
+  return t[value] ~= nil
+end
+
+---@param tags table<string>
+---@return table<UraWindow>
+function M.get_windows_by_tags(tags)
+  local wins = ura.api.get_all_windows() or {}
+  local t = {}
+  for _, win in ipairs(wins) do
+    local w = ura.class.UraWindow:new(win)
+    local contains = false
+    for _, tag in ipairs(tags) do
+      if M.icontains(w:tags(), tag) then
+        contains = true
+        break
+      end
+    end
+    if contains then
+      table.insert(t, w)
+    end
+  end
+  return t
 end
 
 return M

@@ -2,8 +2,6 @@
 
 <img src="/assets/icon.png" style="width:30%">
 
-[中文文档](/docs/zh-cn/README-zh_CN.md)
-
 **Ura** is a brand-new Wayland compositor built on **wlroots**, written in **C++**, and uses **Lua (LuaJIT)** as its configuration system.
 
 The strength of Ura lies in its high customizability. Through a **hook mechanism**, it exposes part of the window manager’s functionality, allowing you to inject code into specific workflows.
@@ -121,12 +119,13 @@ The `window-new` hook is triggered when a new top-level window is created and fo
 
 ```lua
 ura.hook.set("window-new", function(e)
-	local app_id = ura.api.get_window_app_id(e.id)
+	local win = ura.class.UraWindow:new(e.id)
+	local app_id = win:app_id()
 	assert(app_id)
 	if string.match(app_id, "fzfmenu") then
-		ura.layout.set(e.id, "floating")
-		ura.api.resize_window(e.id, 1000, 600)
-		ura.win.center(e.id)
+		win:set_layout("floating")
+		win:resize(1000, 600)
+		win:center()
 	end
 end)
 ```
@@ -139,24 +138,26 @@ The layout module in Ura lets you create custom layout algorithms. This is how u
 
 ```lua
 ura.layout.register("fullscreen", {
+  ---@param win UraWindow
   enter = function(win)
-    ura.api.set_window_draggable(win, false)
-    ura.api.set_window_z_index(win, 250)
-    ura.api.set_window_fullscreen(win, true)
+    win:set_draggable(false)
+    win:set_z_index(250)
+    win:set_fullscreen(true)
   end,
+  ---@param win UraWindow
   apply = function(win)
-    local output = ura.api.get_window_output(win)
+    local output = win:output()
     assert(output)
-    local geo = ura.api.get_output_logical_geometry(output)
+    local geo = output:logical_geometry()
     assert(geo)
-    ura.api.resize_window(win, geo.width, geo.height)
-    ura.api.move_window(win, geo.x, geo.y)
+    win:resize(geo.width, geo.height)
+    win:move(geo.x, geo.y)
   end,
+  ---@param win UraWindow
   leave = function(win)
-    ura.api.set_window_fullscreen(win, false)
+    win:set_fullscreen(false)
   end,
 })
-end)
 ```
 
 Used with the window-new hook, this allows you to apply a custom layout algorithm when a new window is created. The builtin layout algorithms include tiling, floating, and fullscreen. The buildin layout algorithms are at [layout](/ura/plugins/builtin/lua/builtin/layout/)

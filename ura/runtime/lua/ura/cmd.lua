@@ -1,147 +1,65 @@
 local M = {}
 
----@param layout string
-function M.toggle_layout(layout)
-  local win = ura.api.get_current_window()
-  assert(win)
-  ura.layout.toggle(win, layout)
+local function get_distance(current_geo, target_geo, direction)
+  local dx = (current_geo.x + current_geo.width / 2) - (target_geo.x + target_geo.width / 2)
+  local dy = (current_geo.y + current_geo.height / 2) - (target_geo.y + target_geo.height / 2)
+  if direction == "left" then
+    return dx
+  elseif direction == "right" then
+    return -dx
+  elseif direction == "up" then
+    return dy
+  elseif direction == "down" then
+    return -dy
+  end
+  return math.huge
 end
 
-function M.close()
-  local win = ura.api.get_current_window()
-  assert(win)
-  ura.win.close(win)
-end
+local function focus_in_direction(direction)
+  local w = ura.class.UraWindow:current()
+  assert(w)
 
-function M.focus_prev()
-  local win = ura.api.get_current_window()
-  if win then
-    assert(ura.layout.get(win) ~= "fullscreen")
-    local index = ura.api.get_window_index(win)
-    assert(index)
-    local ws = ura.api.get_window_workspace(win)
-    assert(ws)
-    local target = ura.api.get_window(ws, index - 1)
-    assert(target)
-    ura.api.focus_window(target)
-  else
-    local ws = ura.api.get_current_workspace()
-    assert(ws)
-    local target = ura.api.get_window(ws, 0)
-    assert(target)
-    ura.api.focus_window(target)
+  if w:layout() == "fullscreen" then
+    return
+  end
+
+  local geo = w:geometry()
+  local closest_win = nil
+  local min_dist = math.huge
+
+  for _, win in ipairs(ura.fn.get_windows_by_tags(w:output():tags())) do
+    if win.id ~= w.id then
+      local t_geo = win:geometry()
+      local dist = get_distance(geo, t_geo, direction)
+
+      if dist > 0 then
+        if dist < min_dist then
+          min_dist = dist
+          closest_win = win
+        end
+      end
+    end
+  end
+
+  if closest_win then
+    closest_win:focus()
   end
 end
 
-function M.focus_next()
-  local win = ura.api.get_current_window()
-  if win then
-    assert(ura.layout.get(win) ~= "fullscreen")
-    local index = ura.api.get_window_index(win)
-    assert(index)
-    local ws = ura.api.get_window_workspace(win)
-    assert(ws)
-    local target = ura.api.get_window(ws, index + 1)
-    assert(target)
-    ura.api.focus_window(target)
-  else
-    local ws = ura.api.get_current_workspace()
-    assert(ws)
-    local target = ura.api.get_window(ws, 0)
-    assert(target)
-    ura.api.focus_window(target)
-  end
+function M.focus_left()
+  focus_in_direction("left")
 end
 
-function M.swap_prev()
-  local win = ura.api.get_current_window()
-  assert(win)
-  local index = ura.api.get_window_index(win)
-  assert(index)
-  local ws = ura.api.get_current_workspace()
-  assert(ws)
-  local prev = ura.api.get_window(ws, index - 1)
-  assert(prev)
-  ura.api.swap_window(win, prev)
+function M.focus_right()
+  focus_in_direction("right")
 end
 
-function M.swap_next()
-  local win = ura.api.get_current_window()
-  assert(win)
-  local index = ura.api.get_window_index(win)
-  assert(index)
-  local ws = ura.api.get_current_workspace()
-  assert(ws)
-  local next = ura.api.get_window(ws, index + 1)
-  assert(next)
-  ura.api.swap_window(win, next)
+function M.focus_up()
+  focus_in_direction("up")
 end
 
-function M.switch_prev()
-  local ws = ura.api.get_current_workspace()
-  assert(ws)
-  local index = ura.api.get_workspace_index(ws)
-  assert(index)
-  local output = ura.api.get_current_output()
-  assert(output)
-  local target = ura.api.get_indexed_workspace(output, index - 1)
-  assert(target)
-  ura.api.switch_workspace(target)
-  ura.api.destroy_workspace(ws)
-end
-
-function M.switch_next()
-  local ws = ura.api.get_current_workspace()
-  assert(ws)
-  local index = ura.api.get_workspace_index(ws)
-  assert(index)
-  local output = ura.api.get_current_output()
-  assert(output)
-  local workspaces = ura.api.get_indexed_workspaces(output)
-  assert(workspaces)
-  if index == #workspaces - 1 then
-    ura.api.create_indexed_workspace()
-  end
-  local target = ura.api.get_indexed_workspace(output, index + 1)
-  assert(target)
-  ura.api.switch_workspace(target)
-  ura.api.destroy_workspace(ws)
-end
-
-function M.move_to_prev()
-  local ws = ura.api.get_current_workspace()
-  assert(ws)
-  local win = ura.api.get_current_window()
-  assert(win)
-  local index = ura.api.get_workspace_index(ws)
-  local output = ura.api.get_current_output()
-  assert(output)
-  local target = ura.api.get_indexed_workspace(output, index - 1)
-  assert(target)
-  ura.api.move_window_to_workspace(win, target)
-  ura.api.switch_workspace(target)
-  ura.api.destroy_workspace(ws)
-end
-
-function M.move_to_next()
-  local ws = ura.api.get_current_workspace()
-  assert(ws)
-  local win = ura.api.get_current_window()
-  assert(win)
-  local index = ura.api.get_workspace_index(ws)
-  assert(index)
-  local output = ura.api.get_current_output()
-  assert(output)
-  local workspaces = ura.api.get_indexed_workspaces(output)
-  assert(workspaces)
-  if index == #workspaces - 1 then
-    ura.api.create_indexed_workspace()
-  end
-  local target = ura.api.get_indexed_workspace(output, index + 1)
-  assert(target)
-  ura.api.move_window_to_workspace(win, target)
-  ura.api.switch_workspace(target)
-  ura.api.destroy_workspace(ws)
+function M.focus_down()
+  focus_in_direction("down")
 end
 
 return M

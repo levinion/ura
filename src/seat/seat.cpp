@@ -50,12 +50,10 @@ void UraSeat::init() {
 }
 
 UraToplevel* UraSeat::focused_toplevel() {
-  if (!this->seat->keyboard_state.focused_surface)
+  auto client = this->focused_client();
+  if (!client || client.value().type != UraSurfaceType::Toplevel)
     return nullptr;
-  auto client = UraClient::from(this->seat->keyboard_state.focused_surface);
-  if (client.type == UraSurfaceType::Toplevel)
-    return client.transform<UraToplevel>();
-  return nullptr;
+  return client.value().transform<UraToplevel>();
 }
 
 // only layer_shell and toplevel can be focused

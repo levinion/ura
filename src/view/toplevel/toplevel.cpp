@@ -15,19 +15,24 @@ namespace ura {
 
 void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
   this->xdg_toplevel = xdg_toplevel;
   this->z_index = UraSceneLayer::Normal;
   this->scene_tree = wlr_scene_xdg_surface_create(
     server->view->get_scene_tree_or_create(this->z_index),
     xdg_toplevel->base
   );
-  this->workspace = output->current_workspace();
-  this->workspace->add(this);
+  this->lru = 0;
+  auto output = server->view->current_output();
+  if (output) {
+    this->tags = output->tags;
+  } else {
+    this->tags = { "headless" };
+  }
   xdg_toplevel->base->surface->data = this;
   this->create_borders();
-
   this->update_scale();
+
+  server->view->toplevels.push_back(this);
 
   // register callback
   {
@@ -101,23 +106,22 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
 void UraToplevel::destroy() {
   auto server = UraServer::get_instance();
   this->destroying = true;
+  server->view->toplevels.remove(this);
   if (this->is_focused()) {
-    server->seat->unfocus();
-    this->workspace->remove(this);
-    auto top = this->workspace->focus_stack.top();
-    if (top)
-      server->seat->focus(top.value());
-  } else {
-    this->workspace->remove(this);
+    auto output = this->output();
+    if (!output)
+      return;
+    output->focus_lru();
   }
   server->runtime->remove(this);
   wlr_foreign_toplevel_handle_v1_destroy(this->foreign_handle);
   this->dismiss_popups();
 
-  server->globals.erase(this->id());
   auto args = flexible::create_table();
   args.set("id", this->id());
   server->state->try_execute_hook("window-close", args);
+
+  server->globals.erase(this->id());
 }
 
 void UraToplevel::commit() {
@@ -168,7 +172,7 @@ void UraToplevel::commit() {
 
     // init geometry with given value then put it center
     auto geo = Vec4<int>::from(this->xdg_toplevel->base->current.geometry);
-    auto area = this->workspace->geometry().value();
+    auto area = output->logical_geometry();
     geo.center(area);
     this->geometry.width = geo.width;
     this->geometry.height = geo.height;
@@ -192,14 +196,9 @@ void UraToplevel::focus() {
   auto server = UraServer::get_instance();
   auto seat = server->seat->seat;
   auto surface = this->xdg_toplevel->base->surface;
-  auto workspace = this->workspace;
 
-  // make sure this is on stack
-  if (!workspace->focus_stack.contains(this))
-    workspace->focus_stack.push(this);
+  this->lru = std::chrono::steady_clock::now().time_since_epoch().count();
 
-  // move to top of stack and focus this
-  workspace->focus_stack.move_to_top(this);
   wlr_scene_node_raise_to_top(&this->scene_tree->node);
   wlr_xdg_toplevel_set_activated(this->xdg_toplevel, true);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
@@ -249,61 +248,6 @@ UraToplevel* UraToplevel::from(uint64_t id) {
   return nullptr;
 }
 
-void UraToplevel::move_to_workspace(UraWorkspace* workspace) {
-  workspace->name ? this->move_to_workspace(workspace->name.value())
-                  : this->move_to_workspace(workspace->index());
-}
-
-void UraToplevel::move_to_workspace(std::string name) {
-  auto server = UraServer::get_instance();
-  if (this->is_focused())
-    server->seat->unfocus();
-  this->unmap();
-  auto named_workspace = server->view->get_named_workspace_or_create(name);
-  this->workspace->remove(this);
-  auto prev_workspace = this->workspace;
-  this->workspace = named_workspace;
-  this->workspace->toplevels.push_back(this);
-  if (prev_workspace->focus_stack.top()) {
-    server->seat->focus(prev_workspace->focus_stack.top().value());
-  }
-  auto args = flexible::create_table();
-  args.set("id", this->id());
-  server->state->try_execute_hook("window-remove", args);
-}
-
-void UraToplevel::move_to_workspace(int index) {
-  auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  auto target = output->get_workspace_at(index);
-  if (!target)
-    return;
-  if (target == this->workspace)
-    return;
-  // switch focus
-  if (this->is_focused())
-    server->seat->unfocus();
-  this->workspace->remove(this);
-  if (this->workspace->focus_stack.top())
-    server->seat->focus(this->workspace->focus_stack.top().value());
-  this->workspace = target;
-  this->workspace->add(this);
-  auto args = flexible::create_table();
-  args.set("id", this->id());
-  server->state->try_execute_hook("window-remove", args);
-}
-
-int UraToplevel::index() {
-  int index = 0;
-  auto& toplevels = this->workspace->toplevels;
-  for (auto toplevel : toplevels) {
-    if (toplevel == this)
-      return index;
-    index++;
-  }
-  std::unreachable();
-}
-
 void UraToplevel::activate() {
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
@@ -313,24 +257,12 @@ void UraToplevel::activate() {
   // if hook returns a false value, then stop the operation.
   if (flag && !flag.value())
     return;
-  if (this->workspace->name) {
-    // named workspace, move this toplevel to current workspace
-    auto output = server->view->current_output();
-    if (!output)
-      return;
-    this->move_to_workspace(output->current_workspace());
-  } else {
-    // indexed workspace, switch to this toplevel's workspace
-    auto output = this->output();
-    if (!output)
-      return;
-    if (this->workspace != output->current_workspace()) {
-      output->switch_workspace(this->workspace);
-    }
-  }
+  auto output = this->output();
+  if (!output)
+    return;
+  output->set_tags(std::move(this->tags));
   server->seat->focus(this);
-  this->map();
-  server->state->try_execute_hook("post-window-activate", args);
+  server->state->try_execute_hook("window-activate", args);
 }
 
 bool UraToplevel::move(int x, int y) {
@@ -439,14 +371,27 @@ void UraToplevel::map() {
       this->app_id().data()
     );
   }
+  auto server = UraServer::get_instance();
+  auto args = flexible::create_table();
+  args.add("id", this->id());
+  server->state->try_execute_hook("window-map", args);
 }
 
 void UraToplevel::unmap() {
   if (!this->mapped())
     return;
   wlr_scene_node_set_enabled(&this->scene_tree->node, false);
+
+  auto server = UraServer::get_instance();
+  if (server->seat->focused_toplevel() == this)
+    server->seat->unfocus();
+
   if (this->xdg_toplevel->base->initialized && this->foreign_handle)
     wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
+
+  auto args = flexible::create_table();
+  args.add("id", this->id());
+  server->state->try_execute_hook("window-unmap", args);
 }
 
 std::string UraToplevel::title() {
@@ -523,11 +468,12 @@ void UraToplevel::set_border_color(std::array<float, 4>& color) {
 }
 
 void UraToplevel::center() {
-  auto area = this->workspace->geometry();
-  if (!area)
+  auto output = this->output();
+  if (!output)
     return;
+  auto area = this->output()->logical_geometry();
   auto geo = this->geometry;
-  geo.center(area.value());
+  geo.center(area);
   this->move(geo.x, geo.y);
 }
 
@@ -590,14 +536,22 @@ bool UraToplevel::mapped() {
 }
 
 UraOutput* UraToplevel::output() {
-  return this->workspace->output();
+  auto server = UraServer::get_instance();
+  for (auto& [_, output] : server->view->outputs) {
+    auto geo = output->logical_geometry();
+    if (this->geometry.x >= geo.x && this->geometry.x < geo.x + geo.width
+        && this->geometry.y >= geo.y && this->geometry.y < geo.y + geo.height) {
+      return output;
+    }
+  }
+  return nullptr;
 }
 
 double UraToplevel::scale() {
   auto output = this->output();
   if (output)
-    return output->scale() * this->workspace->scale;
-  return this->workspace->scale;
+    return output->scale();
+  return 1.;
 }
 
 void UraToplevel::set_scale(double scale) {
@@ -607,6 +561,31 @@ void UraToplevel::set_scale(double scale) {
 
 void UraToplevel::update_scale() {
   this->set_scale(this->scale());
+}
+
+void UraToplevel::set_tags(Vec<std::string>&& tags) {
+  this->tags = tags;
+  if (this->is_tag_matched()) {
+    this->map();
+    auto server = UraServer::get_instance();
+    server->seat->focus(this);
+  } else {
+    this->unmap();
+  }
+}
+
+bool UraToplevel::is_tag_matched() {
+  auto output = this->output();
+  if (!output)
+    return false;
+  auto matched = false;
+  for (auto& tag : output->tags) {
+    if (this->tags.contains(tag)) {
+      matched = true;
+      break;
+    }
+  }
+  return matched;
 }
 
 } // namespace ura

@@ -20,7 +20,7 @@ void UraInputMethodPopup::constrain(wlr_text_input_v3* text_input) {
   popup_rect.height = this->popup_surface->surface->current.height;
 
   // constrain to current screen
-  auto output = parent->workspace->output();
+  auto output = parent->output();
   if (!output)
     return;
   auto geo = output->logical_geometry();

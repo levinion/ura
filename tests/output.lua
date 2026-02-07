@@ -1,5 +1,0 @@
-local output = ura.api.get_current_output()
-assert(output)
-local geo = ura.api.get_output_logical_geometry(output)
-assert(geo)
-print(geo.x, geo.y, geo.width, geo.height)

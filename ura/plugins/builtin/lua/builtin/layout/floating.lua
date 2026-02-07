@@ -2,33 +2,35 @@ local M = {}
 
 function M.setup()
   ura.layout.register("floating", {
+    ---@param win UraWindow
     enter = function(win)
-      ura.api.set_window_draggable(win, true)
-      ura.api.set_window_z_index(win, 150)
+      win:set_draggable(true)
+      win:set_z_index(150)
       -- recover window size
-      local userdata = ura.api.get_userdata(win)
+      local userdata = win:userdata()
       assert(userdata)
       assert(ura.fn.validate(userdata, "floating", "table"))
       if userdata.floating.width and userdata.floating.height then
-        ura.api.resize_window(win, userdata.floating.width, userdata.floating.height)
+        win:resize(userdata.floating.width, userdata.floating.height)
       end
       if userdata.floating.x and userdata.floating.y then
-        ura.api.move_window(win, userdata.floating.x, userdata.floating.y)
+        win:move(userdata.floating.x, userdata.floating.y)
       end
     end,
+    ---@param win UraWindow
     leave = function(win)
-      local geo = ura.api.get_window_geometry(win)
+      local geo = win:geometry()
       assert(geo)
-      ura.fn.update_userdata(win, { floating = geo })
+      win:update_userdata({ floating = geo })
     end,
   })
 
   ura.hook.set("window-new", function(e)
-    local win = e.id
+    local win = ura.class.UraWindow:new(e.id)
     assert(win)
-    local geo = ura.api.get_window_geometry(win)
+    local geo = win:geometry()
     assert(geo)
-    ura.fn.update_userdata(win, { floating = geo })
+    win:update_userdata({ floating = geo })
   end, {
     ns = "layout.floating",
     priority = 0,

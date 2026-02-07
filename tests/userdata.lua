@@ -1,5 +1,0 @@
-local win = ura.api.get_current_window()
-assert(win)
-ura.api.set_userdata(win, "ura")
-local userdata = ura.api.get_userdata(win)
-print(userdata or "not found")

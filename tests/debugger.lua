@@ -1,7 +1,0 @@
-ura.api.schedule(function()
-	local win = ura.api.get_current_window()
-	assert(win, "window is nil")
-	local userdata = ura.api.get_userdata(win)
-	assert(userdata, "userdata is nil")
-	ura.api.notify(ura.api.to_json(userdata), "")
-end, 3000)

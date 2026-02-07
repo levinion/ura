@@ -1,5 +1,0 @@
-local win = ura.api.get_current_window()
-assert(win)
-local app_id = ura.api.get_window_app_id(win)
-local title = ura.api.get_window_title(win)
-print(app_id, title)

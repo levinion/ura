@@ -2,32 +2,41 @@ local M = {}
 
 function M.setup()
   ura.layout.register("fullscreen", {
+    ---@param win UraWindow
     enter = function(win)
-      ura.api.set_window_draggable(win, false)
-      ura.api.set_window_z_index(win, 250)
-      ura.api.set_window_fullscreen(win, true)
+      win:set_draggable(false)
+      win:set_z_index(250)
+      win:set_fullscreen(true)
     end,
+    ---@param win UraWindow
     apply = function(win)
-      local output = ura.api.get_window_output(win)
+      local output = win:output()
       assert(output)
-      local geo = ura.api.get_output_logical_geometry(output)
+      local geo = output:logical_geometry()
       assert(geo)
-      ura.api.resize_window(win, geo.width, geo.height)
-      ura.api.move_window(win, geo.x, geo.y)
+      win:resize(geo.width, geo.height)
+      win:move(geo.x, geo.y)
     end,
+    ---@param win UraWindow
     leave = function(win)
-      ura.api.set_window_fullscreen(win, false)
+      win:set_fullscreen(false)
     end,
   })
 
+  local function apply_layouts()
+    local tags = ura.class.UraOutput:current():tags()
+    local windows = ura.fn.get_windows_by_tags(tags)
+    for _, win in ipairs(windows) do
+      win:apply_layout()
+    end
+  end
+
   ura.hook.set("output-usable-geometry-change", function(_)
-    local ws = ura.api.get_current_workspace()
-    assert(ws)
-    ura.layout.apply_workspace(ws)
+    apply_layouts()
   end, { ns = "layout.fullscreen", priority = 40, desc = "re-apply layout as usable geometry change" })
 
   ura.hook.set("window-request-fullscreen", function(e)
-    ura.layout.toggle(e.id, "fullscreen")
+    ura.class.UraWindow:new(e.id):toggle_layout("fullscreen")
   end, { ns = "layout.fullscreen", priority = 40, desc = "re-apply layout as usable geometry change" })
 end
 

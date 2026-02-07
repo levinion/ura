@@ -9,7 +9,6 @@
 namespace ura {
 
 class UraOutput;
-class UraWorkspace;
 
 class UraToplevel {
 public:
@@ -18,10 +17,11 @@ public:
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
   int z_index;
-  UraWorkspace* workspace;
   wlr_xdg_toplevel_decoration_v1* decoration;
   wlr_foreign_toplevel_handle_v1* foreign_handle;
   Vec4<int> geometry;
+  Vec<std::string> tags;
+  uint64_t lru;
 
   // same with css, top > right > bottom > left
   std::array<wlr_scene_rect*, 4> borders;
@@ -48,10 +48,6 @@ public:
   std::string app_id();
   void set_title(std::string title); // inner api
   void set_app_id(std::string app_id); // inner api
-  void move_to_workspace(UraWorkspace* workspace);
-  void move_to_workspace(int index);
-  void move_to_workspace(std::string name);
-  int index();
   void activate();
   void set_z_index(int z);
   bool is_focused();
@@ -62,6 +58,8 @@ public:
   double scale();
   void set_scale(double scale);
   void update_scale(); // a shortcut of set_scale(scale())
+  void set_tags(Vec<std::string>&& tags);
+  bool is_tag_matched();
 
 private:
   void create_borders();

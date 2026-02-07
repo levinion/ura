@@ -10,6 +10,4 @@ setmetatable(M, {
   end,
 })
 
-M.focus_follow_mouse = true
-
 return M

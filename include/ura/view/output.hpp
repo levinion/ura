@@ -15,6 +15,7 @@ class UraOutput {
 public:
   wlr_output* output;
   std::string name;
+  Vec<std::string> tags = { "1" };
 
   bool dpms_on = true;
   std::optional<wlr_output_mode> mode;
@@ -56,13 +57,8 @@ public:
   );
   Vec<UraLayerShell*>& get_layer_list_by_type(zwlr_layer_shell_v1_layer type);
 
-  /* Workspaces */
-  UraWorkspace* current_workspace();
-  UraWorkspace* create_workspace();
-  Vec<UraWorkspace*>& get_workspaces();
-  void switch_workspace(UraWorkspace* workspace);
-  void destroy_workspace(UraWorkspace* workspace);
-  UraWorkspace* get_workspace_at(int index);
+  void set_tags(Vec<std::string>&& tags);
+  void focus_lru();
 };
 
 } // namespace ura
