@@ -1,6 +1,6 @@
 # project
 set(NAME "ura")
-set(VERSION 0.2.1)
+set(VERSION 0.3.0)
 cmake_minimum_required(VERSION 3.10)
 project(${NAME} VERSION ${VERSION} LANGUAGES C CXX)
 
@@ -12,7 +12,7 @@ file(GLOB_RECURSE SRC src/*.c src/*.cpp)
 add_executable(${NAME} ${SRC})
 
 if(CMAKE_BUILD_TYPE MATCHES 'Release')
-	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
 # include header
@@ -32,9 +32,9 @@ target_compile_options(${NAME} PRIVATE -Wall)
 find_package(PkgConfig REQUIRED)
 
 function(target_add_dependence target pkgname)
-	pkg_check_modules(${pkgname} REQUIRED ${pkgname})
-	target_link_libraries(${target} PRIVATE ${${pkgname}_LIBRARIES})
-	target_include_directories(${target} PRIVATE ${${pkgname}_INCLUDE_DIRS})
+  pkg_check_modules(${pkgname} REQUIRED ${pkgname})
+  target_link_libraries(${target} PRIVATE ${${pkgname}_LIBRARIES})
+  target_include_directories(${target} PRIVATE ${${pkgname}_INCLUDE_DIRS})
 endfunction()
 
 target_add_dependence(${NAME} wlroots-0.19)
