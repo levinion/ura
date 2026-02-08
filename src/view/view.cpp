@@ -4,7 +4,6 @@
 #include "ura/seat/cursor.hpp"
 #include "ura/seat/seat.hpp"
 #include "ura/core/server.hpp"
-#include "ura/view/workspace.hpp"
 
 namespace ura {
 

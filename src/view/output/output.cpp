@@ -6,14 +6,12 @@
 #include "ura/util/util.hpp"
 #include "ura/util/vec.hpp"
 #include "ura/view/layer_shell.hpp"
-#include "ura/view/output.hpp"
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <functional>
 #include <ranges>
 #include "ura/view/view.hpp"
-#include "ura/view/workspace.hpp"
 #include "ura/core/state.hpp"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 #include "ura/seat/seat.hpp"

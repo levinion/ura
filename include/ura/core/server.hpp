@@ -18,7 +18,7 @@ class Lua;
 class UraView;
 class UraState;
 
-enum class UraGlobalType { Toplevel, Workspace, Output, LayerShell, Popup };
+enum class UraGlobalType { Toplevel, Output, LayerShell, Popup };
 
 class UraGlobal {
 public:

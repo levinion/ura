@@ -5,7 +5,6 @@
 #include <unordered_map>
 #include "ura/ura.hpp"
 #include "ura/view/output.hpp"
-#include "ura/view/workspace.hpp"
 
 namespace ura {
 

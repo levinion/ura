@@ -103,18 +103,6 @@ ura.hook.set("ready", function(_)
 end)
 ```
 
-The `focus-change` and `workspace-change` hooks are triggered when focus or workspace changes. You can notify desktop components (e.g., custom modules in waybar) to update:
-
-```lua
-ura.hook.set("focus-change", function(_)
-  ura.api.spawn("pkill -SIGRTMIN+9 waybar")
-end)
-
-ura.hook.set("workspace-change", function(_)
-  ura.api.spawn("pkill -SIGRTMIN+8 waybar")
-end)
-```
-
 The `window-new` hook is triggered when a new top-level window is created and focused. You can use it to apply window-specific styling:
 
 ```lua

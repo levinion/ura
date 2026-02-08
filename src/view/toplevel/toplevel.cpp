@@ -565,13 +565,19 @@ void UraToplevel::update_scale() {
 
 void UraToplevel::set_tags(Vec<std::string>&& tags) {
   this->tags = tags;
+
+  auto server = UraServer::get_instance();
+
   if (this->is_tag_matched()) {
     this->map();
-    auto server = UraServer::get_instance();
     server->seat->focus(this);
   } else {
     this->unmap();
   }
+
+  auto args = flexible::create_table();
+  args.set("id", this->id());
+  server->state->try_execute_hook("window-tags-change", args);
 }
 
 bool UraToplevel::is_tag_matched() {

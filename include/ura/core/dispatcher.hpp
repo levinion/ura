@@ -69,8 +69,10 @@ public:
     timer_spec.it_interval.tv_nsec = 0;
     // flag 0 means relative time
     auto ret = timerfd_settime(fd, 0, &timer_spec, nullptr);
-    if (ret == -1)
+    if (ret == -1) {
       close(fd);
+      return;
+    }
 
     this->add_task(fd, [=, this]() {
       // consume the event
