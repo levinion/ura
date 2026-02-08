@@ -3,6 +3,16 @@
 local UraOutput = {}
 UraOutput.__index = UraOutput
 
+function UraOutput.__eq(a, b)
+  if rawequal(a, b) then
+    return true
+  end
+  if type(a) == "table" and type(b) == "table" then
+    return a.id == b.id
+  end
+  return false
+end
+
 ---@param id integer
 ---@return UraOutput
 function UraOutput:new(id)

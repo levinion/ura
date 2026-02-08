@@ -31,7 +31,7 @@ local function horizontal(opt)
 
       local index = -1
       for i, w in ipairs(tiling_windows) do
-        if w.id == win.id then
+        if w == win then
           index = i - 1
           break
         end
