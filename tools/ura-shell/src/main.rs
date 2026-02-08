@@ -6,8 +6,8 @@ use std::{path::PathBuf, process::exit};
 use wayland_client;
 use wayland_client::{Connection, Dispatch, EventQueue, QueueHandle, protocol::wl_registry};
 
-wayland_scanner::generate_interfaces!("../protocols/ura-ipc.xml");
-wayland_scanner::generate_client_code!("../protocols/ura-ipc.xml");
+wayland_scanner::generate_interfaces!("../../protocols/ura-ipc.xml");
+wayland_scanner::generate_client_code!("../../protocols/ura-ipc.xml");
 
 #[derive(Parser)]
 struct Cli {
