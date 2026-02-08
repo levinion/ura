@@ -25,7 +25,7 @@ function M.setup()
 
   local function apply_layouts()
     local tags = ura.class.UraOutput:current():tags()
-    local windows = ura.fn.get_windows_by_tags(tags)
+    local windows = ura.class.UraWindow:from_tags(tags)
     for _, win in ipairs(windows) do
       win:apply_layout()
     end

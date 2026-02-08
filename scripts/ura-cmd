@@ -1,0 +1,153 @@
+#!/bin/bash
+
+show_help() {
+  cat <<EOF
+Usage: ura-cmd <command> [arguments]
+
+A control script for ura-shell to manage windows and layouts.
+
+Commands:
+  close                              Close the currently focused window.
+  focus-(left,right,up,down)         Move focus to specific direction.
+  set-output-tags                    Set tags of current output.
+  set-window-tags                    Set tags of current window.
+  toggle-window-layout <layout>      Toggle a specific layout (e.g., floating, tiling).
+  list-commands                      List all available 'ura-*' command scripts in PATH.
+  set-option
+  get-option
+  set-pointer-accel-profile <profile> <glob>  Set pointer acceleration profile for a device glob.
+  show-hooks
+  show-windows
+  show-layouts
+  help, -h, --help                   Show this help message.
+EOF
+}
+
+case "$1" in
+"" | "help" | "-h" | "--help")
+  show_help
+  ;;
+"close")
+  ura-shell -c "ura.class.UraWindow:current():close()"
+  ;;
+"focus-left")
+  ura-shell -c "ura.cmd.focus_left()"
+  ;;
+"focus-right")
+  ura-shell -c "ura.cmd.focus_right()"
+  ;;
+"focus-up")
+  ura-shell -c "ura.cmd.focus-up()"
+  ;;
+"focus-down")
+  ura-shell -c "ura.cmd.focus-down()"
+  ;;
+"set-option")
+  shift
+  if [[ -n "$2" ]]; then
+    ura-shell -c "ura.opt.$1 = $2"
+    ura-shell -c "print(ura.opt.$1)"
+  else
+    echo "ura-cmd set-option <name> <value>"
+    exit 1
+  fi
+  ;;
+"get-option")
+  shift
+  if [[ -n "$1" ]]; then
+    ura-shell -c "print(ura.opt.$1)"
+  else
+    echo "ura-cmd get-option <name>"
+    exit 1
+  fi
+  ;;
+"toggle-window-layout")
+  shift
+  ura-shell -c "ura.class.UraWindow:current():toggle_layout(\"$1\")"
+  ;;
+"set-output-tags")
+  shift
+  [[ -n "$*" ]] && {
+    quoted=$(printf '"%s",' "$@")
+    quoted=${quoted%,}
+    ura-shell -c "ura.class.UraOutput:current():set_tags({ $quoted })"
+  }
+  ;;
+
+"set-window-tags")
+  shift
+  [[ -n "$*" ]] && {
+    quoted=$(printf '"%s",' "$@")
+    quoted=${quoted%,}
+    ura-shell -c "ura.class.UraWindow:current():set_tags({ $quoted })"
+  }
+  ;;
+
+"list-commands")
+  echo "$PATH" | tr ':' '\n' |
+    xargs -I 'PATH' find PATH -name 'ura-*' 2>/dev/null |
+    xargs -n1 basename |
+    sed 's/ura-//' | sort | uniq
+  ;;
+"set-pointer-accel-profile")
+  shift
+  if [[ -n "$1" ]]; then
+    if [[ -n "$2" ]]; then
+      ura-shell -c "ura.api.set_pointer_accel_profile(\"$1\", \"$2\")"
+    else
+      echo 'ura-cmd set-pointer-accel-profile <profile> <glob>'
+      exit 1
+    fi
+  else
+    echo 'ura-cmd set-pointer-accel-profile <profile> <glob>'
+    exit 1
+  fi
+  ;;
+"show-hooks")
+  ura-shell -c "print(ura.api.to_json(ura.hook.HOOKS))"
+  ;;
+"show-layouts")
+  ura-shell -c "print(ura.api.to_json(ura.layout.LAYOUTS))"
+  ;;
+"show-windows")
+  ura-shell -c '
+local t = {}
+for _, w in ipairs(ura.class.UraWindow:all()) do
+  t[tostring(w.id)] = {
+		app_id = w:app_id(),
+		title = w:title(),
+		output = w:output():name(),
+		geometry = w:geometry(),
+		z_index = w:z_index(),
+		is_draggable = w:is_draggable(),
+		is_fullscreen = w:is_fullscreen(),
+		userdata = w:userdata(),
+		tags = w:tags(),
+	}
+end
+print(ura.api.to_json(t))
+  '
+  ;;
+"show-outputs")
+  ura-shell -c '
+local t = {}
+for _, o in ipairs(ura.class.UraOutput:all()) do
+  t[tostring(o.id)] = {
+		name = o:name(),
+		logical_geometry = o:logical_geometry(),
+		usable_geometry = o:usable_geometry(),
+    scale = o:scale(),
+		tags = o:tags(),
+	}
+end
+print(ura.api.to_json(t))
+  ' | jq
+  ;;
+"show-fd")
+  for i in /proc/"$(pidof ura)/fd"/*; do file "$i"; done
+  ;;
+*)
+  echo "Command not found: $1"
+  exit 1
+  ;;
+esac

@@ -27,6 +27,27 @@ function UraWindow:all()
   return t
 end
 
+---@param tags table<string>
+---@return table<UraWindow>
+function UraWindow:from_tags(tags)
+  local wins = ura.api.get_all_windows() or {}
+  local t = {}
+  for _, win in ipairs(wins) do
+    local w = ura.class.UraWindow:new(win)
+    local contains = false
+    for _, tag in ipairs(tags) do
+      if ura.fn.icontains(w:tags(), tag) then
+        contains = true
+        break
+      end
+    end
+    if contains then
+      table.insert(t, w)
+    end
+  end
+  return t
+end
+
 function UraWindow:close()
   ura.api.close_window(self.id)
 end

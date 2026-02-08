@@ -540,6 +540,15 @@ std::optional<std::string> get_output_name(uint64_t id) {
   return output->name;
 }
 
+flexible::object get_all_outputs() {
+  auto server = UraServer::get_instance();
+  auto table = flexible::create_table();
+  for (auto [_, output] : server->view->outputs) {
+    table.add(output->id());
+  }
+  return table;
+}
+
 } // namespace ura::api::core
 
 namespace ura::api::lua {

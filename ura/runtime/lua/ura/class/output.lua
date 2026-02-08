@@ -17,6 +17,16 @@ function UraOutput:current()
   return id and UraOutput:new(id) or nil
 end
 
+---@return table<UraOutput>
+function UraOutput:all()
+  local outputs = ura.api.get_all_outputs()
+  local t = {}
+  for _, output in ipairs(outputs) do
+    table.insert(t, ura.class.UraOutput:new(output))
+  end
+  return t
+end
+
 ---@param name string
 ---@return UraOutput|nil
 function UraOutput:from_name(name)

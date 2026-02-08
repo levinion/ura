@@ -27,7 +27,7 @@ local function focus_in_direction(direction)
   local closest_win = nil
   local min_dist = math.huge
 
-  for _, win in ipairs(ura.fn.get_windows_by_tags(w:output():tags())) do
+  for _, win in ipairs(ura.class.UraWindow:from_tags(w:output():tags())) do
     if win.id ~= w.id then
       local t_geo = win:geometry()
       local dist = get_distance(geo, t_geo, direction)

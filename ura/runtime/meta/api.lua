@@ -136,6 +136,8 @@ ura.api = {
   --- @param name string
   --- @return integer|nil
   get_output = function(name) end,
+  --- @return table<integer>
+  get_all_outputs = function() end,
   --- @return string|nil
   get_output_name = function() end,
   --- @param id integer

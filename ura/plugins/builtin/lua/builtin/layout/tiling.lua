@@ -13,7 +13,7 @@ local function horizontal(opt)
       assert(output)
       local usable = output:usable_geometry()
       assert(usable)
-      local windows = ura.fn.get_windows_by_tags(output:tags())
+      local windows = ura.class.UraWindow:from_tags(output:tags())
       assert(windows)
 
       local tiling_windows = {}
@@ -71,7 +71,7 @@ function M.setup(opt)
 
   local function apply_layouts()
     local tags = ura.class.UraOutput:current():tags()
-    local windows = ura.fn.get_windows_by_tags(tags)
+    local windows = ura.class.UraWindow:from_tags(tags)
     for _, win in ipairs(windows) do
       win:apply_layout()
     end

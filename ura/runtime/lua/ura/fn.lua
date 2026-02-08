@@ -119,25 +119,4 @@ function M.contains(t, value)
   return t[value] ~= nil
 end
 
----@param tags table<string>
----@return table<UraWindow>
-function M.get_windows_by_tags(tags)
-  local wins = ura.api.get_all_windows() or {}
-  local t = {}
-  for _, win in ipairs(wins) do
-    local w = ura.class.UraWindow:new(win)
-    local contains = false
-    for _, tag in ipairs(tags) do
-      if M.icontains(w:tags(), tag) then
-        contains = true
-        break
-      end
-    end
-    if contains then
-      table.insert(t, w)
-    end
-  end
-  return t
-end
-
 return M
