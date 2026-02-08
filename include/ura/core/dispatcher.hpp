@@ -51,9 +51,9 @@ public:
 
   void remove_task(int fd) {
     assert(this->tasks.contains(fd));
-    [[maybe_unused]] auto ret = epoll_ctl(this->fd, EPOLL_CTL_DEL, fd, nullptr);
-    assert(ret != -1);
+    epoll_ctl(this->fd, EPOLL_CTL_DEL, fd, nullptr);
     this->tasks.erase(fd);
+    close(fd);
   }
 
   void schedule_task(std::function<bool()> callback, uint64_t millisecond) {
@@ -68,18 +68,16 @@ public:
     timer_spec.it_interval.tv_sec = 0;
     timer_spec.it_interval.tv_nsec = 0;
     // flag 0 means relative time
-    [[maybe_unused]] auto ret = timerfd_settime(fd, 0, &timer_spec, nullptr);
-    assert(ret != -1);
+    auto ret = timerfd_settime(fd, 0, &timer_spec, nullptr);
+    if (ret == -1)
+      close(fd);
 
     this->add_task(fd, [=, this]() {
       // consume the event
       uint64_t expirations;
-      [[maybe_unused]] auto n = read(fd, &expirations, sizeof(expirations));
-      assert(n == sizeof(expirations));
-      bool success = callback();
+      read(fd, &expirations, sizeof(expirations));
       this->remove_task(fd);
-      close(fd);
-      return success;
+      return callback();
     });
   }
 

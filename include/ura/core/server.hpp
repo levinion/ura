@@ -64,7 +64,7 @@ public:
   std::unique_ptr<Lua> lua;
   std::unique_ptr<UraSeat> seat;
   std::unique_ptr<UraView> view;
-  std::unique_ptr<UraDispatcher<1024>> dispatcher;
+  std::unique_ptr<UraDispatcher<64>> dispatcher;
 
   std::unordered_map<uint64_t, UraGlobal> globals;
 

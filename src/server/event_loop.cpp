@@ -20,7 +20,7 @@ UraServer* UraServer::init(std::unique_ptr<UraState>&& state) {
   this->setup_signal();
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
-  this->dispatcher = UraDispatcher<1024>::init();
+  this->dispatcher = UraDispatcher<64>::init();
   this->lua = Lua::init();
   auto result = this->lua->load_config();
   if (!result) {
