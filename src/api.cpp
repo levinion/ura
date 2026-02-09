@@ -488,12 +488,6 @@ flexible::object parse_json(std::string str) {
   return flexible::from_str(str);
 }
 
-void eval(std::string code) {
-  auto server = UraServer::get_instance();
-  auto result = server->lua->execute(code);
-  // TODO: handle result
-}
-
 void set_output_tags(uint64_t id, std::vector<std::string> tags) {
   auto output = UraOutput::from(id);
   if (!output)

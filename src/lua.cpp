@@ -50,7 +50,6 @@ void Lua::setup() {
   LUAAPI("api.notify", api::core::notify);
   LUAAPI("api.set_timer", api::core::set_timer);
   LUAAPI("api.clear_timer", api::core::clear_timer);
-  LUAAPI("api.eval", api::core::eval);
   // window
   LUAAPI("api.focus_window", api::core::focus_window);
   LUAAPI("api.close_window", api::core::close_window);

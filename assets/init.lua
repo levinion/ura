@@ -28,7 +28,7 @@ end)
 
 ura.keymap.set("ctrl+left", function()
   local tag = tonumber(ura.class.UraOutput:current():tags()[1]) - 1
-  if tag < 0 then
+  if tag < 1 then
     return
   end
   ura.class.UraOutput:current():set_tags({ tostring(tag) })
@@ -36,6 +36,21 @@ end)
 
 ura.keymap.set("ctrl+right", function()
   local tag = tonumber(ura.class.UraOutput:current():tags()[1]) + 1
+  ura.class.UraOutput:current():set_tags({ tostring(tag) })
+end)
+
+ura.keymap.set("ctrl+shift+left", function()
+  local tag = tonumber(ura.class.UraOutput:current():tags()[1]) - 1
+  if tag < 1 then
+    return
+  end
+  ura.class.UraWindow:current():set_tags({ tostring(tag) })
+  ura.class.UraOutput:current():set_tags({ tostring(tag) })
+end)
+
+ura.keymap.set("ctrl+shift+right", function()
+  local tag = tonumber(ura.class.UraOutput:current():tags()[1]) + 1
+  ura.class.UraWindow:current():set_tags({ tostring(tag) })
   ura.class.UraOutput:current():set_tags({ tostring(tag) })
 end)
 
@@ -55,8 +70,16 @@ ura.keymap.set("super+k", function()
   ura.cmd.focus_up()
 end)
 
-ura.api.set_hook("prepare", function() end)
+for i = 1, 9 do
+  ura.keymap.set("super+" .. tostring(i), function()
+    ura.class.UraOutput:current():set_tags({ tostring(i) })
+  end)
+end
 
-ura.api.set_hook("ready", function() end)
+ura.keymap.set("super+0", function()
+  ura.class.UraOutput:current():set_tags({ "10" })
+end)
 
-ura.api.set_hook("reload", function() end)
+ura.hook.set("window-new", function(e)
+  ura.class.UraWindow:new(e.id):focus()
+end)

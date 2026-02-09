@@ -86,10 +86,6 @@ function M.setup(opt)
   ura.hook.set("output-usable-geometry-change", function(_)
     apply_layouts()
   end, { ns = "layout.fullscreen", priority = 40, desc = "re-apply layout as usable geometry change" })
-
-  ura.hook.set("window-new", function(e)
-    ura.class.UraWindow:new(e.id):focus()
-  end, { ns = "focus", priority = 0, desc = "focus when window created" })
 end
 
 return M

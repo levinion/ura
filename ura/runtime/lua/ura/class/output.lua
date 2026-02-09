@@ -71,6 +71,7 @@ end
 
 ---@param tags table<string>
 function UraOutput:set_tags(tags)
+  tags = ura.fn.natural_sort(tags)
   ura.api.set_output_tags(self.id, tags)
 end
 

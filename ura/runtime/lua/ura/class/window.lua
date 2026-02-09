@@ -145,6 +145,7 @@ end
 
 --- @param tags table<string>
 function UraWindow:set_tags(tags)
+  tags = ura.fn.natural_sort(tags)
   ura.api.set_window_tags(self.id, tags)
 end
 

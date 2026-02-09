@@ -119,4 +119,67 @@ function M.contains(t, value)
   return t[value] ~= nil
 end
 
+---@param t table
+---@return table
+function M.natural_sort(t)
+  table.sort(t, function(a, b)
+    local function get_priority(s)
+      s = tostring(s)
+      local has_digit = s:find("%d") ~= nil
+      local has_non_digit = s:find("%D") ~= nil
+
+      if has_digit and not has_non_digit then
+        return 1
+      elseif has_digit and has_non_digit then
+        return 2
+      else
+        return 3
+      end
+    end
+
+    local pa = get_priority(a)
+    local pb = get_priority(b)
+
+    if pa ~= pb then
+      return pa < pb
+    end
+
+    local sa, sb = tostring(a), tostring(b)
+
+    local function tokenize(str)
+      local tokens = {}
+      for digit, non_digit in str:gmatch("(%d*)(%D*)") do
+        if digit ~= "" then
+          table.insert(tokens, tonumber(digit))
+        end
+        if non_digit ~= "" then
+          table.insert(tokens, non_digit)
+        end
+      end
+      return tokens
+    end
+
+    local ta = tokenize(sa)
+    local tb = tokenize(sb)
+
+    for i = 1, math.max(#ta, #tb) do
+      local va, vb = ta[i], tb[i]
+      if va == nil then
+        return true
+      end
+      if vb == nil then
+        return false
+      end
+
+      if type(va) ~= type(vb) then
+        return type(va) == "number"
+      elseif va ~= vb then
+        return va < vb
+      end
+    end
+    return false
+  end)
+  return t
+end
+
 return M

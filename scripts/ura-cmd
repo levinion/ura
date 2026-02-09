@@ -113,7 +113,7 @@ case "$1" in
   ura-shell -c '
 local t = {}
 for _, w in ipairs(ura.class.UraWindow:all()) do
-  t[tostring(w.id)] = {
+  t[string.format("%.0f", w.id)] = {
 		app_id = w:app_id(),
 		title = w:title(),
 		output = w:output():name(),
@@ -132,7 +132,7 @@ print(ura.api.to_json(t))
   ura-shell -c '
 local t = {}
 for _, o in ipairs(ura.class.UraOutput:all()) do
-  t[tostring(o.id)] = {
+  t[string.format("%.0f", o.id)] = {
 		name = o:name(),
 		logical_geometry = o:logical_geometry(),
 		usable_geometry = o:usable_geometry(),

@@ -20,4 +20,19 @@ ura.fn = {
   ---@param cmd string
   ---@return string
   shell = function(cmd) end,
+  ---@param path string
+  load = function(path) end,
+  ---@param path string
+  load_dir = function(path) end,
+  ---@param t table
+  ---@param value any
+  ---@return boolean
+  icontains = function(t, value) end,
+  ---@param t table
+  ---@param value any
+  ---@return boolean
+  contains = function(t, value) end,
+  ---@param t table
+  ---@return table
+  natural_sort = function(t) end,
 }
