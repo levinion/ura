@@ -1,4 +1,5 @@
 #include "ura/seat/cursor.hpp"
+#include <chrono>
 #include "ura/seat/pointer.hpp"
 #include "ura/view/client.hpp"
 #include "ura/view/view.hpp"
@@ -181,23 +182,31 @@ void UraCursor::process_motion(
 
   // focus if move to another surface
   if (focus_follow_mouse) {
-    static bool focus_inhibitor = false;
-    if (focus_inhibitor)
-      return;
-    focus_inhibitor = true;
-    if (!surface) {
-      if (server->state->get_option<bool>("unfocus_on_leave").value_or(false))
-        server->seat->unfocus();
+    auto callback = [=]() {
+      auto client = server->view->foreground_client();
+      auto surface = client ? client.value().surface : nullptr;
+      if (surface == server->seat->focused_client()->surface)
+        return;
+      if (!surface) {
+        if (server->state->get_option<bool>("unfocus_on_leave").value_or(false))
+          server->seat->unfocus();
+      } else {
+        server->seat->focus(client.value());
+      }
+    };
+
+    auto delay = server->state->get_option<double>("focus_delay").value_or(2.);
+    if (delay <= 0) {
+      callback();
     } else {
-      server->seat->focus(client.value());
+      static auto timer = -1;
+      server->dispatcher->clear_timer(timer);
+      timer = server->dispatcher->set_timer(
+        callback,
+        std::chrono::milliseconds(2), // delay
+        std::chrono::milliseconds(0)
+      );
     }
-    server->dispatcher->schedule_task(
-      []() {
-        focus_inhibitor = false;
-        return true;
-      },
-      100
-    );
   }
 }
 

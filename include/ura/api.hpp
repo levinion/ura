@@ -12,7 +12,8 @@ void terminate();
 void reload();
 void spawn(std::string cmd);
 void notify(std::string summary, std::string body);
-void schedule(flexible::function f, int64_t time);
+int set_timer(flexible::function f, int64_t value, int64_t interval);
+void clear_timer(int fd);
 void eval(std::string code);
 // hook
 void set_hook(std::string name, flexible::function f);

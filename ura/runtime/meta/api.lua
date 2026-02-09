@@ -11,8 +11,12 @@ ura.api = {
   --- @param body string
   notify = function(summary, body) end,
   --- @param f function
-  --- @param time integer Milliseconds
-  schedule = function(f, time) end,
+  --- @param value integer Milliseconds
+  --- @param interval integer Milliseconds
+  --- @return integer
+  set_timer = function(f, value, interval) end,
+  --- @param fd integer
+  clear_timer = function(fd) end,
 
   -- hook
   --- @param name string

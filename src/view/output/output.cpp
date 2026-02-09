@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <chrono>
 #include <functional>
 #include <ranges>
 #include "ura/view/view.hpp"
@@ -240,12 +241,10 @@ void UraOutput::set_dpms_mode(bool flag) {
 
   auto server = UraServer::get_instance();
   wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, true);
-  server->dispatcher->schedule_task(
-    [=]() {
-      wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, false);
-      return true;
-    },
-    1000
+  server->dispatcher->set_timer(
+    [=]() { wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, false); },
+    std::chrono::milliseconds(1000),
+    std::chrono::milliseconds(0)
   );
 }
 

@@ -8,6 +8,7 @@
 #include <memory>
 #include <unordered_map>
 #include <sys/timerfd.h>
+#include <chrono>
 
 namespace ura {
 
@@ -56,31 +57,58 @@ public:
     close(fd);
   }
 
-  void schedule_task(std::function<bool()> callback, uint64_t millisecond) {
+  template<typename Rep1, typename Period1, typename Rep2, typename Period2>
+  int set_timer(
+    std::function<void()> callback,
+    std::chrono::duration<Rep1, Period1> value,
+    std::chrono::duration<Rep2, Period2> interval
+  ) {
     auto fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     if (fd == -1)
-      return;
+      return -1;
+
+    auto secs = std::chrono::duration_cast<std::chrono::seconds>(value);
+    auto nsecs =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(value - secs);
+    auto isecs = std::chrono::duration_cast<std::chrono::seconds>(interval);
+    auto insecs =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(interval - isecs);
+
     itimerspec timer_spec;
-    // ms to s and ns
-    timer_spec.it_value.tv_sec = millisecond / 1000;
-    timer_spec.it_value.tv_nsec = (millisecond % 1000) * 1000000;
-    // interval: only exec the task once
-    timer_spec.it_interval.tv_sec = 0;
-    timer_spec.it_interval.tv_nsec = 0;
+    timer_spec.it_value.tv_sec = secs.count();
+    timer_spec.it_value.tv_nsec = nsecs.count();
+    timer_spec.it_interval.tv_sec = isecs.count();
+    timer_spec.it_interval.tv_nsec = insecs.count();
+
     // flag 0 means relative time
     auto ret = timerfd_settime(fd, 0, &timer_spec, nullptr);
     if (ret == -1) {
       close(fd);
-      return;
+      return -1;
     }
 
     this->add_task(fd, [=, this]() {
-      // consume the event
       uint64_t expirations;
-      read(fd, &expirations, sizeof(expirations));
+      while (read(fd, &expirations, sizeof(expirations)) > 0) {
+        callback();
+      }
       this->remove_task(fd);
-      return callback();
+      return true;
     });
+
+    return fd;
+  }
+
+  void clear_timer(int fd) {
+    if (!this->is_task_active(fd))
+      return;
+    itimerspec clear = {};
+    timerfd_settime(fd, 0, &clear, nullptr);
+    this->remove_task(fd);
+  }
+
+  bool is_task_active(int fd) {
+    return this->tasks.contains(fd);
   }
 
 private:

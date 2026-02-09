@@ -1,4 +1,5 @@
 #include "ura/api.hpp"
+#include <chrono>
 #include <cstdint>
 #include <regex>
 #include <sol/forward.hpp>
@@ -318,21 +319,20 @@ void notify(std::string summary, std::string body) {
   log::notify(summary, body);
 }
 
-void schedule(flexible::function f, int64_t time) {
+int set_timer(flexible::function f, int64_t value, int64_t interval) {
   auto server = UraServer::get_instance();
-  if (time < 0)
-    return;
-  else if (time == 0) {
-    f({});
-    return;
-  }
-  server->dispatcher->schedule_task(
-    [=]() {
-      f({});
-      return true;
-    },
-    time
+  if (value < 0 || interval < 0)
+    return -1;
+  return server->dispatcher->set_timer(
+    [=]() { f({}); },
+    std::chrono::milliseconds(value),
+    std::chrono::milliseconds(interval)
   );
+}
+
+void clear_timer(int fd) {
+  auto server = UraServer::get_instance();
+  server->dispatcher->clear_timer(fd);
 }
 
 std::optional<int> get_window_z_index(uint64_t id) {
