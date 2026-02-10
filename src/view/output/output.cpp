@@ -297,10 +297,11 @@ void UraOutput::focus_lru() {
     server->seat->unfocus();
     return;
   }
-  std::sort(toplevels.begin(), toplevels.end(), [](auto a, auto b) {
-    return a->lru > b->lru;
-  });
-  server->seat->focus(toplevels.front());
+  auto toplevel =
+    std::max_element(toplevels.begin(), toplevels.end(), [](auto a, auto b) {
+      return a->lru > b->lru;
+    });
+  server->seat->focus(*toplevel);
 }
 
 } // namespace ura

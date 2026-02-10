@@ -383,8 +383,12 @@ void UraToplevel::unmap() {
   wlr_scene_node_set_enabled(&this->scene_tree->node, false);
 
   auto server = UraServer::get_instance();
-  if (server->seat->focused_toplevel() == this)
+  if (server->seat->focused_toplevel() == this) {
     server->seat->unfocus();
+    auto output = this->output();
+    if (output)
+      output->focus_lru();
+  }
 
   if (this->xdg_toplevel->base->initialized && this->foreign_handle)
     wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
