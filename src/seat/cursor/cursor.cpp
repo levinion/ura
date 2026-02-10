@@ -177,6 +177,9 @@ void UraCursor::process_motion(
     );
   }
 
+  if (surface == server->seat->seat->keyboard_state.focused_surface)
+    return;
+
   auto focus_follow_mouse =
     server->state->get_option<bool>("focus_follow_mouse").value_or(true);
 
@@ -185,7 +188,7 @@ void UraCursor::process_motion(
     auto callback = [=]() {
       auto client = server->view->foreground_client();
       auto surface = client ? client.value().surface : nullptr;
-      if (surface == server->seat->focused_client()->surface)
+      if (surface == server->seat->seat->keyboard_state.focused_surface)
         return;
       if (!surface) {
         if (server->state->get_option<bool>("unfocus_on_leave").value_or(false))
@@ -195,7 +198,7 @@ void UraCursor::process_motion(
       }
     };
 
-    auto delay = server->state->get_option<double>("focus_delay").value_or(2.);
+    auto delay = server->state->get_option<double>("focus_delay").value_or(5.);
     if (delay <= 0) {
       callback();
     } else {

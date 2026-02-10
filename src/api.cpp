@@ -319,10 +319,11 @@ void notify(std::string summary, std::string body) {
   log::notify(summary, body);
 }
 
-int set_timer(flexible::function f, int64_t value, int64_t interval) {
+std::optional<int>
+set_timer(flexible::function f, int64_t value, int64_t interval) {
   auto server = UraServer::get_instance();
   if (value < 0 || interval < 0)
-    return -1;
+    return {};
   return server->dispatcher->set_timer(
     [=]() { f({}); },
     std::chrono::milliseconds(value),

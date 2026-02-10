@@ -35,4 +35,8 @@ ura.fn = {
   ---@param t table
   ---@return table
   natural_sort = function(t) end,
+  ---@param t table
+  ---@param value any
+  ---@return integer|nil
+  find = function(t, value) end,
 }

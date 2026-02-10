@@ -13,7 +13,7 @@ ura.api = {
   --- @param f function
   --- @param value integer Milliseconds
   --- @param interval integer Milliseconds
-  --- @return integer
+  --- @return integer|nil
   set_timer = function(f, value, interval) end,
   --- @param fd integer
   clear_timer = function(fd) end,

@@ -182,4 +182,16 @@ function M.natural_sort(t)
   return t
 end
 
+---@param t table
+---@param value any
+---@return integer|nil
+function M.find(t, value)
+  for i, v in ipairs(t) do
+    if v == value then
+      return i
+    end
+  end
+  return nil
+end
+
 return M
