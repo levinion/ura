@@ -299,7 +299,7 @@ void UraOutput::focus_lru() {
   }
   auto toplevel =
     std::max_element(toplevels.begin(), toplevels.end(), [](auto a, auto b) {
-      return a->lru > b->lru;
+      return a->lru < b->lru;
     });
   server->seat->focus(*toplevel);
 }

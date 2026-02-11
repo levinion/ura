@@ -385,9 +385,6 @@ void UraToplevel::unmap() {
   auto server = UraServer::get_instance();
   if (server->seat->focused_toplevel() == this) {
     server->seat->unfocus();
-    auto output = this->output();
-    if (output)
-      output->focus_lru();
   }
 
   if (this->xdg_toplevel->base->initialized && this->foreign_handle)
@@ -577,6 +574,9 @@ void UraToplevel::set_tags(Vec<std::string>&& tags) {
     server->seat->focus(this);
   } else {
     this->unmap();
+    auto output = this->output();
+    if (output)
+      output->focus_lru();
   }
 
   auto args = flexible::create_table();
