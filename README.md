@@ -154,6 +154,13 @@ More configuration examples are available at: [examples](https://github.com/levi
 
 For more infomation, please visit [Ura Wiki](https://github.com/levinion/ura/wiki)
 
+## Dev
+
+```shell
+docker build -t levinion/ura .
+docker run -it -v .:/home/dev/ura levinion/ura
+```
+
 ## License
 
 This project is licensed under the terms of the [GPLv3](/LICENSE).

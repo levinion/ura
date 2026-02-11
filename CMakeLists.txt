@@ -37,10 +37,16 @@ function(target_add_dependence target pkgname)
   target_include_directories(${target} PRIVATE ${${pkgname}_INCLUDE_DIRS})
 endfunction()
 
+include(FetchContent)
+FetchContent_Declare(sol2
+GIT_REPOSITORY https://github.com/ThePhD/sol2
+GIT_TAG main)
+FetchContent_MakeAvailable(sol2)
+target_link_libraries(${NAME} PRIVATE sol2)
+
 target_add_dependence(${NAME} wlroots-0.19)
 target_add_dependence(${NAME} wayland-server)
 target_add_dependence(${NAME} xkbcommon)
-target_add_dependence(${NAME} sol2)
 target_add_dependence(${NAME} luajit)
 target_add_dependence(${NAME} CLI11)
 target_add_dependence(${NAME} libnotify)
