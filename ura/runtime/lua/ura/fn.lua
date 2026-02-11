@@ -194,33 +194,40 @@ function M.find(t, value)
   return nil
 end
 
+---@param t table
+---@return table
+function M.unique(t)
+  local checked = {}
+  local tb = {}
+  for _, v in ipairs(t) do
+    if not checked[v] then
+      checked[v] = true
+      table.insert(tb, v)
+    end
+  end
+  return tb
+end
+
 ---@param opt table|nil
 ---@return table<string>
 function M.collect_tags(opt)
   opt = opt or { include_active = true }
 
   local tags = {}
-  local checked = {}
   for _, w in ipairs(ura.class.UraWindow:all()) do
     for _, tag in ipairs(w:tags()) do
-      if not checked[tag] then
-        checked[tag] = true
-        table.insert(tags, tag)
-      end
+      table.insert(tags, tag)
     end
   end
 
   if opt.include_active then
     local active_tags = ura.class.UraOutput:current():tags()
     for _, tag in ipairs(active_tags) do
-      if not checked[tag] then
-        checked[tag] = true
-        table.insert(tags, tag)
-      end
+      table.insert(tags, tag)
     end
   end
 
-  return ura.fn.natural_sort(tags)
+  return ura.fn.natural_sort(ura.fn.unique(tags))
 end
 
 return M
