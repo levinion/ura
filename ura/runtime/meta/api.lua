@@ -104,6 +104,12 @@ ura.api = {
   get_window_tags = function(id) end,
   --- @return table<integer>
   get_all_windows = function() end,
+  --- @param id integer
+  --- @return boolean|nil
+  is_window_mapped = function(id) end,
+  --- @param id integer
+  --- @return boolean|nil
+  is_window_focused = function(id) end,
 
   -- input
   --- @param rate integer

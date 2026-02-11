@@ -44,6 +44,21 @@ function UraOutput:from_name(name)
   return id and UraOutput:new(id) or nil
 end
 
+---@param x integer
+---@param y integer
+---@return table<UraOutput>
+function UraOutput:from_pos(x, y)
+  local outputs = self:all()
+  local t = {}
+  for _, output in ipairs(outputs) do
+    local geo = output:logical_geometry()
+    if geo.x <= x and geo.x + geo.width >= x and geo.y <= y and geo.y + geo.height >= y then
+      table.insert(t, output)
+    end
+  end
+  return t
+end
+
 ---@return string|nil
 function UraOutput:name()
   return ura.api.get_output_name(self.id)

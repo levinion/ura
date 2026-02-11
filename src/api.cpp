@@ -544,6 +544,20 @@ flexible::object get_all_outputs() {
   return table;
 }
 
+std::optional<bool> is_window_mapped(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->mapped();
+}
+
+std::optional<bool> is_window_focused(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->is_focused();
+}
+
 } // namespace ura::api::core
 
 namespace ura::api::lua {

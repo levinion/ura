@@ -70,6 +70,8 @@ void Lua::setup() {
   LUAAPI("api.set_window_tags", api::core::set_window_tags);
   LUAAPI("api.get_window_tags", api::core::get_window_tags);
   LUAAPI("api.get_all_windows", api::core::get_all_windows);
+  LUAAPI("api.is_window_mapped", api::core::is_window_mapped);
+  LUAAPI("api.is_window_focused", api::core::is_window_focused);
   // input
   LUAAPI("api.set_keyboard_repeat", api::core::set_keyboard_repeat);
   LUAAPI("api.set_cursor_theme", api::core::set_cursor_theme);

@@ -123,6 +123,8 @@ for _, w in ipairs(ura.class.UraWindow:all()) do
 		is_fullscreen = w:is_fullscreen(),
 		userdata = w:userdata(),
 		tags = w:tags(),
+    is_mapped = w:is_mapped(),
+    is_focused = w:is_focused()
 	}
 end
 print(ura.api.to_json(t))

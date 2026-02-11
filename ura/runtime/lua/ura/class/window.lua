@@ -58,6 +58,21 @@ function UraWindow:from_tags(tags)
   return t
 end
 
+---@param x integer
+---@param y integer
+---@return table<UraWindow>
+function UraWindow:from_pos(x, y)
+  local wins = self:all()
+  local t = {}
+  for _, win in ipairs(wins) do
+    local geo = win:geometry()
+    if win:is_mapped() and geo.x <= x and geo.x + geo.width >= x and geo.y <= y and geo.y + geo.height >= y then
+      table.insert(t, win)
+    end
+  end
+  return t
+end
+
 function UraWindow:close()
   ura.api.close_window(self.id)
 end
@@ -119,6 +134,16 @@ end
 --- @param flag boolean
 function UraWindow:set_fullscreen(flag)
   ura.api.set_window_fullscreen(self.id, flag)
+end
+
+---@return boolean|nil
+function UraWindow:is_mapped()
+  return ura.api.is_window_mapped(self.id)
+end
+
+---@return boolean|nil
+function UraWindow:is_focused()
+  return ura.api.is_window_focused(self.id)
 end
 
 --- @param x integer
