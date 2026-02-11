@@ -39,4 +39,7 @@ ura.fn = {
   ---@param value any
   ---@return integer|nil
   find = function(t, value) end,
+  ---@param opt table|nil
+  ---@return table<string>
+  collect_tags = function(opt) end,
 }

@@ -26,7 +26,7 @@ install:
 	install -d $(DESTDIR)/usr/share/zsh/site-functions
 	install -Dm644 ./assets/completions/zsh/* $(DESTDIR)/usr/share/zsh/site-functions/
 	cp -r ura $(DESTDIR)/usr/share/
-	install -Dm755 ./scripts/* $(DESTDIR)/usr/bin/
+	install -Dm755 ./tools/scripts/* $(DESTDIR)/usr/bin/
 	install -Dm755 ./tools/ura-shell/target/release/ura-shell $(DESTDIR)/usr/bin/
 
 init: CMakeLists.txt include/protocols $(PROTOCOL_HEADERS) src/ipc.c

@@ -27,31 +27,21 @@ ura.keymap.set("super+f", function()
 end)
 
 ura.keymap.set("ctrl+left", function()
-  local tag = tonumber(ura.class.UraOutput:current():tags()[1]) - 1
-  if tag < 1 then
-    return
+  local tags = ura.fn.collect_tags()
+  local active_tag = ura.class.UraOutput:current():tags()[1]
+  local index = ura.fn.find(tags, active_tag)
+  if index - 1 >= 1 then
+    ura.class.UraOutput:current():set_tags({ tags[index - 1] })
   end
-  ura.class.UraOutput:current():set_tags({ tostring(tag) })
 end)
 
 ura.keymap.set("ctrl+right", function()
-  local tag = tonumber(ura.class.UraOutput:current():tags()[1]) + 1
-  ura.class.UraOutput:current():set_tags({ tostring(tag) })
-end)
-
-ura.keymap.set("ctrl+shift+left", function()
-  local tag = tonumber(ura.class.UraOutput:current():tags()[1]) - 1
-  if tag < 1 then
-    return
+  local tags = ura.fn.collect_tags()
+  local active_tag = ura.class.UraOutput:current():tags()[1]
+  local index = ura.fn.find(tags, active_tag)
+  if index + 1 <= #tags then
+    ura.class.UraOutput:current():set_tags({ tags[index + 1] })
   end
-  ura.class.UraWindow:current():set_tags({ tostring(tag) })
-  ura.class.UraOutput:current():set_tags({ tostring(tag) })
-end)
-
-ura.keymap.set("ctrl+shift+right", function()
-  local tag = tonumber(ura.class.UraOutput:current():tags()[1]) + 1
-  ura.class.UraWindow:current():set_tags({ tostring(tag) })
-  ura.class.UraOutput:current():set_tags({ tostring(tag) })
 end)
 
 ura.keymap.set("super+h", function()
