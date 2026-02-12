@@ -24,6 +24,9 @@ ura.api = {
   set_hook = function(name, f) end,
   --- @param name string
   unset_hook = function(name) end,
+  ---@param name string
+  ---@param args table
+  emit_hook = function(name, args) end,
 
   -- idle
   notify_idle_activity = function() end,

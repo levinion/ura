@@ -3,7 +3,7 @@
 
 namespace ura {
 
-bool UraState::try_execute_keybinding(uint64_t id) {
+bool UraState::emit_keybinding(uint64_t id) {
   if (!this->contains_keybinding(id))
     return false;
   this->keymaps[this->keymap_mode][id]({});
@@ -25,7 +25,7 @@ UraState::init(std::optional<std::string>&& config_path) {
   return state;
 }
 
-void UraState::try_execute_hook(std::string name, flexible::object args) {
+void UraState::emit_hook(std::string name, flexible::object args) {
   if (!this->hooks.contains(name))
     return;
   this->hooks[name](args);

@@ -78,7 +78,7 @@ void UraSeat::unfocus() {
     server->seat->cursor->set_xcursor("left_ptr");
   }
   wlr_seat_keyboard_notify_clear_focus(seat);
-  server->state->try_execute_hook("focus-change", {});
+  server->state->emit_hook("focus-change", {});
 }
 
 void UraSeat::focus(UraClient client) {
@@ -93,7 +93,7 @@ void UraSeat::focus(UraClient client) {
     this->unfocus();
   client.focus();
   auto server = UraServer::get_instance();
-  server->state->try_execute_hook("focus-change", {});
+  server->state->emit_hook("focus-change", {});
 }
 
 void UraSeat::focus(UraToplevel* toplevel) {

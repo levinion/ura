@@ -5,7 +5,7 @@ M.HOOKS = {}
 ---@param name string
 ---@param f fun(e: table):any
 ---@param opt table|nil
-function M.set(name, f, opt)
+function M.add(name, f, opt)
   local hook = { func = f }
   if opt ~= nil and ura.fn.validate(opt, "ns", "string") then
     hook.ns = opt.ns
@@ -50,6 +50,12 @@ function M.remove(ns)
       end
     end)
   end
+end
+
+---@param name string
+---@param args table|nil
+function M.emit(name, args)
+  ura.api.emit_hook(name, args or {})
 end
 
 return M

@@ -18,6 +18,7 @@ _ura_cmd_commands() {
     "get-option"
     "show-hooks"
     "show-windows"
+    "show-fd"
     "help"
     "-h"
     "--help"

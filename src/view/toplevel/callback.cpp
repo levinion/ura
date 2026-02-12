@@ -67,7 +67,7 @@ void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {
     return;
   auto args = flexible::create_table();
   args.set("id", toplevel->id());
-  server->state->try_execute_hook("window-request-fullscreen", args);
+  server->state->emit_hook("window-request-fullscreen", args);
 }
 
 void on_toplevel_set_app_id(wl_listener* listener, void* data) {

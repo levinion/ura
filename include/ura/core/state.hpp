@@ -23,7 +23,7 @@ public:
   init(std::optional<std::string>&& config_path);
 
   template<typename T>
-  std::optional<T> try_execute_hook(std::string name, flexible::object args) {
+  std::optional<T> emit_hook(std::string name, flexible::object args) {
     if (!this->hooks.contains(name))
       return {};
     auto ret = this->hooks[name](args);
@@ -35,8 +35,8 @@ public:
     return {};
   }
 
-  void try_execute_hook(std::string name, flexible::object args);
-  bool try_execute_keybinding(uint64_t id);
+  void emit_hook(std::string name, flexible::object args);
+  bool emit_keybinding(uint64_t id);
   bool contains_keybinding(uint64_t id);
   void set_option(std::string_view key, flexible::object& value);
 

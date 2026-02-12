@@ -111,7 +111,7 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
     }
     // exec keybinding
     if (!server->seat->locked) {
-      if (server->state->try_execute_keybinding(id))
+      if (server->state->emit_keybinding(id))
         return;
     }
   }

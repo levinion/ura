@@ -51,7 +51,7 @@ void on_new_input(wl_listener* listener, void* data) {
 
   auto args = flexible::create_table();
   args.set("name", device->name);
-  server->state->try_execute_hook("new-input", args);
+  server->state->emit_hook("new-input", args);
 }
 
 } // namespace ura

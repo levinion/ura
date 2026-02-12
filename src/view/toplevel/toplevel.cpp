@@ -119,7 +119,7 @@ void UraToplevel::destroy() {
 
   auto args = flexible::create_table();
   args.set("id", this->id());
-  server->state->try_execute_hook("window-close", args);
+  server->state->emit_hook("window-close", args);
 
   server->globals.erase(this->id());
 }
@@ -183,7 +183,7 @@ void UraToplevel::commit() {
     args.set("id", this->id());
     this->prepared = true;
     this->map();
-    server->state->try_execute_hook("window-new", args);
+    server->state->emit_hook("window-new", args);
   }
 }
 
@@ -252,8 +252,7 @@ void UraToplevel::activate() {
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
   args.set("id", this->id());
-  auto flag =
-    server->state->try_execute_hook<bool>("pre-window-activate", args);
+  auto flag = server->state->emit_hook<bool>("pre-window-activate", args);
   // if hook returns a false value, then stop the operation.
   if (flag && !flag.value())
     return;
@@ -262,7 +261,7 @@ void UraToplevel::activate() {
     return;
   output->set_tags(std::move(this->tags));
   server->seat->focus(this);
-  server->state->try_execute_hook("window-activate", args);
+  server->state->emit_hook("window-activate", args);
 }
 
 bool UraToplevel::move(int x, int y) {
@@ -280,7 +279,7 @@ bool UraToplevel::move(int x, int y) {
     auto server = UraServer::get_instance();
     auto args = flexible::create_table();
     args.set("id", this->id());
-    server->state->try_execute_hook("window-move", args);
+    server->state->emit_hook("window-move", args);
 
     return true;
   }
@@ -314,7 +313,7 @@ bool UraToplevel::resize(int width, int height) {
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
   args.set("id", this->id());
-  server->state->try_execute_hook("window-resize", args);
+  server->state->emit_hook("window-resize", args);
   return true;
 }
 
@@ -374,7 +373,7 @@ void UraToplevel::map() {
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
   args.add("id", this->id());
-  server->state->try_execute_hook("window-map", args);
+  server->state->emit_hook("window-map", args);
 }
 
 void UraToplevel::unmap() {
@@ -392,7 +391,7 @@ void UraToplevel::unmap() {
 
   auto args = flexible::create_table();
   args.add("id", this->id());
-  server->state->try_execute_hook("window-unmap", args);
+  server->state->emit_hook("window-unmap", args);
 }
 
 std::string UraToplevel::title() {
@@ -408,7 +407,7 @@ void UraToplevel::set_title(std::string title) {
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
   args.set("id", this->id());
-  server->state->try_execute_hook("window-title-change", args);
+  server->state->emit_hook("window-title-change", args);
 }
 
 void UraToplevel::set_app_id(std::string app_id) {
@@ -419,7 +418,7 @@ void UraToplevel::set_app_id(std::string app_id) {
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
   args.set("id", this->id());
-  server->state->try_execute_hook("window-app_id-change", args);
+  server->state->emit_hook("window-app_id-change", args);
 }
 
 void UraToplevel::set_z_index(int z_index) {
@@ -581,7 +580,7 @@ void UraToplevel::set_tags(Vec<std::string>&& tags) {
 
   auto args = flexible::create_table();
   args.set("id", this->id());
-  server->state->try_execute_hook("window-tags-change", args);
+  server->state->emit_hook("window-tags-change", args);
 }
 
 bool UraToplevel::is_tag_matched() {

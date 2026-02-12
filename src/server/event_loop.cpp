@@ -27,7 +27,7 @@ UraServer* UraServer::init(std::unique_ptr<UraState>&& state) {
     log::error("{}", result.error());
     this->terminate();
   }
-  this->state->try_execute_hook("prepare", {});
+  this->state->emit_hook("prepare", {});
 
   this->setup_base();
   this->setup_ipc();
@@ -287,7 +287,7 @@ void UraServer::check_and_reset_lua() {
       log::notify("reload failed", result.error());
       return;
     }
-    this->state->try_execute_hook("reload", {});
+    this->state->emit_hook("reload", {});
   }
 }
 
@@ -318,7 +318,7 @@ void UraServer::run() {
     wl_display_flush_clients(this->display);
     return true;
   });
-  this->state->try_execute_hook("ready", {});
+  this->state->emit_hook("ready", {});
 
   while (!this->quit) {
     if (!dispatcher->dispatch())

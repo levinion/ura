@@ -80,9 +80,9 @@ void UraOutput::init(wlr_output* _wlr_output) {
   args.set("id", this->id());
 
   if (resume)
-    server->state->try_execute_hook("output-resume", args);
+    server->state->emit_hook("output-resume", args);
   else {
-    server->state->try_execute_hook("output-new", args);
+    server->state->emit_hook("output-new", args);
   }
 
   server->globals[this->id()] = UraGlobalType::Output;
@@ -217,7 +217,7 @@ bool UraOutput::configure_layers() {
     this->usable_area = Vec4<int>::from(usable_area);
     auto args = flexible::create_table();
     args.set("id", this->id());
-    server->state->try_execute_hook("output-usable-geometry-change", args);
+    server->state->emit_hook("output-usable-geometry-change", args);
     return true;
   }
   return false;
@@ -285,7 +285,7 @@ void UraOutput::set_tags(Vec<std::string>&& tags) {
 
   auto args = flexible::create_table();
   args.add("id", this->id());
-  server->state->try_execute_hook("output-tags-change", args);
+  server->state->emit_hook("output-tags-change", args);
 }
 
 void UraOutput::focus_lru() {

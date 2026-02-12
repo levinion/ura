@@ -70,6 +70,6 @@ ura.keymap.set("super+0", function()
   ura.class.UraOutput:current():set_tags({ "10" })
 end)
 
-ura.hook.set("window-new", function(e)
+ura.hook.add("window-new", function(e)
   ura.class.UraWindow:new(e.id):focus()
 end)

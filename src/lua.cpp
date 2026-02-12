@@ -106,6 +106,7 @@ void Lua::setup() {
   // hook
   LUAAPI("api.set_hook", api::core::set_hook);
   LUAAPI("api.unset_hook", api::core::unset_hook);
+  LUAAPI("api.emit_hook", api::core::emit_hook);
   // fn
   LUAAPI("api.set_env", api::core::set_env);
   LUAAPI("api.unset_env", api::core::unset_env);

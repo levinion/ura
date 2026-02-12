@@ -27,6 +27,6 @@ void on_foreign_toplevel_handle_request_fullscreen(
 
   auto args = flexible::create_table();
   args.set("id", toplevel->id());
-  server->state->try_execute_hook("window-request-fullscreen", args);
+  server->state->emit_hook("window-request-fullscreen", args);
 }
 } // namespace ura

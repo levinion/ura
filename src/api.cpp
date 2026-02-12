@@ -558,6 +558,11 @@ std::optional<bool> is_window_focused(uint64_t id) {
   return toplevel->is_focused();
 }
 
+void emit_hook(std::string name, flexible::object args) {
+  auto server = UraServer::get_instance();
+  server->state->emit_hook(name, args);
+}
+
 } // namespace ura::api::core
 
 namespace ura::api::lua {

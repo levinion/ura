@@ -1,9 +1,9 @@
 local M = {}
 
 function M.setup()
-  ura.layout.register("floating", {
-    ---@param win UraWindow
-    enter = function(win)
+  ura.hook.add("window-layout-change", function(e)
+    local win = ura.class.UraWindow:new(e.id)
+    if e.to == "floating" then
       win:set_draggable(true)
       win:set_z_index(150)
       -- recover window size
@@ -16,16 +16,14 @@ function M.setup()
       if userdata.floating.x and userdata.floating.y then
         win:move(userdata.floating.x, userdata.floating.y)
       end
-    end,
-    ---@param win UraWindow
-    leave = function(win)
+    elseif e.from == "floating" then
       local geo = win:geometry()
       assert(geo)
       win:update_userdata({ floating = geo })
-    end,
-  })
+    end
+  end, { priority = 0 })
 
-  ura.hook.set("window-new", function(e)
+  ura.hook.add("window-new", function(e)
     local win = ura.class.UraWindow:new(e.id)
     assert(win)
     local geo = win:geometry()

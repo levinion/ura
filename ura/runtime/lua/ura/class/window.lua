@@ -198,16 +198,22 @@ end
 
 ---@return string|nil
 function UraWindow:layout()
-  return ura.layout.get(self)
+  local userdata = self:userdata()
+  return userdata and userdata.layout or nil
 end
 
 ---@param layout string
 function UraWindow:set_layout(layout)
-  ura.layout.set(self, layout)
-end
-
-function UraWindow:apply_layout()
-  ura.layout.apply(self)
+  local old_layout = self:layout()
+  if old_layout == layout then
+    return
+  end
+  self:update_userdata({ layout = layout })
+  ura.api.emit_hook("window-layout-change", {
+    id = self.id,
+    from = old_layout,
+    to = layout,
+  })
 end
 
 ---@param layout string

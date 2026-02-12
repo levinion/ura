@@ -18,7 +18,6 @@ Commands:
   set-pointer-accel-profile <profile> <glob>  Set pointer acceleration profile for a device glob.
   show-hooks
   show-windows
-  show-layouts
   help, -h, --help                   Show this help message.
 EOF
 }
@@ -105,9 +104,6 @@ case "$1" in
   ;;
 "show-hooks")
   ura-shell -c "print(ura.api.to_json(ura.hook.HOOKS))"
-  ;;
-"show-layouts")
-  ura-shell -c "print(ura.api.to_json(ura.layout.LAYOUTS))"
   ;;
 "show-windows")
   ura-shell -c '

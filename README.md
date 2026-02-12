@@ -86,7 +86,7 @@ Here are some examples:
 The `prepare` hook runs after the Lua module is initialized, but before compositor resources are created. You can use this hook to set global environment variables:
 
 ```lua
-ura.hook.set("prepare", function(_)
+ura.hook.add("prepare", function(_)
   ura.api.set_env("WLR_RENDERER", "vulkan")
   ura.api.set_env("WLR_NO_HARDWARE_CURSORS", "0")
   ura.api.set_env("LIBVA_DRIVER_NAME", "nvidia")
@@ -97,7 +97,7 @@ end)
 Use the `ready` hook (note: hook names may change across versions) to start applications just before the compositor starts running:
 
 ```lua
-ura.hook.set("ready", function(_)
+ura.hook.add("ready", function(_)
   ura.api.set_env("DISPLAY", ":0")
   ura.api.spawn("xwayland-satellite")
 end)
@@ -106,7 +106,7 @@ end)
 The `window-new` hook is triggered when a new top-level window is created and focused. You can use it to apply window-specific styling:
 
 ```lua
-ura.hook.set("window-new", function(e)
+ura.hook.add("window-new", function(e)
 	local win = ura.class.UraWindow:new(e.id)
 	local app_id = win:app_id()
 	assert(app_id)
@@ -118,37 +118,9 @@ ura.hook.set("window-new", function(e)
 end)
 ```
 
+...
+
 More hooks could be found in the WIKI (TODO)。
-
-## Layout
-
-The layout module in Ura lets you create custom layout algorithms. This is how ura implement the fullscreen layout.
-
-```lua
-ura.layout.register("fullscreen", {
-  ---@param win UraWindow
-  enter = function(win)
-    win:set_draggable(false)
-    win:set_z_index(250)
-    win:set_fullscreen(true)
-  end,
-  ---@param win UraWindow
-  apply = function(win)
-    local output = win:output()
-    assert(output)
-    local geo = output:logical_geometry()
-    assert(geo)
-    win:resize(geo.width, geo.height)
-    win:move(geo.x, geo.y)
-  end,
-  ---@param win UraWindow
-  leave = function(win)
-    win:set_fullscreen(false)
-  end,
-})
-```
-
-Used with the window-new hook, this allows you to apply a custom layout algorithm when a new window is created. The builtin layout algorithms include tiling, floating, and fullscreen. The buildin layout algorithms are at [layout](/ura/plugins/builtin/lua/builtin/layout/)
 
 More configuration examples are available at: [examples](https://github.com/levinion/dotfiles/tree/main/user/ura/.config/ura)
 
@@ -158,7 +130,7 @@ For more infomation, please visit [Ura Wiki](https://github.com/levinion/ura/wik
 
 ```shell
 docker build -t levinion/ura .
-docker run -it -v .:/home/dev/ura levinion/ura
+docker run --rm -it -v .:/home/dev/ura levinion/ura
 ```
 
 ## License

@@ -18,6 +18,7 @@ void clear_timer(int fd);
 // hook
 void set_hook(std::string name, flexible::function f);
 void unset_hook(std::string name);
+void emit_hook(std::string name, flexible::object args);
 // idle
 void notify_idle_activity();
 void set_idle_inhibitor(bool flag);
