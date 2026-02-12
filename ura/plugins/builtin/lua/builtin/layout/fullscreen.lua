@@ -27,15 +27,15 @@ function M.setup()
     elseif e.from == "fullscreen" then
       win:set_fullscreen(false)
     end
-  end)
+  end, { ns = "layout.fullscreen" })
 
   ura.hook.add("output-usable-geometry-change", function(_)
     apply_all()
-  end, { ns = "layout.fullscreen", priority = 40, desc = "re-apply layout as usable geometry change" })
+  end, { ns = "layout.fullscreen" })
 
   ura.hook.add("window-request-fullscreen", function(e)
     ura.class.UraWindow:new(e.id):toggle_layout("fullscreen")
-  end, { ns = "layout.fullscreen", priority = 40, desc = "re-apply layout as usable geometry change" })
+  end, { ns = "layout.fullscreen" })
 end
 
 return M

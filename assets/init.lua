@@ -27,7 +27,10 @@ ura.keymap.set("super+f", function()
 end)
 
 ura.keymap.set("ctrl+left", function()
-  local tags = ura.fn.collect_tags()
+  local tags = ura.fn.natural_sort(
+    ura.fn.unique({ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", unpack(ura.fn.collect_tags()) })
+  )
+  print(ura.api.to_json(tags))
   local active_tag = ura.class.UraOutput:current():tags()[1]
   local index = ura.fn.find(tags, active_tag)
   if index - 1 >= 1 then
@@ -36,6 +39,27 @@ ura.keymap.set("ctrl+left", function()
 end)
 
 ura.keymap.set("ctrl+right", function()
+  local tags = ura.fn.natural_sort(
+    ura.fn.unique({ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", unpack(ura.fn.collect_tags()) })
+  )
+  local active_tag = ura.class.UraOutput:current():tags()[1]
+  local index = ura.fn.find(tags, active_tag)
+  if index + 1 <= #tags then
+    ura.class.UraOutput:current():set_tags({ tags[index + 1] })
+  end
+end)
+
+ura.keymap.set("ctrl+alt+left", function()
+  local tags = ura.fn.collect_tags()
+  print(ura.api.to_json(tags))
+  local active_tag = ura.class.UraOutput:current():tags()[1]
+  local index = ura.fn.find(tags, active_tag)
+  if index - 1 >= 1 then
+    ura.class.UraOutput:current():set_tags({ tags[index - 1] })
+  end
+end)
+
+ura.keymap.set("ctrl+alt+right", function()
   local tags = ura.fn.collect_tags()
   local active_tag = ura.class.UraOutput:current():tags()[1]
   local index = ura.fn.find(tags, active_tag)
@@ -71,5 +95,7 @@ ura.keymap.set("super+0", function()
 end)
 
 ura.hook.add("window-new", function(e)
-  ura.class.UraWindow:new(e.id):focus()
+  local win = ura.class.UraWindow:new(e.id)
+  win:set_layout("tiling")
+  win:focus()
 end)

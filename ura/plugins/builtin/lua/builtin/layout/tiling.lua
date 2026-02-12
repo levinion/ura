@@ -66,28 +66,22 @@ function M.setup(opt)
     elseif e.from == "tiling" then
       apply_all(opt)
     end
-  end)
-
-  ura.hook.add("window-new", function(e)
-    local win = ura.class.UraWindow:new(e.id)
-    assert(win)
-    if win:layout() ~= nil then
-      return
-    end
-    win:set_layout("tiling")
-  end, { ns = "layout.tiling", priority = 100, desc = "set tiling as the fallback layout" })
+  end, { ns = "layout.tiling" })
 
   for _, name in ipairs({
-    -- "window-resize",
     "window-close",
-    "output-tags-change",
     "window-tags-change",
-    "output-usable-geometry-change",
   }) do
-    ura.hook.add(name, function(_)
-      apply_all(opt)
-    end, { ns = "layout.tiling", priority = 40, desc = "re-apply layout" })
+    ura.hook.add(name, function(e)
+      if ura.class.UraWindow:new(e.id):layout() == "tiling" then
+        apply_all(opt)
+      end
+    end, { ns = "layout.tiling" })
   end
+
+  ura.hook.add("output-usable-geometry-change", function(_)
+    apply_all(opt)
+  end, { ns = "layout.tiling" })
 end
 
 return M

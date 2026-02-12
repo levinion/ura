@@ -21,7 +21,10 @@ function M.setup()
       assert(geo)
       win:update_userdata({ floating = geo })
     end
-  end, { priority = 0 })
+  end, {
+    ns = "layout.floating",
+    priority = 0,
+  })
 
   ura.hook.add("window-new", function(e)
     local win = ura.class.UraWindow:new(e.id)
@@ -29,11 +32,7 @@ function M.setup()
     local geo = win:geometry()
     assert(geo)
     win:update_userdata({ floating = geo })
-  end, {
-    ns = "layout.floating",
-    priority = 0,
-    desc = "preserve initial geometry",
-  })
+  end, { ns = "layout.floating" })
 end
 
 return M
