@@ -12,7 +12,7 @@ file(GLOB_RECURSE SRC src/*.c src/*.cpp)
 add_executable(${NAME} ${SRC})
 
 if(CMAKE_BUILD_TYPE MATCHES 'Release')
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
 # include header
@@ -32,22 +32,16 @@ target_compile_options(${NAME} PRIVATE -Wall)
 find_package(PkgConfig REQUIRED)
 
 function(target_add_dependence target pkgname)
-  pkg_check_modules(${pkgname} REQUIRED ${pkgname})
-  target_link_libraries(${target} PRIVATE ${${pkgname}_LIBRARIES})
-  target_include_directories(${target} PRIVATE ${${pkgname}_INCLUDE_DIRS})
+	pkg_check_modules(${pkgname} REQUIRED ${pkgname})
+	target_link_libraries(${target} PRIVATE ${${pkgname}_LIBRARIES})
+	target_include_directories(${target} PRIVATE ${${pkgname}_INCLUDE_DIRS})
 endfunction()
-
-include(FetchContent)
-FetchContent_Declare(sol2
-GIT_REPOSITORY https://github.com/ThePhD/sol2
-GIT_TAG main)
-FetchContent_MakeAvailable(sol2)
-target_link_libraries(${NAME} PRIVATE sol2)
 
 target_add_dependence(${NAME} wlroots-0.20)
 target_add_dependence(${NAME} wayland-server)
 target_add_dependence(${NAME} xkbcommon)
 target_add_dependence(${NAME} luajit)
+target_add_dependence(${NAME} sol2)
 target_add_dependence(${NAME} CLI11)
 target_add_dependence(${NAME} libnotify)
 target_add_dependence(${NAME} spdlog)
