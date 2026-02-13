@@ -16,22 +16,21 @@ Lua is a general-purpose language supported by many editors and LSPs (like `lua_
 
 Dependencies include:
 
-- wayland
-- wlroots-git (wlroots0.20)
-- luajit
-- sol2
-- pixman
-- nlohmann-json
-- cli11
-- libnotify
-- spdlog
+- [wlroots-git](https://aur.archlinux.org/packages/wlroots-git)
+- [luajit](http://luajit.org/)
+- [libnotify](https://gitlab.gnome.org/GNOME/libnotify)
+- [spdlog](https://github.com/gabime/spdlog)
 
 Make dependencies include:
 
+- wayland-protocols
+- [sol2](https://aur.archlinux.org/packages/sol2)
 - cargo
 - make
 - cmake
 - pkgconf
+- [nlohmann-json](https://github.com/nlohmann/json)
+- [cli11](https://github.com/CLIUtils/CLI11)
 - ninja (optional)
 - sccache (optional)
 
