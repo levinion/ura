@@ -8,11 +8,11 @@ function M.setup()
     win:move(geo.x, geo.y)
   end
 
-  local function apply_all()
+  local function reset_fullscreen(w)
     local wins = ura.class.UraWindow:from_tags(ura.class.UraOutput:current():tags())
     for _, win in ipairs(wins) do
-      if win:layout() == "fullscreen" then
-        apply(win)
+      if win ~= w and win:layout() == "fullscreen" then
+        win:toggle_layout("fullscreen")
       end
     end
   end
@@ -24,13 +24,19 @@ function M.setup()
       win:set_z_index(250)
       win:set_fullscreen(true)
       apply(win)
+      reset_fullscreen(win)
     elseif e.from == "fullscreen" then
       win:set_fullscreen(false)
     end
   end, { ns = "layout.fullscreen" })
 
   ura.hook.add("output-usable-geometry-change", function(_)
-    apply_all()
+    local wins = ura.class.UraWindow:from_tags(ura.class.UraOutput:current():tags())
+    for _, win in ipairs(wins) do
+      if win:layout() == "fullscreen" then
+        apply(win)
+      end
+    end
   end, { ns = "layout.fullscreen" })
 
   ura.hook.add("window-request-fullscreen", function(e)

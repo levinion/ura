@@ -222,7 +222,7 @@ function UraWindow:toggle_layout(layout)
   if old ~= layout then
     self:set_layout(layout)
   else
-    self:set_layout(ura.opt["layout.default"] or "tiling")
+    self:set_layout(ura.opt["default_layout"] or "tiling")
   end
 end
 

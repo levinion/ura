@@ -564,6 +564,7 @@ void UraToplevel::update_scale() {
 }
 
 void UraToplevel::set_tags(Vec<std::string>&& tags) {
+  auto old_tags = this->tags;
   this->tags = tags;
 
   auto server = UraServer::get_instance();
@@ -580,6 +581,14 @@ void UraToplevel::set_tags(Vec<std::string>&& tags) {
 
   auto args = flexible::create_table();
   args.set("id", this->id());
+  args.set(
+    "from",
+    sol::as_table(std::vector(old_tags.begin(), old_tags.end()))
+  );
+  args.set(
+    "to",
+    sol::as_table(std::vector(this->tags.begin(), this->tags.end()))
+  );
   server->state->emit_hook("window-tags-change", args);
 }
 
