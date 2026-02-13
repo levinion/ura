@@ -15,7 +15,6 @@ Commands:
   list-commands                      List all available 'ura-*' command scripts in PATH.
   set-option
   get-option
-  set-pointer-accel-profile <profile> <glob>  Set pointer acceleration profile for a device glob.
   show-hooks
   show-windows
   help, -h, --help                   Show this help message.

@@ -1,6 +1,5 @@
 #include "ura/seat/pointer.hpp"
 #include "ura/ura.hpp"
-#include "ura/util/util.hpp"
 
 namespace ura {
 
@@ -25,18 +24,6 @@ libinput_device* UraPointer::device() {
   if (!wlr_input_device_is_libinput(device))
     return nullptr;
   return wlr_libinput_get_device_handle(device);
-}
-
-void UraPointer::set_accel_profile(std::string_view _profile) {
-  auto profile = accel_profile_from_str(_profile);
-  if (!profile)
-    return;
-  auto device = this->device();
-  if (!device || !libinput_device_config_accel_is_available(device)
-      || libinput_device_config_accel_get_profile(device) == profile.value())
-    return;
-  // TODO: find reason why segment fault occurs when call this after resuming from another session
-  libinput_device_config_accel_set_profile(device, profile.value());
 }
 
 } // namespace ura

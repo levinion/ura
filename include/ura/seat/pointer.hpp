@@ -9,11 +9,8 @@ class UraPointer {
 public:
   static UraPointer* from(wlr_pointer* pointer);
   void init(wlr_input_device* device);
-  void set_accel_profile(std::string_view _profile);
   std::optional<std::string> name();
 
-  float move_speed = 1.;
-  float scroll_speed = 1.;
   bool virt = false;
 
 private:

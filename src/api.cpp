@@ -362,33 +362,6 @@ std::string get_cursor_shape() {
   return UraServer::get_instance()->seat->cursor->xcursor_name;
 }
 
-void set_pointer_accel_profile(std::string profile, std::string glob) {
-  auto server = UraServer::get_instance();
-  for (auto pointer : server->seat->pointers) {
-    auto name = pointer->name();
-    if (name && !fnmatch(glob.c_str(), name.value().c_str(), 0))
-      pointer->set_accel_profile(profile);
-  }
-}
-
-void set_pointer_move_speed(double speed, std::string glob) {
-  auto server = UraServer::get_instance();
-  for (auto pointer : server->seat->pointers) {
-    auto name = pointer->name();
-    if (name && !fnmatch(glob.c_str(), name.value().c_str(), 0))
-      pointer->move_speed = speed;
-  }
-}
-
-void set_pointer_scroll_speed(double speed, std::string glob) {
-  auto server = UraServer::get_instance();
-  for (auto pointer : server->seat->pointers) {
-    auto name = pointer->name();
-    if (name && !fnmatch(glob.c_str(), name.value().c_str(), 0))
-      pointer->scroll_speed = speed;
-  }
-}
-
 flexible::object get_output_logical_geometry(uint64_t id) {
   auto output = UraOutput::from(id);
   if (!output)

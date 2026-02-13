@@ -11,6 +11,29 @@ namespace ura {
 void on_new_input(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto device = static_cast<wlr_input_device*>(data);
+
+  // TODO: enable libinput lua plugins
+  // This should be called before iterating devices,
+  // which means it should be implemented by wlroots' libinput backend.
+  // We could do nothing without wlroots impl that.
+
+  // static auto libinput_plugin_loaded = false;
+  // if (!libinput_plugin_loaded && wlr_input_device_is_libinput(device)) {
+  //   auto handle = wlr_libinput_get_device_handle(device);
+  //   auto context = libinput_device_get_context(handle);
+  //   libinput_plugin_system_append_default_paths(context);
+  //   if (libinput_plugin_system_load_plugins(
+  //         context,
+  //         LIBINPUT_PLUGIN_SYSTEM_FLAG_NONE
+  //       )
+  //       == 0) {
+  //     libinput_plugin_loaded = true;
+  //     log::info("LIBINPUT LUA PLUGINS LOADED");
+  //   } else {
+  //     log::error("FAILED TO LOAD LIBINPUT LUA PLUGINS");
+  //   }
+  // }
+
   switch (device->type) {
     case WLR_INPUT_DEVICE_KEYBOARD: {
       auto keyboard = new UraKeyboard {};

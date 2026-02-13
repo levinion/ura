@@ -78,9 +78,6 @@ void Lua::setup() {
   LUAAPI("api.set_cursor_visible", api::core::set_cursor_visible);
   LUAAPI("api.get_cursor_visible", api::core::is_cursor_visible);
   LUAAPI("api.set_cursor_shape", api::core::set_cursor_shape);
-  LUAAPI("api.set_pointer_accel_profile", api::core::set_pointer_accel_profile);
-  LUAAPI("api.set_pointer_move_speed", api::core::set_pointer_move_speed);
-  LUAAPI("api.set_pointer_scroll_speed", api::core::set_pointer_scroll_speed);
   // output
   LUAAPI("api.get_current_output", api::core::get_current_output);
   LUAAPI("api.get_output", api::core::get_output);

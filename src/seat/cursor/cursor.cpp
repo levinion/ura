@@ -1,6 +1,5 @@
 #include "ura/seat/cursor.hpp"
 #include <chrono>
-#include "ura/seat/pointer.hpp"
 #include "ura/view/client.hpp"
 #include "ura/view/view.hpp"
 #include "ura/core/runtime.hpp"
@@ -49,13 +48,11 @@ void UraCursor::init() {
 }
 
 void UraCursor::relative_move(wlr_pointer_motion_event* event) {
-  auto pointer = UraPointer::from(event->pointer);
-  auto factor = pointer->move_speed;
   wlr_cursor_move(
     this->cursor,
     &event->pointer->base,
-    event->delta_x * factor,
-    event->delta_y * factor
+    event->delta_x,
+    event->delta_y
   );
   if (this->mode == UraCursorMode::Move)
     this->process_cursor_mode_move();
@@ -64,10 +61,10 @@ void UraCursor::relative_move(wlr_pointer_motion_event* event) {
   else
     this->process_motion(
       event->time_msec,
-      event->delta_x * factor,
-      event->delta_y * factor,
-      event->unaccel_dx * factor,
-      event->unaccel_dy * factor
+      event->delta_x,
+      event->delta_y,
+      event->unaccel_dx,
+      event->unaccel_dy
     );
 
   auto server = UraServer::get_instance();
@@ -333,13 +330,11 @@ void UraCursor::process_cursor_mode_resize() {
 
 void UraCursor::process_axis(wlr_pointer_axis_event* event) {
   auto server = UraServer::get_instance();
-  auto pointer = UraPointer::from(event->pointer);
-  auto factor = pointer->scroll_speed;
   wlr_seat_pointer_notify_axis(
     server->seat->seat,
     event->time_msec,
     event->orientation,
-    event->delta * factor,
+    event->delta,
     event->delta_discrete,
     event->source,
     event->relative_direction
