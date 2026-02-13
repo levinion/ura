@@ -19,6 +19,7 @@ Dependencies include:
 - wayland
 - wlroots-git (wlroots0.20)
 - luajit
+- sol2
 - pixman
 - nlohmann-json
 - cli11
