@@ -1,5 +1,6 @@
 #include "ura/core/server.hpp"
 #include "ura/core/callback.hpp"
+#include <wayland-util.h>
 #include "ura/core/runtime.hpp"
 #include "ura/seat/text_input.hpp"
 #include "ura/seat/seat.hpp"
@@ -7,9 +8,18 @@
 
 // TEXT INPUT V3
 namespace ura {
+// data is a null pointer!
 void on_new_text_input(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto text_input = static_cast<wlr_text_input_v3*>(data);
+
+  if (wl_list_empty(&server->text_input_manager->text_inputs))
+    return;
+  wlr_text_input_v3* text_input = wl_container_of(
+    server->text_input_manager->text_inputs.next,
+    text_input,
+    link
+  );
+
   server->seat->text_input->text_inputs.push_back(text_input);
   server->runtime->register_callback(
     &text_input->events.enable,
@@ -35,7 +45,7 @@ void on_new_text_input(wl_listener* listener, void* data) {
 
 void on_text_input_enable(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto text_input = static_cast<wlr_text_input_v3*>(data);
+  auto text_input = server->runtime->fetch<wlr_text_input_v3*>(listener);
   auto input_method = server->seat->text_input->input_method;
   if (input_method) {
     if (!input_method->active)
@@ -46,7 +56,7 @@ void on_text_input_enable(wl_listener* listener, void* data) {
 
 void on_text_input_disable(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto text_input = static_cast<wlr_text_input_v3*>(data);
+  auto text_input = server->runtime->fetch<wlr_text_input_v3*>(listener);
   auto input_method = server->seat->text_input->input_method;
   if (input_method) {
     server->seat->text_input->send_state(text_input);
@@ -56,13 +66,13 @@ void on_text_input_disable(wl_listener* listener, void* data) {
 
 void on_text_input_commit(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto text_input = static_cast<wlr_text_input_v3*>(data);
+  auto text_input = server->runtime->fetch<wlr_text_input_v3*>(listener);
   server->seat->text_input->send_state(text_input);
 }
 
 void on_text_input_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto text_input = static_cast<wlr_text_input_v3*>(data);
+  auto text_input = server->runtime->fetch<wlr_text_input_v3*>(listener);
   if (server->seat->text_input->input_method
       && text_input == server->seat->text_input->get_active_text_input()
       && server->seat->text_input->input_method->active)
@@ -104,7 +114,7 @@ void on_new_input_method(wl_listener* listener, void* data) {
 
 void on_input_method_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto input_method = static_cast<wlr_input_method_v2*>(data);
+  auto input_method = server->runtime->fetch<wlr_input_method_v2*>(listener);
   server->seat->text_input->input_method = nullptr;
   server->runtime->remove(input_method);
   server->seat->text_input->unfocus_active_text_input();
@@ -112,7 +122,7 @@ void on_input_method_destroy(wl_listener* listener, void* data) {
 
 void on_input_method_commit(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto input_method = static_cast<wlr_input_method_v2*>(data);
+  auto input_method = server->runtime->fetch<wlr_input_method_v2*>(listener);
   auto active_text_input = server->seat->text_input->get_active_text_input();
   if (!active_text_input)
     return;
@@ -144,9 +154,11 @@ void on_input_method_grab_keyboard(wl_listener* listener, void* data) {
   );
 }
 
+// data is a null ptr
 void on_input_method_grab_keyboard_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto keyboard_grab = static_cast<wlr_input_method_keyboard_grab_v2*>(data);
+  auto keyboard_grab =
+    server->runtime->fetch<wlr_input_method_keyboard_grab_v2*>(listener);
   auto seat = server->seat->seat;
   if (keyboard_grab->keyboard) {
     wlr_seat_set_keyboard(seat, keyboard_grab->keyboard);

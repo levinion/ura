@@ -44,7 +44,7 @@ GIT_TAG main)
 FetchContent_MakeAvailable(sol2)
 target_link_libraries(${NAME} PRIVATE sol2)
 
-target_add_dependence(${NAME} wlroots-0.19)
+target_add_dependence(${NAME} wlroots-0.20)
 target_add_dependence(${NAME} wayland-server)
 target_add_dependence(${NAME} xkbcommon)
 target_add_dependence(${NAME} luajit)

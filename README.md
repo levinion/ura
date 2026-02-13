@@ -17,9 +17,8 @@ Lua is a general-purpose language supported by many editors and LSPs (like `lua_
 Dependencies include:
 
 - wayland
-- wlroots0.19
+- wlroots0.20
 - luajit
-- sol2
 - pixman
 - nlohmann-json
 - cli11

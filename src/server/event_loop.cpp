@@ -218,7 +218,7 @@ void UraServer::setup_foreign() {
 void UraServer::setup_text_input() {
   this->text_input_manager = wlr_text_input_manager_v3_create(this->display);
   this->runtime->register_callback(
-    &this->text_input_manager->events.text_input,
+    &this->text_input_manager->events.new_text_input,
     on_new_text_input,
     nullptr
   );
@@ -226,7 +226,7 @@ void UraServer::setup_text_input() {
   this->input_method_manager =
     wlr_input_method_manager_v2_create(this->display);
   this->runtime->register_callback(
-    &this->input_method_manager->events.input_method,
+    &this->input_method_manager->events.new_input_method,
     on_new_input_method,
     nullptr
   );
