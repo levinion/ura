@@ -40,31 +40,25 @@ function M.validate(variable, path, typ)
   return false
 end
 
---- thanks: http://lua-users.org/wiki/SplitJoin
 ---@param str string
----@param pat string
+---@param sep string
 ---@return table
-function M.split(str, pat)
-  local t = {} -- NOTE: use {n = 0} in Lua-5.0
-  local fpat = "(.-)" .. pat
-  local last_end = 1
-  local s, e, cap = str:find(fpat, 1)
-  while s do
-    if s ~= 1 or cap ~= "" then
-      table.insert(t, cap)
-    end
-    last_end = e + 1
-    s, e, cap = str:find(fpat, last_end)
+function M.split(str, sep)
+  local result = {}
+  local start = 1
+  local split_start, split_end = string.find(str, sep, start, true)
+  while split_start do
+    table.insert(result, string.sub(str, start, split_start - 1))
+    start = split_end + 1
+    split_start, split_end = string.find(str, sep, start, true)
   end
-  if last_end <= #str then
-    cap = str:sub(last_end)
-    table.insert(t, cap)
-  end
-  return t
+  table.insert(result, string.sub(str, start))
+  return result
 end
 
 ---@param tbl table
----@param f fun(index: integer, value: any):table
+---@param f fun(index: integer, value: any):boolean
+---@return table
 function M.filter(tbl, f)
   local r = {}
   for i, v in ipairs(tbl) do
@@ -119,66 +113,71 @@ function M.contains(t, value)
   return t[value] ~= nil
 end
 
+---@param a string
+---@param b string
+---@return boolean
+function M.natural_compare(a, b)
+  local function get_priority(s)
+    s = tostring(s)
+    local has_digit = s:find("%d") ~= nil
+    local has_non_digit = s:find("%D") ~= nil
+
+    if has_digit and not has_non_digit then
+      return 1
+    elseif has_digit and has_non_digit then
+      return 2
+    else
+      return 3
+    end
+  end
+
+  local pa = get_priority(a)
+  local pb = get_priority(b)
+
+  if pa ~= pb then
+    return pa < pb
+  end
+
+  local sa, sb = tostring(a), tostring(b)
+
+  local function tokenize(str)
+    local tokens = {}
+    for digit, non_digit in str:gmatch("(%d*)(%D*)") do
+      if digit ~= "" then
+        table.insert(tokens, tonumber(digit))
+      end
+      if non_digit ~= "" then
+        table.insert(tokens, non_digit)
+      end
+    end
+    return tokens
+  end
+
+  local ta = tokenize(sa)
+  local tb = tokenize(sb)
+
+  for i = 1, math.max(#ta, #tb) do
+    local va, vb = ta[i], tb[i]
+    if va == nil then
+      return true
+    end
+    if vb == nil then
+      return false
+    end
+
+    if type(va) ~= type(vb) then
+      return type(va) == "number"
+    elseif va ~= vb then
+      return va < vb
+    end
+  end
+  return false
+end
+
 ---@param t table
 ---@return table
 function M.natural_sort(t)
-  table.sort(t, function(a, b)
-    local function get_priority(s)
-      s = tostring(s)
-      local has_digit = s:find("%d") ~= nil
-      local has_non_digit = s:find("%D") ~= nil
-
-      if has_digit and not has_non_digit then
-        return 1
-      elseif has_digit and has_non_digit then
-        return 2
-      else
-        return 3
-      end
-    end
-
-    local pa = get_priority(a)
-    local pb = get_priority(b)
-
-    if pa ~= pb then
-      return pa < pb
-    end
-
-    local sa, sb = tostring(a), tostring(b)
-
-    local function tokenize(str)
-      local tokens = {}
-      for digit, non_digit in str:gmatch("(%d*)(%D*)") do
-        if digit ~= "" then
-          table.insert(tokens, tonumber(digit))
-        end
-        if non_digit ~= "" then
-          table.insert(tokens, non_digit)
-        end
-      end
-      return tokens
-    end
-
-    local ta = tokenize(sa)
-    local tb = tokenize(sb)
-
-    for i = 1, math.max(#ta, #tb) do
-      local va, vb = ta[i], tb[i]
-      if va == nil then
-        return true
-      end
-      if vb == nil then
-        return false
-      end
-
-      if type(va) ~= type(vb) then
-        return type(va) == "number"
-      elseif va ~= vb then
-        return va < vb
-      end
-    end
-    return false
-  end)
+  table.sort(t, M.natural_compare)
   return t
 end
 

@@ -40,6 +40,14 @@ cd ura
 make
 ```
 
+### Docker
+
+```shell
+docker build -t levinion/ura .
+docker run --rm -v .:/home/dev/ura levinion/ura make build
+sudo make install
+```
+
 ### AUR
 
 ```shell

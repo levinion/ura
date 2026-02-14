@@ -21,7 +21,8 @@ UraServer* UraServer::init(std::unique_ptr<UraState>&& state) {
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
   this->dispatcher = UraDispatcher<64>::init();
-  this->lua = Lua::init();
+  this->lua = std::make_unique<Lua>();
+  this->lua->init();
   auto result = this->lua->load_config();
   if (!result) {
     log::error("{}", result.error());
@@ -277,20 +278,6 @@ void UraServer::setup_others() {
   wlr_alpha_modifier_v1_create(this->display);
 }
 
-void UraServer::check_and_reset_lua() {
-  if (this->lua->reset) {
-    auto config_path = this->state->config_path;
-    this->state = UraState::init(std::move(config_path));
-    this->lua = Lua::init();
-    auto result = this->lua->load_config();
-    if (!result) {
-      log::notify("reload failed", result.error());
-      return;
-    }
-    this->state->emit_hook("reload", {});
-  }
-}
-
 void UraServer::run() {
   // create wayland socket
   auto socket = wl_display_add_socket_auto(this->display);
@@ -323,7 +310,6 @@ void UraServer::run() {
   while (!this->quit) {
     if (!dispatcher->dispatch())
       break;
-    this->check_and_reset_lua();
   }
 }
 

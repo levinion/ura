@@ -226,4 +226,6 @@ function UraWindow:toggle_layout(layout)
   end
 end
 
+function UraWindow:segments() end
+
 return UraWindow

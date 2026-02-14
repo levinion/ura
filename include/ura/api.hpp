@@ -9,7 +9,6 @@
 namespace ura::api::core {
 // api
 void terminate();
-void reload();
 void spawn(std::string cmd);
 void notify(std::string summary, std::string body);
 std::optional<int>

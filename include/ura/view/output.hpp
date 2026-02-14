@@ -14,7 +14,7 @@ class UraOutput {
 public:
   wlr_output* output;
   std::string name;
-  Vec<std::string> tags = { "1" };
+  Vec<std::string> tags;
 
   bool dpms_on = true;
   std::optional<wlr_output_mode> mode;

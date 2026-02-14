@@ -25,7 +25,7 @@ public:
   UraGlobal() = default;
   UraGlobal(UraGlobalType&& t) : type(t) {};
   UraGlobalType type;
-  flexible::json userdata;
+  flexible::object userdata;
 };
 
 class UraServer {
@@ -95,7 +95,6 @@ private:
   void setup_idle();
   void setup_session_lock();
   void setup_others();
-  void check_and_reset_lua();
 };
 
 } // namespace ura

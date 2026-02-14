@@ -4,7 +4,6 @@
 ura.api = {
   -- base
   terminate = function() end,
-  reload = function() end,
   --- @param cmd string
   spawn = function(cmd) end,
   --- @param summary string

@@ -66,11 +66,6 @@ void close_window(uint64_t id) {
   }
 }
 
-void reload() {
-  auto server = UraServer::get_instance();
-  server->lua->reset = true;
-}
-
 void set_keyboard_repeat(int rate, int delay) {
   auto server = UraServer::get_instance();
   for (auto keyboard : server->seat->keyboards)
@@ -443,13 +438,13 @@ flexible::object get_option(std::string key) {
 void set_userdata(uint64_t id, flexible::object obj) {
   auto server = UraServer::get_instance();
   if (server->globals.contains(id))
-    server->globals[id].userdata = flexible::to_json(obj);
+    server->globals[id].userdata = obj;
 }
 
 flexible::object get_userdata(uint64_t id) {
   auto server = UraServer::get_instance();
   if (server->globals.contains(id))
-    return flexible::from(server->globals[id].userdata);
+    return server->globals[id].userdata;
   return {};
 }
 

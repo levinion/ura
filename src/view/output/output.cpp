@@ -25,6 +25,10 @@ void UraOutput::init(wlr_output* _wlr_output) {
   this->output = _wlr_output;
   this->output->data = this;
   this->name = this->output->name;
+  auto tags =
+    server->state->get_option<std::vector<std::string>>("default_output_tags")
+      .value_or(std::vector<std::string> { ":1" });
+  this->tags = Vec<std::string>(tags.begin(), tags.end());
 
   this->background = wlr_scene_rect_create(
     server->view->get_scene_tree_or_create(UraSceneLayer::Clear),

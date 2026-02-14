@@ -18,53 +18,43 @@ ura.keymap.set("super+shift+e", function()
   ura.api.terminate()
 end)
 
-ura.keymap.set("super+shift+r", function()
-  ura.api.reload()
-end)
-
 ura.keymap.set("super+f", function()
   ura.class.UraWindow:current():toggle_layout("fullscreen")
 end)
 
 ura.keymap.set("ctrl+left", function()
-  local tags = ura.fn.natural_sort(
-    ura.fn.unique({ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", unpack(ura.fn.collect_tags()) })
-  )
-  print(ura.api.to_json(tags))
-  local active_tag = ura.class.UraOutput:current():tags()[1]
-  local index = ura.fn.find(tags, active_tag)
-  if index - 1 >= 1 then
-    ura.class.UraOutput:current():set_tags({ tags[index - 1] })
+  local seg = ura.class.UraSegment:from_tag(ura.class.UraOutput:current():tags()[1])
+  assert(seg)
+  if seg.index > 1 then
+    seg.index = seg.index - 1
+    ura.class.UraOutput:current():set_tags({ seg:tag() })
   end
 end)
 
 ura.keymap.set("ctrl+right", function()
-  local tags = ura.fn.natural_sort(
-    ura.fn.unique({ "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", unpack(ura.fn.collect_tags()) })
-  )
-  local active_tag = ura.class.UraOutput:current():tags()[1]
-  local index = ura.fn.find(tags, active_tag)
-  if index + 1 <= #tags then
-    ura.class.UraOutput:current():set_tags({ tags[index + 1] })
-  end
+  local seg = ura.class.UraSegment:from_tag(ura.class.UraOutput:current():tags()[1])
+  assert(seg)
+  seg.index = seg.index + 1
+  ura.class.UraOutput:current():set_tags({ seg:tag() })
 end)
 
 ura.keymap.set("ctrl+alt+left", function()
-  local tags = ura.fn.collect_tags()
-  print(ura.api.to_json(tags))
-  local active_tag = ura.class.UraOutput:current():tags()[1]
-  local index = ura.fn.find(tags, active_tag)
-  if index - 1 >= 1 then
-    ura.class.UraOutput:current():set_tags({ tags[index - 1] })
+  local seg = ura.class.UraSegment:from_tag(ura.class.UraOutput:current():tags()[1])
+  assert(seg)
+  local segs = ura.class.UraSegment:all()
+  local index = ura.fn.find(segs, seg)
+  if index > 1 then
+    ura.class.UraOutput:current():set_tags({ segs[index - 1]:tag() })
   end
 end)
 
 ura.keymap.set("ctrl+alt+right", function()
-  local tags = ura.fn.collect_tags()
-  local active_tag = ura.class.UraOutput:current():tags()[1]
-  local index = ura.fn.find(tags, active_tag)
-  if index + 1 <= #tags then
-    ura.class.UraOutput:current():set_tags({ tags[index + 1] })
+  local seg = ura.class.UraSegment:from_tag(ura.class.UraOutput:current():tags()[1])
+  assert(seg)
+  local segs = ura.class.UraSegment:all()
+  local index = ura.fn.find(segs, seg)
+  if index < #segs then
+    ura.class.UraOutput:current():set_tags({ segs[index + 1]:tag() })
   end
 end)
 
@@ -84,15 +74,17 @@ ura.keymap.set("super+k", function()
   ura.cmd.focus_up()
 end)
 
-for i = 1, 9 do
-  ura.keymap.set("super+" .. tostring(i), function()
-    ura.class.UraOutput:current():set_tags({ tostring(i) })
+for i = 1, 10 do
+  local key = i == 10 and "0" or tostring(i)
+  ura.keymap.set("super+" .. key, function()
+    local output = ura.class.UraOutput:current()
+    assert(output)
+    local seg = ura.class.UraSegment:from_tag(output:tags()[1])
+    assert(seg)
+    seg.index = i
+    output:set_tags({ seg:tag() })
   end)
 end
-
-ura.keymap.set("super+0", function()
-  ura.class.UraOutput:current():set_tags({ "10" })
-end)
 
 ura.hook.add("window-new", function(e)
   local win = ura.class.UraWindow:new(e.id)

@@ -102,7 +102,7 @@ case "$1" in
   fi
   ;;
 "show-hooks")
-  ura-shell -c "print(ura.api.to_json(ura.hook.HOOKS))"
+  ura-shell -c "print(ura.api.to_json(ura.hook.all()))"
   ;;
 "show-windows")
   ura-shell -c '

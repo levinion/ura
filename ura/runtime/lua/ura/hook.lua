@@ -1,6 +1,11 @@
 local M = {}
 
-M.HOOKS = {}
+local HOOKS = {}
+
+---@return table
+function M.all()
+  return HOOKS
+end
 
 ---@param name string
 ---@param f fun(e: table):any
@@ -20,35 +25,33 @@ function M.add(name, f, opt)
   if opt ~= nil and ura.fn.validate(opt, "desc", "string") then
     hook.desc = opt.desc
   end
-  if type(M.HOOKS[name]) ~= "table" then
-    M.HOOKS[name] = {}
+
+  if HOOKS[name] == nil then
+    HOOKS[name] = {}
     ura.api.set_hook(name, function(e)
-      for _, v in ipairs(M.HOOKS[name]) do
+      for _, v in ipairs(HOOKS[name]) do
         v.func(e)
       end
     end)
   end
 
-  table.insert(M.HOOKS[name], hook)
+  table.insert(HOOKS[name], hook)
 
-  table.sort(M.HOOKS[name], function(h1, h2)
+  table.sort(HOOKS[name], function(h1, h2)
     return h1.priority < h2.priority
   end)
 end
 
 ---@param ns string
 function M.remove(ns)
-  for name, hook in pairs(M.HOOKS) do
-    M.HOOKS[name] = ura.fn.filter(hook, function(_, value)
+  for name, hook in pairs(HOOKS) do
+    HOOKS[name] = ura.fn.filter(hook, function(_, value)
       return value.ns ~= ns
     end)
-    ura.api.set_hook(name, function(e)
-      for _, v in ipairs(M.HOOKS[name]) do
-        if v.enabled then
-          v.func(e)
-        end
-      end
-    end)
+    if #HOOKS[name] == 0 then
+      HOOKS[name] = nil
+      ura.api.unset_hook(name)
+    end
   end
 end
 

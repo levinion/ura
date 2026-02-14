@@ -15,9 +15,10 @@
 
 namespace ura {
 
-std::unique_ptr<Lua> Lua::init() {
-  auto lua = std::make_unique<Lua>();
-  lua->state.open_libraries(
+#define LUAAPI(name, f) flexible::set(this->ura, name, f)
+
+void Lua::init() {
+  this->state.open_libraries(
     sol::lib::base,
     sol::lib::os,
     sol::lib::package,
@@ -33,17 +34,9 @@ std::unique_ptr<Lua> Lua::init() {
     sol::lib::table,
     sol::lib::utf8
   );
-  lua->ura = lua->state.create_named_table("ura");
-  lua->setup();
-  return lua;
-};
-
-#define LUAAPI(name, f) flexible::set(this->ura, name, f)
-
-void Lua::setup() {
+  this->ura = this->state.create_named_table("ura");
   // api
   LUAAPI("api.terminate", api::core::terminate);
-  LUAAPI("api.reload", api::core::reload);
   LUAAPI("api.spawn", api::core::spawn);
   LUAAPI("api.notify_idle_activity", api::core::notify_idle_activity);
   LUAAPI("api.set_idle_inhibitor", api::core::set_idle_inhibitor);
