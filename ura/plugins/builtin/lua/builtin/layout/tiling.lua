@@ -3,11 +3,15 @@ local M = {}
 ---@param opt table?
 function M.setup(opt)
   local function apply(win)
+    if not win:is_mapped() then
+      return
+    end
+
     local output = win:output()
     assert(output)
     local usable = output:usable_geometry()
     assert(usable)
-    local windows = ura.class.UraWindow:from_tags(win:tags())
+    local windows = ura.class.UraWindow:from_tags(output:tags())
     assert(windows)
 
     local tiling_windows = {}
@@ -60,19 +64,20 @@ function M.setup(opt)
 
   ura.hook.add("window-layout-change", function(e)
     local win = ura.class.UraWindow:new(e.id)
+    local tags = win:output():tags()
     if e.to == "tiling" then
       win:set_draggable(false)
       win:set_z_index(100)
-      apply_all(win:tags())
+      apply_all(tags)
     elseif e.from == "tiling" then
-      apply_all(win:tags())
+      apply_all(tags)
     end
   end, { ns = "layout.tiling" })
 
   ura.hook.add("window-close", function(e)
     local win = ura.class.UraWindow:new(e.id)
     if win:layout() == "tiling" then
-      apply_all(win:tags())
+      apply_all(win:output():tags())
     end
   end, { ns = "layout.tiling" })
 
@@ -80,8 +85,11 @@ function M.setup(opt)
     local win = ura.class.UraWindow:new(e.id)
     if win:layout() == "tiling" then
       apply_all(e.from)
-      apply_all(e.to)
     end
+  end, { ns = "layout.tiling" })
+
+  ura.hook.add("output-tags-change", function(e)
+    apply_all(e.to)
   end, { ns = "layout.tiling" })
 
   ura.hook.add("output-usable-geometry-change", function(e)

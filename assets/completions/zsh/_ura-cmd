@@ -12,6 +12,7 @@ _ura_cmd_commands() {
     "focus-right"
     "focus-up"
     "focus-down"
+    "select"
     "set-output-tags"
     "set-window-tags"
     "set-option"

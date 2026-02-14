@@ -229,4 +229,16 @@ function M.collect_tags(opt)
   return ura.fn.natural_sort(ura.fn.unique(tags))
 end
 
+---@param pattern string
+---@param s string
+---@param flags integer|nil
+---@return boolean
+function M.fnmatch(pattern, s, flags)
+  local ffi = require("ffi")
+  ffi.cdef([[
+    int fnmatch(const char *pattern, const char *string, int flags);
+]])
+  return ffi.C.fnmatch(pattern, s, flags or 0) == 0
+end
+
 return M

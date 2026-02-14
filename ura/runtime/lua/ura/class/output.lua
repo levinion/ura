@@ -95,6 +95,13 @@ function UraOutput:tags()
   return ura.api.get_output_tags(self.id) or {}
 end
 
+---@param pattern string
+function UraOutput:select(pattern)
+  self:set_tags(ura.fn.filter(ura.fn.collect_tags(), function(_, v)
+    return ura.fn.fnmatch(pattern, v)
+  end))
+end
+
 ---@return table
 function UraOutput:userdata()
   return ura.api.get_userdata(self.id)

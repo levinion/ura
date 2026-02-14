@@ -9,6 +9,7 @@ A control script for ura-shell to manage windows and layouts.
 Commands:
   close                              Close the currently focused window.
   focus-(left,right,up,down)         Move focus to specific direction.
+  select
   set-output-tags                    Set tags of current output.
   set-window-tags                    Set tags of current window.
   toggle-window-layout <layout>      Toggle a specific layout (e.g., floating, tiling).
@@ -39,6 +40,15 @@ case "$1" in
   ;;
 "focus-down")
   ura-shell -c "ura.cmd.focus-down()"
+  ;;
+"select")
+  shift
+  if [[ -n "$1" ]]; then
+    ura-shell -c "ura.class.UraOutput:current():select('$1')"
+  else
+    echo "ura-cmd select <glob>"
+    exit 1
+  fi
   ;;
 "set-option")
   shift

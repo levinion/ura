@@ -275,6 +275,7 @@ uint64_t UraOutput::id() {
 }
 
 void UraOutput::set_tags(Vec<std::string>&& tags) {
+  auto old_tags = this->tags;
   this->tags = tags;
   auto server = UraServer::get_instance();
   for (auto toplevel : server->view->toplevels
@@ -289,6 +290,14 @@ void UraOutput::set_tags(Vec<std::string>&& tags) {
 
   auto args = flexible::create_table();
   args.add("id", this->id());
+  args.set(
+    "from",
+    sol::as_table(std::vector(old_tags.begin(), old_tags.end()))
+  );
+  args.set(
+    "to",
+    sol::as_table(std::vector(this->tags.begin(), this->tags.end()))
+  );
   server->state->emit_hook("output-tags-change", args);
 }
 

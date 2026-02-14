@@ -103,6 +103,7 @@ ura.api = {
   --- @param tags table<string>
   set_window_tags = function(id, tags) end,
   --- @param id integer
+  --- @return table<string>|nil
   get_window_tags = function(id) end,
   --- @return table<integer>
   get_all_windows = function() end,
@@ -159,7 +160,7 @@ ura.api = {
   --- @param tags table< string>
   set_output_tags = function(id, tags) end,
   --- @param id integer
-  --- @return table<string>
+  --- @return table<string>|nil
   get_output_tags = function(id) end,
 
   -- fn
