@@ -42,7 +42,12 @@ ura.keymap.set("ctrl+alt+left", function()
   local seg = ura.class.UraSegment:from_tag(ura.class.UraOutput:current():tags()[1])
   assert(seg)
   local segs = ura.class.UraSegment:all()
-  local index = ura.fn.find(segs, seg)
+  local labels = {}
+  for _, v in ipairs(segs) do
+    table.insert(labels, v.label)
+  end
+  labels = ura.fn.natural_sort(ura.fn.unique(labels))
+  local index = ura.fn.find(labels, seg.label)
   if index > 1 then
     ura.class.UraOutput:current():set_tags({ segs[index - 1]:tag() })
   end
@@ -52,7 +57,12 @@ ura.keymap.set("ctrl+alt+right", function()
   local seg = ura.class.UraSegment:from_tag(ura.class.UraOutput:current():tags()[1])
   assert(seg)
   local segs = ura.class.UraSegment:all()
-  local index = ura.fn.find(segs, seg)
+  local labels = {}
+  for _, v in ipairs(segs) do
+    table.insert(labels, v.label)
+  end
+  labels = ura.fn.natural_sort(ura.fn.unique(labels))
+  local index = ura.fn.find(labels, seg.label)
   if index < #segs then
     ura.class.UraOutput:current():set_tags({ segs[index + 1]:tag() })
   end
