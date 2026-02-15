@@ -20,40 +20,9 @@
 #include <unistd.h>
 #include <sys/prctl.h>
 #include "ura/util/flexible.hpp"
-#include "ura/core/state.hpp"
 #include <fnmatch.h>
 
 namespace ura::api::core {
-
-void set_keymap(std::string pattern, std::string mode, flexible::function f) {
-  auto server = UraServer::get_instance();
-  auto id = parse_keymap(pattern);
-  if (id) {
-    server->state->keymaps[mode][id.value()] = f;
-  }
-}
-
-void unset_keymap(std::string pattern, std::string mode) {
-  auto server = UraServer::get_instance();
-  auto id = parse_keymap(pattern);
-  if (!id)
-    return;
-  if (!server->state->keymaps.contains(mode))
-    return;
-  if (!server->state->keymaps[mode].contains(id.value()))
-    return;
-  server->state->keymaps[mode].erase(id.value());
-}
-
-void set_keymap_mode(std::string mode) {
-  auto server = UraServer::get_instance();
-  server->state->keymap_mode = mode;
-}
-
-std::string get_keymap_mode() {
-  auto server = UraServer::get_instance();
-  return server->state->keymap_mode;
-}
 
 void terminate() {
   UraServer::get_instance()->terminate();
@@ -78,17 +47,6 @@ void set_env(std::string name, std::string value) {
 
 void unset_env(std::string name) {
   unsetenv(name.data());
-}
-
-void set_hook(std::string name, flexible::function f) {
-  auto server = UraServer::get_instance();
-  server->state->hooks[name] = f;
-}
-
-void unset_hook(std::string name) {
-  auto server = UraServer::get_instance();
-  if (server->state->hooks.contains(name))
-    server->state->hooks.erase(name);
 }
 
 void set_cursor_theme(std::string theme, int size) {
@@ -423,18 +381,6 @@ std::optional<uint64_t> get_window_output(uint64_t id) {
   return output->id();
 }
 
-void set_option(std::string key, flexible::object obj) {
-  auto server = UraServer::get_instance();
-  server->state->set_option(key, obj);
-}
-
-flexible::object get_option(std::string key) {
-  auto server = UraServer::get_instance();
-  return server->state->get_option<flexible::object>(key).value_or(
-    flexible::nil()
-  );
-}
-
 void set_userdata(uint64_t id, flexible::object obj) {
   auto server = UraServer::get_instance();
   if (server->globals.contains(id))
@@ -526,9 +472,8 @@ std::optional<bool> is_window_focused(uint64_t id) {
   return toplevel->is_focused();
 }
 
-void emit_hook(std::string name, flexible::object args) {
-  auto server = UraServer::get_instance();
-  server->state->emit_hook(name, args);
+std::optional<uint64_t> get_keybinding_id(std::string pattern) {
+  return parse_keymap(pattern);
 }
 
 } // namespace ura::api::core

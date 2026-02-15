@@ -1,11 +1,11 @@
 #include "ura/util/flexible.hpp"
 #include "ura/core/server.hpp"
+#include "ura/core/lua.hpp"
 #include "ura/seat/keyboard.hpp"
 #include "ura/seat/pointer.hpp"
 #include "ura/seat/tablet.hpp"
 #include "ura/seat/seat.hpp"
 #include "ura/ura.hpp"
-#include "ura/core/state.hpp"
 
 namespace ura {
 void on_new_input(wl_listener* listener, void* data) {
@@ -74,7 +74,7 @@ void on_new_input(wl_listener* listener, void* data) {
 
   auto args = flexible::create_table();
   args.set("name", device->name);
-  server->state->emit_hook("new-input", args);
+  server->lua->emit_hook("new-input", args);
 }
 
 } // namespace ura

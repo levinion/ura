@@ -13,7 +13,7 @@
 #include <functional>
 #include <ranges>
 #include "ura/view/view.hpp"
-#include "ura/core/state.hpp"
+#include "ura/core/lua.hpp"
 #include "wlr-layer-shell-unstable-v1-protocol.h"
 #include "ura/seat/seat.hpp"
 
@@ -26,7 +26,7 @@ void UraOutput::init(wlr_output* _wlr_output) {
   this->output->data = this;
   this->name = this->output->name;
   auto tags =
-    server->state->get_option<std::vector<std::string>>("default_output_tags")
+    server->lua->get_option<std::vector<std::string>>("default_output_tags")
       .value_or(std::vector<std::string> { ":1" });
   this->tags = Vec<std::string>(tags.begin(), tags.end());
 
@@ -84,9 +84,9 @@ void UraOutput::init(wlr_output* _wlr_output) {
   args.set("id", this->id());
 
   if (resume)
-    server->state->emit_hook("output-resume", args);
+    server->lua->emit_hook("output-resume", args);
   else {
-    server->state->emit_hook("output-new", args);
+    server->lua->emit_hook("output-new", args);
   }
 
   server->globals[this->id()] = UraGlobalType::Output;
@@ -221,7 +221,7 @@ bool UraOutput::configure_layers() {
     this->usable_area = Vec4<int>::from(usable_area);
     auto args = flexible::create_table();
     args.set("id", this->id());
-    server->state->emit_hook("output-usable-geometry-change", args);
+    server->lua->emit_hook("output-usable-geometry-change", args);
     return true;
   }
   return false;
@@ -298,7 +298,7 @@ void UraOutput::set_tags(Vec<std::string>&& tags) {
     "to",
     sol::as_table(std::vector(this->tags.begin(), this->tags.end()))
   );
-  server->state->emit_hook("output-tags-change", args);
+  server->lua->emit_hook("output-tags-change", args);
 }
 
 void UraOutput::focus_lru() {

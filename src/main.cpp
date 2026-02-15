@@ -1,5 +1,4 @@
 #include "ura/core/server.hpp"
-#include "ura/core/state.hpp"
 #include "ura/core/lua.hpp"
 #include <CLI/CLI.hpp>
 #include <print>
@@ -34,7 +33,7 @@ int main(int argc, char** argv) {
 
   auto server = ura::UraServer::get_instance();
   server->init();
-  server->state->set_option(
+  server->lua->set_option(
     "config_path",
     sol::make_object(server->lua->state, config_path)
   );

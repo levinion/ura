@@ -8,7 +8,6 @@
 #include "ura/view/layer_shell.hpp" // IWYU pragma: keep
 #include "ura/seat/seat.hpp" // IWYU pragma: keep
 #include "ura/core/lua.hpp" // IWYU pragma: keep
-#include "ura/core/state.hpp" // IWYU pragma: keep
 
 namespace ura {
 

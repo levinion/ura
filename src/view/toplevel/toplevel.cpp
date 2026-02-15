@@ -8,7 +8,7 @@
 #include "ura/core/callback.hpp"
 #include "ura/seat/seat.hpp"
 #include "ura/util/util.hpp"
-#include "ura/core/state.hpp"
+#include "ura/core/lua.hpp"
 #include "ura/view/view.hpp"
 
 namespace ura {
@@ -119,7 +119,7 @@ void UraToplevel::destroy() {
 
   auto args = flexible::create_table();
   args.set("id", this->id());
-  server->state->emit_hook("window-close", args);
+  server->lua->emit_hook("window-close", args);
 
   server->globals.erase(this->id());
 }
@@ -183,7 +183,7 @@ void UraToplevel::commit() {
     args.set("id", this->id());
     this->prepared = true;
     this->map();
-    server->state->emit_hook("window-new", args);
+    server->lua->emit_hook("window-new", args);
   }
 }
 
@@ -252,7 +252,7 @@ void UraToplevel::activate() {
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
   args.set("id", this->id());
-  auto flag = server->state->emit_hook<bool>("pre-window-activate", args);
+  auto flag = server->lua->emit_hook<bool>("pre-window-activate", args);
   // if hook returns a false value, then stop the operation.
   if (flag && !flag.value())
     return;
@@ -261,7 +261,7 @@ void UraToplevel::activate() {
     return;
   output->set_tags(std::move(this->tags));
   server->seat->focus(this);
-  server->state->emit_hook("window-activate", args);
+  server->lua->emit_hook("window-activate", args);
 }
 
 bool UraToplevel::move(int x, int y) {
@@ -279,7 +279,7 @@ bool UraToplevel::move(int x, int y) {
     auto server = UraServer::get_instance();
     auto args = flexible::create_table();
     args.set("id", this->id());
-    server->state->emit_hook("window-move", args);
+    server->lua->emit_hook("window-move", args);
 
     return true;
   }
@@ -313,7 +313,7 @@ bool UraToplevel::resize(int width, int height) {
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
   args.set("id", this->id());
-  server->state->emit_hook("window-resize", args);
+  server->lua->emit_hook("window-resize", args);
   return true;
 }
 
@@ -373,7 +373,7 @@ void UraToplevel::map() {
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
   args.add("id", this->id());
-  server->state->emit_hook("window-map", args);
+  server->lua->emit_hook("window-map", args);
 }
 
 void UraToplevel::unmap() {
@@ -391,7 +391,7 @@ void UraToplevel::unmap() {
 
   auto args = flexible::create_table();
   args.add("id", this->id());
-  server->state->emit_hook("window-unmap", args);
+  server->lua->emit_hook("window-unmap", args);
 }
 
 std::string UraToplevel::title() {
@@ -407,7 +407,7 @@ void UraToplevel::set_title(std::string title) {
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
   args.set("id", this->id());
-  server->state->emit_hook("window-title-change", args);
+  server->lua->emit_hook("window-title-change", args);
 }
 
 void UraToplevel::set_app_id(std::string app_id) {
@@ -418,7 +418,7 @@ void UraToplevel::set_app_id(std::string app_id) {
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
   args.set("id", this->id());
-  server->state->emit_hook("window-app_id-change", args);
+  server->lua->emit_hook("window-app_id-change", args);
 }
 
 void UraToplevel::set_z_index(int z_index) {
@@ -433,13 +433,12 @@ void UraToplevel::set_z_index(int z_index) {
 void UraToplevel::create_borders() {
   auto server = UraServer::get_instance();
   auto active_border_color =
-    server->state->get_option<std::string>("active_border_color")
+    server->lua->get_option<std::string>("active_border_color")
       .value_or("#89b4fa");
   auto inactive_border_color =
-    server->state->get_option<std::string>("inactive_border_color")
+    server->lua->get_option<std::string>("inactive_border_color")
       .value_or("#00000000");
-  this->border_width =
-    server->state->get_option<int>("border_width").value_or(1);
+  this->border_width = server->lua->get_option<int>("border_width").value_or(1);
   this->active_border_color =
     hex2rgba(active_border_color)
       .value_or({ 137.f / 255.f, 180.f / 255.f, 250.f / 255.f, 1.f });
@@ -589,7 +588,7 @@ void UraToplevel::set_tags(Vec<std::string>&& tags) {
     "to",
     sol::as_table(std::vector(this->tags.begin(), this->tags.end()))
   );
-  server->state->emit_hook("window-tags-change", args);
+  server->lua->emit_hook("window-tags-change", args);
 }
 
 bool UraToplevel::is_tag_matched() {

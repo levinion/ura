@@ -16,7 +16,6 @@ class UraRuntime;
 class UraSeat;
 class Lua;
 class UraView;
-class UraState;
 
 enum class UraGlobalType { Toplevel, Output, LayerShell, Popup };
 
@@ -59,7 +58,6 @@ public:
   wlr_virtual_pointer_manager_v1* virtual_pointer_manager;
   ura_ipc* ipc;
 
-  std::unique_ptr<UraState> state;
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;
   std::unique_ptr<UraSeat> seat;

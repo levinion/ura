@@ -10,12 +10,10 @@
 #include "ura/view/view.hpp"
 #include "ura/core/lua.hpp"
 #include <sys/epoll.h>
-#include "ura/core/state.hpp"
 
 namespace ura {
 
 UraServer* UraServer::init() {
-  this->state = UraState::init();
   log::init();
   this->setup_signal();
   this->runtime = UraRuntime::init();
@@ -273,7 +271,7 @@ void UraServer::setup_others() {
 
 void UraServer::run() {
   this->lua->load_runtime();
-  this->state->emit_hook("prepare", {});
+  this->lua->emit_hook("prepare", {});
 
   // create wayland socket
   auto socket = wl_display_add_socket_auto(this->display);
@@ -301,7 +299,7 @@ void UraServer::run() {
     wl_display_flush_clients(this->display);
     return true;
   });
-  this->state->emit_hook("ready", {});
+  this->lua->emit_hook("ready", {});
 
   while (!this->quit) {
     if (!dispatcher->dispatch())

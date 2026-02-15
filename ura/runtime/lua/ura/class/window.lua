@@ -209,7 +209,7 @@ function UraWindow:set_layout(layout)
     return
   end
   self:update_userdata({ layout = layout })
-  ura.api.emit_hook("window-layout-change", {
+  ura.hook.emit("window-layout-change", {
     id = self.id,
     from = old_layout,
     to = layout,

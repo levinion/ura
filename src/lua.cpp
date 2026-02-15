@@ -90,15 +90,6 @@ std::unique_ptr<Lua> Lua::init() {
     api::core::get_output_usable_geometry
   );
   LUAAPI("api.get_output_scale", api::core::get_output_scale);
-  // keymap
-  LUAAPI("api.set_keymap", api::core::set_keymap);
-  LUAAPI("api.unset_keymap", api::core::unset_keymap);
-  LUAAPI("api.set_keymap_mode", api::core::set_keymap_mode);
-  LUAAPI("api.get_keymap_mode", api::core::get_keymap_mode);
-  // hook
-  LUAAPI("api.set_hook", api::core::set_hook);
-  LUAAPI("api.unset_hook", api::core::unset_hook);
-  LUAAPI("api.emit_hook", api::core::emit_hook);
   // fn
   LUAAPI("api.set_env", api::core::set_env);
   LUAAPI("api.unset_env", api::core::unset_env);
@@ -109,11 +100,11 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.expand", api::core::expand);
   LUAAPI("api.to_json", api::core::to_json);
   LUAAPI("api.parse_json", api::core::parse_json);
-  // opt
-  LUAAPI("api.set_option", api::core::set_option);
-  LUAAPI("api.get_option", api::core::get_option);
+  // userdata
   LUAAPI("api.set_userdata", api::core::set_userdata);
   LUAAPI("api.get_userdata", api::core::get_userdata);
+  // util
+  LUAAPI("api.get_keybinding_id", api::core::get_keybinding_id);
   // override
   lua->state.set("print", api::lua::print);
 
@@ -139,7 +130,6 @@ std::expected<std::string, std::string> Lua::execute(std::string_view script) {
   return std::unexpected(err.what());
 }
 
-// this is only used to run init.lua by now
 std::expected<std::string, std::string> Lua::execute_file(std::string_view p) {
   this->lua_stdout.clear();
   auto path = std::filesystem::path(p);
@@ -152,6 +142,37 @@ std::expected<std::string, std::string> Lua::execute_file(std::string_view p) {
     return std::string(trim(this->lua_stdout));
   sol::error err = result;
   return std::unexpected(std::string(path) + ": " + std::string(err.what()));
+}
+
+bool Lua::emit_keybinding(uint64_t id) {
+  auto f = this->ura["keymap"]["_keymaps"][id]
+             .get<std::optional<sol::protected_function>>();
+  if (f) {
+    f.value()();
+    return true;
+  }
+  return false;
+}
+
+bool Lua::contains_keybinding(uint64_t id) {
+  return this->ura["keymap"]["_keymaps"][id]
+    .get<std::optional<sol::protected_function>>()
+    .has_value();
+}
+
+void Lua::emit_hook(std::string name, flexible::object args) {
+  auto f = this->ura["hook"]["_hooks"][name]
+             .get<std::optional<sol::protected_function>>();
+  if (f) {
+    f.value()(args);
+  }
+}
+
+void Lua::set_option(std::string_view key, flexible::object value) {
+  auto opt = this->ura["opt"].get<std::optional<sol::table>>();
+  if (opt) {
+    opt.value().set(key, value);
+  }
 }
 
 } // namespace ura

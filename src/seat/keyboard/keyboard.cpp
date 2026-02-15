@@ -1,9 +1,9 @@
 #include "ura/core/callback.hpp"
 #include "ura/core/runtime.hpp"
+#include "ura/core/lua.hpp"
 #include "ura/seat/seat.hpp"
 #include "ura/seat/keyboard.hpp"
 #include "ura/seat/cursor.hpp"
-#include "ura/core/state.hpp"
 
 namespace ura {
 
@@ -98,7 +98,7 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
   // ignore release events of a keybinding
   if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED
       && !server->seat->keyboard_shortcuts_inhibited && !server->seat->locked
-      && server->state->contains_keybinding(id))
+      && server->lua->contains_keybinding(id))
     return;
 
   if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED
@@ -111,7 +111,7 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
     }
     // exec keybinding
     if (!server->seat->locked) {
-      if (server->state->emit_keybinding(id))
+      if (server->lua->emit_keybinding(id))
         return;
     }
   }

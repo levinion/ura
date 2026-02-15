@@ -2,7 +2,7 @@
 #include "ura/core/server.hpp"
 #include "ura/ura.hpp"
 #include "ura/core/callback.hpp"
-#include "ura/core/state.hpp"
+#include "ura/core/lua.hpp"
 
 namespace ura {
 // toplevel/foreign.cpp
@@ -27,6 +27,6 @@ void on_foreign_toplevel_handle_request_fullscreen(
 
   auto args = flexible::create_table();
   args.set("id", toplevel->id());
-  server->state->emit_hook("window-request-fullscreen", args);
+  server->lua->emit_hook("window-request-fullscreen", args);
 }
 } // namespace ura

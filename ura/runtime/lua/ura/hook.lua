@@ -1,5 +1,7 @@
 local M = {}
 
+M._hooks = {}
+
 local HOOKS = {}
 
 ---@return table
@@ -28,11 +30,11 @@ function M.add(name, f, opt)
 
   if HOOKS[name] == nil then
     HOOKS[name] = {}
-    ura.api.set_hook(name, function(e)
+    M._hooks[name] = function(e)
       for _, v in ipairs(HOOKS[name]) do
         v.func(e)
       end
-    end)
+    end
   end
 
   table.insert(HOOKS[name], hook)
@@ -50,7 +52,7 @@ function M.remove(ns)
     end)
     if #HOOKS[name] == 0 then
       HOOKS[name] = nil
-      ura.api.unset_hook(name)
+      M._hooks[name] = nil
     end
   end
 end
@@ -58,7 +60,7 @@ end
 ---@param name string
 ---@param args table|nil
 function M.emit(name, args)
-  ura.api.emit_hook(name, args or {})
+  M._hooks[name](args)
 end
 
 return M

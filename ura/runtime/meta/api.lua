@@ -17,29 +17,10 @@ ura.api = {
   --- @param fd integer
   clear_timer = function(fd) end,
 
-  -- hook
-  --- @param name string
-  --- @param f function
-  set_hook = function(name, f) end,
-  --- @param name string
-  unset_hook = function(name) end,
-  ---@param name string
-  ---@param args table
-  emit_hook = function(name, args) end,
-
   -- idle
   notify_idle_activity = function() end,
   --- @param flag boolean
   set_idle_inhibitor = function(flag) end,
-
-  -- keymap
-  --- @param pattern string
-  --- @param mode string
-  --- @param f function
-  set_keymap = function(pattern, mode, f) end,
-  --- @param pattern string
-  --- @param mode string
-  unset_keymap = function(pattern, mode) end,
 
   -- win
   --- @param id integer
@@ -189,17 +170,16 @@ ura.api = {
   --- @return any
   parse_json = function(str) end,
 
-  -- opt
-  ---@param key string
-  ---@param value any
-  set_option = function(key, value) end,
-  ---@param key string
-  ---@return any
-  get_option = function(key) end,
+  -- userdata
   ---@param id integer
   ---@param value any
   set_userdata = function(id, value) end,
   ---@param id integer
   ---@return any
   get_userdata = function(id) end,
+
+  -- util
+  ---@param pattern string
+  ---@return integer|nil
+  get_keybinding_id = function(pattern) end,
 }

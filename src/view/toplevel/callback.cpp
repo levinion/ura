@@ -3,7 +3,7 @@
 #include "ura/core/runtime.hpp"
 #include "ura/core/server.hpp"
 #include "ura/core/callback.hpp"
-#include "ura/core/state.hpp"
+#include "ura/core/lua.hpp"
 
 namespace ura {
 // create a new toplevel
@@ -67,7 +67,7 @@ void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {
     return;
   auto args = flexible::create_table();
   args.set("id", toplevel->id());
-  server->state->emit_hook("window-request-fullscreen", args);
+  server->lua->emit_hook("window-request-fullscreen", args);
 }
 
 void on_toplevel_set_app_id(wl_listener* listener, void* data) {

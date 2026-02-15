@@ -7,7 +7,7 @@
 #include "ura/ura.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/seat/seat.hpp"
-#include "ura/core/state.hpp"
+#include "ura/core/lua.hpp"
 
 namespace ura {
 
@@ -178,7 +178,7 @@ void UraCursor::process_motion(
     return;
 
   auto focus_follow_mouse =
-    server->state->get_option<bool>("focus_follow_mouse").value_or(true);
+    server->lua->get_option<bool>("focus_follow_mouse").value_or(true);
 
   // focus if move to another surface
   if (focus_follow_mouse) {
@@ -188,14 +188,14 @@ void UraCursor::process_motion(
       if (surface == server->seat->seat->keyboard_state.focused_surface)
         return;
       if (!surface) {
-        if (server->state->get_option<bool>("unfocus_on_leave").value_or(false))
+        if (server->lua->get_option<bool>("unfocus_on_leave").value_or(false))
           server->seat->unfocus();
       } else {
         server->seat->focus(client.value());
       }
     };
 
-    auto delay = server->state->get_option<double>("focus_delay").value_or(5.);
+    auto delay = server->lua->get_option<double>("focus_delay").value_or(5.);
     if (delay <= 0) {
       callback();
     } else {
@@ -257,7 +257,7 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
 
   // focus pressed toplevel if focus_follow_mouse is not enabled
   auto focus_follow_mouse =
-    server->state->get_option<bool>("focus_follow_mouse").value_or(true);
+    server->lua->get_option<bool>("focus_follow_mouse").value_or(true);
   // only works when focus_follow_mouse is disabled
   if (!focus_follow_mouse && event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
     auto client = server->view->foreground_client();

@@ -14,18 +14,9 @@ void notify(std::string summary, std::string body);
 std::optional<int>
 set_timer(flexible::function f, int64_t value, int64_t interval);
 void clear_timer(int fd);
-// hook
-void set_hook(std::string name, flexible::function f);
-void unset_hook(std::string name);
-void emit_hook(std::string name, flexible::object args);
 // idle
 void notify_idle_activity();
 void set_idle_inhibitor(bool flag);
-// keymap
-void set_keymap(std::string pattern, std::string mode, flexible::function f);
-void unset_keymap(std::string pattern, std::string mode);
-void set_keymap_mode(std::string mode);
-std::string get_keymap_mode();
 // win
 void close_window(uint64_t id);
 std::optional<uint64_t> get_current_window();
@@ -81,11 +72,12 @@ std::string expandvars(std::string path);
 std::string expand(std::string path);
 std::string to_json(flexible::object obj);
 flexible::object parse_json(std::string str);
-// opt
-void set_option(std::string key, flexible::object obj);
-flexible::object get_option(std::string key);
+// userdata
 void set_userdata(uint64_t id, flexible::object obj);
 flexible::object get_userdata(uint64_t id);
+
+// util
+std::optional<uint64_t> get_keybinding_id(std::string pattern);
 } // namespace ura::api::core
 
 namespace ura::api::lua {
