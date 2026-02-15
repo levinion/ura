@@ -1,5 +1,4 @@
 #include "ura/core/server.hpp"
-#include "ura/core/lua.hpp"
 #include <CLI/CLI.hpp>
 #include <print>
 #include <string>
@@ -21,8 +20,6 @@ int main(int argc, char** argv) {
                "ura" };
 
   cli.add_flag("-v,--version", version, "Show version information");
-  cli.add_option("-c,--config", config_path, "Set configuration file path")
-    ->check(CLI::ExistingFile);
 
   CLI11_PARSE(cli, argc, argv);
 
@@ -33,9 +30,5 @@ int main(int argc, char** argv) {
 
   auto server = ura::UraServer::get_instance();
   server->init();
-  server->lua->set_option(
-    "config_path",
-    sol::make_object(server->lua->state, config_path)
-  );
   server->run();
 }

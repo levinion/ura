@@ -11,11 +11,6 @@ ura.fn.load("~/.config/ura")
 ura.fn.load("$XDG_CONFIG_HOME/ura")
 
 local function find_config_path()
-  local config_path = ura.opt["config_path"]
-  if config_path then
-    return config_path
-  end
-
   local xdg_config = os.getenv("XDG_CONFIG_HOME")
   local home = os.getenv("HOME")
   local root = nil
