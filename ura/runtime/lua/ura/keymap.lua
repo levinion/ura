@@ -2,7 +2,7 @@ local M = {}
 
 M._keymaps = {}
 
-local keymaps = {}
+local KEYMAPS = {}
 local mode = "normal"
 
 ---@param pattern string
@@ -12,15 +12,15 @@ function M.set(pattern, f, opt)
   local id = ura.api.get_keybinding_id(pattern)
   assert(id)
   local m = opt and opt.mode or "normal"
-  if keymaps[id] == nil then
-    keymaps[id] = {}
+  if KEYMAPS[id] == nil then
+    KEYMAPS[id] = {}
   end
-  if keymaps[id][m] == nil then
-    keymaps[id][m] = f
+  if KEYMAPS[id][m] == nil then
+    KEYMAPS[id][m] = f
   end
   if M._keymaps[id] == nil then
     M._keymaps[id] = function()
-      keymaps[id][mode]()
+      KEYMAPS[id][mode]()
     end
   end
 end
@@ -31,9 +31,9 @@ function M.unset(pattern, opt)
   local id = ura.api.get_keybinding_id(pattern)
   assert(id)
   local m = (opt and opt.mode) or "normal"
-  keymaps[id][m] = nil
-  if #keymaps[id] == 0 then
-    keymaps[id] = nil
+  KEYMAPS[id][m] = nil
+  if #KEYMAPS[id] == 0 then
+    KEYMAPS[id] = nil
     M._keymaps[id] = nil
   end
 end
@@ -41,6 +41,11 @@ end
 ---@param m string
 function M.set_mode(m)
   mode = m
+end
+
+function M._reset()
+  M._keymaps = {}
+  KEYMAPS = {}
 end
 
 return M

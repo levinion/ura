@@ -18,6 +18,10 @@ ura.keymap.set("super+shift+e", function()
   ura.api.terminate()
 end)
 
+ura.keymap.set("super+shift+r", function()
+  ura.cmd.reload()
+end)
+
 ura.keymap.set("super+f", function()
   ura.class.UraWindow:current():toggle_layout("fullscreen")
 end)

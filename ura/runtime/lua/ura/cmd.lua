@@ -62,4 +62,21 @@ function M.focus_down()
   focus_in_direction("down")
 end
 
+function M.reload()
+  local status, v = ura.fn._load_config()
+  if not status then
+    error(v)
+  else
+    ura.opt = {}
+    ura.hook._reset()
+    ura.keymap._reset()
+    ura.fn._restore_context()
+    --[[@diagnostic disable-next-line: param-type-mismatch]]
+    local status2, err = ura.fn._safe_call(v)
+    if not status2 then
+      error(err)
+    end
+  end
+end
+
 return M

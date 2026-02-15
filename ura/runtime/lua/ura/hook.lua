@@ -63,4 +63,9 @@ function M.emit(name, args)
   M._hooks[name](args)
 end
 
+function M._reset()
+  M._hooks = {}
+  HOOKS = {}
+end
+
 return M

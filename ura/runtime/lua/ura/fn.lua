@@ -254,4 +254,78 @@ function M.exists(path)
   return false
 end
 
+function M.find_config_path()
+  local xdg_config = os.getenv("XDG_CONFIG_HOME")
+  local home = os.getenv("HOME")
+  local root = nil
+
+  if xdg_config and xdg_config ~= "" then
+    root = xdg_config
+  elseif home then
+    root = home .. "/.config"
+  end
+
+  if root ~= nil then
+    local dotfile = root .. "/ura/init.lua"
+    if ura.fn.exists(dotfile) then
+      return dotfile
+    end
+  end
+
+  local global_dotfile = "/etc/ura/init.lua"
+  if ura.fn.exists(global_dotfile) then
+    return global_dotfile
+  end
+
+  return nil
+end
+
+local context = {}
+
+function M._save_context()
+  context = {}
+  for k, v in pairs(package.loaded) do
+    context[k] = v
+  end
+end
+
+function M._restore_context()
+  for k in pairs(package.loaded) do
+    package.loaded[k] = nil
+  end
+  for k, v in pairs(context) do
+    package.loaded[k] = v
+  end
+end
+
+---@return boolean
+---@return function|string
+function M._load_config()
+  local path = ura.fn.find_config_path()
+  if not path then
+    return false, "could not find any config files, exiting..."
+  end
+
+  local chunk, err = loadfile(path)
+  if not chunk then
+    return false, "Syntax Error: " .. (err or "unknown")
+  end
+
+  return true, chunk
+end
+
+---@param chunk function
+---@return boolean
+---@return string|nil
+function M._safe_call(chunk)
+  local new_env = {}
+  setmetatable(new_env, { __index = _G })
+  setfenv(chunk, new_env)
+  local success, run_err = pcall(chunk)
+  if not success then
+    return false, "Runtime Error: " .. (run_err or "unknown")
+  end
+  return true
+end
+
 return M
