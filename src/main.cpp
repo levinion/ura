@@ -1,9 +1,9 @@
 #include "ura/core/server.hpp"
 #include "ura/core/state.hpp"
+#include "ura/core/lua.hpp"
 #include <CLI/CLI.hpp>
 #include <print>
 #include <string>
-#include <utility>
 
 int main(int argc, char** argv) {
   if (argc > 1 && !std::string(argv[1]).starts_with('-')) {
@@ -32,8 +32,11 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  auto state = ura::UraState::init(std::move(config_path));
   auto server = ura::UraServer::get_instance();
-  server->init(std::move(state));
+  server->init();
+  server->state->set_option(
+    "config_path",
+    sol::make_object(server->lua->state, config_path)
+  );
   server->run();
 }

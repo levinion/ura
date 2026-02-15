@@ -19,8 +19,7 @@ public:
   std::optional<std::string> config_path;
   std::unordered_map<std::string, flexible::object> options;
 
-  static std::unique_ptr<UraState>
-  init(std::optional<std::string>&& config_path);
+  static std::unique_ptr<UraState> init();
 
   template<typename T>
   std::optional<T> emit_hook(std::string name, flexible::object args) {
@@ -38,7 +37,7 @@ public:
   void emit_hook(std::string name, flexible::object args);
   bool emit_keybinding(uint64_t id);
   bool contains_keybinding(uint64_t id);
-  void set_option(std::string_view key, flexible::object& value);
+  void set_option(std::string_view key, flexible::object value);
 
   template<typename T>
   std::optional<T> get_option(std::string_view key) {

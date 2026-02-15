@@ -14,21 +14,14 @@
 
 namespace ura {
 
-UraServer* UraServer::init(std::unique_ptr<UraState>&& state) {
-  this->state = std::move(state);
+UraServer* UraServer::init() {
+  this->state = UraState::init();
   log::init();
   this->setup_signal();
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
   this->dispatcher = UraDispatcher<64>::init();
-  this->lua = std::make_unique<Lua>();
-  this->lua->init();
-  auto result = this->lua->load_config();
-  if (!result) {
-    log::error("{}", result.error());
-    this->terminate();
-  }
-  this->state->emit_hook("prepare", {});
+  this->lua = Lua::init();
 
   this->setup_base();
   this->setup_ipc();
@@ -279,6 +272,9 @@ void UraServer::setup_others() {
 }
 
 void UraServer::run() {
+  this->lua->load_runtime();
+  this->state->emit_hook("prepare", {});
+
   // create wayland socket
   auto socket = wl_display_add_socket_auto(this->display);
   if (!socket) {

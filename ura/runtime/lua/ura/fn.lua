@@ -241,4 +241,17 @@ function M.fnmatch(pattern, s, flags)
   return ffi.C.fnmatch(pattern, s, flags or 0) == 0
 end
 
+---@param path string
+function M.exists(path)
+  if not path then
+    return false
+  end
+  local f = io.open(path, "r")
+  if f then
+    f:close()
+    return true
+  end
+  return false
+end
+
 return M

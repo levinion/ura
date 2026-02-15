@@ -1,5 +1,6 @@
 #include "ura/core/lua.hpp"
 #include "ura/api.hpp"
+#include "ura/core/log.hpp"
 #include "ura/core/server.hpp"
 #include <expected>
 #include <filesystem>
@@ -9,16 +10,14 @@
 #include <sol/property.hpp>
 #include <sol/state_handling.hpp>
 #include <string>
-#include "ura/core/state.hpp"
 #include "ura/util/util.hpp"
 #include <filesystem>
 
 namespace ura {
 
-#define LUAAPI(name, f) flexible::set(this->ura, name, f)
-
-void Lua::init() {
-  this->state.open_libraries(
+std::unique_ptr<Lua> Lua::init() {
+  auto lua = std::make_unique<Lua>();
+  lua->state.open_libraries(
     sol::lib::base,
     sol::lib::os,
     sol::lib::package,
@@ -34,7 +33,10 @@ void Lua::init() {
     sol::lib::table,
     sol::lib::utf8
   );
-  this->ura = this->state.create_named_table("ura");
+  lua->ura = lua->state.create_named_table("ura");
+
+#define LUAAPI(name, f) flexible::set(lua->ura, name, f)
+
   // api
   LUAAPI("api.terminate", api::core::terminate);
   LUAAPI("api.spawn", api::core::spawn);
@@ -113,7 +115,19 @@ void Lua::init() {
   LUAAPI("api.set_userdata", api::core::set_userdata);
   LUAAPI("api.get_userdata", api::core::get_userdata);
   // override
-  this->state.set("print", api::lua::print);
+  lua->state.set("print", api::lua::print);
+
+  return lua;
+}
+
+void Lua::load_runtime() {
+  api::core::prepend_package_path("/usr/share/ura/runtime/lua/?/init.lua");
+  api::core::prepend_package_path("/usr/share/ura/runtime/lua/?.lua");
+  auto result = this->execute("require('ura')");
+  if (!result) {
+    log::error("{}", result.error());
+    exit(1);
+  }
 }
 
 std::expected<std::string, std::string> Lua::execute(std::string_view script) {
@@ -138,52 +152,6 @@ std::expected<std::string, std::string> Lua::execute_file(std::string_view p) {
     return std::string(trim(this->lua_stdout));
   sol::error err = result;
   return std::unexpected(std::string(path) + ": " + std::string(err.what()));
-}
-
-std::optional<std::string> Lua::find_config_path() {
-  auto server = UraServer::get_instance();
-  if (server->state->config_path) {
-    return server->state->config_path;
-  }
-  auto root = std::getenv("XDG_CONFIG_HOME")
-    ? std::filesystem::path(std::getenv("XDG_CONFIG_HOME"))
-    : std::filesystem::path(std::getenv("HOME")) / ".config";
-  auto dotfile = root / "ura/init.lua";
-  if (std::filesystem::is_regular_file(dotfile)) {
-    return dotfile;
-  }
-  auto global_dotfile = std::filesystem::path("/etc/ura/init.lua");
-  if (std::filesystem::is_regular_file(global_dotfile)) {
-    return global_dotfile;
-  }
-  return {};
-}
-
-std::expected<void, std::string> Lua::load_config() {
-  auto runtime = std::filesystem::path("/usr/share/ura/runtime");
-
-  if (!std::filesystem::is_directory(runtime))
-    return std::unexpected("runtime not found");
-
-  api::core::prepend_package_path("/usr/share/ura/runtime/lua/?/init.lua");
-  api::core::prepend_package_path("/usr/share/ura/runtime/lua/?.lua");
-
-  auto result = this->execute("require('ura')");
-  if (!result) {
-    return std::unexpected(result.error());
-  }
-
-  auto path = this->find_config_path();
-  if (!path) {
-    return std::unexpected("could not found any config files, exiting...");
-  }
-
-  result = this->execute_file(path.value());
-  if (!result) {
-    return std::unexpected(result.error());
-  }
-
-  return {};
 }
 
 } // namespace ura

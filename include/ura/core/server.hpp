@@ -69,7 +69,7 @@ public:
   std::unordered_map<uint64_t, UraGlobal> globals;
 
   static UraServer* get_instance();
-  UraServer* init(std::unique_ptr<UraState>&& state);
+  UraServer* init();
   void run();
   void destroy();
   void terminate();

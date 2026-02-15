@@ -18,10 +18,8 @@ bool UraState::contains_keybinding(uint64_t id) {
   return true;
 }
 
-std::unique_ptr<UraState>
-UraState::init(std::optional<std::string>&& config_path) {
+std::unique_ptr<UraState> UraState::init() {
   auto state = std::make_unique<UraState>();
-  state->config_path = config_path;
   return state;
 }
 
@@ -31,7 +29,7 @@ void UraState::emit_hook(std::string name, flexible::object args) {
   this->hooks[name](args);
 }
 
-void UraState::set_option(std::string_view key, flexible::object& value) {
+void UraState::set_option(std::string_view key, flexible::object value) {
   this->options[std::string(key)] = value;
 }
 
