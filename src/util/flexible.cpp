@@ -17,10 +17,10 @@ json to_json(object& obj) {
     return {};
   if (obj.is<bool>())
     return obj.as<bool>();
-  if (obj.is<int>())
-    return obj.as<int>();
   if (obj.is<uint64_t>())
     return obj.as<uint64_t>();
+  if (obj.is<int>())
+    return obj.as<int>();
   if (obj.is<double>())
     return obj.as<double>();
   if (obj.is<std::string>())

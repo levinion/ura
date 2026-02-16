@@ -16,7 +16,7 @@ end
 --- @param id integer
 --- @return UraWindow
 function UraWindow:new(id)
-  local instance = setmetatable({}, self)
+  local instance = setmetatable({}, UraWindow)
   instance.id = id
   return instance
 end
@@ -46,7 +46,9 @@ function UraWindow:from_tags(tags)
     local w = ura.class.UraWindow:new(win)
     local contains = false
     for _, tag in ipairs(tags) do
-      if ura.fn.icontains(w:tags(), tag) then
+      if ura.fn.find(w:tags(), function(v)
+        return v == tag
+      end) then
         contains = true
         break
       end
@@ -168,6 +170,11 @@ function UraWindow:center()
   self:move(target_x, target_y)
 end
 
+---@return integer|nil
+function UraWindow:lru()
+  return ura.api.get_window_lru(self.id)
+end
+
 --- @param tags table<string>
 function UraWindow:set_tags(tags)
   tags = ura.fn.natural_sort(tags)
@@ -225,7 +232,5 @@ function UraWindow:toggle_layout(layout)
     self:set_layout(ura.opt["default_layout"] or "tiling")
   end
 end
-
-function UraWindow:segments() end
 
 return UraWindow

@@ -27,7 +27,7 @@ ura.keymap.set("super+f", function()
 end)
 
 ura.keymap.set("ctrl+left", function()
-  local blk = ura.class.UraBlock:current()
+  local blk = ura.class.UraBlock:current()[1]
   assert(blk)
   if blk.index > 1 then
     blk.index = blk.index - 1
@@ -36,31 +36,35 @@ ura.keymap.set("ctrl+left", function()
 end)
 
 ura.keymap.set("ctrl+right", function()
-  local blk = ura.class.UraBlock:current()
+  local blk = ura.class.UraBlock:current()[1]
   assert(blk)
   blk.index = blk.index + 1
   ura.class.UraOutput:current():set_tags({ blk:tag() })
 end)
 
 ura.keymap.set("ctrl+alt+left", function()
-  local seg = ura.class.UraSegment:current()
+  local seg = ura.class.UraSegment:current()[1]
   assert(seg)
   local segs = ura.class.UraSegment:all()
-  local index = ura.fn.find(segs, seg)
+  local index = ura.fn.find(segs, function(v)
+    return v == seg
+  end)
   assert(index)
   if index > 1 then
-    ura.class.UraOutput:current():set_tags({ segs[index - 1]:blocks()[1]:tag() })
+    ura.class.UraOutput:current():set_tags({ segs[index - 1]:active_block():tag() })
   end
 end)
 
 ura.keymap.set("ctrl+alt+right", function()
-  local seg = ura.class.UraSegment:current()
+  local seg = ura.class.UraSegment:current()[1]
   assert(seg)
   local segs = ura.class.UraSegment:all()
-  local index = ura.fn.find(segs, seg)
+  local index = ura.fn.find(segs, function(v)
+    return v == seg
+  end)
   assert(index)
   if index < #segs then
-    ura.class.UraOutput:current():set_tags({ segs[index + 1]:blocks()[1]:tag() })
+    ura.class.UraOutput:current():set_tags({ segs[index + 1]:active_block():tag() })
   end
 end)
 

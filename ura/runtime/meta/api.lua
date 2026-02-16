@@ -94,6 +94,9 @@ ura.api = {
   --- @param id integer
   --- @return boolean|nil
   is_window_focused = function(id) end,
+  --- @param id integer
+  --- @return integer|nil
+  get_window_lru = function(id) end,
 
   -- input
   --- @param rate integer

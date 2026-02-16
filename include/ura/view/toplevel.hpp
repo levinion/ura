@@ -21,7 +21,7 @@ public:
   wlr_foreign_toplevel_handle_v1* foreign_handle;
   Vec4<int> geometry;
   Vec<std::string> tags;
-  uint64_t lru;
+  uint64_t lru = 0;
 
   // same with css, top > right > bottom > left
   std::array<wlr_scene_rect*, 4> borders;

@@ -21,12 +21,11 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     server->view->get_scene_tree_or_create(this->z_index),
     xdg_toplevel->base
   );
-  this->lru = 0;
   auto output = server->view->current_output();
   if (output) {
     this->tags = output->tags;
   } else {
-    this->tags = { "headless" };
+    this->tags = {};
   }
   xdg_toplevel->base->surface->data = this;
   this->create_borders();

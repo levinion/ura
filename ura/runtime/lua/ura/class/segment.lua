@@ -10,9 +10,16 @@ end
 ---@param label string
 ---@return UraSegment
 function UraSegment:new(label)
-  local instance = setmetatable({}, self)
+  local instance = setmetatable({}, UraSegment)
   instance.label = label
   return instance
+end
+
+--- @param tag string
+--- @return UraSegment|nil
+function UraSegment:from_tag(tag)
+  local block = ura.class.UraBlock:from_tag(tag)
+  return block and self:from_block(block) or nil
 end
 
 --- @param block UraBlock
@@ -31,6 +38,26 @@ function UraSegment:blocks()
     end
   end
   return results
+end
+
+--- @return table<UraWindow>
+function UraSegment:windows()
+  local wins = ura.class.UraWindow:all()
+  local t = {}
+  for _, win in ipairs(wins) do
+    if
+      ura.fn.find(win:tags(), function(v)
+        local block = ura.class.UraBlock:from_tag(v)
+        if block then
+          return block.label == self.label
+        end
+        return false
+      end)
+    then
+      table.insert(t, win)
+    end
+  end
+  return t
 end
 
 --- @return table<UraSegment>
@@ -52,17 +79,49 @@ function UraSegment:all()
   return segments
 end
 
---- @return UraSegment|nil
+--- @return table<UraSegment>
 function UraSegment:current()
-  local curr_tag = ura.class.UraOutput:current():tags()[1]
-  if not curr_tag then
+  local segs = {}
+  for _, tag in ipairs(ura.class.UraOutput:current():tags()) do
+    local seg = self:from_tag(tag)
+    if seg then
+      segs[seg.label] = seg
+    end
+  end
+  local ss = {}
+  for _, s in pairs(segs) do
+    table.insert(ss, s)
+  end
+  table.sort(ss, function(a, b)
+    return ura.fn.natural_compare(a.label, b.label)
+  end)
+  return ss
+end
+
+function UraSegment:active_block()
+  local blocks = self:blocks()
+  if #blocks == 0 then
     return nil
   end
-  local b = ura.class.UraBlock:from_tag(curr_tag)
-  if not b then
-    return nil
+  if #blocks == 1 then
+    return blocks[1]
   end
-  return self:from_block(b)
+
+  local active_block = nil
+  local max_lru = -1
+
+  for _, block in ipairs(blocks) do
+    local wins = block:windows()
+    for _, win in ipairs(wins) do
+      local lru = win:lru() or 0
+      if lru > max_lru then
+        max_lru = lru
+        active_block = block
+      end
+    end
+  end
+
+  return active_block
 end
 
 return UraSegment

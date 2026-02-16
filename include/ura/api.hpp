@@ -37,6 +37,7 @@ flexible::object get_window_geometry(uint64_t id);
 void set_window_tags(uint64_t id, std::vector<std::string> tags);
 flexible::object get_window_tags(uint64_t id);
 flexible::object get_all_windows();
+std::optional<uint64_t> get_window_lru(uint64_t id);
 std::optional<bool> is_window_mapped(uint64_t id);
 std::optional<bool> is_window_focused(uint64_t id);
 

@@ -18,10 +18,9 @@ end
 ---@param index integer
 ---@return UraBlock
 function UraBlock:new(label, index)
-  local instance = setmetatable({}, self)
+  local instance = setmetatable({}, UraBlock)
   instance.label = label
   instance.index = index
-  instance.lru = 0
   return instance
 end
 
@@ -42,7 +41,11 @@ end
 
 ---@return UraBlock|nil
 function UraBlock:current()
-  return self:from_tag(ura.class.UraOutput:current():tags()[1])
+  local blocks = {}
+  for _, tag in ipairs(ura.class.UraOutput:current():tags()) do
+    table.insert(blocks, self:from_tag(tag))
+  end
+  return blocks
 end
 
 ---@return string
@@ -68,12 +71,20 @@ end
 
 ---@return UraSegment|nil
 function UraBlock:segment()
-  for _, v in ura.class.UraSegment:all() do
-    if v.label == self.label then
-      return v
+  return ura.class.UraSegment:from_block(self)
+end
+
+---@return table<UraWindow>
+function UraBlock:windows()
+  local wins = {}
+  for _, win in ipairs(ura.class.UraWindow:all()) do
+    for _, tag in ipairs(win:tags()) do
+      if self == self:from_tag(tag) then
+        table.insert(wins, win)
+      end
     end
   end
-  return nil
+  return wins
 end
 
 return UraBlock

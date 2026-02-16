@@ -94,25 +94,6 @@ function M.load_dir(path)
   end
 end
 
----@param t table
----@param value any
----@return boolean
-function M.icontains(t, value)
-  for _, v in ipairs(t) do
-    if v == value then
-      return true
-    end
-  end
-  return false
-end
-
----@param t table
----@param value any
----@return boolean
-function M.contains(t, value)
-  return t[value] ~= nil
-end
-
 ---@param a string
 ---@param b string
 ---@return boolean
@@ -182,11 +163,11 @@ function M.natural_sort(t)
 end
 
 ---@param t table
----@param value any
+---@param f fun(v:any):boolean
 ---@return integer|nil
-function M.find(t, value)
+function M.find(t, f)
   for i, v in ipairs(t) do
-    if v == value then
+    if f(v) then
       return i
     end
   end
@@ -301,7 +282,7 @@ end
 ---@return boolean
 ---@return function|string
 function M._load_config()
-  local path = ura.fn.find_config_path()
+  local path = M.find_config_path()
   if not path then
     return false, "could not find any config files, exiting..."
   end

@@ -476,6 +476,13 @@ std::optional<uint64_t> get_keybinding_id(std::string pattern) {
   return parse_keymap(pattern);
 }
 
+std::optional<uint64_t> get_window_lru(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->lru;
+}
+
 } // namespace ura::api::core
 
 namespace ura::api::lua {

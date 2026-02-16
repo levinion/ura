@@ -129,7 +129,8 @@ for _, w in ipairs(ura.class.UraWindow:all()) do
 		userdata = w:userdata(),
 		tags = w:tags(),
     is_mapped = w:is_mapped(),
-    is_focused = w:is_focused()
+    is_focused = w:is_focused(),
+    lru = w:lru()
 	}
 end
 print(ura.api.to_json(t))

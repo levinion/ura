@@ -16,7 +16,7 @@ end
 ---@param id integer
 ---@return UraOutput
 function UraOutput:new(id)
-  local instance = setmetatable({}, self)
+  local instance = setmetatable({}, UraOutput)
   instance.id = id
   return instance
 end

@@ -62,6 +62,11 @@ function M.setup(opt)
     end
   end
 
+  local o = {
+    ns = "layout.tiling",
+    priority = 100,
+  }
+
   ura.hook.add("window-layout-change", function(e)
     local win = ura.class.UraWindow:new(e.id)
     local tags = win:output():tags()
@@ -72,30 +77,31 @@ function M.setup(opt)
     elseif e.from == "tiling" then
       apply_all(tags)
     end
-  end, { ns = "layout.tiling" })
+  end, o)
 
   ura.hook.add("window-close", function(e)
     local win = ura.class.UraWindow:new(e.id)
     if win:layout() == "tiling" then
       apply_all(win:output():tags())
     end
-  end, { ns = "layout.tiling" })
+  end, o)
 
   ura.hook.add("window-tags-change", function(e)
     local win = ura.class.UraWindow:new(e.id)
     if win:layout() == "tiling" then
       apply_all(e.from)
+      apply_all(e.to)
     end
-  end, { ns = "layout.tiling" })
+  end, o)
 
   ura.hook.add("output-tags-change", function(e)
     apply_all(e.to)
-  end, { ns = "layout.tiling" })
+  end, o)
 
   ura.hook.add("output-usable-geometry-change", function(e)
     local output = ura.class.UraOutput:new(e.id)
     apply_all(output:tags())
-  end, { ns = "layout.tiling" })
+  end, o)
 end
 
 return M
