@@ -42,6 +42,24 @@ ura.keymap.set("ctrl+right", function()
   ura.class.UraOutput:current():set_tags({ blk:tag() })
 end)
 
+ura.keymap.set("ctrl+shift+left", function()
+  local blk = ura.class.UraBlock:current()[1]
+  assert(blk)
+  if blk.index > 1 then
+    blk.index = blk.index - 1
+    ura.class.UraWindow:current():set_tags({ blk:tag() })
+    ura.class.UraOutput:current():set_tags({ blk:tag() })
+  end
+end)
+
+ura.keymap.set("ctrl+shift+right", function()
+  local blk = ura.class.UraBlock:current()[1]
+  assert(blk)
+  blk.index = blk.index + 1
+  ura.class.UraWindow:current():set_tags({ blk:tag() })
+  ura.class.UraOutput:current():set_tags({ blk:tag() })
+end)
+
 ura.keymap.set("ctrl+alt+left", function()
   local seg = ura.class.UraSegment:current()[1]
   assert(seg)
