@@ -71,7 +71,7 @@ function M.setup(opt)
     local win = ura.class.UraWindow:new(e.id)
     local tags = win:output():tags()
     if e.to == "tiling" then
-      win:set_z_index(100)
+      win:set_z_index(ura.g.layer.normal)
       apply_all(tags)
     elseif e.from == "tiling" then
       apply_all(tags)

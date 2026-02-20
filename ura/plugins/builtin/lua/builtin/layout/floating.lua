@@ -4,7 +4,7 @@ function M.setup()
   ura.hook.add("window-layout-change", function(e)
     local win = ura.class.UraWindow:new(e.id)
     if e.to == "floating" then
-      win:set_z_index(200)
+      win:set_z_index(ura.g.layer.floating)
       -- recover window size
       local userdata = win:userdata()
       assert(userdata)
