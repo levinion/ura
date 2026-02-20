@@ -26,12 +26,17 @@ public:
   UraToplevel* focused_toplevel();
   std::optional<UraClient> focused_client();
   void init();
+  void attach_new_input(wlr_input_device* device);
   void unfocus();
   void focus(UraClient client);
   void focus(UraToplevel* toplevel);
   void focus(UraLayerShell* layer_shell);
   void notify_idle_activity();
   void set_idle_inhibitor(bool flag);
+  uint32_t get_modifiers();
+
+private:
+  void update_capability();
 };
 
 } // namespace ura

@@ -1,6 +1,5 @@
 #include "ura/core/callback.hpp"
 #include <utility>
-#include "tablet-v2-protocol.h"
 #include "ura/core/runtime.hpp"
 #include "ura/seat/seat.hpp"
 #include "ura/core/server.hpp"

@@ -20,7 +20,6 @@ function M.setup()
   ura.hook.add("window-layout-change", function(e)
     local win = ura.class.UraWindow:new(e.id)
     if e.to == "fullscreen" then
-      win:set_draggable(false)
       win:set_z_index(250)
       win:set_fullscreen(true)
       apply(win)

@@ -9,10 +9,9 @@
 #include <sol/state.hpp>
 #include <sol/types.hpp>
 #include <string_view>
-#include <vector>
-#include "ura/util/util.hpp"
 #include <nlohmann/json.hpp>
 #include <sol/sol.hpp>
+#include <absl/strings/str_split.h>
 
 namespace flexible {
 
@@ -26,7 +25,7 @@ sol::table create_table();
 
 template<typename T>
 void set(table& t, std::string_view key, T&& value) {
-  auto keys = ura::split(key, '.');
+  std::vector<std::string> keys = absl::StrSplit(key, '.');
   auto current_table = t;
   for (std::size_t i = 0; i < keys.size() - 1; ++i) {
     auto& k = keys[i];
@@ -37,7 +36,7 @@ void set(table& t, std::string_view key, T&& value) {
 
 template<typename T>
 std::optional<T> get(table& t, std::string_view key) {
-  auto keys = ura::split(key, '.');
+  std::vector<std::string> keys = absl::StrSplit(key, '.');
   auto current_table = t;
   for (std::size_t i = 0; i < keys.size() - 1; ++i) {
     auto& k = keys[i];

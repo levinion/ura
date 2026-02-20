@@ -2,8 +2,9 @@
 #include "ura/core/runtime.hpp"
 #include "ura/core/lua.hpp"
 #include "ura/seat/seat.hpp"
+#include "ura/util/keybinding.hpp"
 #include "ura/seat/keyboard.hpp"
-#include "ura/seat/cursor.hpp"
+#include <wayland-server-protocol.h>
 
 namespace ura {
 
@@ -54,10 +55,6 @@ void UraKeyboard::process_modifiers() {
 
   server->seat->notify_idle_activity();
 
-  if (server->seat->cursor->mode != UraCursorMode::Passthrough
-      && !(this->get_modifiers() & WLR_MODIFIER_LOGO))
-    server->seat->cursor->reset_mode();
-
   if (!server->seat->locked) {
     // send modifier to im grab
     auto kb_grab = this->get_im_grab();
@@ -81,7 +78,7 @@ void UraKeyboard::process_modifiers() {
 void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
   auto server = UraServer::get_instance();
 
-  // disable virtual keyboard if seat is locked
+  // ignore virtual keyboard events if seat is locked
   if (server->seat->locked && this->virt)
     return;
 
@@ -90,34 +87,52 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
   // order: tty > keybinding > input_method > client
   // if seat is locked: tty > client
 
+  // switch tty
   uint32_t keycode = event->keycode + 8; // xkeycode = libinput keycode + 8
   auto sym = xkb_state_key_get_one_sym(this->keyboard->xkb_state, keycode);
-  auto modifiers = this->get_modifiers();
-  auto id = (static_cast<uint64_t>(modifiers) << 32) | sym;
-
-  // ignore release events of a keybinding
-  if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED
-      && !server->seat->keyboard_shortcuts_inhibited && !server->seat->locked
-      && server->lua->contains_keybinding(id))
-    return;
 
   if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED
       && !server->seat->keyboard_shortcuts_inhibited) {
-    // switch tty
     if (sym >= XKB_KEY_XF86Switch_VT_1 && sym <= XKB_KEY_XF86Switch_VT_12) {
       auto vt = sym - XKB_KEY_XF86Switch_VT_1 + 1;
       wlr_session_change_vt(server->session, vt);
       return;
     }
-    // exec keybinding
-    if (!server->seat->locked) {
-      if (server->lua->emit_keybinding(id))
-        return;
-    }
   }
 
-  // handle input method grab
   if (!server->seat->locked) {
+    if (!server->seat->keyboard_shortcuts_inhibited) {
+      auto modifiers = server->seat->get_modifiers();
+      // exec keybinding
+      if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+        auto id = util::construct_keybinding_id(
+          modifiers,
+          util::UraKeyState::Pressed,
+          sym
+        );
+        if (!server->lua->emit_keybinding(id))
+          return;
+      } else if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
+        auto id = util::construct_keybinding_id(
+          modifiers,
+          util::UraKeyState::Released,
+          sym
+        );
+        if (!server->lua->emit_keybinding(id))
+          return;
+        // ignore release event in codition
+        id = util::construct_keybinding_id(
+          modifiers,
+          util::UraKeyState::Pressed,
+          sym
+        );
+        // TODO: ignore release event
+        // if (server->lua->contains_keybinding(id))
+        //   return;
+      }
+    }
+
+    // handle input method grab
     auto kb_grab = this->get_im_grab();
     if (kb_grab) {
       wlr_input_method_keyboard_grab_v2_set_keyboard(kb_grab, this->keyboard);
@@ -154,7 +169,4 @@ wlr_input_method_keyboard_grab_v2* UraKeyboard::get_im_grab() {
   return input_method->keyboard_grab;
 }
 
-uint32_t UraKeyboard::get_modifiers() {
-  return wlr_keyboard_get_modifiers(this->keyboard);
-}
 } // namespace ura

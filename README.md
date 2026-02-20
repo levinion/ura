@@ -20,6 +20,7 @@ Dependencies include:
 - [luajit](http://luajit.org/)
 - [libnotify](https://gitlab.gnome.org/GNOME/libnotify)
 - [spdlog](https://github.com/gabime/spdlog)
+- [abseil-cpp](https://github.com/abseil/abseil-cpp)
 
 Make dependencies include:
 
@@ -71,16 +72,16 @@ The default terminal is [foot](https://codeberg.org/dnkl/foot), which can be lau
 Define keybindings using the following format: one or more modifier keys (or none) followed by a single key, connected by `"+"`:
 
 ```lua
-ura.keymap.set("super+t", function()
-  ura.api.spawn("foot -e tmux")
+ura.keymap.set({ "super+t" }, function()
+  ura.api.spawn("foot")
 end)
 
-ura.keymap.set("super+shift+e", function()
-  ura.api.terminate()
+ura.keymap.set({ "super+q" }, function()
+  ura.class.UraWindow:current():close()
 end)
 
-ura.keymap.set("XF86AudioRaiseVolume", function()
-  ura.api.spawn("volume -i 5")
+ura.keymap.set({ "alt+space" }, function()
+  ura.class.UraWindow:current():toggle_layout("floating")
 end)
 ```
 

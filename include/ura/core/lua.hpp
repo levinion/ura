@@ -19,8 +19,11 @@ public:
 
   template<typename T>
   std::optional<T> emit_hook(std::string name, flexible::object args) {
-    auto f = this->ura["hook"]["_hooks"][name]
-               .get<std::optional<sol::protected_function>>();
+    auto f = this->ura.traverse_get<std::optional<sol::protected_function>>(
+      "hook",
+      "_hooks",
+      name
+    );
     if (f) {
       auto ret = f.value()();
       if (!ret.valid())

@@ -124,7 +124,6 @@ for _, w in ipairs(ura.class.UraWindow:all()) do
 		output = w:output():name(),
 		geometry = w:geometry(),
 		z_index = w:z_index(),
-		is_draggable = w:is_draggable(),
 		is_fullscreen = w:is_fullscreen(),
 		userdata = w:userdata(),
 		tags = w:tags(),

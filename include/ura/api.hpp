@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <sol/forward.hpp>
 #include <sol/sol.hpp>
 #include <string>
 #include <vector>
@@ -11,9 +12,8 @@ namespace ura::api::core {
 void terminate();
 void spawn(std::string cmd);
 void notify(std::string summary, std::string body);
-std::optional<int>
-set_timer(flexible::function f, int64_t value, int64_t interval);
-void clear_timer(int fd);
+std::optional<int> set_timeout(flexible::function f, int64_t timeout);
+void clear_timeout(int fd);
 // idle
 void notify_idle_activity();
 void set_idle_inhibitor(bool flag);
@@ -23,9 +23,7 @@ std::optional<uint64_t> get_current_window();
 std::optional<uint64_t> get_window_output(uint64_t id);
 void focus_window(uint64_t id);
 void set_window_z_index(uint64_t id, int z);
-void set_window_draggable(uint64_t id, bool flag);
 std::optional<int> get_window_z_index(uint64_t id);
-std::optional<bool> is_window_draggable(uint64_t id);
 void activate_window(uint64_t id);
 void move_window(uint64_t id, int x, int y);
 void resize_window(uint64_t id, int width, int height);
@@ -50,6 +48,7 @@ void set_cursor_visible(bool flag);
 bool is_cursor_visible();
 void set_cursor_shape(std::string name);
 std::string get_cursor_shape();
+sol::object get_cursor_pos();
 
 // output
 std::optional<uint64_t> get_current_output();
@@ -78,7 +77,8 @@ void set_userdata(uint64_t id, flexible::object obj);
 flexible::object get_userdata(uint64_t id);
 
 // util
-std::optional<uint64_t> get_keybinding_id(std::string pattern);
+std::optional<uint64_t>
+get_keybinding_id(std::string pattern, std::string state);
 } // namespace ura::api::core
 
 namespace ura::api::lua {

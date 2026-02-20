@@ -47,7 +47,7 @@ void on_seat_request_cursor(wl_listener* listener, void* data) {
     if (event->surface)
       server->seat->cursor->set_xcursor("left_ptr");
     else
-      server->seat->cursor->hide();
+      server->seat->cursor->set_visible(false);
   }
 }
 

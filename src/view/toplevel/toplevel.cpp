@@ -7,7 +7,7 @@
 #include "ura/view/output.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/seat/seat.hpp"
-#include "ura/util/util.hpp"
+#include "ura/util/rgb.hpp"
 #include "ura/core/lua.hpp"
 #include "ura/view/view.hpp"
 
@@ -439,10 +439,10 @@ void UraToplevel::create_borders() {
       .value_or("#00000000");
   this->border_width = server->lua->get_option<int>("border_width").value_or(1);
   this->active_border_color =
-    hex2rgba(active_border_color)
+    util::hex2rgba(active_border_color)
       .value_or({ 137.f / 255.f, 180.f / 255.f, 250.f / 255.f, 1.f });
   this->inactive_border_color =
-    hex2rgba(inactive_border_color).value_or({ 0.f, 0.f, 0.f, 0.f });
+    util::hex2rgba(inactive_border_color).value_or({ 0.f, 0.f, 0.f, 0.f });
 
   for (int i = 0; i < 4; i++) {
     this->borders[i] = wlr_scene_rect_create(

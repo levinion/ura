@@ -3,7 +3,7 @@
 #include "ura/core/runtime.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/ura.hpp"
-#include "ura/util/util.hpp"
+#include "ura/util/rgb.hpp"
 #include "ura/util/vec.hpp"
 #include "ura/view/layer_shell.hpp"
 #include <algorithm>
@@ -34,7 +34,7 @@ void UraOutput::init(wlr_output* _wlr_output) {
     server->view->get_scene_tree_or_create(UraSceneLayer::Clear),
     0,
     0,
-    hex2rgba("#1D727A").value().data()
+    util::hex2rgba("#1D727A").value().data()
   );
 
   // bind render and allocator to this output
@@ -245,10 +245,9 @@ void UraOutput::set_dpms_mode(bool flag) {
 
   auto server = UraServer::get_instance();
   wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, true);
-  server->dispatcher->set_timer(
+  server->dispatcher->set_timeout(
     [=]() { wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, false); },
-    std::chrono::milliseconds(1000),
-    std::chrono::milliseconds(0)
+    std::chrono::milliseconds(1000)
   );
 }
 

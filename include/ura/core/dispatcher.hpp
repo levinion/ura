@@ -57,28 +57,22 @@ public:
     close(fd);
   }
 
-  template<typename Rep1, typename Period1, typename Rep2, typename Period2>
-  int set_timer(
+  template<typename Rep, typename Period>
+  int set_timeout(
     std::function<void()> callback,
-    std::chrono::duration<Rep1, Period1> value,
-    std::chrono::duration<Rep2, Period2> interval
+    std::chrono::duration<Rep, Period> timeout
   ) {
     auto fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     if (fd == -1)
       return -1;
 
-    auto secs = std::chrono::duration_cast<std::chrono::seconds>(value);
+    auto secs = std::chrono::duration_cast<std::chrono::seconds>(timeout);
     auto nsecs =
-      std::chrono::duration_cast<std::chrono::nanoseconds>(value - secs);
-    auto isecs = std::chrono::duration_cast<std::chrono::seconds>(interval);
-    auto insecs =
-      std::chrono::duration_cast<std::chrono::nanoseconds>(interval - isecs);
+      std::chrono::duration_cast<std::chrono::nanoseconds>(timeout - secs);
 
-    itimerspec timer_spec;
+    itimerspec timer_spec = {};
     timer_spec.it_value.tv_sec = secs.count();
     timer_spec.it_value.tv_nsec = nsecs.count();
-    timer_spec.it_interval.tv_sec = isecs.count();
-    timer_spec.it_interval.tv_nsec = insecs.count();
 
     // flag 0 means relative time
     auto ret = timerfd_settime(fd, 0, &timer_spec, nullptr);
@@ -99,7 +93,7 @@ public:
     return fd;
   }
 
-  void clear_timer(int fd) {
+  void clear_timeout(int fd) {
     if (!this->is_task_active(fd))
       return;
     itimerspec clear = {};

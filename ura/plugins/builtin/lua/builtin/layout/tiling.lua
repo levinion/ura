@@ -71,7 +71,6 @@ function M.setup(opt)
     local win = ura.class.UraWindow:new(e.id)
     local tags = win:output():tags()
     if e.to == "tiling" then
-      win:set_draggable(false)
       win:set_z_index(100)
       apply_all(tags)
     elseif e.from == "tiling" then

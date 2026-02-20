@@ -45,6 +45,7 @@ build-tools:
 clean-dev:
 	rm -rf build
 	rm -rf include/protocols
+	rm -rf .cache
 
 clean:
 	rm -f $(DESTDIR)/usr/bin/ura

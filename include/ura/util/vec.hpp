@@ -1,8 +1,8 @@
 #pragma once
 
+#include <absl/container/inlined_vector.h>
 #include <algorithm>
 #include <cstddef>
-#include <vector>
 #include "ura/util/flexible.hpp"
 #include "wlr/util/box.h"
 
@@ -16,6 +16,13 @@ public:
 
   bool operator==(const Vec2<T>& box) {
     return this->x == box.x && this->y == box.y;
+  }
+
+  flexible::object to_table() {
+    auto table = flexible::create_table();
+    table.set("x", this->x);
+    table.set("y", this->y);
+    return table;
   }
 };
 
@@ -37,7 +44,7 @@ public:
     return { x, y, width, height };
   }
 
-  flexible::object to_flexible() {
+  flexible::object to_table() {
     flexible::table obj = flexible::create_table();
     obj.set("x", x);
     obj.set("y", y);
@@ -61,9 +68,9 @@ public:
   }
 };
 
-template<typename T>
-struct Vec: public std::vector<T> {
-  using std::vector<T>::vector;
+template<typename T, std::size_t N = 128>
+struct Vec: public absl::InlinedVector<T, N> {
+  using absl::InlinedVector<T, N>::InlinedVector;
 
   std::optional<T> get(int index) {
     if (index < 0 || static_cast<std::size_t>(index) >= this->size()) {
@@ -73,7 +80,7 @@ struct Vec: public std::vector<T> {
   }
 
   void remove(T v) {
-    std::erase(*this, v);
+    this->erase(std::remove(this->begin(), this->end(), v), this->end());
   }
 
   bool contains(T v) {

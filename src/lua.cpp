@@ -1,4 +1,5 @@
 #include "ura/core/lua.hpp"
+#include <absl/strings/ascii.h>
 #include "ura/api.hpp"
 #include "ura/core/log.hpp"
 #include "ura/core/server.hpp"
@@ -10,7 +11,6 @@
 #include <sol/property.hpp>
 #include <sol/state_handling.hpp>
 #include <string>
-#include "ura/util/util.hpp"
 #include <filesystem>
 
 namespace ura {
@@ -43,8 +43,8 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.notify_idle_activity", api::core::notify_idle_activity);
   LUAAPI("api.set_idle_inhibitor", api::core::set_idle_inhibitor);
   LUAAPI("api.notify", api::core::notify);
-  LUAAPI("api.set_timer", api::core::set_timer);
-  LUAAPI("api.clear_timer", api::core::clear_timer);
+  LUAAPI("api.set_timeout", api::core::set_timeout);
+  LUAAPI("api.clear_timeout", api::core::clear_timeout);
   // window
   LUAAPI("api.focus_window", api::core::focus_window);
   LUAAPI("api.close_window", api::core::close_window);
@@ -54,8 +54,6 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.get_window_z_index", api::core::get_window_z_index);
   LUAAPI("api.move_window", api::core::move_window);
   LUAAPI("api.resize_window", api::core::resize_window);
-  LUAAPI("api.set_window_draggable", api::core::set_window_draggable);
-  LUAAPI("api.is_window_draggable", api::core::is_window_draggable);
   LUAAPI("api.get_window_app_id", api::core::get_window_app_id);
   LUAAPI("api.get_window_title", api::core::get_window_title);
   LUAAPI("api.set_window_fullscreen", api::core::set_window_fullscreen);
@@ -74,6 +72,7 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.set_cursor_visible", api::core::set_cursor_visible);
   LUAAPI("api.get_cursor_visible", api::core::is_cursor_visible);
   LUAAPI("api.set_cursor_shape", api::core::set_cursor_shape);
+  LUAAPI("api.get_cursor_pos", api::core::get_cursor_pos);
   // output
   LUAAPI("api.get_current_output", api::core::get_current_output);
   LUAAPI("api.get_output", api::core::get_output);
@@ -126,7 +125,7 @@ std::expected<std::string, std::string> Lua::execute(std::string_view script) {
   this->lua_stdout.clear();
   auto result = this->state.safe_script(script, sol::script_pass_on_error);
   if (result.valid())
-    return std::string(trim(this->lua_stdout));
+    return std::string(absl::StripAsciiWhitespace(this->lua_stdout));
   sol::error err = result;
   return std::unexpected(err.what());
 }
@@ -140,30 +139,40 @@ std::expected<std::string, std::string> Lua::execute_file(std::string_view p) {
     );
   auto result = this->state.safe_script_file(path, sol::script_pass_on_error);
   if (result.valid())
-    return std::string(trim(this->lua_stdout));
+    return std::string(absl::StripAsciiWhitespace(this->lua_stdout));
   sol::error err = result;
   return std::unexpected(std::string(path) + ": " + std::string(err.what()));
 }
 
+// if true then pass to client
 bool Lua::emit_keybinding(uint64_t id) {
-  auto f = this->ura["keymap"]["_keymaps"][id]
-             .get<std::optional<sol::protected_function>>();
+  auto f = this->ura.traverse_get<std::optional<sol::protected_function>>(
+    "keymap",
+    "_keymaps",
+    id
+  );
   if (f) {
-    f.value()();
-    return true;
+    return f.value()().get<std::optional<bool>>().value_or(false);
   }
-  return false;
+  return true;
 }
 
 bool Lua::contains_keybinding(uint64_t id) {
-  return this->ura["keymap"]["_keymaps"][id]
-    .get<std::optional<sol::protected_function>>()
+  return this->ura
+    .traverse_get<std::optional<sol::protected_function>>(
+      "keymap",
+      "_keymaps",
+      id
+    )
     .has_value();
 }
 
 void Lua::emit_hook(std::string name, flexible::object args) {
-  auto f = this->ura["hook"]["_hooks"][name]
-             .get<std::optional<sol::protected_function>>();
+  auto f = this->ura.traverse_get<std::optional<sol::protected_function>>(
+    "hook",
+    "_hooks",
+    name
+  );
   if (f) {
     f.value()(args);
   }

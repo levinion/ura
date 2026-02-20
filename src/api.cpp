@@ -10,9 +10,10 @@
 #include "ura/view/output.hpp"
 #include "ura/view/view.hpp"
 #include "ura/view/toplevel.hpp"
-#include "ura/seat/keyboard.hpp"
-#include "ura/util/util.hpp"
+#include "ura/util/keybinding.hpp"
 #include "ura/seat/seat.hpp"
+#include <absl/strings/str_split.h>
+#include <absl/strings/str_join.h>
 #include <fcntl.h>
 #include <libinput.h>
 #include <sys/types.h>
@@ -56,10 +57,7 @@ void set_cursor_theme(std::string theme, int size) {
 
 void set_cursor_visible(bool flag) {
   auto server = UraServer::get_instance();
-  if (!flag)
-    server->seat->cursor->hide();
-  else
-    server->seat->cursor->show();
+  server->seat->cursor->set_visible(flag);
 }
 
 void set_cursor_shape(std::string name) {
@@ -125,12 +123,12 @@ void append_package_path(std::string path) {
   auto package_path = package.value().get<std::optional<std::string>>("path");
   if (!package_path)
     return;
-  auto paths = split(package_path.value(), ';');
+  std::vector<std::string> paths = absl::StrSplit(package_path.value(), ';');
   auto set = std::unordered_set(paths.begin(), paths.end());
   if (set.contains(path))
     return;
   paths.push_back(path);
-  auto result = join(paths, ';');
+  std::string result = absl::StrJoin(paths, ";");
   package.value().set("path", result);
 }
 
@@ -142,12 +140,12 @@ void prepend_package_path(std::string path) {
   auto package_path = package.value().get<std::optional<std::string>>("path");
   if (!package_path)
     return;
-  auto paths = split(package_path.value(), ';');
+  std::vector<std::string> paths = absl::StrSplit(package_path.value(), ';');
   auto set = std::unordered_set(paths.begin(), paths.end());
   if (set.contains(path))
     return;
   paths.insert(paths.begin(), path);
-  auto result = join(paths, ';');
+  std::string result = absl::StrJoin(paths, ";");
   package.value().set("path", result);
 }
 
@@ -225,13 +223,6 @@ void set_idle_inhibitor(bool flag) {
   server->seat->set_idle_inhibitor(flag);
 }
 
-void set_window_draggable(uint64_t id, bool flag) {
-  auto toplevel = UraToplevel::from(id);
-  if (!toplevel)
-    return;
-  toplevel->draggable = flag;
-}
-
 void set_window_z_index(uint64_t id, int z) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
@@ -272,21 +263,19 @@ void notify(std::string summary, std::string body) {
   log::notify(summary, body);
 }
 
-std::optional<int>
-set_timer(flexible::function f, int64_t value, int64_t interval) {
+std::optional<int> set_timeout(flexible::function f, int64_t timeout) {
   auto server = UraServer::get_instance();
-  if (value < 0 || interval < 0)
+  if (timeout < 0)
     return {};
-  return server->dispatcher->set_timer(
-    [=]() { f({}); },
-    std::chrono::milliseconds(value),
-    std::chrono::milliseconds(interval)
+  return server->dispatcher->set_timeout(
+    [=]() { f(); },
+    std::chrono::milliseconds(timeout)
   );
 }
 
-void clear_timer(int fd) {
+void clear_timeout(int fd) {
   auto server = UraServer::get_instance();
-  server->dispatcher->clear_timer(fd);
+  server->dispatcher->clear_timeout(fd);
 }
 
 std::optional<int> get_window_z_index(uint64_t id) {
@@ -294,13 +283,6 @@ std::optional<int> get_window_z_index(uint64_t id) {
   if (!toplevel)
     return {};
   return toplevel->z_index;
-}
-
-std::optional<bool> is_window_draggable(uint64_t id) {
-  auto toplevel = UraToplevel::from(id);
-  if (!toplevel)
-    return {};
-  return toplevel->draggable;
 }
 
 std::string get_cursor_theme() {
@@ -319,14 +301,14 @@ flexible::object get_output_logical_geometry(uint64_t id) {
   auto output = UraOutput::from(id);
   if (!output)
     return {};
-  return output->logical_geometry().to_flexible();
+  return output->logical_geometry().to_table();
 }
 
 flexible::object get_output_usable_geometry(uint64_t id) {
   auto output = UraOutput::from(id);
   if (!output)
     return {};
-  return output->usable_area.to_flexible();
+  return output->usable_area.to_table();
 }
 
 std::optional<float> get_output_scale(uint64_t id) {
@@ -368,7 +350,7 @@ flexible::object get_window_geometry(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
-  return toplevel->geometry.to_flexible();
+  return toplevel->geometry.to_table();
 }
 
 std::optional<uint64_t> get_window_output(uint64_t id) {
@@ -472,8 +454,13 @@ std::optional<bool> is_window_focused(uint64_t id) {
   return toplevel->is_focused();
 }
 
-std::optional<uint64_t> get_keybinding_id(std::string pattern) {
-  return parse_keymap(pattern);
+std::optional<uint64_t>
+get_keybinding_id(std::string pattern, std::string state) {
+  if (state == "pressed")
+    return util::get_keybinding_id(pattern, util::UraKeyState::Pressed);
+  else if (state == "released")
+    return util::get_keybinding_id(pattern, util::UraKeyState::Released);
+  return {};
 }
 
 std::optional<uint64_t> get_window_lru(uint64_t id) {
@@ -481,6 +468,11 @@ std::optional<uint64_t> get_window_lru(uint64_t id) {
   if (!toplevel)
     return {};
   return toplevel->lru;
+}
+
+flexible::object get_cursor_pos() {
+  auto server = UraServer::get_instance();
+  return server->seat->cursor->position().to_table();
 }
 
 } // namespace ura::api::core

@@ -8,14 +8,14 @@
 
 namespace ura {
 
-// TODO: this should be visitable and modifiable from api
+//TODO: this should be visitable and modifiable from api
 enum UraSceneLayer {
   Clear = -50,
   Background = 0,
   Bottom = 50,
   Normal = 100,
-  Floating = 150,
-  Top = 200,
+  Top = 150,
+  Floating = 200,
   Fullscreen = 250,
   Popup = 300,
   Overlay = 350,

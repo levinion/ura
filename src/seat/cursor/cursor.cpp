@@ -1,5 +1,7 @@
 #include "ura/seat/cursor.hpp"
+#include <wayland-server-protocol.h>
 #include <chrono>
+#include "ura/util/keybinding.hpp"
 #include "ura/view/client.hpp"
 #include "ura/view/view.hpp"
 #include "ura/core/runtime.hpp"
@@ -54,18 +56,13 @@ void UraCursor::relative_move(wlr_pointer_motion_event* event) {
     event->delta_x,
     event->delta_y
   );
-  if (this->mode == UraCursorMode::Move)
-    this->process_cursor_mode_move();
-  else if (this->mode == UraCursorMode::Resize)
-    this->process_cursor_mode_resize();
-  else
-    this->process_motion(
-      event->time_msec,
-      event->delta_x,
-      event->delta_y,
-      event->unaccel_dx,
-      event->unaccel_dy
-    );
+  this->process_motion(
+    event->time_msec,
+    event->delta_x,
+    event->delta_y,
+    event->unaccel_dx,
+    event->unaccel_dy
+  );
 
   auto server = UraServer::get_instance();
   server->seat->notify_idle_activity();
@@ -80,49 +77,35 @@ void UraCursor::absolute_move(wlr_pointer_motion_absolute_event* event) {
     event->x,
     event->y
   );
-  if (this->mode == UraCursorMode::Move)
-    this->process_cursor_mode_move();
-  else if (this->mode == UraCursorMode::Resize)
-    this->process_cursor_mode_resize();
-  else {
-    double lx, ly;
-    wlr_cursor_absolute_to_layout_coords(
-      this->cursor,
-      &event->pointer->base,
-      event->x,
-      event->y,
-      &lx,
-      &ly
-    );
-    auto dx = lx - this->cursor->x;
-    auto dy = ly - this->cursor->y;
-    this->process_motion(event->time_msec, dx, dy, dx, dy);
-  }
+  double lx, ly;
+  wlr_cursor_absolute_to_layout_coords(
+    this->cursor,
+    &event->pointer->base,
+    event->x,
+    event->y,
+    &lx,
+    &ly
+  );
+  auto dx = lx - this->cursor->x;
+  auto dy = ly - this->cursor->y;
+  this->process_motion(event->time_msec, dx, dy, dx, dy);
 }
 
 void UraCursor::set_xcursor(std::string name) {
-  if (name.contains("resize"))
-    return;
+  if (name.contains("resize")) {
+    name = "left_ptr";
+  }
   wlr_cursor_set_xcursor(this->cursor, this->cursor_mgr, name.data());
   this->xcursor_name = name;
 }
 
-void UraCursor::hide() {
-  wlr_cursor_unset_image(this->cursor);
-  this->visible = false;
-}
-
-void UraCursor::show() {
-  wlr_cursor_set_xcursor(
-    this->cursor,
-    this->cursor_mgr,
-    this->xcursor_name.data()
-  );
-  this->visible = true;
-}
-
-void UraCursor::toggle() {
-  visible ? this->hide() : this->show();
+void UraCursor::set_visible(bool flag) {
+  if (flag) {
+    this->set_xcursor(this->xcursor_name);
+  } else {
+    wlr_cursor_unset_image(this->cursor);
+  }
+  this->visible = flag;
 }
 
 // internal method
@@ -200,11 +183,10 @@ void UraCursor::process_motion(
       callback();
     } else {
       static auto timer = -1;
-      server->dispatcher->clear_timer(timer);
-      timer = server->dispatcher->set_timer(
+      server->dispatcher->clear_timeout(timer);
+      timer = server->dispatcher->set_timeout(
         callback,
-        std::chrono::milliseconds(2), // delay
-        std::chrono::milliseconds(0)
+        std::chrono::milliseconds(2) // delay
       );
     }
   }
@@ -212,40 +194,41 @@ void UraCursor::process_motion(
 
 void UraCursor::process_button(wlr_pointer_button_event* event) {
   auto server = UraServer::get_instance();
-  auto process_mode = [=, this](UraCursorMode mode) {
-    if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
-      this->reset_mode();
-    else {
-      auto super_pressed = false;
-      for (auto keyboard : server->seat->keyboards) {
-        auto modifiers = keyboard->get_modifiers();
-        if (modifiers & WLR_MODIFIER_LOGO) {
-          super_pressed = true;
-          break;
-        }
-      }
-      if (super_pressed) {
-        // begin grab
-        auto toplevel = server->seat->focused_toplevel();
-        if (toplevel && toplevel->draggable) {
-          this->mode = mode;
-          this->grab = this->position();
-          this->anchor = toplevel->geometry;
-        }
-      }
-    }
-  };
-  // process move window
-  if (event->button == 0x110) { // left button
-    process_mode(UraCursorMode::Move);
-  }
-  // process resize window
-  if (event->button == 0x111) { // right button
-    process_mode(UraCursorMode::Resize);
-  }
 
-  if (this->mode != UraCursorMode::Passthrough)
+  if (server->seat->locked)
     return;
+
+  auto modifiers = server->seat->get_modifiers();
+
+  if (event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
+    auto id = util::construct_keybinding_id(
+      modifiers,
+      static_cast<util::UraKeyState>(WL_POINTER_BUTTON_STATE_PRESSED),
+      util::UraKeybindingDeviceType::Mouse | event->button
+    );
+    if (server->lua->contains_keybinding(id)) {
+      if (!server->lua->emit_keybinding(id))
+        return;
+    }
+  } else if (event->state == WL_POINTER_BUTTON_STATE_RELEASED) {
+    auto id = util::construct_keybinding_id(
+      modifiers,
+      static_cast<util::UraKeyState>(WL_POINTER_BUTTON_STATE_RELEASED),
+      util::UraKeybindingDeviceType::Mouse | event->button
+    );
+    if (server->lua->contains_keybinding(id)) {
+      if (!server->lua->emit_keybinding(id))
+        return;
+    }
+    id = util::construct_keybinding_id(
+      modifiers,
+      static_cast<util::UraKeyState>(WL_POINTER_BUTTON_STATE_PRESSED),
+      util::UraKeybindingDeviceType::Mouse | event->button
+    );
+    // TODO: ignore release event
+    // if (server->lua->contains_keybinding(id))
+    //   return;
+  }
 
   // notify focused client with button pressed event
   wlr_seat_pointer_notify_button(
@@ -287,49 +270,47 @@ void UraCursor::set_theme(std::string theme, int size) {
   this->cursor_mgr =
     wlr_xcursor_manager_create(theme.empty() ? "default" : theme.data(), size);
   if (this->visible)
-    this->show();
+    this->set_visible(false);
 }
 
 void UraCursor::attach_device(wlr_input_device* device) {
   wlr_cursor_attach_input_device(this->cursor, device);
 }
 
-void UraCursor::reset_mode() {
-  this->mode = UraCursorMode::Passthrough;
-}
-
-void UraCursor::process_cursor_mode_move() {
-  auto server = UraServer::get_instance();
-  auto toplevel = server->seat->focused_toplevel();
-  if (!toplevel || !toplevel->draggable)
-    this->reset_mode();
-  else {
-    toplevel->move(
-      this->anchor.x + this->position().x - this->grab.x,
-      this->anchor.y + this->position().y - this->grab.y
-    );
-  }
-}
-
-void UraCursor::process_cursor_mode_resize() {
-  auto server = UraServer::get_instance();
-  auto toplevel = server->seat->focused_toplevel();
-  if (!toplevel || !toplevel->draggable) {
-    if (toplevel->xdg_toplevel->current.resizing)
-      wlr_xdg_toplevel_set_resizing(toplevel->xdg_toplevel, false);
-    this->reset_mode();
-  } else {
-    if (!toplevel->xdg_toplevel->current.resizing)
-      wlr_xdg_toplevel_set_resizing(toplevel->xdg_toplevel, true);
-    toplevel->resize(
-      this->anchor.width + this->position().x - this->grab.x,
-      this->anchor.height + this->position().y - this->grab.y
-    );
-  }
-}
-
 void UraCursor::process_axis(wlr_pointer_axis_event* event) {
   auto server = UraServer::get_instance();
+
+  if (server->seat->locked)
+    return;
+
+  uint32_t keycode = 0;
+  if (event->orientation == WL_POINTER_AXIS_VERTICAL_SCROLL) {
+    if (event->delta < 0) {
+      keycode = util::UraKeyCodeExtra::WheelUp;
+    } else if (event->delta > 0) {
+      keycode = util::UraKeyCodeExtra::WheelDown;
+    }
+  } else if (event->orientation == WL_POINTER_AXIS_HORIZONTAL_SCROLL) {
+    if (event->delta < 0) {
+      keycode = util::UraKeyCodeExtra::WheelLeft;
+    } else if (event->delta > 0) {
+      keycode = util::UraKeyCodeExtra::WheelRight;
+    }
+  }
+
+  if (keycode != 0) {
+    auto modifiers = server->seat->get_modifiers();
+    auto id = util::construct_keybinding_id(
+      modifiers,
+      util::UraKeyState::Pressed,
+      util::UraKeybindingDeviceType::Mouse | keycode
+    );
+    if (server->lua->contains_keybinding(id)) {
+      server->lua->emit_keybinding(id);
+      return;
+    }
+  }
+
   wlr_seat_pointer_notify_axis(
     server->seat->seat,
     event->time_msec,
@@ -340,7 +321,7 @@ void UraCursor::process_axis(wlr_pointer_axis_event* event) {
     event->relative_direction
   );
   server->seat->notify_idle_activity();
-}
+} // namespace ura
 
 std::string UraCursor::get_theme() {
   return this->cursor_mgr->name ? this->cursor_mgr->name : "";

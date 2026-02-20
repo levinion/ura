@@ -1,3 +1,4 @@
+#include "ura/ura.hpp"
 #include "ura/util/flexible.hpp"
 #include "ura/core/server.hpp"
 #include "ura/core/runtime.hpp"
@@ -117,6 +118,86 @@ void UraSeat::notify_idle_activity() {
 void UraSeat::set_idle_inhibitor(bool flag) {
   auto server = UraServer::get_instance();
   wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, flag);
+}
+
+void UraSeat::update_capability() {
+  uint32_t caps = 0;
+  if (!this->pointers.empty() || !this->tablets.empty()) {
+    caps |= WL_SEAT_CAPABILITY_POINTER;
+  }
+  if (!this->keyboards.empty()) {
+    caps |= WL_SEAT_CAPABILITY_KEYBOARD;
+  }
+  wlr_seat_set_capabilities(this->seat, caps);
+}
+
+void UraSeat::attach_new_input(wlr_input_device* device) {
+  // TODO: enable libinput lua plugins
+  // This should be called before iterating devices,
+  // which means it should be implemented by wlroots' libinput backend.
+  // We could do nothing without wlroots impl that.
+
+  // static auto libinput_plugin_loaded = false;
+  // if (!libinput_plugin_loaded && wlr_input_device_is_libinput(device)) {
+  //   auto handle = wlr_libinput_get_device_handle(device);
+  //   auto context = libinput_device_get_context(handle);
+  //   libinput_plugin_system_append_default_paths(context);
+  //   if (libinput_plugin_system_load_plugins(
+  //         context,
+  //         LIBINPUT_PLUGIN_SYSTEM_FLAG_NONE
+  //       )
+  //       == 0) {
+  //     libinput_plugin_loaded = true;
+  //     log::info("LIBINPUT LUA PLUGINS LOADED");
+  //   } else {
+  //     log::error("FAILED TO LOAD LIBINPUT LUA PLUGINS");
+  //   }
+  // }
+
+  auto server = UraServer::get_instance();
+
+  switch (device->type) {
+    case WLR_INPUT_DEVICE_KEYBOARD: {
+      auto keyboard = new UraKeyboard {};
+      keyboard->init(device);
+      this->keyboards.push_back(keyboard);
+      break;
+    }
+    case WLR_INPUT_DEVICE_POINTER: {
+      this->cursor->attach_device(device);
+      auto pointer = new UraPointer {};
+      pointer->init(device);
+      this->pointers.push_back(pointer);
+      break;
+    }
+    case WLR_INPUT_DEVICE_TABLET: {
+      this->cursor->attach_device(device);
+      auto tablet = new UraTablet {};
+      tablet->init(device);
+      this->tablets.push_back(tablet);
+      break;
+    }
+    case WLR_INPUT_DEVICE_TOUCH: {
+      server->seat->cursor->attach_device(device);
+      break;
+    }
+    default:
+      break;
+  }
+
+  server->seat->update_capability();
+
+  auto args = flexible::create_table();
+  args.set("name", device->name);
+  server->lua->emit_hook("new-input", args);
+}
+
+uint32_t UraSeat::get_modifiers() {
+  uint32_t modifiers = 0u;
+  for (auto keyboard : this->keyboards) {
+    modifiers |= wlr_keyboard_get_modifiers(keyboard->keyboard);
+  }
+  return modifiers;
 }
 
 } // namespace ura

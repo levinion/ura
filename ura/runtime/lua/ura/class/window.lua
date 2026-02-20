@@ -119,16 +119,6 @@ function UraWindow:set_z_index(z)
 end
 
 ---@return boolean|nil
-function UraWindow:is_draggable()
-  return ura.api.is_window_draggable(self.id)
-end
-
---- @param flag boolean
-function UraWindow:set_draggable(flag)
-  ura.api.set_window_draggable(self.id, flag)
-end
-
----@return boolean|nil
 function UraWindow:is_fullscreen()
   return ura.api.is_window_fullscreen(self.id)
 end

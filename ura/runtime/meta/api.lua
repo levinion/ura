@@ -10,12 +10,11 @@ ura.api = {
   --- @param body string
   notify = function(summary, body) end,
   --- @param f function
-  --- @param value integer Milliseconds
-  --- @param interval integer Milliseconds
+  --- @param timeout integer Milliseconds
   --- @return integer|nil
-  set_timer = function(f, value, interval) end,
+  set_timeout = function(f, timeout) end,
   --- @param fd integer
-  clear_timer = function(fd) end,
+  clear_timeout = function(fd) end,
 
   -- idle
   notify_idle_activity = function() end,
@@ -47,9 +46,6 @@ ura.api = {
   --- @param z integer
   set_window_z_index = function(id, z) end,
   --- @param id integer
-  --- @param flag boolean
-  set_window_draggable = function(id, flag) end,
-  --- @param id integer
   --- @return integer|nil
   get_window_z_index = function(id) end,
   --- @param id integer
@@ -58,9 +54,6 @@ ura.api = {
   --- @param id integer
   --- @return string|nil
   get_window_title = function(id) end,
-  --- @param id integer
-  --- @return boolean|nil
-  is_window_draggable = function(id) end,
   --- @param id integer
   activate_window = function(id) end,
   --- @param id integer
@@ -117,6 +110,8 @@ ura.api = {
   set_cursor_shape = function(name) end,
   --- @return string
   get_cursor_shape = function() end,
+  --- @return table
+  get_cursor_pos = function() end,
 
   -- output
   --- @return integer|nil
@@ -183,6 +178,7 @@ ura.api = {
 
   -- util
   ---@param pattern string
+  ---@param state string
   ---@return integer|nil
-  get_keybinding_id = function(pattern) end,
+  get_keybinding_id = function(pattern, state) end,
 }
