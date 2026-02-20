@@ -1,48 +1,36 @@
 local M = {}
 
-local function get_distance(current_geo, target_geo, direction)
-  local dx = (current_geo.x + current_geo.width / 2) - (target_geo.x + target_geo.width / 2)
-  local dy = (current_geo.y + current_geo.height / 2) - (target_geo.y + target_geo.height / 2)
-  if direction == "left" then
-    return dx
-  elseif direction == "right" then
-    return -dx
-  elseif direction == "up" then
-    return dy
-  elseif direction == "down" then
-    return -dy
-  end
-  return math.huge
-end
-
 local function focus_in_direction(direction)
-  local w = ura.class.UraWindow:current()
-  assert(w)
-
-  if w:layout() == "fullscreen" then
-    return
-  end
-
-  local geo = w:geometry()
-  local closest_win = nil
-  local min_dist = math.huge
-
-  for _, win in ipairs(ura.class.UraWindow:from_tags(w:output():tags())) do
-    if win ~= w then
-      local t_geo = win:geometry()
-      local dist = get_distance(geo, t_geo, direction)
-
-      if dist >= 0 then
-        if dist < min_dist then
-          min_dist = dist
-          closest_win = win
-        end
-      end
+  local function get_distance(current_geo, target_geo)
+    local dx = current_geo.x - target_geo.x
+    local dy = current_geo.y - target_geo.y
+    if direction == "left" or direction == "right" then
+      return dx
+    elseif direction == "up" or direction == "down" then
+      return dy
     end
   end
 
-  if closest_win then
-    closest_win:focus()
+  local w = ura.class.UraWindow:current()
+  assert(w)
+  if w:layout() == "fullscreen" then
+    return
+  end
+  local geo = w:output():logical_geometry()
+  local candidates = {}
+  for i, win in ipairs(ura.class.UraWindow:from_tags(w:output():tags())) do
+    table.insert(candidates, { index = i, instance = win, dist = get_distance(win:geometry(), geo) })
+  end
+  table.sort(candidates, function(a, b)
+    return a.dist ~= b.dist and a.dist < b.dist or a.index < b.index
+  end)
+  local index = ura.fn.find(candidates, function(v)
+    return v.instance == w
+  end)
+  if index < #candidates and (direction == "right" or direction == "down") then
+    candidates[index + 1].instance:focus()
+  elseif index > 1 and (direction == "left" or direction == "up") then
+    candidates[index - 1].instance:focus()
   end
 end
 
