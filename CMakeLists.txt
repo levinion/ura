@@ -1,6 +1,6 @@
 # project
 set(NAME "ura")
-set(VERSION 0.3.1)
+set(VERSION 0.3.2)
 cmake_minimum_required(VERSION 3.10)
 project(${NAME} VERSION ${VERSION} LANGUAGES C CXX)
 
