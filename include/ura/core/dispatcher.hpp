@@ -1,4 +1,5 @@
 #pragma once
+#include <absl/container/flat_hash_map.h>
 #include <sys/epoll.h>
 #include <array>
 #include <cassert>
@@ -6,7 +7,6 @@
 #include <ctime>
 #include <functional>
 #include <memory>
-#include <unordered_map>
 #include <sys/timerfd.h>
 #include <chrono>
 
@@ -108,7 +108,7 @@ public:
 private:
   int fd;
   std::array<epoll_event, MAXEVENTS> events;
-  std::unordered_map<int, std::function<bool()>> tasks;
+  absl::flat_hash_map<int, std::function<bool()>> tasks;
 };
 
 } // namespace ura

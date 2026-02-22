@@ -2,13 +2,11 @@
 
 #include <memory>
 #include <map>
-#include <unordered_map>
 #include "ura/ura.hpp"
 #include "ura/view/output.hpp"
 
 namespace ura {
 
-//TODO: this should be visitable and modifiable from api
 enum UraSceneLayer {
   Clear = -50,
   Background = 0,
@@ -26,7 +24,7 @@ class UraView {
 public:
   wlr_scene* scene;
   std::map<int, wlr_scene_tree*> layers;
-  std::unordered_map<std::string, UraOutput*> outputs;
+  absl::flat_hash_map<std::string, UraOutput*> outputs;
   Vec<UraToplevel*> toplevels;
 
   static std::unique_ptr<UraView> init();

@@ -5,6 +5,7 @@
 #include "ura/core/dispatcher.hpp"
 #include "ipc.hpp"
 #include "ura/util/flexible.hpp"
+#include <absl/container/flat_hash_map.h>
 
 namespace ura {
 // extern
@@ -64,7 +65,7 @@ public:
   std::unique_ptr<UraView> view;
   std::unique_ptr<UraDispatcher<64>> dispatcher;
 
-  std::unordered_map<uint64_t, UraGlobal> globals;
+  absl::flat_hash_map<uint64_t, UraGlobal> globals;
 
   static UraServer* get_instance();
   UraServer* init();
