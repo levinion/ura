@@ -77,8 +77,10 @@ void set_userdata(uint64_t id, flexible::object obj);
 flexible::object get_userdata(uint64_t id);
 
 // util
-std::optional<uint64_t>
-get_keybinding_id(std::string pattern, std::string state);
+std::optional<uint64_t> get_keybinding_id(std::string pattern);
+
+//TODO: std::vector<std::string> translate_keybinding_id(uint64_t id);
+
 } // namespace ura::api::core
 
 namespace ura::api::lua {

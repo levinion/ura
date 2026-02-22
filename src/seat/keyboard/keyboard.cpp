@@ -2,6 +2,7 @@
 #include "ura/core/runtime.hpp"
 #include "ura/core/lua.hpp"
 #include "ura/seat/seat.hpp"
+#include "ura/util/flexible.hpp"
 #include "ura/util/keybinding.hpp"
 #include "ura/seat/keyboard.hpp"
 #include <wayland-server-protocol.h>
@@ -90,6 +91,16 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
   // switch tty
   uint32_t keycode = event->keycode + 8; // xkeycode = libinput keycode + 8
   auto sym = xkb_state_key_get_one_sym(this->keyboard->xkb_state, keycode);
+  auto modifiers = server->seat->get_modifiers();
+  auto id = util::construct_keybinding_id(modifiers, sym);
+
+  auto args = flexible::create_table();
+  args.set("id", id);
+  args.set(
+    "state",
+    event->state == WL_KEYBOARD_KEY_STATE_PRESSED ? "pressed" : "released"
+  );
+  server->lua->emit_hook("keyboard-key", args);
 
   if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED
       && !server->seat->keyboard_shortcuts_inhibited) {
@@ -102,33 +113,14 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
 
   if (!server->seat->locked) {
     if (!server->seat->keyboard_shortcuts_inhibited) {
-      auto modifiers = server->seat->get_modifiers();
       // exec keybinding
       if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-        auto id = util::construct_keybinding_id(
-          modifiers,
-          util::UraKeyState::Pressed,
-          sym
-        );
-        if (!server->lua->emit_keybinding(id))
+        if (server->lua->emit_keybinding(id))
           return;
       } else if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
-        auto id = util::construct_keybinding_id(
-          modifiers,
-          util::UraKeyState::Released,
-          sym
-        );
-        if (!server->lua->emit_keybinding(id))
-          return;
         // ignore release event in codition
-        id = util::construct_keybinding_id(
-          modifiers,
-          util::UraKeyState::Pressed,
-          sym
-        );
-        // TODO: ignore release event
-        // if (server->lua->contains_keybinding(id))
-        //   return;
+        if (server->lua->contains_keybinding(id))
+          return;
       }
     }
 

@@ -199,35 +199,26 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
     return;
 
   auto modifiers = server->seat->get_modifiers();
+  auto id = util::construct_keybinding_id(
+    modifiers,
+    util::UraKeybindingDeviceType::Mouse | event->button
+  );
+
+  auto args = flexible::create_table();
+  args.set("id", id);
+  args.set(
+    "state",
+    event->state == WL_POINTER_BUTTON_STATE_PRESSED ? "pressed" : "released"
+  );
+  server->lua->emit_hook("mouse-key", args);
 
   if (event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
-    auto id = util::construct_keybinding_id(
-      modifiers,
-      static_cast<util::UraKeyState>(WL_POINTER_BUTTON_STATE_PRESSED),
-      util::UraKeybindingDeviceType::Mouse | event->button
-    );
-    if (server->lua->contains_keybinding(id)) {
-      if (!server->lua->emit_keybinding(id))
-        return;
-    }
+    if (server->lua->emit_keybinding(id))
+      return;
   } else if (event->state == WL_POINTER_BUTTON_STATE_RELEASED) {
-    auto id = util::construct_keybinding_id(
-      modifiers,
-      static_cast<util::UraKeyState>(WL_POINTER_BUTTON_STATE_RELEASED),
-      util::UraKeybindingDeviceType::Mouse | event->button
-    );
-    if (server->lua->contains_keybinding(id)) {
-      if (!server->lua->emit_keybinding(id))
-        return;
-    }
-    id = util::construct_keybinding_id(
-      modifiers,
-      static_cast<util::UraKeyState>(WL_POINTER_BUTTON_STATE_PRESSED),
-      util::UraKeybindingDeviceType::Mouse | event->button
-    );
-    // TODO: ignore release event
-    // if (server->lua->contains_keybinding(id))
-    //   return;
+    // ignore release event
+    if (server->lua->contains_keybinding(id))
+      return;
   }
 
   // notify focused client with button pressed event
@@ -302,11 +293,14 @@ void UraCursor::process_axis(wlr_pointer_axis_event* event) {
     auto modifiers = server->seat->get_modifiers();
     auto id = util::construct_keybinding_id(
       modifiers,
-      util::UraKeyState::Pressed,
       util::UraKeybindingDeviceType::Mouse | keycode
     );
-    if (server->lua->contains_keybinding(id)) {
-      server->lua->emit_keybinding(id);
+
+    auto args = flexible::create_table();
+    args.set("id", id);
+    server->lua->emit_hook("mouse-axis", args);
+
+    if (server->lua->emit_keybinding(id)) {
       return;
     }
   }

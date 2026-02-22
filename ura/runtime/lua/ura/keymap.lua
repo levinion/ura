@@ -11,7 +11,7 @@ local mode = "normal"
 function M.set(patterns, f, opt)
   local m = opt and opt.mode or "normal"
   for _, pattern in ipairs(patterns) do
-    local id = ura.api.get_keybinding_id(pattern, opt and opt.state or "pressed")
+    local id = ura.api.get_keybinding_id(pattern)
     if id then
       if KEYMAPS[id] == nil then
         KEYMAPS[id] = {}
@@ -33,7 +33,7 @@ end
 function M.unset(patterns, opt)
   local m = (opt and opt.mode) or "normal"
   for _, pattern in ipairs(patterns) do
-    local id = ura.api.get_keybinding_id(pattern, opt and opt.state or "pressed")
+    local id = ura.api.get_keybinding_id(pattern)
     if id then
       KEYMAPS[id][m] = nil
       if #KEYMAPS[id] == 0 then

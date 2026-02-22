@@ -144,7 +144,7 @@ std::expected<std::string, std::string> Lua::execute_file(std::string_view p) {
   return std::unexpected(std::string(path) + ": " + std::string(err.what()));
 }
 
-// if true then pass to client
+// return true if success
 bool Lua::emit_keybinding(uint64_t id) {
   auto f = this->ura.traverse_get<std::optional<sol::protected_function>>(
     "keymap",
@@ -152,9 +152,10 @@ bool Lua::emit_keybinding(uint64_t id) {
     id
   );
   if (f) {
-    return f.value()().get<std::optional<bool>>().value_or(false);
+    f.value()();
+    return true;
   }
-  return true;
+  return false;
 }
 
 bool Lua::contains_keybinding(uint64_t id) {

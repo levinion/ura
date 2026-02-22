@@ -24,19 +24,12 @@ enum UraKeyCodeExtra : uint32_t {
   WheelRight = 0x1004u,
 };
 
-enum UraKeyState : uint8_t { Released = 0u, Pressed = 1u };
-
-// mod: 30bit | state: 2bit | sym: 32bit
-inline uint64_t
-construct_keybinding_id(uint32_t mod, UraKeyState state, uint32_t sym) {
-  return (static_cast<uint64_t>(mod) << 34)
-    | (static_cast<uint64_t>(state) << 32) | sym;
+// mod: 8bit | sym: 32bit (3+29)
+inline uint64_t construct_keybinding_id(uint8_t mod, uint32_t sym) {
+  return (static_cast<uint64_t>(mod) << 32) | sym;
 }
 
-inline std::optional<uint64_t> get_keybinding_id(
-  std::string_view pattern,
-  UraKeyState state = UraKeyState::Pressed
-) {
+inline std::optional<uint64_t> get_keybinding_id(std::string_view pattern) {
   // modifiers str to modifiers bit
   std::vector<std::string> keys = absl::StrSplit(pattern, '+');
   if (keys.empty())
@@ -44,20 +37,19 @@ inline std::optional<uint64_t> get_keybinding_id(
   for (auto& key : keys) {
     key = absl::AsciiStrToLower(absl::StripAsciiWhitespace(key));
   }
-  uint32_t mod = 0;
+  uint8_t mod = 0;
   if (keys.size() > 1) {
     for (std::size_t i = 0; i < keys.size() - 1; i++) {
       auto m = keys[i];
-      if (m == "super" || m == "mod" || m == "cmd" || m == "command"
-          || m == "logo" || m == "win") {
+      if (m == "super") {
         mod |= WLR_MODIFIER_LOGO;
-      } else if (m == "alt" || m == "opt" || m == "option") {
+      } else if (m == "alt") {
         mod |= WLR_MODIFIER_ALT;
-      } else if (m == "ctrl" || m == "control") {
+      } else if (m == "ctrl") {
         mod |= WLR_MODIFIER_CTRL;
       } else if (m == "shift") {
         mod |= WLR_MODIFIER_SHIFT;
-      } else if (m == "caps" || m == "capslock") {
+      } else if (m == "caps") {
         mod |= WLR_MODIFIER_CAPS;
       } else if (m == "mod2") {
         mod |= WLR_MODIFIER_MOD2;
@@ -65,6 +57,8 @@ inline std::optional<uint64_t> get_keybinding_id(
         mod |= WLR_MODIFIER_MOD3;
       } else if (m == "mod5") {
         mod |= WLR_MODIFIER_MOD5;
+      } else {
+        return {};
       }
     }
   }
@@ -106,7 +100,7 @@ inline std::optional<uint64_t> get_keybinding_id(
       return {};
   }
 
-  return construct_keybinding_id(mod, state, sym);
+  return construct_keybinding_id(mod, sym);
 }
 
 } // namespace ura::util

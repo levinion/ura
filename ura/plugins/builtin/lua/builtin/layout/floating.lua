@@ -49,36 +49,32 @@ function M.setup()
       anchor = pos
     end
 
-    local function interval_move()
-      move_window()
-      timer = ura.api.set_timeout(interval_move, 10)
-    end
-
-    ura.keymap.set({ "super+mouseleft" }, function()
-      w = ura.class.UraWindow:current()
-      assert(w)
-      if w:layout() ~= "floating" then
+    ura.hook.add("mouse-key", function(e)
+      if e.id ~= ura.api.get_keybinding_id("super+mouseleft") then
         return
       end
-      anchor = ura.api.get_cursor_pos()
-      timer = ura.api.set_timeout(interval_move, 10)
-    end)
-
-    ura.keymap.set({
-      "super+mouseleft",
-    }, function()
-      if timer then
-        ura.api.clear_timeout(timer)
-        move_window()
+      if e.state == "pressed" then
+        w = ura.class.UraWindow:current()
+        assert(w)
+        if w:layout() ~= "floating" then
+          return
+        end
+        anchor = ura.api.get_cursor_pos()
+        timer = ura.fn.set_interval(move_window, 10)
+      else
+        if timer then
+          ura.fn.clear_interval(timer)
+          move_window()
+        end
       end
-    end, { state = "released" })
+    end)
   end)
 
   -- resize window
   pcall(function()
     local anchor = nil
-    local timer = nil
     local w = nil
+    local timer = nil
 
     local function resize_window()
       local pos = ura.api.get_cursor_pos()
@@ -90,28 +86,25 @@ function M.setup()
       anchor = pos
     end
 
-    local function interval_resize()
-      resize_window()
-      timer = ura.api.set_timeout(interval_resize, 10)
-    end
-
-    ura.keymap.set({ "super+mouseright" }, function()
-      w = ura.class.UraWindow:current()
-      assert(w)
-      if w:layout() ~= "floating" then
+    ura.hook.add("mouse-key", function(e)
+      if ura.fn.lshift(e.id, 32) ~= ura.fn.lshift(ura.api.get_keybinding_id("super+mouseright"), 32) then
         return
       end
-      anchor = ura.api.get_cursor_pos()
-      timer = ura.api.set_timeout(interval_resize, 10)
-    end)
-
-    ura.keymap.set({ "super+mouseright", "mouseright" }, function()
-      if timer then
-        ura.api.clear_timeout(timer)
-        resize_window()
-        return true
+      if e.state == "pressed" then
+        w = ura.class.UraWindow:current()
+        assert(w)
+        if w:layout() ~= "floating" then
+          return
+        end
+        anchor = ura.api.get_cursor_pos()
+        timer = ura.fn.set_interval(resize_window, 10)
+      else
+        if timer then
+          ura.fn.clear_interval(timer)
+          resize_window()
+        end
       end
-    end, { state = "released" })
+    end)
   end)
 end
 

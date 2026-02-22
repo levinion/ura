@@ -178,7 +178,6 @@ ura.api = {
 
   -- util
   ---@param pattern string
-  ---@param state string
   ---@return integer|nil
-  get_keybinding_id = function(pattern, state) end,
+  get_keybinding_id = function(pattern) end,
 }

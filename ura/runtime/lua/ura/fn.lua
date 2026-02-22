@@ -309,4 +309,53 @@ function M._safe_call(chunk)
   return true
 end
 
+---@param f fun()
+---@param timeout integer
+function M.set_timeout(f, timeout)
+  local id = ura.api.set_timeout(f, timeout)
+  return {
+    id = id,
+  }
+end
+
+---@param timer table
+function M.clear_timeout(timer)
+  ura.api.clear_timeout(timer.id)
+end
+
+---@param f fun()
+---@param interval integer
+function M.set_interval(f, interval)
+  local timer = { id = nil, active = true }
+  local function loop()
+    if not timer.active then
+      return
+    end
+    f()
+    timer.id = ura.api.set_timeout(loop, interval)
+  end
+  timer.id = ura.api.set_timeout(loop, interval)
+  return timer
+end
+
+function M.clear_interval(timer)
+  if timer then
+    timer.active = false
+    if timer.id then
+      ura.api.clear_timeout(timer.id)
+      timer.id = nil
+    end
+  end
+end
+
+function M.rshift(v, n)
+  local ffi = require("ffi")
+  return ffi.new("uint64_t", v) / (2 ^ n)
+end
+
+function M.lshift(v, n)
+  local ffi = require("ffi")
+  return ffi.new("uint64_t", v) * (2 ^ n)
+end
+
 return M

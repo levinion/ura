@@ -454,13 +454,8 @@ std::optional<bool> is_window_focused(uint64_t id) {
   return toplevel->is_focused();
 }
 
-std::optional<uint64_t>
-get_keybinding_id(std::string pattern, std::string state) {
-  if (state == "pressed")
-    return util::get_keybinding_id(pattern, util::UraKeyState::Pressed);
-  else if (state == "released")
-    return util::get_keybinding_id(pattern, util::UraKeyState::Released);
-  return {};
+std::optional<uint64_t> get_keybinding_id(std::string pattern) {
+  return util::get_keybinding_id(pattern);
 }
 
 std::optional<uint64_t> get_window_lru(uint64_t id) {
