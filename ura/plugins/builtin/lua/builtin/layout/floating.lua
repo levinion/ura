@@ -64,6 +64,7 @@ function M.setup()
       else
         if timer then
           ura.fn.clear_interval(timer)
+          timer = nil
           move_window()
         end
       end
@@ -101,6 +102,7 @@ function M.setup()
       else
         if timer then
           ura.fn.clear_interval(timer)
+          timer = nil
           resize_window()
         end
       end
