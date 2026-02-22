@@ -64,7 +64,7 @@ function M.setup(opt)
 
   local o = {
     ns = "layout.tiling",
-    priority = 100,
+    priority = ura.g.priority.slowest,
   }
 
   ura.hook.add("window-layout-change", function(e)

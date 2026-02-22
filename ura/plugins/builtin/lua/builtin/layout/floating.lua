@@ -22,7 +22,7 @@ function M.setup()
     end
   end, {
     ns = "layout.floating",
-    priority = 0,
+    priority = ura.g.priority.instant,
   })
 
   ura.hook.add("window-new", function(e)
