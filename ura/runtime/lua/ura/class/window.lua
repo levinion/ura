@@ -105,7 +105,15 @@ end
 
 ---@return table|nil
 function UraWindow:geometry()
-  return ura.api.get_window_geometry(self.id)
+  local userdata = self:userdata()
+  if userdata and userdata.geometry then
+    return userdata.geometry
+  else
+    self:update_userdata(function(t)
+      t.geometry = ura.api.get_window_geometry(self.id)
+    end)
+    return self:userdata().geometry
+  end
 end
 
 ---@return integer|nil
@@ -138,16 +146,95 @@ function UraWindow:is_focused()
   return ura.api.is_window_focused(self.id)
 end
 
+--TODO: impl animation
+
 --- @param x integer
 --- @param y integer
-function UraWindow:move(x, y)
+--- @param opt { duration: integer }|nil
+function UraWindow:move(x, y, opt)
+  self:update_userdata(function(t)
+    if not t.geometry then
+      t.geometry = {}
+    end
+    t.geometry.x = x
+    t.geometry.y = y
+  end)
   ura.api.move_window(self.id, x, y)
+  -- local duration = opt and opt.duration or 0
+  --
+  -- if duration <= 0 then
+  --   ura.api.move_window(self.id, x, y)
+  --   return
+  -- end
+  --
+  -- local geo = self:geometry()
+  -- assert(geo)
+  -- local start_x = geo.x
+  -- local start_y = geo.y
+  -- local start_time = ura.api.time_since_epoch() / 10 ^ 6
+  --
+  -- local timer = {}
+  -- timer = ura.fn.set_interval(function()
+  --   local now = ura.api.time_since_epoch() / 10 ^ 6
+  --   local elapsed = now - start_time
+  --   local t = math.min(elapsed / duration, 1.0)
+  --
+  --   local ease_t = 1 - (1 - t) ^ 3
+  --
+  --   local cur_x = start_x + (x - start_x) * ease_t
+  --   local cur_y = start_y + (y - start_y) * ease_t
+  --
+  --   ura.api.move_window(self.id, math.floor(cur_x), math.floor(cur_y))
+  --
+  --   if t >= 1.0 then
+  --     ura.fn.clear_interval(timer)
+  --   end
+  -- end, 16)
 end
 
 --- @param width integer
 --- @param height integer
-function UraWindow:resize(width, height)
+--- @param opt { duration: integer }|nil
+function UraWindow:resize(width, height, opt)
+  self:update_userdata(function(t)
+    if not t.geometry then
+      t.geometry = {}
+    end
+    t.geometry.width = width
+    t.geometry.height = height
+  end)
   ura.api.resize_window(self.id, width, height)
+  -- local duration = opt and opt.duration or 0
+  --
+  -- ura.api.resize_window(self.id, width, height)
+  -- if duration <= 0 then
+  --   ura.api.resize_window(self.id, width, height)
+  --   return
+  -- end
+  --
+  -- local geo = self:geometry()
+  -- assert(geo)
+  -- local start_w = geo.width
+  -- local start_h = geo.height
+  -- local start_time = os.clock()
+  --
+  -- local timer = {}
+  -- timer = ura.fn.set_interval(function()
+  --   local now = ura.api.time_since_epoch() / 10 ^ 6
+  --   local elapsed = now - start_time
+  --   local t = math.min(elapsed / duration, 1.0)
+  --
+  --   local ease_t = 1 - (1 - t) ^ 3
+  --
+  --   local cur_w = start_w + (width - start_w) * ease_t
+  --   local cur_h = start_h + (height - start_h) * ease_t
+  --
+  --   ura.api.resize_window(self.id, math.floor(cur_w), math.floor(cur_h))
+  --
+  --   if t >= 1.0 then
+  --     ura.fn.clear_interval(timer)
+  --   end
+  -- end, 16)
 end
 
 function UraWindow:center()
@@ -176,7 +263,7 @@ function UraWindow:tags()
   return ura.api.get_window_tags(self.id) or {}
 end
 
----@return table
+---@return table|nil
 function UraWindow:userdata()
   return ura.api.get_userdata(self.id)
 end
@@ -186,10 +273,10 @@ function UraWindow:set_userdata(tbl)
   ura.api.set_userdata(self.id, tbl)
 end
 
----@param tbl table
-function UraWindow:update_userdata(tbl)
+---@param f fun(t: table)
+function UraWindow:update_userdata(f)
   local userdata = self:userdata() or {}
-  ura.fn.merge(userdata, tbl)
+  f(userdata)
   self:set_userdata(userdata)
 end
 
@@ -205,7 +292,9 @@ function UraWindow:set_layout(layout)
   if old_layout == layout then
     return
   end
-  self:update_userdata({ layout = layout })
+  self:update_userdata(function(t)
+    t.layout = layout
+  end)
   ura.hook.emit("window-layout-change", {
     id = self.id,
     from = old_layout,
@@ -221,6 +310,11 @@ function UraWindow:toggle_layout(layout)
   else
     self:set_layout(ura.opt["default_layout"] or "tiling")
   end
+end
+
+---@param flag boolean
+function UraWindow:set_border_invisible(flag)
+  ura.api.set_window_border_invisible(flag)
 end
 
 return UraWindow

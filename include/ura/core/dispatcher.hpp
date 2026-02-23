@@ -45,13 +45,14 @@ public:
     epoll_event event {};
     event.events = EPOLLIN;
     event.data.fd = fd;
-    [[maybe_unused]] auto ret = epoll_ctl(this->fd, EPOLL_CTL_ADD, fd, &event);
-    assert(ret != -1);
+    if (epoll_ctl(this->fd, EPOLL_CTL_ADD, fd, &event) == -1)
+      return;
     this->tasks[fd] = callback;
   }
 
   void remove_task(int fd) {
-    assert(this->tasks.contains(fd));
+    if (!this->tasks.contains(fd))
+      return;
     epoll_ctl(this->fd, EPOLL_CTL_DEL, fd, nullptr);
     this->tasks.erase(fd);
     close(fd);

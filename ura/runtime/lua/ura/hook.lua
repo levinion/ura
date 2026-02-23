@@ -32,7 +32,9 @@ function M.add(name, f, opt)
     HOOKS[name] = {}
     M._hooks[name] = function(e)
       for _, v in ipairs(HOOKS[name]) do
-        v.func(e)
+        pcall(function()
+          v.func(e)
+        end)
       end
     end
   end

@@ -78,6 +78,7 @@ flexible::object get_userdata(uint64_t id);
 
 // util
 std::optional<uint64_t> get_keybinding_id(std::string pattern);
+long time_since_epoch();
 
 //TODO: std::vector<std::string> translate_keybinding_id(uint64_t id);
 

@@ -1,5 +1,6 @@
 require("builtin.layout.tiling").setup()
 require("builtin.layout.fullscreen").setup()
+require("builtin.layout.maximize").setup()
 require("builtin.layout.floating").setup()
 
 ura.keymap.set({ "super+t" }, function()
@@ -24,6 +25,10 @@ end)
 
 ura.keymap.set({ "super+f" }, function()
   ura.class.UraWindow:current():toggle_layout("fullscreen")
+end)
+
+ura.keymap.set({ "super+shift+f" }, function()
+  ura.class.UraWindow:current():toggle_layout("maximize")
 end)
 
 ura.keymap.set({ "ctrl+left", "super+wheelup" }, function()

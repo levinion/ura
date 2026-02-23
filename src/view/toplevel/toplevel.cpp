@@ -61,11 +61,11 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     //   on_toplevel_request_resize,
     //   toplevel
     // );
-    // server->runtime->register_callback(
-    //   &xdg_toplevel->events.request_maximize,
-    //   on_toplevel_request_maximize,
-    //   this
-    // );
+    server->runtime->register_callback(
+      &xdg_toplevel->events.request_maximize,
+      on_toplevel_request_maximize,
+      this
+    );
     server->runtime->register_callback(
       &xdg_toplevel->events.request_fullscreen,
       on_toplevel_request_fullscreen,
@@ -251,9 +251,8 @@ void UraToplevel::activate() {
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
   args.set("id", this->id());
-  auto flag = server->lua->emit_hook<bool>("pre-window-activate", args);
   // if hook returns a false value, then stop the operation.
-  if (flag && !flag.value())
+  if (!server->lua->emit_hook<bool>("pre-window-activate", args).value_or(true))
     return;
   auto output = this->output();
   if (!output)

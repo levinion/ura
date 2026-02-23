@@ -25,7 +25,7 @@ public:
       name
     );
     if (f) {
-      auto ret = f.value()();
+      auto ret = f.value()(args);
       if (!ret.valid())
         return {};
       auto obj = ret.get<flexible::object>();

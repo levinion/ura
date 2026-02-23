@@ -1,13 +1,5 @@
 local M = {}
 
----@param src table
----@param dst table
-function M.merge(dst, src)
-  for k, v in pairs(src) do
-    dst[k] = v
-  end
-end
-
 ---@param variable any
 ---@param path string
 ---@param typ type
@@ -311,24 +303,29 @@ end
 
 ---@param f fun()
 ---@param timeout integer
+---@return {id: integer}
 function M.set_timeout(f, timeout)
+  local timer = {}
   local id = ura.api.set_timeout(f, timeout)
-  return {
-    id = id,
-  }
+  timer.id = id
+  return timer
 end
 
 ---@param timer table
 function M.clear_timeout(timer)
-  ura.api.clear_timeout(timer.id)
+  if timer and timer.id then
+    ura.api.clear_timeout(timer.id)
+    timer.id = nil
+  end
 end
 
 ---@param f fun()
 ---@param interval integer
+---@return {id: integer}
 function M.set_interval(f, interval)
-  local timer = { id = nil, active = true }
+  local timer = {}
   local function loop()
-    if not timer.active then
+    if not timer or not timer.id then
       return
     end
     f()
@@ -339,13 +336,7 @@ function M.set_interval(f, interval)
 end
 
 function M.clear_interval(timer)
-  if timer then
-    timer.active = false
-    if timer.id then
-      ura.api.clear_timeout(timer.id)
-      timer.id = nil
-    end
-  end
+  M.clear_timeout(timer)
 end
 
 function M.rshift(v, n)

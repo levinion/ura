@@ -180,4 +180,6 @@ ura.api = {
   ---@param pattern string
   ---@return integer|nil
   get_keybinding_id = function(pattern) end,
+  ---@return integer
+  time_since_epoch = function() end,
 }

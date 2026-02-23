@@ -100,7 +100,8 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
     "state",
     event->state == WL_KEYBOARD_KEY_STATE_PRESSED ? "pressed" : "released"
   );
-  server->lua->emit_hook("keyboard-key", args);
+  if (!server->lua->emit_hook<bool>("keyboard-key", args).value_or(true))
+    return;
 
   if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED
       && !server->seat->keyboard_shortcuts_inhibited) {

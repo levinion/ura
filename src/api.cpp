@@ -265,8 +265,10 @@ void notify(std::string summary, std::string body) {
 
 std::optional<int> set_timeout(flexible::function f, int64_t timeout) {
   auto server = UraServer::get_instance();
-  if (timeout < 0)
+  if (timeout <= 0) {
+    f();
     return {};
+  }
   return server->dispatcher->set_timeout(
     [=]() { f(); },
     std::chrono::milliseconds(timeout)
@@ -468,6 +470,10 @@ std::optional<uint64_t> get_window_lru(uint64_t id) {
 flexible::object get_cursor_pos() {
   auto server = UraServer::get_instance();
   return server->seat->cursor->position().to_table();
+}
+
+long time_since_epoch() {
+  return std::chrono::steady_clock::now().time_since_epoch().count();
 }
 
 } // namespace ura::api::core

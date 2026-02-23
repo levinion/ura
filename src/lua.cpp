@@ -105,6 +105,7 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.get_userdata", api::core::get_userdata);
   // util
   LUAAPI("api.get_keybinding_id", api::core::get_keybinding_id);
+  LUAAPI("api.time_since_epoch", api::core::time_since_epoch);
   // override
   lua->state.set("print", api::lua::print);
 
@@ -152,7 +153,11 @@ bool Lua::emit_keybinding(uint64_t id) {
     id
   );
   if (f) {
-    f.value()();
+    auto result = f.value()();
+    if (!result.valid()) {
+      sol::error err = result;
+      log::error("[lua] {}", err.what());
+    }
     return true;
   }
   return false;
@@ -175,7 +180,11 @@ void Lua::emit_hook(std::string name, flexible::object args) {
     name
   );
   if (f) {
-    f.value()(args);
+    auto result = f.value()(args);
+    if (!result.valid()) {
+      sol::error err = result;
+      log::error("[lua] {}", err.what());
+    }
   }
 }
 

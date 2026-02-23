@@ -112,10 +112,10 @@ function UraOutput:set_userdata(tbl)
   ura.api.set_userdata(self.id, tbl)
 end
 
----@param tbl table
-function UraOutput:update_userdata(tbl)
+---@param f fun(t: table)
+function UraOutput:update_userdata(f)
   local userdata = self:userdata() or {}
-  ura.fn.merge(userdata, tbl)
+  f(userdata)
   self:set_userdata(userdata)
 end
 

@@ -10,15 +10,15 @@ function M.setup()
       assert(userdata)
       assert(ura.fn.validate(userdata, "floating", "table"))
       if userdata.floating.width and userdata.floating.height then
-        win:resize(userdata.floating.width, userdata.floating.height)
+        win:resize(userdata.floating.width, userdata.floating.height, { duration = 50 })
       end
       if userdata.floating.x and userdata.floating.y then
-        win:move(userdata.floating.x, userdata.floating.y)
+        win:move(userdata.floating.x, userdata.floating.y, { duration = 50 })
       end
     elseif e.from == "floating" then
-      local geo = win:geometry()
-      assert(geo)
-      win:update_userdata({ floating = geo })
+      win:update_userdata(function(t)
+        t.floating = win:geometry()
+      end)
     end
   end, {
     ns = "layout.floating",
@@ -28,85 +28,60 @@ function M.setup()
   ura.hook.add("window-new", function(e)
     local win = ura.class.UraWindow:new(e.id)
     assert(win)
-    local geo = win:geometry()
-    assert(geo)
-    win:update_userdata({ floating = geo })
+    win:update_userdata(function(t)
+      t.floating = win:geometry()
+    end)
   end, { ns = "layout.floating" })
 
-  -- move window
-  pcall(function()
+  local function listen_mouse_key(key, f)
     local anchor = nil
     local timer = nil
     local w = nil
 
-    local function move_window()
+    local function func(win)
       local pos = ura.api.get_cursor_pos()
-      assert(w)
-      local geo = w:geometry()
-      assert(geo)
       assert(anchor)
-      w:move(geo.x + (pos.x - anchor.x), geo.y + (pos.y - anchor.y))
+      f(win, pos.x - anchor.x, pos.y - anchor.y)
       anchor = pos
     end
 
     ura.hook.add("mouse-key", function(e)
-      if e.id ~= ura.api.get_keybinding_id("super+mouseleft") then
-        return
-      end
       if e.state == "pressed" then
+        if e.id ~= ura.api.get_keybinding_id(key) then
+          return
+        end
         w = ura.class.UraWindow:current()
         assert(w)
         if w:layout() ~= "floating" then
           return
         end
         anchor = ura.api.get_cursor_pos()
-        timer = ura.fn.set_interval(move_window, 10)
+        timer = ura.fn.set_interval(function()
+          func(w)
+        end, 10)
+        return false
       else
+        if ura.fn.lshift(e.id, 32) ~= ura.fn.lshift(ura.api.get_keybinding_id(key), 32) then
+          return
+        end
         if timer then
           ura.fn.clear_interval(timer)
           timer = nil
-          move_window()
+          func(w)
+          return false
         end
       end
-    end)
+    end, { ns = "layout.floating" })
+  end
+
+  listen_mouse_key("super+mouseleft", function(w, x, y)
+    local geo = w:geometry()
+    w:move(geo.x + x, geo.y + y)
   end)
 
-  -- resize window
-  pcall(function()
-    local anchor = nil
-    local w = nil
-    local timer = nil
-
-    local function resize_window()
-      local pos = ura.api.get_cursor_pos()
-      assert(w)
-      local geo = w:geometry()
-      assert(geo)
-      assert(anchor)
-      w:resize(geo.width + (pos.x - anchor.x), geo.height + (pos.y - anchor.y))
-      anchor = pos
-    end
-
-    ura.hook.add("mouse-key", function(e)
-      if ura.fn.lshift(e.id, 32) ~= ura.fn.lshift(ura.api.get_keybinding_id("super+mouseright"), 32) then
-        return
-      end
-      if e.state == "pressed" then
-        w = ura.class.UraWindow:current()
-        assert(w)
-        if w:layout() ~= "floating" then
-          return
-        end
-        anchor = ura.api.get_cursor_pos()
-        timer = ura.fn.set_interval(resize_window, 10)
-      else
-        if timer then
-          ura.fn.clear_interval(timer)
-          timer = nil
-          resize_window()
-        end
-      end
-    end)
+  listen_mouse_key("super+mouseright", function(w, width, height)
+    local geo = w:geometry()
+    w:resize(geo.width + width, geo.height + height)
   end)
 end
 

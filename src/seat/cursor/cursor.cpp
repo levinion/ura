@@ -210,7 +210,9 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
     "state",
     event->state == WL_POINTER_BUTTON_STATE_PRESSED ? "pressed" : "released"
   );
-  server->lua->emit_hook("mouse-key", args);
+
+  if (!server->lua->emit_hook<bool>("mouse-key", args).value_or(true))
+    return;
 
   if (event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
     if (server->lua->emit_keybinding(id))
@@ -298,7 +300,8 @@ void UraCursor::process_axis(wlr_pointer_axis_event* event) {
 
     auto args = flexible::create_table();
     args.set("id", id);
-    server->lua->emit_hook("mouse-axis", args);
+    if (!server->lua->emit_hook<bool>("mouse-axis", args).value_or(true))
+      return;
 
     if (server->lua->emit_keybinding(id)) {
       return;

@@ -4,8 +4,8 @@ function M.setup()
   local function apply(win)
     local geo = win:output():logical_geometry()
     assert(geo)
-    win:resize(geo.width, geo.height)
-    win:move(geo.x, geo.y)
+    win:resize(geo.width, geo.height, { duration = 50 })
+    win:move(geo.x, geo.y, { duration = 50 })
   end
 
   local function reset_fullscreen(w)
