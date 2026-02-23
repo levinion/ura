@@ -251,9 +251,13 @@ void UraToplevel::activate() {
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
   args.set("id", this->id());
-  // if hook returns a false value, then stop the operation.
-  if (!server->lua->emit_hook<bool>("pre-window-activate", args).value_or(true))
+
+  auto results =
+    server->lua->emit_hook<std::vector<bool>>("pre-window-activate", args);
+  if (results
+      && std::find(results->begin(), results->end(), false) != results->end())
     return;
+
   auto output = this->output();
   if (!output)
     return;

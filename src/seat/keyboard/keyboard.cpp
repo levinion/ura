@@ -100,7 +100,10 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
     "state",
     event->state == WL_KEYBOARD_KEY_STATE_PRESSED ? "pressed" : "released"
   );
-  if (!server->lua->emit_hook<bool>("keyboard-key", args).value_or(true))
+  auto results =
+    server->lua->emit_hook<std::vector<bool>>("keyboard-key", args);
+  if (results
+      && std::find(results->begin(), results->end(), false) != results->end())
     return;
 
   if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED

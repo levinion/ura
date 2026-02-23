@@ -31,11 +31,16 @@ function M.add(name, f, opt)
   if HOOKS[name] == nil then
     HOOKS[name] = {}
     M._hooks[name] = function(e)
+      local results = {}
       for _, v in ipairs(HOOKS[name]) do
-        pcall(function()
-          v.func(e)
+        local success, result = pcall(function()
+          return v.func(e)
         end)
+        if success then
+          table.insert(results, result)
+        end
       end
+      return results
     end
   end
 
