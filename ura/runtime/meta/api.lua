@@ -15,6 +15,12 @@ ura.api = {
   set_timeout = function(f, timeout) end,
   --- @param fd integer
   clear_timeout = function(fd) end,
+  --- @param f function
+  --- @param interval integer Milliseconds
+  --- @return integer|nil
+  set_interval = function(f, interval) end,
+  --- @param fd integer
+  clear_interval = function(fd) end,
 
   -- idle
   notify_idle_activity = function() end,

@@ -277,7 +277,24 @@ std::optional<int> set_timeout(flexible::function f, int64_t timeout) {
 
 void clear_timeout(int fd) {
   auto server = UraServer::get_instance();
-  server->dispatcher->clear_timeout(fd);
+  server->dispatcher->clear_timer(fd);
+}
+
+std::optional<int> set_interval(flexible::function f, int64_t interval) {
+  auto server = UraServer::get_instance();
+  if (interval <= 0) {
+    f();
+    return {};
+  }
+  return server->dispatcher->set_interval(
+    [=]() { f(); },
+    std::chrono::milliseconds(interval)
+  );
+}
+
+void clear_interval(int fd) {
+  auto server = UraServer::get_instance();
+  server->dispatcher->clear_timer(fd);
 }
 
 std::optional<int> get_window_z_index(uint64_t id) {

@@ -45,6 +45,8 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.notify", api::core::notify);
   LUAAPI("api.set_timeout", api::core::set_timeout);
   LUAAPI("api.clear_timeout", api::core::clear_timeout);
+  LUAAPI("api.set_interval", api::core::set_interval);
+  LUAAPI("api.clear_interval", api::core::clear_interval);
   // window
   LUAAPI("api.focus_window", api::core::focus_window);
   LUAAPI("api.close_window", api::core::close_window);

@@ -301,44 +301,6 @@ function M._safe_call(chunk)
   return true
 end
 
----@param f fun()
----@param timeout integer
----@return {id: integer}
-function M.set_timeout(f, timeout)
-  local timer = {}
-  local id = ura.api.set_timeout(f, timeout)
-  timer.id = id
-  return timer
-end
-
----@param timer table
-function M.clear_timeout(timer)
-  if timer and timer.id then
-    ura.api.clear_timeout(timer.id)
-    timer.id = nil
-  end
-end
-
----@param f fun()
----@param interval integer
----@return {id: integer}
-function M.set_interval(f, interval)
-  local timer = {}
-  local function loop()
-    if not timer or not timer.id then
-      return
-    end
-    f()
-    timer.id = ura.api.set_timeout(loop, interval)
-  end
-  timer.id = ura.api.set_timeout(loop, interval)
-  return timer
-end
-
-function M.clear_interval(timer)
-  M.clear_timeout(timer)
-end
-
 function M.rshift(v, n)
   local ffi = require("ffi")
   return ffi.new("uint64_t", v) / (2 ^ n)
@@ -347,6 +309,28 @@ end
 function M.lshift(v, n)
   local ffi = require("ffi")
   return ffi.new("uint64_t", v) * (2 ^ n)
+end
+
+-- thanks to http://lua-users.org/wiki/CopyTable
+function M.copy(orig, copies)
+  copies = copies or {}
+  local orig_type = type(orig)
+  local copy
+  if orig_type == "table" then
+    if copies[orig] then
+      copy = copies[orig]
+    else
+      copy = {}
+      copies[orig] = copy
+      for orig_key, orig_value in next, orig, nil do
+        copy[M.copy(orig_key, copies)] = M.copy(orig_value, copies)
+      end
+      setmetatable(copy, M.copy(getmetatable(orig), copies))
+    end
+  else -- number, string, boolean, etc
+    copy = orig
+  end
+  return copy
 end
 
 return M

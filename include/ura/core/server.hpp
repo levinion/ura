@@ -63,7 +63,7 @@ public:
   std::unique_ptr<Lua> lua;
   std::unique_ptr<UraSeat> seat;
   std::unique_ptr<UraView> view;
-  std::unique_ptr<UraDispatcher<64>> dispatcher;
+  std::unique_ptr<UraDispatcher<128>> dispatcher;
 
   absl::flat_hash_map<uint64_t, UraGlobal> globals;
 

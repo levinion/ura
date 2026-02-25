@@ -10,14 +10,14 @@ function M.setup()
       assert(userdata)
       assert(ura.fn.validate(userdata, "floating", "table"))
       if userdata.floating.width and userdata.floating.height then
-        win:resize(userdata.floating.width, userdata.floating.height, { duration = 50 })
+        win:resize(userdata.floating.width, userdata.floating.height)
       end
       if userdata.floating.x and userdata.floating.y then
-        win:move(userdata.floating.x, userdata.floating.y, { duration = 50 })
+        win:move(userdata.floating.x, userdata.floating.y)
       end
     elseif e.from == "floating" then
       win:update_userdata(function(t)
-        t.floating = win:geometry()
+        t.floating = ura.fn.copy(win:geometry())
       end)
     end
   end, {
@@ -29,9 +29,9 @@ function M.setup()
     local win = ura.class.UraWindow:new(e.id)
     assert(win)
     win:update_userdata(function(t)
-      t.floating = win:geometry()
+      t.floating = ura.fn.copy(win:geometry())
     end)
-  end, { ns = "layout.floating" })
+  end, { ns = "layout.floating", priority = ura.g.priority.instant })
 
   local function listen_mouse_key(key, f)
     local anchor = nil
@@ -56,7 +56,7 @@ function M.setup()
           return
         end
         anchor = ura.api.get_cursor_pos()
-        timer = ura.fn.set_interval(function()
+        timer = ura.api.set_interval(function()
           func(w)
         end, 10)
         return false
@@ -65,7 +65,7 @@ function M.setup()
           return
         end
         if timer then
-          ura.fn.clear_interval(timer)
+          ura.api.clear_interval(timer)
           timer = nil
           func(w)
           return false
