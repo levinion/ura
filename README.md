@@ -10,7 +10,7 @@ Lua is a general-purpose language supported by many editors and LSPs (like `lua_
 
 <img src="/assets/show.png" style="width:100%">
 
-<video src="/assets/show.mp4" width="100%" controls />
+https://github.com/levinion/ura/blob/dev/assets/show.mp4
 
 ## Installation
 
