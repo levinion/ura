@@ -501,6 +501,26 @@ bool UraToplevel::is_fullscreen() {
   return this->xdg_toplevel->current.fullscreen;
 }
 
+void UraToplevel::set_resizing(bool flag) {
+  if (!this->xdg_toplevel->base->initialized)
+    return;
+  wlr_xdg_toplevel_set_resizing(this->xdg_toplevel, flag);
+}
+
+bool UraToplevel::is_resizing() {
+  return this->xdg_toplevel->current.resizing;
+}
+
+void UraToplevel::set_maximized(bool flag) {
+  if (!this->xdg_toplevel->base->initialized)
+    return;
+  wlr_xdg_toplevel_set_maximized(this->xdg_toplevel, flag);
+}
+
+bool UraToplevel::is_maximized() {
+  return this->xdg_toplevel->current.maximized;
+}
+
 void UraToplevel::move_borders(int x, int y) {
   auto border_width = this->border_width;
   // top border

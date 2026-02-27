@@ -137,6 +137,26 @@ function UraWindow:set_fullscreen(flag)
 end
 
 ---@return boolean|nil
+function UraWindow:is_resizing()
+  return ura.api.is_window_resizing(self.id)
+end
+
+--- @param flag boolean
+function UraWindow:set_resizing(flag)
+  ura.api.set_window_resizing(self.id, flag)
+end
+
+---@return boolean|nil
+function UraWindow:is_maximized()
+  return ura.api.is_window_maximized(self.id)
+end
+
+--- @param flag boolean
+function UraWindow:set_maximized(flag)
+  ura.api.set_window_maximized(self.id, flag)
+end
+
+---@return boolean|nil
 function UraWindow:is_mapped()
   return ura.api.is_window_mapped(self.id)
 end
@@ -165,7 +185,7 @@ function UraWindow:move(x, y, opt)
     t.geometry.y = y
   end)
 
-  local duration = opt and opt.duration or ura.opt.animation_duration or 500
+  local duration = opt and opt.duration or ura.opt.animation_duration or 200
   local fps = opt and opt.fps or ura.opt.animation_fps or 60
 
   if duration <= 0 then
@@ -215,8 +235,8 @@ function UraWindow:resize(width, height, opt)
     t.geometry.height = height
   end)
 
-  local duration = opt and opt.duration or 0
-  local fps = opt and opt.fps or 60
+  local duration = opt and opt.duration or ura.opt.animation_duration or 200
+  local fps = opt and opt.fps or ura.opt.animation_fps or 60
 
   if duration <= 0 then
     ura.api.resize_window(self.id, width, height)
@@ -225,6 +245,7 @@ function UraWindow:resize(width, height, opt)
 
   self:update_userdata(function(tb)
     local start_time = ura.api.time_since_epoch() / 1e6
+    self:set_resizing(true)
 
     tb.resize_timer = ura.api.set_interval(function()
       local now = ura.api.time_since_epoch() / 1e6
@@ -241,6 +262,7 @@ function UraWindow:resize(width, height, opt)
       if t >= 1.0 and tb.resize_timer then
         ura.api.clear_interval(tb.resize_timer)
         tb.resize_timer = nil
+        self:set_resizing(false)
       end
     end, 1000 / fps)
   end)

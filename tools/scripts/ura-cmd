@@ -125,6 +125,8 @@ for _, w in ipairs(ura.class.UraWindow:all()) do
 		geometry = w:geometry(),
 		z_index = w:z_index(),
 		is_fullscreen = w:is_fullscreen(),
+    is_resizing = w:is_resizing(),
+    is_maximized = w:is_maximized(),
 		userdata = w:userdata(),
 		tags = w:tags(),
     is_mapped = w:is_mapped(),

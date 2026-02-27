@@ -12,7 +12,10 @@ function M.setup()
     local win = ura.class.UraWindow:new(e.id)
     if e.to == "maximize" then
       win:set_z_index(ura.g.layer.normal)
+      win:set_maximized(true)
       apply(win)
+    elseif e.from == "maximize" then
+      win:set_maximized(false)
     end
   end, { ns = "layout.maximize" })
 

@@ -365,6 +365,34 @@ std::optional<bool> is_window_fullscreen(uint64_t id) {
   return toplevel->is_fullscreen();
 }
 
+void set_window_resizing(uint64_t id, bool flag) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return;
+  toplevel->set_resizing(flag);
+}
+
+std::optional<bool> is_window_resizing(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->is_resizing();
+}
+
+void set_window_maximized(uint64_t id, bool flag) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return;
+  toplevel->set_maximized(flag);
+}
+
+std::optional<bool> is_window_maximized(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->is_maximized();
+}
+
 flexible::object get_window_geometry(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)

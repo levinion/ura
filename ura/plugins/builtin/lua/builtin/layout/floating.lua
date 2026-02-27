@@ -33,15 +33,15 @@ function M.setup()
     end)
   end, { ns = "layout.floating", priority = ura.g.priority.instant })
 
-  local function listen_mouse_key(key, f)
+  local function on_mouse_drag(key, begin_drag, update_drag, end_drag)
     local anchor = nil
     local timer = nil
     local w = nil
 
-    local function func(win)
+    local function update(win)
       local pos = ura.api.get_cursor_pos()
       assert(anchor)
-      f(win, pos.x - anchor.x, pos.y - anchor.y)
+      update_drag(win, pos.x - anchor.x, pos.y - anchor.y)
       anchor = pos
     end
 
@@ -55,9 +55,10 @@ function M.setup()
         if w:layout() ~= "floating" then
           return
         end
+        begin_drag(w)
         anchor = ura.api.get_cursor_pos()
         timer = ura.api.set_interval(function()
-          func(w)
+          update(w)
         end, 10)
         return false
       else
@@ -67,21 +68,26 @@ function M.setup()
         if timer then
           ura.api.clear_interval(timer)
           timer = nil
-          func(w)
+          update_drag(w)
+          end_drag(w)
           return false
         end
       end
     end, { ns = "layout.floating" })
   end
 
-  listen_mouse_key("super+mouseleft", function(w, x, y)
+  on_mouse_drag("super+mouseleft", function() end, function(w, x, y)
     local geo = w:geometry()
     w:move(geo.x + x, geo.y + y, { duration = 0 })
-  end)
+  end, function() end)
 
-  listen_mouse_key("super+mouseright", function(w, width, height)
+  on_mouse_drag("super+mouseright", function(w)
+    w:set_resizing(true)
+  end, function(w, width, height)
     local geo = w:geometry()
     w:resize(geo.width + width, geo.height + height, { duration = 0 })
+  end, function(w)
+    w:set_resizing(false)
   end)
 end
 

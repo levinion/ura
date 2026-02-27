@@ -53,6 +53,10 @@ public:
   uint64_t id();
   void set_fullscreen(bool flag);
   bool is_fullscreen();
+  void set_resizing(bool flag);
+  bool is_resizing();
+  void set_maximized(bool flag);
+  bool is_maximized();
   UraOutput* output();
   double scale();
   void set_scale(double scale);
