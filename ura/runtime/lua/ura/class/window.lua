@@ -146,15 +146,18 @@ function UraWindow:is_focused()
   return ura.api.is_window_focused(self.id)
 end
 
---TODO: impl animation
-
 --- @param x integer
 --- @param y integer
---- @param opt { duration: integer }|nil
+--- @param opt { duration?: integer, fps?: number }|nil
 function UraWindow:move(x, y, opt)
   if self:userdata().move_timer then
     ura.api.clear_interval(self:userdata().move_timer)
   end
+
+  local geo = self:geometry()
+  assert(geo)
+  local start_x = geo.x
+  local start_y = geo.y
 
   self:update_userdata(function(t)
     t.geometry = t.geometry or {}
@@ -162,22 +165,19 @@ function UraWindow:move(x, y, opt)
     t.geometry.y = y
   end)
 
-  local duration = opt and opt.duration or 0
+  local duration = opt and opt.duration or ura.opt.animation_duration or 500
+  local fps = opt and opt.fps or ura.opt.animation_fps or 60
 
   if duration <= 0 then
     ura.api.move_window(self.id, x, y)
     return
   end
 
-  local geo = self:geometry()
-  assert(geo)
-  local start_x = geo.x
-  local start_y = geo.y
-  local start_time = ura.api.time_since_epoch() / 10 ^ 6
-
   self:update_userdata(function(tb)
+    local start_time = ura.api.time_since_epoch() / 1e6
+
     tb.move_timer = ura.api.set_interval(function()
-      local now = ura.api.time_since_epoch() / 10 ^ 6
+      local now = ura.api.time_since_epoch() / 1e6
       local elapsed = now - start_time
       local t = math.min(elapsed / duration, 1.0)
 
@@ -192,17 +192,22 @@ function UraWindow:move(x, y, opt)
         ura.api.clear_interval(tb.move_timer)
         tb.move_timer = nil
       end
-    end, 16)
+    end, 1000 / fps)
   end)
 end
 
 --- @param width integer
 --- @param height integer
---- @param opt { duration: integer }|nil
+--- @param opt { duration?: integer, fps?: number }|nil
 function UraWindow:resize(width, height, opt)
   if self:userdata().resize_timer then
     ura.api.clear_interval(self:userdata().resize_timer)
   end
+
+  local geo = self:geometry()
+  assert(geo)
+  local start_w = geo.width
+  local start_h = geo.height
 
   self:update_userdata(function(t)
     t.geometry = t.geometry or {}
@@ -211,21 +216,18 @@ function UraWindow:resize(width, height, opt)
   end)
 
   local duration = opt and opt.duration or 0
+  local fps = opt and opt.fps or 60
 
   if duration <= 0 then
     ura.api.resize_window(self.id, width, height)
     return
   end
 
-  local geo = self:geometry()
-  assert(geo)
-  local start_w = geo.width
-  local start_h = geo.height
-  local start_time = ura.api.time_since_epoch() / 10 ^ 6
-
   self:update_userdata(function(tb)
+    local start_time = ura.api.time_since_epoch() / 1e6
+
     tb.resize_timer = ura.api.set_interval(function()
-      local now = ura.api.time_since_epoch() / 10 ^ 6
+      local now = ura.api.time_since_epoch() / 1e6
       local elapsed = now - start_time
       local t = math.min(elapsed / duration, 1.0)
 
@@ -240,18 +242,19 @@ function UraWindow:resize(width, height, opt)
         ura.api.clear_interval(tb.resize_timer)
         tb.resize_timer = nil
       end
-    end, 16)
+    end, 1000 / fps)
   end)
 end
 
-function UraWindow:center()
+--- @param opt { duration?: integer, fps?: number }|nil
+function UraWindow:center(opt)
   local geo = self:geometry()
   assert(geo)
   local o_geo = self:output():logical_geometry()
   assert(o_geo)
   local target_x = o_geo.x + math.floor((o_geo.width - geo.width) / 2)
   local target_y = o_geo.y + math.floor((o_geo.height - geo.height) / 2)
-  self:move(target_x, target_y)
+  self:move(target_x, target_y, opt)
 end
 
 ---@return integer|nil

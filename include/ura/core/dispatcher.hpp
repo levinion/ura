@@ -84,7 +84,7 @@ public:
 
     this->add_task(fd, [=, this]() {
       uint64_t expirations;
-      if (read(fd, &expirations, sizeof(expirations)) > 0) {
+      if (read(fd, &expirations, sizeof(expirations) == sizeof(expirations))) {
         callback();
       }
       this->remove_task(fd);
@@ -130,7 +130,7 @@ public:
 
     this->add_task(fd, [=, this]() {
       uint64_t expirations;
-      if (read(fd, &expirations, sizeof(expirations)) > 0) {
+      if (read(fd, &expirations, sizeof(expirations) == sizeof(expirations))) {
         callback();
       }
       return true;

@@ -76,12 +76,12 @@ function M.setup()
 
   listen_mouse_key("super+mouseleft", function(w, x, y)
     local geo = w:geometry()
-    w:move(geo.x + x, geo.y + y)
+    w:move(geo.x + x, geo.y + y, { duration = 0 })
   end)
 
   listen_mouse_key("super+mouseright", function(w, width, height)
     local geo = w:geometry()
-    w:resize(geo.width + width, geo.height + height)
+    w:resize(geo.width + width, geo.height + height, { duration = 0 })
   end)
 end
 
