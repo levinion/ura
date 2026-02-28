@@ -10,13 +10,13 @@ ura.api = {
   --- @param body string
   notify = function(summary, body) end,
   --- @param f function
-  --- @param timeout integer Milliseconds
+  --- @param timeout number Milliseconds
   --- @return integer|nil
   set_timeout = function(f, timeout) end,
   --- @param fd integer
   clear_timeout = function(fd) end,
   --- @param f function
-  --- @param interval integer Milliseconds
+  --- @param interval number Milliseconds
   --- @return integer|nil
   set_interval = function(f, interval) end,
   --- @param fd integer

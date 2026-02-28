@@ -12,9 +12,9 @@ namespace ura::api::core {
 void terminate();
 void spawn(std::string cmd);
 void notify(std::string summary, std::string body);
-std::optional<int> set_timeout(flexible::function f, int64_t timeout);
+std::optional<int> set_timeout(flexible::function f, double timeout);
 void clear_timeout(int fd);
-std::optional<int> set_interval(flexible::function f, int64_t timeout);
+std::optional<int> set_interval(flexible::function f, double timeout);
 void clear_interval(int fd);
 // idle
 void notify_idle_activity();

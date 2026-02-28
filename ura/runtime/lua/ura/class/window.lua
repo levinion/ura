@@ -185,7 +185,7 @@ function UraWindow:move(x, y, opt)
     t.geometry.y = y
   end)
 
-  local duration = opt and opt.duration or ura.opt.animation_duration or 200
+  local duration = opt and opt.duration or ura.opt.animation_duration or 300
   local fps = opt and opt.fps or ura.opt.animation_fps or 60
 
   if duration <= 0 then
@@ -235,7 +235,7 @@ function UraWindow:resize(width, height, opt)
     t.geometry.height = height
   end)
 
-  local duration = opt and opt.duration or ura.opt.animation_duration or 200
+  local duration = opt and opt.duration or ura.opt.animation_duration or 300
   local fps = opt and opt.fps or ura.opt.animation_fps or 60
 
   if duration <= 0 then

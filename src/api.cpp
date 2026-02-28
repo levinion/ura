@@ -263,15 +263,16 @@ void notify(std::string summary, std::string body) {
   log::notify(summary, body);
 }
 
-std::optional<int> set_timeout(flexible::function f, int64_t timeout) {
+std::optional<int> set_timeout(flexible::function f, double timeout) {
   auto server = UraServer::get_instance();
   if (timeout <= 0) {
     f();
     return {};
   }
+  std::chrono::duration<double, std::milli> duration(timeout);
   return server->dispatcher->set_timeout(
     [=]() { f(); },
-    std::chrono::milliseconds(timeout)
+    std::chrono::round<std::chrono::nanoseconds>(duration)
   );
 }
 
@@ -280,15 +281,16 @@ void clear_timeout(int fd) {
   server->dispatcher->clear_timer(fd);
 }
 
-std::optional<int> set_interval(flexible::function f, int64_t interval) {
+std::optional<int> set_interval(flexible::function f, double interval) {
   auto server = UraServer::get_instance();
   if (interval <= 0) {
     f();
     return {};
   }
+  std::chrono::duration<double, std::milli> duration(interval);
   return server->dispatcher->set_interval(
     [=]() { f(); },
-    std::chrono::milliseconds(interval)
+    std::chrono::round<std::chrono::nanoseconds>(duration)
   );
 }
 
