@@ -1,6 +1,7 @@
 #include "ura/view/toplevel.hpp"
 #include "ura/util/flexible.hpp"
 #include "ura/ura.hpp"
+#include "ura/util/rgb.hpp"
 #include "ura/util/vec.hpp"
 #include "ura/core/runtime.hpp"
 #include "ura/core/server.hpp"
@@ -31,6 +32,8 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   this->update_scale();
 
   server->view->toplevels.push_back(this);
+
+  this->create_borders();
 
   // register callback
   {
@@ -159,6 +162,8 @@ void UraToplevel::commit() {
     this->geometry.width = this->xdg_toplevel->base->current.geometry.width;
     this->geometry.height = this->xdg_toplevel->base->current.geometry.height;
     this->center();
+    this->resize_borders(this->geometry.width, this->geometry.height);
+    this->move_borders(this->geometry.x, this->geometry.y);
     this->prepared = true;
 
     auto args = flexible::create_table();
@@ -193,6 +198,10 @@ void UraToplevel::focus() {
     );
   }
   server->seat->text_input->focus_text_input(surface);
+
+  auto active_border_color =
+    this->get_userdata<std::string>("active_border_color").value_or("#89b4fa");
+  this->set_border_color(active_border_color);
 }
 
 void UraToplevel::unfocus() {
@@ -210,6 +219,11 @@ void UraToplevel::unfocus() {
   server->seat->text_input->unfocus_active_text_input();
 
   this->dismiss_popups();
+
+  auto inactive_border_color =
+    this->get_userdata<std::string>("inactive_border_color")
+      .value_or("#00000000");
+  this->set_border_color(inactive_border_color);
 }
 
 // get toplevel instance from wlr_surface, it asserts the surface's role is xdg_toplevel
@@ -251,6 +265,7 @@ bool UraToplevel::move(int x, int y) {
   this->geometry.x = x;
   this->geometry.y = y;
   wlr_scene_node_set_position(&this->scene_tree->node, x, y);
+  this->move_borders(x, y);
 
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
@@ -283,6 +298,7 @@ bool UraToplevel::resize(int width, int height) {
   this->geometry.width = width;
   this->geometry.height = height;
   wlr_xdg_toplevel_set_size(this->xdg_toplevel, width, height);
+  this->resize_borders(width, height);
 
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
@@ -306,6 +322,7 @@ void UraToplevel::map() {
     return;
   wlr_scene_node_set_enabled(&this->scene_tree->node, true);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
+  this->set_border_invisible(true);
 
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
@@ -318,6 +335,7 @@ void UraToplevel::unmap() {
     return;
   wlr_scene_node_set_enabled(&this->scene_tree->node, false);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
+  this->set_border_invisible(false);
 
   auto server = UraServer::get_instance();
   if (server->seat->focused_toplevel() == this) {
@@ -499,6 +517,89 @@ bool UraToplevel::is_tag_matched() {
     }
   }
   return matched;
+}
+
+void UraToplevel::create_borders() {
+  auto hex = this->get_userdata<std::string>("inactive_border_color")
+               .value_or("#00000000");
+  auto color = util::hex2rgba(hex).value();
+  for (int i = 0; i < 4; i++) {
+    this->borders[i] =
+      wlr_scene_rect_create(this->scene_tree, 0, 0, color.data());
+    wlr_scene_node_set_enabled(&this->borders[i]->node, false);
+  }
+}
+
+void UraToplevel::set_border_color(std::string_view color) {
+  auto cs = util::hex2rgba(color);
+  if (cs)
+    for (auto border : this->borders) {
+      wlr_scene_rect_set_color(border, cs->data());
+    }
+}
+
+void UraToplevel::move_borders(int x, int y) {
+  auto border_width =
+    this->get_userdata<unsigned int>("border_width").value_or(1);
+  // top border
+  wlr_scene_node_set_position(
+    &this->borders[0]->node,
+    -border_width,
+    -border_width
+  );
+  // right border
+  wlr_scene_node_set_position(
+    &this->borders[1]->node,
+    this->geometry.width,
+    -border_width
+  );
+  // bottom border
+  wlr_scene_node_set_position(
+    &this->borders[2]->node,
+    -border_width,
+    this->geometry.height
+  );
+  // left border
+  wlr_scene_node_set_position(
+    &this->borders[3]->node,
+    -border_width,
+    -border_width
+  );
+}
+
+void UraToplevel::resize_borders(int width, int height) {
+  auto border_width =
+    this->get_userdata<unsigned int>("border_width").value_or(1);
+  // top border
+  wlr_scene_rect_set_size(
+    this->borders[0],
+    width + 2 * border_width,
+    border_width
+  );
+  // right border
+  wlr_scene_rect_set_size(
+    this->borders[1],
+    border_width,
+    height + 2 * border_width
+  );
+  // bottom border
+  wlr_scene_rect_set_size(
+    this->borders[2],
+    width + 2 * border_width,
+    border_width
+  );
+  // left border
+  wlr_scene_rect_set_size(
+    this->borders[3],
+    border_width,
+    height + 2 * border_width
+  );
+}
+
+void UraToplevel::set_border_invisible(bool flag) {
+  for (auto border : this->borders) {
+    wlr_scene_node_set_enabled(&border->node, flag);
+  }
 }
 
 } // namespace ura

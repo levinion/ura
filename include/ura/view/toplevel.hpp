@@ -1,9 +1,11 @@
 #pragma once
 
+#include "ura/core/server.hpp"
 #include "ura/ura.hpp"
 #include "ura/util/vec.hpp"
 #include <string>
 #include <sol/sol.hpp>
+#include <string_view>
 
 namespace ura {
 
@@ -57,9 +59,24 @@ public:
   void set_tags(Vec<std::string>&& tags);
   bool is_tag_matched();
 
+  void create_borders();
+  void set_border_color(std::string_view color);
+  void resize_borders(int width, int height);
+  void move_borders(int x, int y);
+  void set_border_invisible(bool flag);
+
 private:
   void dismiss_popups();
   bool prepared = false;
+  std::array<wlr_scene_rect*, 4> borders;
+
+  template<typename T>
+  std::optional<T> get_userdata(std::string_view name) {
+    auto server = UraServer::get_instance();
+    if (!server->globals.contains(this->id()))
+      return {};
+    return server->globals[this->id()].get_userdata<T>(name);
+  }
 };
 
 } // namespace ura
