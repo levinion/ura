@@ -1,10 +1,11 @@
 #pragma once
 
+#include "ura/core/server.hpp"
 #include "ura/ura.hpp"
 #include "ura/util/vec.hpp"
-#include <array>
 #include <string>
 #include <sol/sol.hpp>
+#include <string_view>
 
 namespace ura {
 
@@ -18,15 +19,9 @@ public:
   int z_index;
   wlr_xdg_toplevel_decoration_v1* decoration;
   wlr_foreign_toplevel_handle_v1* foreign_handle;
-  Vec4<int> geometry;
   Vec<std::string> tags;
   uint64_t lru = 0;
-
-  // same with css, top > right > bottom > left
-  std::array<wlr_scene_rect*, 4> borders;
-  std::array<float, 4> active_border_color;
-  std::array<float, 4> inactive_border_color;
-  uint border_width;
+  Vec4<int> geometry;
 
   static UraToplevel* from(wlr_surface* surface);
   static UraToplevel* from(uint64_t id);
@@ -53,6 +48,10 @@ public:
   uint64_t id();
   void set_fullscreen(bool flag);
   bool is_fullscreen();
+  void set_resizing(bool flag);
+  bool is_resizing();
+  void set_maximized(bool flag);
+  bool is_maximized();
   UraOutput* output();
   double scale();
   void set_scale(double scale);
@@ -60,13 +59,24 @@ public:
   void set_tags(Vec<std::string>&& tags);
   bool is_tag_matched();
 
-private:
   void create_borders();
-  void move_borders(int x, int y);
+  void set_border_color(std::string_view color);
   void resize_borders(int width, int height);
-  void set_border_color(std::array<float, 4>& color);
+  void move_borders(int x, int y);
+  void set_border_invisible(bool flag);
+
+private:
   void dismiss_popups();
   bool prepared = false;
+  std::array<wlr_scene_rect*, 4> borders;
+
+  template<typename T>
+  std::optional<T> get_userdata(std::string_view name) {
+    auto server = UraServer::get_instance();
+    if (!server->globals.contains(this->id()))
+      return {};
+    return server->globals[this->id()].get_userdata<T>(name);
+  }
 };
 
 } // namespace ura

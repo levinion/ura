@@ -33,8 +33,8 @@ public:
     for (int i = 0; i < nfds; i++) {
       auto current_fd = this->events[i].data.fd;
       if (this->tasks.contains(current_fd)) {
-        auto success = this->tasks[current_fd]();
-        if (!success)
+        auto task = this->tasks[current_fd];
+        if (!task())
           return false;
       }
     }
@@ -84,7 +84,7 @@ public:
 
     this->add_task(fd, [=, this]() {
       uint64_t expirations;
-      while (read(fd, &expirations, sizeof(expirations)) > 0) {
+      if (read(fd, &expirations, sizeof(expirations) == sizeof(expirations))) {
         callback();
       }
       this->remove_task(fd);
@@ -94,12 +94,49 @@ public:
     return fd;
   }
 
-  void clear_timeout(int fd) {
+  void clear_timer(int fd) {
     if (!this->is_task_active(fd))
       return;
     itimerspec clear = {};
     timerfd_settime(fd, 0, &clear, nullptr);
     this->remove_task(fd);
+  }
+
+  template<typename Rep, typename Period>
+  int set_interval(
+    std::function<void()> callback,
+    std::chrono::duration<Rep, Period> interval
+  ) {
+    auto fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+    if (fd == -1)
+      return -1;
+
+    auto secs = std::chrono::duration_cast<std::chrono::seconds>(interval);
+    auto nsecs =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(interval - secs);
+
+    itimerspec timer_spec = {};
+    timer_spec.it_value.tv_sec = secs.count();
+    timer_spec.it_value.tv_nsec = nsecs.count();
+    timer_spec.it_interval.tv_sec = secs.count();
+    timer_spec.it_interval.tv_nsec = nsecs.count();
+
+    // flag 0 means relative time
+    auto ret = timerfd_settime(fd, 0, &timer_spec, nullptr);
+    if (ret == -1) {
+      close(fd);
+      return -1;
+    }
+
+    this->add_task(fd, [=, this]() {
+      uint64_t expirations;
+      if (read(fd, &expirations, sizeof(expirations) == sizeof(expirations))) {
+        callback();
+      }
+      return true;
+    });
+
+    return fd;
   }
 
   bool is_task_active(int fd) {

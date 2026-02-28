@@ -46,6 +46,7 @@ clean-dev:
 	rm -rf build
 	rm -rf include/protocols
 	rm -rf .cache
+	rm -f src/ipc.c
 
 clean:
 	rm -f $(DESTDIR)/usr/bin/ura

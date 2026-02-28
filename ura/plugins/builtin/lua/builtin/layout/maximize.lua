@@ -4,15 +4,18 @@ function M.setup()
   local function apply(win)
     local geo = win:output():usable_geometry()
     assert(geo)
-    win:resize(geo.width, geo.height, { duration = 50 })
-    win:move(geo.x, geo.y, { duration = 50 })
+    win:resize(geo.width, geo.height)
+    win:move(geo.x, geo.y)
   end
 
   ura.hook.add("window-layout-change", function(e)
     local win = ura.class.UraWindow:new(e.id)
     if e.to == "maximize" then
       win:set_z_index(ura.g.layer.normal)
+      win:set_maximized(true)
       apply(win)
+    elseif e.from == "maximize" then
+      win:set_maximized(false)
     end
   end, { ns = "layout.maximize" })
 

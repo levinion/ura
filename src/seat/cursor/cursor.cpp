@@ -183,7 +183,7 @@ void UraCursor::process_motion(
       callback();
     } else {
       static auto timer = -1;
-      server->dispatcher->clear_timeout(timer);
+      server->dispatcher->clear_timer(timer);
       timer = server->dispatcher->set_timeout(
         callback,
         std::chrono::milliseconds(2) // delay

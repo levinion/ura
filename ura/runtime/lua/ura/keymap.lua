@@ -1,8 +1,7 @@
 local M = {}
 
 M._keymaps = {}
-
-local KEYMAPS = {}
+M._KEYMAPS = {}
 local mode = "normal"
 
 ---@param patterns table<string>
@@ -13,15 +12,15 @@ function M.set(patterns, f, opt)
   for _, pattern in ipairs(patterns) do
     local id = ura.api.get_keybinding_id(pattern)
     if id then
-      if KEYMAPS[id] == nil then
-        KEYMAPS[id] = {}
+      if M._KEYMAPS[id] == nil then
+        M._KEYMAPS[id] = {}
       end
-      if KEYMAPS[id][m] == nil then
-        KEYMAPS[id][m] = f
+      if M._KEYMAPS[id][m] == nil then
+        M._KEYMAPS[id][m] = f
       end
       if M._keymaps[id] == nil then
         M._keymaps[id] = function()
-          KEYMAPS[id][mode]()
+          M._KEYMAPS[id][mode]()
         end
       end
     end
@@ -35,9 +34,9 @@ function M.unset(patterns, opt)
   for _, pattern in ipairs(patterns) do
     local id = ura.api.get_keybinding_id(pattern)
     if id then
-      KEYMAPS[id][m] = nil
-      if #KEYMAPS[id] == 0 then
-        KEYMAPS[id] = nil
+      M._KEYMAPS[id][m] = nil
+      if #M._KEYMAPS[id] == 0 then
+        M._KEYMAPS[id] = nil
         M._keymaps[id] = nil
       end
     end
@@ -47,11 +46,6 @@ end
 ---@param m string
 function M.set_mode(m)
   mode = m
-end
-
-function M._reset()
-  M._keymaps = {}
-  KEYMAPS = {}
 end
 
 return M

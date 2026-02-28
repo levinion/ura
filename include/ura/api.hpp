@@ -12,8 +12,10 @@ namespace ura::api::core {
 void terminate();
 void spawn(std::string cmd);
 void notify(std::string summary, std::string body);
-std::optional<int> set_timeout(flexible::function f, int64_t timeout);
+std::optional<int> set_timeout(flexible::function f, double timeout);
 void clear_timeout(int fd);
+std::optional<int> set_interval(flexible::function f, double timeout);
+void clear_interval(int fd);
 // idle
 void notify_idle_activity();
 void set_idle_inhibitor(bool flag);
@@ -31,6 +33,10 @@ std::optional<std::string> get_window_app_id(uint64_t id);
 std::optional<std::string> get_window_title(uint64_t id);
 void set_window_fullscreen(uint64_t id, bool flag);
 std::optional<bool> is_window_fullscreen(uint64_t id);
+void set_window_resizing(uint64_t id, bool flag);
+std::optional<bool> is_window_resizing(uint64_t id);
+void set_window_maximized(uint64_t id, bool flag);
+std::optional<bool> is_window_maximized(uint64_t id);
 flexible::object get_window_geometry(uint64_t id);
 void set_window_tags(uint64_t id, std::vector<std::string> tags);
 flexible::object get_window_tags(uint64_t id);

@@ -48,8 +48,8 @@ function M.setup(opt)
     local h = usable.height - (outer_t + outer_b)
     local x = usable.x + outer_l + (w + inner) * index
     local y = usable.y + outer_t
-    win:resize(w, h, { duration = 50 })
-    win:move(x, y, { duration = 50 })
+    win:resize(w, h)
+    win:move(x, y)
   end
 
   ---@param tags table<string>

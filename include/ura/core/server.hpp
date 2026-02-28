@@ -4,8 +4,8 @@
 #include "ura/ura.hpp"
 #include "ura/core/dispatcher.hpp"
 #include "ipc.hpp"
-#include "ura/util/flexible.hpp"
 #include <absl/container/flat_hash_map.h>
+#include "ura/core/global.hpp"
 
 namespace ura {
 // extern
@@ -17,16 +17,6 @@ class UraRuntime;
 class UraSeat;
 class Lua;
 class UraView;
-
-enum class UraGlobalType { Toplevel, Output, LayerShell, Popup };
-
-class UraGlobal {
-public:
-  UraGlobal() = default;
-  UraGlobal(UraGlobalType&& t) : type(t) {};
-  UraGlobalType type;
-  flexible::object userdata;
-};
 
 class UraServer {
 public:
@@ -63,7 +53,7 @@ public:
   std::unique_ptr<Lua> lua;
   std::unique_ptr<UraSeat> seat;
   std::unique_ptr<UraView> view;
-  std::unique_ptr<UraDispatcher<64>> dispatcher;
+  std::unique_ptr<UraDispatcher<128>> dispatcher;
 
   absl::flat_hash_map<uint64_t, UraGlobal> globals;
 

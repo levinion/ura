@@ -10,11 +10,17 @@ ura.api = {
   --- @param body string
   notify = function(summary, body) end,
   --- @param f function
-  --- @param timeout integer Milliseconds
+  --- @param timeout number Milliseconds
   --- @return integer|nil
   set_timeout = function(f, timeout) end,
   --- @param fd integer
   clear_timeout = function(fd) end,
+  --- @param f function
+  --- @param interval number Milliseconds
+  --- @return integer|nil
+  set_interval = function(f, interval) end,
+  --- @param fd integer
+  clear_interval = function(fd) end,
 
   -- idle
   notify_idle_activity = function() end,
@@ -32,16 +38,6 @@ ura.api = {
   --- @param id integer
   focus_window = function(id) end,
 
-  --- Clear = -50,
-  --- Background = 0,
-  --- Bottom = 50,
-  --- Normal = 100,
-  --- Floating = 150,
-  --- Top = 200,
-  --- Fullscreen = 250,
-  --- Popup = 300,
-  --- Overlay = 350,
-  --- LockScreen = 400
   --- @param id integer
   --- @param z integer
   set_window_z_index = function(id, z) end,
@@ -70,6 +66,18 @@ ura.api = {
   --- @param id integer
   --- @return boolean|nil
   is_window_fullscreen = function(id) end,
+  --- @param id integer
+  --- @param flag boolean
+  set_window_resizing = function(id, flag) end,
+  --- @param id integer
+  --- @return boolean|nil
+  is_window_resizing = function(id) end,
+  --- @param id integer
+  --- @param flag boolean
+  set_window_maximized = function(id, flag) end,
+  --- @param id integer
+  --- @return boolean|nil
+  is_window_maximized = function(id) end,
   --- @param id any
   --- @return table|nil
   get_window_geometry = function(id) end,

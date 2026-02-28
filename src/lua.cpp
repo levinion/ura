@@ -45,6 +45,8 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.notify", api::core::notify);
   LUAAPI("api.set_timeout", api::core::set_timeout);
   LUAAPI("api.clear_timeout", api::core::clear_timeout);
+  LUAAPI("api.set_interval", api::core::set_interval);
+  LUAAPI("api.clear_interval", api::core::clear_interval);
   // window
   LUAAPI("api.focus_window", api::core::focus_window);
   LUAAPI("api.close_window", api::core::close_window);
@@ -58,6 +60,10 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.get_window_title", api::core::get_window_title);
   LUAAPI("api.set_window_fullscreen", api::core::set_window_fullscreen);
   LUAAPI("api.is_window_fullscreen", api::core::is_window_fullscreen);
+  LUAAPI("api.set_window_resizing", api::core::set_window_resizing);
+  LUAAPI("api.is_window_resizing", api::core::is_window_resizing);
+  LUAAPI("api.set_window_maximized", api::core::set_window_maximized);
+  LUAAPI("api.is_window_maximized", api::core::is_window_maximized);
   LUAAPI("api.get_window_geometry", api::core::get_window_geometry);
   LUAAPI("api.get_window_output", api::core::get_window_output);
   LUAAPI("api.set_window_tags", api::core::set_window_tags);

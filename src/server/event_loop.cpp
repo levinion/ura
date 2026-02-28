@@ -18,7 +18,7 @@ UraServer* UraServer::init() {
   this->setup_signal();
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
-  this->dispatcher = UraDispatcher<64>::init();
+  this->dispatcher = UraDispatcher<128>::init();
   this->lua = Lua::init();
 
   this->setup_base();

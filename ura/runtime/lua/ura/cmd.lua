@@ -55,9 +55,6 @@ function M.reload()
   if not status then
     error(v)
   else
-    ura.opt = {}
-    ura.hook._reset()
-    ura.keymap._reset()
     ura.fn._restore_context()
     --[[@diagnostic disable-next-line: param-type-mismatch]]
     local status2, err = ura.fn._safe_call(v)
