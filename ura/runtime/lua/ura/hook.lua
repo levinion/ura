@@ -1,13 +1,7 @@
 local M = {}
 
 M._hooks = {}
-
-local HOOKS = {}
-
----@return table
-function M.all()
-  return HOOKS
-end
+M._HOOKS = {}
 
 ---@param name string
 ---@param f fun(e: table):any
@@ -28,11 +22,11 @@ function M.add(name, f, opt)
     hook.desc = opt.desc
   end
 
-  if HOOKS[name] == nil then
-    HOOKS[name] = {}
+  if M._HOOKS[name] == nil then
+    M._HOOKS[name] = {}
     M._hooks[name] = function(e)
       local results = {}
-      for _, v in ipairs(HOOKS[name]) do
+      for _, v in ipairs(M._HOOKS[name]) do
         local success, result = pcall(function()
           return v.func(e)
         end)
@@ -44,21 +38,21 @@ function M.add(name, f, opt)
     end
   end
 
-  table.insert(HOOKS[name], hook)
+  table.insert(M._HOOKS[name], hook)
 
-  table.sort(HOOKS[name], function(h1, h2)
+  table.sort(M._HOOKS[name], function(h1, h2)
     return h1.priority < h2.priority
   end)
 end
 
 ---@param ns string
 function M.remove(ns)
-  for name, hook in pairs(HOOKS) do
-    HOOKS[name] = ura.fn.filter(hook, function(_, value)
+  for name, hook in pairs(M._HOOKS) do
+    M._HOOKS[name] = ura.fn.filter(hook, function(_, value)
       return value.ns ~= ns
     end)
-    if #HOOKS[name] == 0 then
-      HOOKS[name] = nil
+    if #M._HOOKS[name] == 0 then
+      M._HOOKS[name] = nil
       M._hooks[name] = nil
     end
   end
@@ -68,11 +62,6 @@ end
 ---@param args table|nil
 function M.emit(name, args)
   M._hooks[name](args)
-end
-
-function M._reset()
-  M._hooks = {}
-  HOOKS = {}
 end
 
 return M

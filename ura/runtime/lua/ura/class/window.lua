@@ -272,7 +272,7 @@ end
 function UraWindow:center(opt)
   local geo = self:geometry()
   assert(geo)
-  local o_geo = self:output():logical_geometry()
+  local o_geo = self:output():usable_geometry()
   assert(o_geo)
   local target_x = o_geo.x + math.floor((o_geo.width - geo.width) / 2)
   local target_y = o_geo.y + math.floor((o_geo.height - geo.height) / 2)

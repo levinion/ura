@@ -253,12 +253,18 @@ function M.find_config_path()
   return nil
 end
 
-local context = {}
+local context
 
 function M._save_context()
-  context = {}
+  context = {
+    loaded = {},
+    opt = ura.fn.copy(ura.opt),
+    keymap = { _KEYMAPS = ura.fn.copy(ura.keymap._KEYMAPS), _keymaps = ura.fn.copy(ura.keymap._keymaps) },
+    hook = { _HOOKS = ura.fn.copy(ura.hook._HOOKS), _hooks = ura.fn.copy(ura.hook._hooks) },
+  }
+
   for k, v in pairs(package.loaded) do
-    context[k] = v
+    context.loaded[k] = v
   end
 end
 
@@ -266,9 +272,15 @@ function M._restore_context()
   for k in pairs(package.loaded) do
     package.loaded[k] = nil
   end
-  for k, v in pairs(context) do
+  for k, v in pairs(context.loaded) do
     package.loaded[k] = v
   end
+
+  ura.opt = ura.fn.copy(context.opt)
+  ura.keymap._KEYMAPS = ura.fn.copy(context.keymap._KEYMAPS)
+  ura.keymap._keymaps = ura.fn.copy(context.keymap._keymaps)
+  ura.hook._HOOKS = ura.fn.copy(context.hook._HOOKS)
+  ura.hook._hooks = ura.fn.copy(context.hook._hooks)
 end
 
 ---@return boolean

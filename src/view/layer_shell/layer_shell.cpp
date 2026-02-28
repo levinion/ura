@@ -60,20 +60,10 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
   // add this shell to output's layer
   auto& list = output->get_layer_list_by_type(layer_surface->pending.layer);
   list.push_back(this);
-
-  server->globals[this->id()] = UraGlobalType::LayerShell;
 }
 
 UraLayerShell* UraLayerShell::from(wlr_surface* surface) {
   return static_cast<UraLayerShell*>(surface->data);
-}
-
-UraLayerShell* UraLayerShell::from(uint64_t id) {
-  auto server = UraServer::get_instance();
-  if (server->globals.contains(id)
-      && server->globals[id].type == UraGlobalType::LayerShell)
-    return reinterpret_cast<UraLayerShell*>(id);
-  return nullptr;
 }
 
 void UraLayerShell::focus() {

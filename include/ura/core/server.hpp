@@ -18,7 +18,7 @@ class UraSeat;
 class Lua;
 class UraView;
 
-enum class UraGlobalType { Toplevel, Output, LayerShell, Popup };
+enum class UraGlobalType { Toplevel, Output };
 
 class UraGlobal {
 public:

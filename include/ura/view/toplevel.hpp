@@ -2,7 +2,6 @@
 
 #include "ura/ura.hpp"
 #include "ura/util/vec.hpp"
-#include <array>
 #include <string>
 #include <sol/sol.hpp>
 
@@ -18,15 +17,9 @@ public:
   int z_index;
   wlr_xdg_toplevel_decoration_v1* decoration;
   wlr_foreign_toplevel_handle_v1* foreign_handle;
-  Vec4<int> geometry;
   Vec<std::string> tags;
   uint64_t lru = 0;
-
-  // same with css, top > right > bottom > left
-  std::array<wlr_scene_rect*, 4> borders;
-  std::array<float, 4> active_border_color;
-  std::array<float, 4> inactive_border_color;
-  uint border_width;
+  Vec4<int> geometry;
 
   static UraToplevel* from(wlr_surface* surface);
   static UraToplevel* from(uint64_t id);
@@ -65,10 +58,6 @@ public:
   bool is_tag_matched();
 
 private:
-  void create_borders();
-  void move_borders(int x, int y);
-  void resize_borders(int width, int height);
-  void set_border_color(std::array<float, 4>& color);
   void dismiss_popups();
   bool prepared = false;
 };
