@@ -156,6 +156,8 @@ void UraToplevel::commit() {
     }
 
     // init geometry with given value then put it center
+    this->geometry.width = this->xdg_toplevel->base->current.geometry.width;
+    this->geometry.height = this->xdg_toplevel->base->current.geometry.height;
     this->center();
     this->prepared = true;
 
