@@ -531,8 +531,7 @@ void UraToplevel::create_borders() {
 }
 
 void UraToplevel::set_border_color(std::string_view color) {
-  auto cs = util::hex2rgba(color);
-  if (cs)
+  if (auto cs = util::hex2rgba(color))
     for (auto border : this->borders) {
       wlr_scene_rect_set_color(border, cs->data());
     }
@@ -582,11 +581,23 @@ void UraToplevel::resize_borders(int width, int height) {
     border_width,
     height + 2 * border_width
   );
+  // right border
+  wlr_scene_node_set_position(
+    &this->borders[1]->node,
+    this->geometry.width,
+    -border_width
+  );
   // bottom border
   wlr_scene_rect_set_size(
     this->borders[2],
     width + 2 * border_width,
     border_width
+  );
+  // bottom border
+  wlr_scene_node_set_position(
+    &this->borders[2]->node,
+    -border_width,
+    this->geometry.height
   );
   // left border
   wlr_scene_rect_set_size(
