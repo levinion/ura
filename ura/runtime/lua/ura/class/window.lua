@@ -168,12 +168,58 @@ end
 
 ---@return number|nil
 function UraWindow:opacity()
-  return ura.api.get_window_opacity(self.id)
+  local userdata = self:userdata()
+  if userdata and userdata.opacity then
+    return userdata.opacity
+  else
+    self:update_userdata(function(t)
+      t.opacity = ura.api.get_window_opacity(self.id)
+    end)
+    return self:userdata().opacity
+  end
 end
 
 ---@param opacity number
-function UraWindow:set_opacity(opacity)
-  ura.api.set_window_opacity(self.id, opacity)
+--- @param opt { duration?: integer, fps?: number }|nil
+function UraWindow:set_opacity(opacity, opt)
+  if self:userdata().opacity_timer then
+    ura.api.clear_interval(self:userdata().opacity_timer)
+  end
+
+  local start_opacity = self:opacity()
+
+  self:update_userdata(function(t)
+    t.opacity = opacity
+  end)
+
+  local duration = opt and opt.duration or ura.opt.animation_duration or 300
+  local fps = opt and opt.fps or ura.opt.animation_fps or 60
+
+  if duration <= 0 then
+    ura.api.set_window_opacity(self.id, opacity)
+    return
+  end
+
+  self:update_userdata(function(tb)
+    local start_time = ura.api.time_since_epoch() / 1e6
+
+    tb.opacity_timer = ura.api.set_interval(function()
+      local now = ura.api.time_since_epoch() / 1e6
+      local elapsed = now - start_time
+      local t = math.min(elapsed / duration, 1.0)
+
+      local ease_t = t < 0.5 and 4 * t * t * t or 1 - math.pow(-2 * t + 2, 3) / 2
+
+      local cur_o = start_opacity + (opacity - start_opacity) * ease_t
+
+      ura.api.set_window_opacity(self.id, cur_o)
+
+      if t >= 1.0 and tb.opacity_timer then
+        ura.api.clear_interval(tb.opacity_timer)
+        tb.opacity_timer = nil
+      end
+    end, 1000 / fps)
+  end)
 end
 
 ---@return string|nil
