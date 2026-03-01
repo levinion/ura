@@ -74,6 +74,8 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.get_window_lru", api::core::get_window_lru);
   LUAAPI("api.get_window_opacity", api::core::get_window_opacity);
   LUAAPI("api.set_window_opacity", api::core::set_window_opacity);
+  LUAAPI("api.get_window_border_color", api::core::get_window_border_color);
+  LUAAPI("api.set_window_border_color", api::core::set_window_border_color);
   // input
   LUAAPI("api.set_keyboard_repeat", api::core::set_keyboard_repeat);
   LUAAPI("api.set_cursor_theme", api::core::set_cursor_theme);

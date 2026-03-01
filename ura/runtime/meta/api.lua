@@ -104,6 +104,12 @@ ura.api = {
   --- @param id integer
   --- @return number|nil
   get_window_opacity = function(id) end,
+  --- @param id integer
+  --- @param color string
+  set_window_border_color = function(id, color) end,
+  --- @param id integer
+  --- @return string|nil
+  get_window_border_color = function(id) end,
 
   -- input
   --- @param rate integer

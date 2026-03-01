@@ -46,6 +46,8 @@ std::optional<bool> is_window_mapped(uint64_t id);
 std::optional<bool> is_window_focused(uint64_t id);
 std::optional<float> get_window_opacity(uint64_t id);
 void set_window_opacity(uint64_t id, float opacity);
+void set_window_border_color(uint64_t id, std::string color);
+std::optional<std::string> get_window_border_color(uint64_t id);
 
 // input
 void set_keyboard_repeat(int rate, int delay);

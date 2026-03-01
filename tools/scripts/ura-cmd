@@ -131,7 +131,9 @@ for _, w in ipairs(ura.class.UraWindow:all()) do
 		tags = w:tags(),
     is_mapped = w:is_mapped(),
     is_focused = w:is_focused(),
-    lru = w:lru()
+    lru = w:lru(),
+    opacity = w:opacity(),
+    border_color = w:border_color()
 	}
 end
 print(ura.api.to_json(t))

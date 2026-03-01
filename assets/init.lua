@@ -47,7 +47,7 @@ ura.keymap.set({ "ctrl+right", "super+wheeldown" }, function()
   ura.class.UraOutput:current():set_tags({ blk:tag() })
 end)
 
-ura.keymap.set({ "ctrl+shift+left" }, function()
+ura.keymap.set({ "ctrl+shift+left", "super+shift+wheelup" }, function()
   local blk = ura.class.UraBlock:current()[1]
   assert(blk)
   if blk.index > 1 then
@@ -57,7 +57,7 @@ ura.keymap.set({ "ctrl+shift+left" }, function()
   end
 end)
 
-ura.keymap.set({ "ctrl+shift+right" }, function()
+ura.keymap.set({ "ctrl+shift+right", "super+shift+wheeldown" }, function()
   local blk = ura.class.UraBlock:current()[1]
   assert(blk)
   blk.index = blk.index + 1
@@ -123,4 +123,16 @@ ura.hook.add("window-new", function(e)
   local win = ura.class.UraWindow:new(e.id)
   win:set_layout("tiling")
   win:focus()
+end)
+
+ura.hook.add("window-focus", function(e)
+  local win = ura.class.UraWindow:new(e.id)
+  win:set_border_color("#89b4fa")
+  win:set_opacity(1.)
+end)
+
+ura.hook.add("window-unfocus", function(e)
+  local win = ura.class.UraWindow:new(e.id)
+  win:set_border_color("#00000000")
+  win:set_opacity(0.8)
 end)

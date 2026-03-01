@@ -5,7 +5,6 @@
 #include "ura/core/callback.hpp"
 #include "ura/view/client.hpp"
 #include "ura/view/layer_shell.hpp"
-#include "ura/view/view.hpp"
 #include "ura/view/toplevel.hpp"
 #include "ura/seat/seat.hpp"
 #include "ura/seat/text_input.hpp"
@@ -79,7 +78,6 @@ void UraSeat::unfocus() {
     server->seat->cursor->set_xcursor("left_ptr");
   }
   wlr_seat_keyboard_notify_clear_focus(seat);
-  server->lua->emit_hook("focus-change", {});
 }
 
 void UraSeat::focus(UraClient client) {
@@ -93,8 +91,6 @@ void UraSeat::focus(UraClient client) {
   if (focused)
     this->unfocus();
   client.focus();
-  auto server = UraServer::get_instance();
-  server->lua->emit_hook("focus-change", {});
 }
 
 void UraSeat::focus(UraToplevel* toplevel) {

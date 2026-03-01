@@ -176,6 +176,16 @@ function UraWindow:set_opacity(opacity)
   ura.api.set_window_opacity(self.id, opacity)
 end
 
+---@return string|nil
+function UraWindow:border_color()
+  return ura.api.get_window_border_color(self.id)
+end
+
+---@param color string
+function UraWindow:set_border_color(color)
+  ura.api.set_window_border_color(self.id, color)
+end
+
 --- @param x integer
 --- @param y integer
 --- @param opt { duration?: integer, fps?: number }|nil

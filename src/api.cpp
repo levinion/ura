@@ -533,6 +533,20 @@ void set_window_opacity(uint64_t id, float opacity) {
   toplevel->set_opacity(opacity);
 }
 
+void set_window_border_color(uint64_t id, std::string color) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return;
+  toplevel->set_border_color(color);
+}
+
+std::optional<std::string> get_window_border_color(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->border_color;
+}
+
 } // namespace ura::api::core
 
 namespace ura::api::lua {

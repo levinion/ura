@@ -29,7 +29,7 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     this->tags = {};
   }
   xdg_toplevel->base->surface->data = this;
-  this->update_scale();
+  this->set_scale(this->scale());
 
   server->view->toplevels.push_back(this);
 
@@ -202,9 +202,9 @@ void UraToplevel::focus() {
   }
   server->seat->text_input->focus_text_input(surface);
 
-  auto active_border_color =
-    this->get_userdata<std::string>("active_border_color").value_or("#89b4fa");
-  this->set_border_color(active_border_color);
+  auto args = flexible::create_table();
+  args.set("id", this->id());
+  server->lua->emit_hook("window-focus", args);
 }
 
 void UraToplevel::unfocus() {
@@ -223,10 +223,9 @@ void UraToplevel::unfocus() {
 
   this->dismiss_popups();
 
-  auto inactive_border_color =
-    this->get_userdata<std::string>("inactive_border_color")
-      .value_or("#00000000");
-  this->set_border_color(inactive_border_color);
+  auto args = flexible::create_table();
+  args.set("id", this->id());
+  server->lua->emit_hook("window-unfocus", args);
 }
 
 // get toplevel instance from wlr_surface, it asserts the surface's role is xdg_toplevel
@@ -279,6 +278,9 @@ bool UraToplevel::move(int x, int y) {
 }
 
 bool UraToplevel::resize(int width, int height) {
+  if (!this->xdg_toplevel->base->initialized)
+    return false;
+
   // if (this->xdg_toplevel->current.max_width > 0) {
   //   width = std::min(width, this->xdg_toplevel->current.max_width);
   // }
@@ -475,10 +477,6 @@ void UraToplevel::set_scale(double scale) {
   server->view->notify_scale(this->xdg_toplevel->base->surface, scale);
 }
 
-void UraToplevel::update_scale() {
-  this->set_scale(this->scale());
-}
-
 void UraToplevel::set_tags(Vec<std::string>&& tags) {
   auto old_tags = this->tags;
   this->tags = tags;
@@ -535,9 +533,7 @@ void UraToplevel::set_opacity(float opacity) {
 }
 
 void UraToplevel::create_borders() {
-  auto hex = this->get_userdata<std::string>("inactive_border_color")
-               .value_or("#00000000");
-  auto color = util::hex2rgba(hex).value();
+  auto color = util::hex2rgba(this->border_color).value();
   for (int i = 0; i < 4; i++) {
     this->borders[i] =
       wlr_scene_rect_create(this->scene_tree, 0, 0, color.data());
@@ -546,10 +542,12 @@ void UraToplevel::create_borders() {
 }
 
 void UraToplevel::set_border_color(std::string_view color) {
-  if (auto cs = util::hex2rgba(color))
+  if (auto cs = util::hex2rgba(color)) {
+    this->border_color = color;
     for (auto border : this->borders) {
       wlr_scene_rect_set_color(border, cs->data());
     }
+  }
 }
 
 void UraToplevel::move_borders(int x, int y) {

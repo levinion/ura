@@ -55,13 +55,13 @@ public:
   UraOutput* output();
   double scale();
   void set_scale(double scale);
-  void update_scale(); // a shortcut of set_scale(scale())
   void set_tags(Vec<std::string>&& tags);
   bool is_tag_matched();
   float opacity = 1.f;
   void set_opacity(float opacity);
 
   void create_borders();
+  std::string border_color = "#00000000";
   void set_border_color(std::string_view color);
   void resize_borders(int width, int height);
   void move_borders(int x, int y);
