@@ -517,6 +517,22 @@ long time_since_epoch() {
   return std::chrono::steady_clock::now().time_since_epoch().count();
 }
 
+std::optional<float> get_window_opacity(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->opacity;
+}
+
+void set_window_opacity(uint64_t id, float opacity) {
+  if (opacity < 0 || opacity > 1)
+    return;
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return;
+  toplevel->set_opacity(opacity);
+}
+
 } // namespace ura::api::core
 
 namespace ura::api::lua {

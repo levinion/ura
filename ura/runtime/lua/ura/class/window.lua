@@ -166,6 +166,16 @@ function UraWindow:is_focused()
   return ura.api.is_window_focused(self.id)
 end
 
+---@return number|nil
+function UraWindow:opacity()
+  return ura.api.get_window_opacity(self.id)
+end
+
+---@param opacity number
+function UraWindow:set_opacity(opacity)
+  ura.api.set_window_opacity(self.id, opacity)
+end
+
 --- @param x integer
 --- @param y integer
 --- @param opt { duration?: integer, fps?: number }|nil

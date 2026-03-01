@@ -98,6 +98,12 @@ ura.api = {
   --- @param id integer
   --- @return integer|nil
   get_window_lru = function(id) end,
+  --- @param id integer
+  --- @param opacity number
+  set_window_opacity = function(id, opacity) end,
+  --- @param id integer
+  --- @return number|nil
+  get_window_opacity = function(id) end,
 
   -- input
   --- @param rate integer

@@ -170,6 +170,9 @@ void UraToplevel::commit() {
     args.set("id", this->id());
     server->lua->emit_hook("window-new", args);
   }
+
+  // update opacity
+  this->set_opacity(this->opacity);
 }
 
 void UraToplevel::focus() {
@@ -517,6 +520,18 @@ bool UraToplevel::is_tag_matched() {
     }
   }
   return matched;
+}
+
+void UraToplevel::set_opacity(float opacity) {
+  this->opacity = opacity;
+  wlr_scene_node_for_each_buffer(
+    &this->scene_tree->node,
+    [](struct wlr_scene_buffer* buffer, int sx, int sy, void* data) {
+      auto self = static_cast<UraToplevel*>(data);
+      wlr_scene_buffer_set_opacity(buffer, self->opacity);
+    },
+    this
+  );
 }
 
 void UraToplevel::create_borders() {

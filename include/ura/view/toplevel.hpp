@@ -58,6 +58,8 @@ public:
   void update_scale(); // a shortcut of set_scale(scale())
   void set_tags(Vec<std::string>&& tags);
   bool is_tag_matched();
+  float opacity = 1.f;
+  void set_opacity(float opacity);
 
   void create_borders();
   void set_border_color(std::string_view color);
