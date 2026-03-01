@@ -61,7 +61,6 @@ std::optional<uint64_t> get_current_output();
 std::optional<uint64_t> get_output(std::string name);
 flexible::object get_all_outputs();
 std::optional<std::string> get_output_name(uint64_t id);
-void set_output_dpms(uint64_t id, bool flag);
 flexible::object get_output_logical_geometry(uint64_t id);
 flexible::object get_output_usable_geometry(uint64_t id);
 std::optional<float> get_output_scale(uint64_t id);

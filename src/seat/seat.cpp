@@ -108,11 +108,6 @@ void UraSeat::focus(UraLayerShell* layer_shell) {
 void UraSeat::notify_idle_activity() {
   auto server = UraServer::get_instance();
   wlr_idle_notifier_v1_notify_activity(server->idle_notifier, this->seat);
-  if (!server->idle_notifier->WLR_PRIVATE.inhibited)
-    for (auto [_, output] : server->view->outputs) {
-      if (!output->dpms_on)
-        output->set_dpms_mode(true);
-    }
 }
 
 void UraSeat::set_idle_inhibitor(bool flag) {

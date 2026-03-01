@@ -84,7 +84,6 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.get_output", api::core::get_output);
   LUAAPI("api.get_all_outputs", api::core::get_all_outputs);
   LUAAPI("api.get_output_name", api::core::get_output_name);
-  LUAAPI("api.set_output_dpms", api::core::set_output_dpms);
   LUAAPI("api.set_output_tags", api::core::set_output_tags);
   LUAAPI("api.get_output_tags", api::core::get_output_tags);
   LUAAPI(

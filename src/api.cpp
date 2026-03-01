@@ -207,12 +207,6 @@ std::string expand(std::string path) {
   return expanduser(expandvars(path));
 }
 
-void set_output_dpms(uint64_t id, bool flag) {
-  auto output = UraOutput::from(id);
-  if (output)
-    output->set_dpms_mode(flag);
-}
-
 void notify_idle_activity() {
   auto server = UraServer::get_instance();
   server->seat->notify_idle_activity();

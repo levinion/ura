@@ -242,13 +242,6 @@ void UraOutput::set_dpms_mode(bool flag) {
   this->dpms_on = flag;
   wlr_output_state_set_enabled(&wlr_state, flag);
   wlr_output_commit_state(this->output, &wlr_state);
-
-  auto server = UraServer::get_instance();
-  wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, true);
-  server->dispatcher->set_timeout(
-    [=]() { wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, false); },
-    std::chrono::milliseconds(1000)
-  );
 }
 
 void UraOutput::update_background() {

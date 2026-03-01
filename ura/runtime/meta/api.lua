@@ -132,9 +132,6 @@ ura.api = {
   --- @return string|nil
   get_output_name = function() end,
   --- @param id integer
-  --- @param flag boolean
-  set_output_dpms = function(id, flag) end,
-  --- @param id integer
   --- @return table|nil
   get_output_logical_geometry = function(id) end,
   --- @param id integer
