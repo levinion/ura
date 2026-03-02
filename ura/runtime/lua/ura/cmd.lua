@@ -13,7 +13,7 @@ local function focus_in_direction(direction)
 
   local w = ura.class.UraWindow:current()
   assert(w)
-  if w:layout() == "fullscreen" then
+  if w:userdata().focus_exclusive == true then
     return
   end
   local geo = w:output():logical_geometry()

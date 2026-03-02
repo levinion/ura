@@ -22,10 +22,16 @@ function M.setup()
     if e.to == "fullscreen" then
       win:set_z_index(ura.g.layer.fullscreen)
       win:set_fullscreen(true)
+      win:update_userdata(function(t)
+        t.focus_exclusive = true
+      end)
       apply(win)
       reset_fullscreen(win)
     elseif e.from == "fullscreen" then
       win:set_fullscreen(false)
+      win:update_userdata(function(t)
+        t.focus_exclusive = nil
+      end)
     end
   end, { ns = "layout.fullscreen" })
 
