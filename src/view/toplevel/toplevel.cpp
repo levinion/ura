@@ -155,12 +155,10 @@ void UraToplevel::commit() {
     if (this->xdg_toplevel->base->current.geometry.width == 0
         || this->xdg_toplevel->base->current.geometry.height == 0) {
       this->resize(800, 600);
-      return;
+    } else {
+      this->geometry.width = this->xdg_toplevel->base->current.geometry.width;
+      this->geometry.height = this->xdg_toplevel->base->current.geometry.height;
     }
-
-    // init geometry with given value then put it center
-    this->geometry.width = this->xdg_toplevel->base->current.geometry.width;
-    this->geometry.height = this->xdg_toplevel->base->current.geometry.height;
     this->center();
     this->resize_borders(this->geometry.width, this->geometry.height);
     this->move_borders(this->geometry.x, this->geometry.y);
@@ -325,30 +323,38 @@ void UraToplevel::close() {
 void UraToplevel::map() {
   if (this->mapped())
     return;
+
+  auto server = UraServer::get_instance();
+
+  auto args = flexible::create_table();
+  args.add("id", this->id());
+  server->lua->emit_hook("pre-window-map", args);
+
   wlr_scene_node_set_enabled(&this->scene_tree->node, true);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
   this->set_border_invisible(true);
 
-  auto server = UraServer::get_instance();
-  auto args = flexible::create_table();
-  args.add("id", this->id());
   server->lua->emit_hook("window-map", args);
 }
 
 void UraToplevel::unmap() {
   if (!this->mapped())
     return;
+
+  auto server = UraServer::get_instance();
+
+  auto args = flexible::create_table();
+  args.add("id", this->id());
+  server->lua->emit_hook("pre-window-unmap", args);
+
   wlr_scene_node_set_enabled(&this->scene_tree->node, false);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
   this->set_border_invisible(false);
 
-  auto server = UraServer::get_instance();
   if (server->seat->focused_toplevel() == this) {
     server->seat->unfocus();
   }
 
-  auto args = flexible::create_table();
-  args.add("id", this->id());
   server->lua->emit_hook("window-unmap", args);
 }
 

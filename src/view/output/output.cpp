@@ -1,3 +1,4 @@
+#include "ura/view/output.hpp"
 #include "ura/util/flexible.hpp"
 #include "ura/core/server.hpp"
 #include "ura/core/runtime.hpp"
@@ -9,8 +10,6 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
-#include <chrono>
-#include <functional>
 #include <ranges>
 #include "ura/view/view.hpp"
 #include "ura/core/lua.hpp"
@@ -68,12 +67,15 @@ void UraOutput::init(wlr_output* _wlr_output) {
     scene_output
   );
 
-  auto resume = server->view->outputs.contains(this->name);
-  server->view->outputs[name] = this;
+  auto resume = server->view->output_contexts.contains(this->name);
+  server->view->outputs[this->name] = this;
+  if (resume) {
+    this->restore_context();
+  }
 
   auto configuration = wlr_output_configuration_v1_create();
-  for (auto output : server->view->outputs) {
-    wlr_output_configuration_head_v1_create(configuration, this->output);
+  for (auto [_, output] : server->view->outputs) {
+    wlr_output_configuration_head_v1_create(configuration, output->output);
   }
   wlr_output_manager_v1_set_configuration(
     server->output_manager,
@@ -134,6 +136,7 @@ void UraOutput::commit() {
 
 void UraOutput::destroy() {
   auto server = UraServer::get_instance();
+  this->save_context();
   server->runtime->remove(this);
   server->view->outputs.erase(this->name);
   server->globals.erase(this->id());
@@ -239,7 +242,6 @@ Vec4<int> UraOutput::logical_geometry() {
 
 void UraOutput::set_dpms_mode(bool flag) {
   wlr_output_state wlr_state {};
-  this->dpms_on = flag;
   wlr_output_state_set_enabled(&wlr_state, flag);
   wlr_output_commit_state(this->output, &wlr_state);
 }
@@ -307,6 +309,47 @@ void UraOutput::focus_lru() {
       return a->lru < b->lru;
     });
   server->seat->focus(*toplevel);
+}
+
+void UraOutput::apply(wlr_output_configuration_v1* config) {
+  size_t states_len;
+  wlr_backend_output_state* states =
+    wlr_output_configuration_v1_build_state(config, &states_len);
+  if (!states) {
+    wlr_output_configuration_v1_send_failed(config);
+    wlr_output_configuration_v1_destroy(config);
+    return;
+  }
+  auto server = UraServer::get_instance();
+  if (wlr_backend_commit(server->backend, states, states_len)) {
+    wlr_output_configuration_v1_send_succeeded(config);
+    wlr_output_manager_v1_set_configuration(server->output_manager, config);
+    this->configure_layers();
+    this->update_background();
+  } else {
+    wlr_output_configuration_v1_send_failed(config);
+    wlr_output_configuration_v1_destroy(config);
+  }
+  delete states;
+}
+
+void UraOutput::save_context() {
+  auto server = UraServer::get_instance();
+  server->view->output_contexts[this->name] = this->context();
+}
+
+void UraOutput::restore_context() {
+  auto server = UraServer::get_instance();
+  assert(server->view->output_contexts.contains(this->name));
+  auto& context = server->view->output_contexts[this->name];
+  assert(context.has_value());
+  this->tags = context.tags;
+}
+
+UraOutputContext UraOutput::context() {
+  UraOutputContext ctx;
+  ctx.tags = this->tags;
+  return ctx;
 }
 
 } // namespace ura

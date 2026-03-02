@@ -25,6 +25,7 @@ public:
   wlr_scene* scene;
   std::map<int, wlr_scene_tree*> layers;
   absl::flat_hash_map<std::string, UraOutput*> outputs;
+  absl::flat_hash_map<std::string, UraOutputContext> output_contexts;
   Vec<UraToplevel*> toplevels;
 
   static std::unique_ptr<UraView> init();

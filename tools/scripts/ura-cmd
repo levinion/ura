@@ -112,32 +112,33 @@ case "$1" in
   fi
   ;;
 "show-hooks")
-  ura-shell -c "print(ura.api.to_json(ura.hook.all()))"
+  ura-shell -c "print(ura.api.to_json(ura.hook._HOOKS))"
   ;;
 "show-windows")
   ura-shell -c '
-local t = {}
 for _, w in ipairs(ura.class.UraWindow:all()) do
-  t[string.format("%.0f", w.id)] = {
-		app_id = w:app_id(),
-		title = w:title(),
-		output = w:output():name(),
-		geometry = w:geometry(),
-		z_index = w:z_index(),
-		is_fullscreen = w:is_fullscreen(),
-    is_resizing = w:is_resizing(),
-    is_maximized = w:is_maximized(),
-		userdata = w:userdata(),
-		tags = w:tags(),
-    is_mapped = w:is_mapped(),
-    is_focused = w:is_focused(),
-    lru = w:lru(),
-    opacity = w:opacity(),
-    border_color = w:border_color()
-	}
-end
-print(ura.api.to_json(t))
-  '
+  print(string.format("%.0f", w.id))
+end' | xargs -I '{}' ura-shell -c '
+local id = {}
+local w = ura.class.UraWindow:new(id)
+print(ura.api.to_json({
+  id = id,
+  app_id = w:app_id(),
+  title = w:title(),
+  output = w:output():name(),
+  geometry = w:geometry(),
+  z_index = w:z_index(),
+  is_fullscreen = w:is_fullscreen(),
+  is_resizing = w:is_resizing(),
+  is_maximized = w:is_maximized(),
+  userdata = w:userdata(),
+  tags = w:tags(),
+  is_mapped = w:is_mapped(),
+  is_focused = w:is_focused(),
+  lru = w:lru(),
+  opacity = w:opacity(),
+  border_color = w:border_color()
+}))' | jq -s '.'
   ;;
 "show-outputs")
   ura-shell -c '
