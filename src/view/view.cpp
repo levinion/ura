@@ -89,4 +89,13 @@ void UraView::notify_scale(wlr_surface* surface, double scale) {
   wlr_surface_set_preferred_buffer_scale(surface, ceil(scale));
 }
 
+Vec<UraLayerShell*> UraView::layer_shells() {
+  Vec<UraLayerShell*> layer_shells;
+  for (auto [_, output] : this->outputs) {
+    auto shells = output->layer_shells();
+    layer_shells.insert(layer_shells.begin(), shells.begin(), shells.end());
+  }
+  return layer_shells;
+}
+
 } // namespace ura

@@ -36,24 +36,25 @@ public:
 
   void set_dpms_mode(bool flag);
 
-  Vec<UraLayerShell*> bottom_surfaces;
-  Vec<UraLayerShell*> background_surfaces;
-  Vec<UraLayerShell*> top_surfaces;
-  Vec<UraLayerShell*> overlay_surfaces;
   Vec<UraPopup*> popups;
 
   Vec4<int> usable_area;
   UraSessionLockSurface* session_lock_surface = nullptr;
 
-  Vec<UraLayerShell*>& get_layer_list_by_type(zwlr_layer_shell_v1_layer type);
+  Vec<UraLayerShell*> layer_shells();
+  Vec<UraLayerShell*>& layer_shells_from_layer(zwlr_layer_shell_v1_layer type);
   bool configure_layers();
 
   void set_tags(Vec<std::string>&& tags);
-  void focus_lru();
 
 private:
   wlr_scene_rect* background;
   void update_background();
+
+  Vec<UraLayerShell*> bottom_surfaces;
+  Vec<UraLayerShell*> background_surfaces;
+  Vec<UraLayerShell*> top_surfaces;
+  Vec<UraLayerShell*> overlay_surfaces;
 
   void configure_layer(
     Vec<UraLayerShell*>& list,

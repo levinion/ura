@@ -7,7 +7,6 @@
 #include "ura/util/rgb.hpp"
 #include "ura/util/vec.hpp"
 #include "ura/view/layer_shell.hpp"
-#include <algorithm>
 #include <array>
 #include <cassert>
 #include <ranges>
@@ -143,7 +142,7 @@ void UraOutput::destroy() {
 }
 
 Vec<UraLayerShell*>&
-UraOutput::get_layer_list_by_type(zwlr_layer_shell_v1_layer type) {
+UraOutput::layer_shells_from_layer(zwlr_layer_shell_v1_layer type) {
   switch (type) {
     case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
       return this->background_surfaces;
@@ -159,6 +158,18 @@ UraOutput::get_layer_list_by_type(zwlr_layer_shell_v1_layer type) {
       break;
   }
   std::unreachable();
+}
+
+Vec<UraLayerShell*> UraOutput::layer_shells() {
+  Vec<UraLayerShell*> layer_shells;
+  for (auto layer : { ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND,
+                      ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM,
+                      ZWLR_LAYER_SHELL_V1_LAYER_TOP,
+                      ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY }) {
+    auto layers = this->layer_shells_from_layer(layer);
+    layer_shells.insert(layer_shells.begin(), layers.begin(), layers.end());
+  }
+  return layer_shells;
 }
 
 void UraOutput::configure_layer(
@@ -280,7 +291,7 @@ void UraOutput::set_tags(Vec<std::string>&& tags) {
       toplevel->unmap();
     }
   }
-  this->focus_lru();
+  server->seat->focus_lru();
 
   auto args = flexible::create_table();
   args.add("id", this->id());
@@ -293,22 +304,6 @@ void UraOutput::set_tags(Vec<std::string>&& tags) {
     sol::as_table(std::vector(this->tags.begin(), this->tags.end()))
   );
   server->lua->emit_hook("output-tags-change", args);
-}
-
-void UraOutput::focus_lru() {
-  auto server = UraServer::get_instance();
-  auto toplevels = server->view->toplevels
-    | std::views::filter([](auto v) { return v->mapped(); })
-    | std::ranges::to<std::vector<UraToplevel*>>();
-  if (toplevels.empty()) {
-    server->seat->unfocus();
-    return;
-  }
-  auto toplevel =
-    std::max_element(toplevels.begin(), toplevels.end(), [](auto a, auto b) {
-      return a->lru < b->lru;
-    });
-  server->seat->focus(*toplevel);
 }
 
 void UraOutput::apply(wlr_output_configuration_v1* config) {

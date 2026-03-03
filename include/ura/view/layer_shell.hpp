@@ -14,6 +14,7 @@ public:
   wlr_scene_tree* scene_tree;
   std::string output;
   zwlr_layer_shell_v1_layer layer;
+  uint64_t lru;
 
   void init(wlr_layer_surface_v1* layer_surface);
   static UraLayerShell* from(wlr_surface* surface);
@@ -25,6 +26,7 @@ public:
   void commit();
   void destroy();
   uint64_t id();
+  bool focusable();
 
 private:
   void dismiss_popups();

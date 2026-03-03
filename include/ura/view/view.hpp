@@ -34,6 +34,7 @@ public:
   UraOutput* get_output_by_name(std::string_view name);
   std::optional<UraClient> foreground_client();
   wlr_scene_tree* get_layer_by_type(zwlr_layer_shell_v1_layer type);
+  Vec<UraLayerShell*> layer_shells();
   void notify_scale(wlr_surface* surface, double scale);
 };
 } // namespace ura

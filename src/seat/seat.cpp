@@ -7,8 +7,11 @@
 #include "ura/view/layer_shell.hpp"
 #include "ura/view/toplevel.hpp"
 #include "ura/seat/seat.hpp"
+#include <algorithm>
+#include <ranges>
 #include "ura/seat/text_input.hpp"
 #include "ura/core/lua.hpp"
+#include "ura/view/view.hpp"
 
 namespace ura {
 void UraSeat::init() {
@@ -99,6 +102,36 @@ void UraSeat::focus(UraToplevel* toplevel) {
 
 void UraSeat::focus(UraLayerShell* layer_shell) {
   this->focus(UraClient::from(layer_shell));
+}
+
+void UraSeat::focus_lru() {
+  auto server = UraServer::get_instance();
+  auto toplevels = server->view->toplevels
+    | std::views::filter([](auto v) { return v->mapped(); })
+    | std::ranges::to<std::vector<UraToplevel*>>();
+  auto toplevel =
+    std::max_element(toplevels.begin(), toplevels.end(), [](auto a, auto b) {
+      return a->lru < b->lru;
+    });
+  auto layer_shells = server->view->layer_shells()
+    | std::views::filter([](auto v) { return v->focusable(); })
+    | std::ranges::to<std::vector<UraLayerShell*>>();
+  auto layer_shell = std::max_element(
+    layer_shells.begin(),
+    layer_shells.end(),
+    [](auto a, auto b) { return a->lru < b->lru; }
+  );
+  if (toplevel != toplevels.end() && layer_shell != layer_shells.end()) {
+    if ((*toplevel)->lru > (*layer_shell)->lru)
+      server->seat->focus(*toplevel);
+    else {
+      server->seat->focus(*layer_shell);
+    }
+  } else if (toplevel != toplevels.end()) {
+    server->seat->focus(*toplevel);
+  } else if (layer_shell != layer_shells.end()) {
+    server->seat->focus(*layer_shell);
+  }
 }
 
 void UraSeat::notify_idle_activity() {

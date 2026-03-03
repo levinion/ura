@@ -31,6 +31,7 @@ public:
   void focus(UraClient client);
   void focus(UraToplevel* toplevel);
   void focus(UraLayerShell* layer_shell);
+  void focus_lru();
   void notify_idle_activity();
   void set_idle_inhibitor(bool flag);
   uint32_t get_modifiers();

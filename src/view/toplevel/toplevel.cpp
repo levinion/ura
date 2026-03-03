@@ -108,10 +108,7 @@ void UraToplevel::destroy() {
   this->destroying = true;
   server->view->toplevels.remove(this);
   if (this->is_focused()) {
-    auto output = this->output();
-    if (!output)
-      return;
-    output->focus_lru();
+    server->seat->focus_lru();
   }
   server->runtime->remove(this);
   wlr_foreign_toplevel_handle_v1_destroy(this->foreign_handle);
@@ -183,8 +180,6 @@ void UraToplevel::focus() {
   auto seat = server->seat->seat;
   auto surface = this->xdg_toplevel->base->surface;
 
-  this->lru = std::chrono::steady_clock::now().time_since_epoch().count();
-
   wlr_scene_node_raise_to_top(&this->scene_tree->node);
   wlr_xdg_toplevel_set_activated(this->xdg_toplevel, true);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
@@ -199,6 +194,7 @@ void UraToplevel::focus() {
     );
   }
   server->seat->text_input->focus_text_input(surface);
+  this->lru = std::chrono::steady_clock::now().time_since_epoch().count();
 
   auto args = flexible::create_table();
   args.set("id", this->id());
@@ -494,9 +490,7 @@ void UraToplevel::set_tags(Vec<std::string>&& tags) {
     server->seat->focus(this);
   } else {
     this->unmap();
-    auto output = this->output();
-    if (output)
-      output->focus_lru();
+    server->seat->focus_lru();
   }
 
   auto args = flexible::create_table();

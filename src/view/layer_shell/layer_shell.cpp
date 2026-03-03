@@ -58,7 +58,7 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
   );
 
   // add this shell to output's layer
-  auto& list = output->get_layer_list_by_type(layer_surface->pending.layer);
+  auto& list = output->layer_shells_from_layer(layer_surface->pending.layer);
   list.push_back(this);
 }
 
@@ -69,7 +69,7 @@ UraLayerShell* UraLayerShell::from(wlr_surface* surface) {
 void UraLayerShell::focus() {
   auto server = UraServer::get_instance();
   auto keyboard = wlr_seat_get_keyboard(server->seat->seat);
-  if (keyboard) {
+  if (keyboard)
     wlr_seat_keyboard_notify_enter(
       server->seat->seat,
       this->layer_surface->surface,
@@ -77,7 +77,7 @@ void UraLayerShell::focus() {
       keyboard->num_keycodes,
       &keyboard->modifiers
     );
-  }
+  this->lru = std::chrono::steady_clock::now().time_since_epoch().count();
 }
 
 void UraLayerShell::unfocus() {
@@ -109,9 +109,9 @@ void UraLayerShell::commit() {
       && this->layer_surface->current.committed
         & WLR_LAYER_SURFACE_V1_STATE_LAYER) {
     // put the surface under proper layer
-    output->get_layer_list_by_type(this->layer).remove(this);
+    output->layer_shells_from_layer(this->layer).remove(this);
     this->layer = this->layer_surface->current.layer;
-    output->get_layer_list_by_type(this->layer).push_back(this);
+    output->layer_shells_from_layer(this->layer).push_back(this);
     auto layer = server->view->get_layer_by_type(this->layer);
     wlr_scene_node_reparent(&this->scene_tree->node, layer);
   }
@@ -132,9 +132,7 @@ void UraLayerShell::commit() {
     output->configure_layers();
   }
 
-  if (this->layer_surface->initial_commit
-      && this->layer_surface->current.keyboard_interactive
-        != ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE) {
+  if (this->layer_surface->initial_commit && this->focusable()) {
     server->seat->focus(this);
   }
 }
@@ -146,11 +144,10 @@ void UraLayerShell::destroy() {
   auto output = server->view->get_output_by_name(this->output);
   if (!output)
     return;
-  auto& layer = output->get_layer_list_by_type(this->layer);
+  auto& layer = output->layer_shells_from_layer(this->layer);
   layer.remove(this);
-  if (this->layer_surface->current.keyboard_interactive
-      != ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE) {
-    output->focus_lru();
+  if (this->focusable()) {
+    server->seat->focus_lru();
   }
   this->dismiss_popups();
   output->configure_layers();
@@ -167,6 +164,11 @@ void UraLayerShell::dismiss_popups() {
 
 uint64_t UraLayerShell::id() {
   return reinterpret_cast<uint64_t>(this);
+}
+
+bool UraLayerShell::focusable() {
+  return this->layer_surface->current.keyboard_interactive
+    != ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE;
 }
 
 } // namespace ura
