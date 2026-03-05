@@ -1,8 +1,6 @@
 local M = {}
 
----@param opt { blacklist: table<string> }
-local function focus_in_direction(direction, opt)
-  local blacklist = opt and opt.blacklist or {}
+local function focus_in_direction(direction)
   local function get_distance(current_geo, target_geo)
     local dx = current_geo.x - target_geo.x
     local dy = current_geo.y - target_geo.y
@@ -21,13 +19,7 @@ local function focus_in_direction(direction, opt)
   local geo = w:output():logical_geometry()
   local candidates = {}
   for i, win in ipairs(ura.class.UraWindow:from_tags(w:output():tags())) do
-    if
-      ura.fn.find(win:tags(), function(v1)
-        return ura.fn.find(blacklist, function(v2)
-          return v1 == v2
-        end) ~= nil
-      end) == nil
-    then
+    if win:userdata().nofocus ~= true then
       table.insert(candidates, { index = i, instance = win, dist = get_distance(win:geometry(), geo) })
     end
   end
@@ -44,24 +36,20 @@ local function focus_in_direction(direction, opt)
   end
 end
 
----@param opt table
-function M.focus_left(opt)
-  focus_in_direction("left", opt)
+function M.focus_left()
+  focus_in_direction("left")
 end
 
----@param opt table
-function M.focus_right(opt)
-  focus_in_direction("right", opt)
+function M.focus_right()
+  focus_in_direction("right")
 end
 
----@param opt table
-function M.focus_up(opt)
-  focus_in_direction("up", opt)
+function M.focus_up()
+  focus_in_direction("up")
 end
 
----@param opt table
-function M.focus_down(opt)
-  focus_in_direction("down", opt)
+function M.focus_down()
+  focus_in_direction("down")
 end
 
 function M.reload()
