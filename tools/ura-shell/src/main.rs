@@ -1,6 +1,10 @@
 use anyhow::{Result, anyhow, bail};
 use clap::{CommandFactory, Parser};
-use std::{path::PathBuf, process::exit};
+use std::{
+    io::{IsTerminal, Read},
+    path::PathBuf,
+    process::exit,
+};
 
 #[allow(clippy::single_component_path_imports)]
 use wayland_client;
@@ -65,6 +69,12 @@ impl Client {
         self.event_queue.blocking_dispatch(&mut self.state)?;
         Ok(())
     }
+
+    fn run(mut self) -> Result<()> {
+        loop {
+            self.dispatch()?;
+        }
+    }
 }
 
 struct State {
@@ -111,23 +121,31 @@ fn main() -> Result<()> {
     let mut cmd = Cli::command();
     let cli = Cli::parse();
 
-    if cli.path.is_none() && cli.code.is_none() {
-        cmd.print_help()?;
-        return Ok(());
-    }
-
-    let mut client = Client::new()?;
-
     match cli.code {
-        Some(code) => client.execute(code, cli.args),
-        None => {
-            if let Some(path) = cli.path {
-                client.execute_file(path, cli.args)?
-            };
+        Some(code) => {
+            let client = Client::new()?;
+            client.execute(code, cli.args);
+            client.run()
         }
-    }
-
-    loop {
-        client.dispatch()?;
+        None => match cli.path {
+            Some(path) => {
+                let client = Client::new()?;
+                client.execute_file(path, cli.args)?;
+                client.run()
+            }
+            None => {
+                if std::io::stdin().is_terminal() {
+                    cmd.print_help()?;
+                    Ok(())
+                } else {
+                    // piped
+                    let mut buf = String::new();
+                    std::io::stdin().read_to_string(&mut buf)?;
+                    let client = Client::new()?;
+                    client.execute(buf, cli.args);
+                    client.run()
+                }
+            }
+        },
     }
 }

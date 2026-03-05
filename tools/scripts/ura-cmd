@@ -97,20 +97,6 @@ case "$1" in
     xargs -n1 basename |
     sed 's/ura-//' | sort | uniq
   ;;
-"set-pointer-accel-profile")
-  shift
-  if [[ -n "$1" ]]; then
-    if [[ -n "$2" ]]; then
-      ura-shell -c "ura.api.set_pointer_accel_profile(\"$1\", \"$2\")"
-    else
-      echo 'ura-cmd set-pointer-accel-profile <profile> <glob>'
-      exit 1
-    fi
-  else
-    echo 'ura-cmd set-pointer-accel-profile <profile> <glob>'
-    exit 1
-  fi
-  ;;
 "show-hooks")
   ura-shell -c "print(ura.api.to_json(ura.hook._HOOKS))"
   ;;
