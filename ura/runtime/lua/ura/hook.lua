@@ -2,12 +2,17 @@ local M = {}
 
 M._hooks = {}
 M._HOOKS = {}
+local id = 0
 
 ---@param name string
 ---@param f fun(e: table):any
 ---@param opt table|nil
+---@return integer
 function M.add(name, f, opt)
-  local hook = { func = f }
+  id = id + 1
+
+  local hook = { func = f, id = id }
+
   if opt ~= nil and ura.fn.validate(opt, "ns", "string") then
     hook.ns = opt.ns
   else
@@ -43,13 +48,21 @@ function M.add(name, f, opt)
   table.sort(M._HOOKS[name], function(h1, h2)
     return h1.priority < h2.priority
   end)
+
+  return id
 end
 
----@param ns string
-function M.remove(ns)
+---@param opt table
+function M.remove(opt)
   for name, hook in pairs(M._HOOKS) do
     M._HOOKS[name] = ura.fn.filter(hook, function(_, value)
-      return value.ns ~= ns
+      if opt.ns and value.ns == opt.ns then
+        return false
+      end
+      if opt.id and value.id == opt.id then
+        return false
+      end
+      return true
     end)
     if #M._HOOKS[name] == 0 then
       M._HOOKS[name] = nil

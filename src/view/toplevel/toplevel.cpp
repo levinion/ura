@@ -171,9 +171,8 @@ void UraToplevel::commit() {
 }
 
 void UraToplevel::focus() {
-  if (!this->xdg_toplevel->base->initialized)
-    return;
-  if (this->is_focused())
+  if (!this->xdg_toplevel->base->initialized || this->is_focused()
+      || !this->mapped())
     return;
 
   auto server = UraServer::get_instance();
@@ -317,7 +316,7 @@ void UraToplevel::close() {
 }
 
 void UraToplevel::map() {
-  if (this->mapped())
+  if (this->mapped() || !this->is_tag_matched())
     return;
 
   auto server = UraServer::get_instance();
