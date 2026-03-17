@@ -17,12 +17,12 @@ json to_json(object& obj) {
     return {};
   if (obj.is<bool>())
     return obj.as<bool>();
+  if (obj.is<double>() && obj.is<int64_t>())
+    return obj.as<double>();
   if (obj.is<uint64_t>())
     return obj.as<uint64_t>();
-  if (obj.is<int>())
-    return obj.as<int>();
-  if (obj.is<double>())
-    return obj.as<double>();
+  if (obj.is<int64_t>())
+    return obj.as<int64_t>();
   if (obj.is<std::string>())
     return obj.as<std::string>();
   if (obj.is<sol::function>())
@@ -41,8 +41,8 @@ json to_json(object& obj) {
       for (auto& [key, v] : src) {
         if (key.is<std::string>())
           dst[key.as<std::string>()] = to_json(v);
-        if (key.is<int>()) {
-          dst[std::to_string(key.as<int>())] = to_json(v);
+        if (key.is<int64_t>()) {
+          dst[std::to_string(key.as<int64_t>())] = to_json(v);
         }
       }
       return dst;
