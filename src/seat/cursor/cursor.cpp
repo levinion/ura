@@ -178,7 +178,7 @@ void UraCursor::process_motion(
       }
     };
 
-    auto delay = server->lua->get_option<int64_t>("focus_delay").value_or(5.);
+    auto delay = server->lua->get_option<int64_t>("focus_delay").value_or(5);
     if (delay <= 0) {
       callback();
     } else {
