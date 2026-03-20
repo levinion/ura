@@ -274,6 +274,9 @@ bool UraToplevel::resize(int width, int height) {
   if (!this->xdg_toplevel->base->initialized)
     return false;
 
+  if (width <= 0 || height <= 0)
+    return false;
+
   // if (this->xdg_toplevel->current.max_width > 0) {
   //   width = std::min(width, this->xdg_toplevel->current.max_width);
   // }
@@ -286,9 +289,6 @@ bool UraToplevel::resize(int width, int height) {
   if (this->xdg_toplevel->current.min_height > 0) {
     height = std::max(height, this->xdg_toplevel->current.min_height);
   }
-
-  if (width <= 0 || height <= 0)
-    return false;
 
   if (width == this->geometry.width && height == this->geometry.height)
     return false;

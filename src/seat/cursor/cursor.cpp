@@ -178,7 +178,7 @@ void UraCursor::process_motion(
       }
     };
 
-    auto delay = server->lua->get_option<double>("focus_delay").value_or(5.);
+    auto delay = server->lua->get_option<int64_t>("focus_delay").value_or(5.);
     if (delay <= 0) {
       callback();
     } else {
@@ -186,7 +186,7 @@ void UraCursor::process_motion(
       server->dispatcher->clear_timer(timer);
       timer = server->dispatcher->set_timeout(
         callback,
-        std::chrono::milliseconds(2) // delay
+        std::chrono::milliseconds(delay)
       );
     }
   }

@@ -6,6 +6,7 @@
 #include "ipc.hpp"
 #include <absl/container/flat_hash_map.h>
 #include "ura/core/global.hpp"
+#include "ura/core/log.hpp"
 
 namespace ura {
 // extern
@@ -54,6 +55,7 @@ public:
   std::unique_ptr<UraSeat> seat;
   std::unique_ptr<UraView> view;
   std::unique_ptr<UraDispatcher<128>> dispatcher;
+  std::unique_ptr<UraLogger> logger;
 
   absl::flat_hash_map<uint64_t, UraGlobal> globals;
 

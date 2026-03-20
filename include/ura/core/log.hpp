@@ -8,7 +8,7 @@
 #include <utility>
 #include "ura/ura.hpp" // IWYU pragma: keep
 
-namespace ura::log {
+namespace ura {
 
 class UraLogLevel {
 public:
@@ -80,8 +80,22 @@ private:
   Level level = Level::Info;
 };
 
-void init();
-void destroy();
+class UraLogger {
+public:
+  static std::unique_ptr<UraLogger> init();
+  void destroy();
+
+  ~UraLogger() {
+    this->destroy();
+  }
+
+  UraLogLevel level;
+  std::shared_ptr<spdlog::logger> spdlog_logger;
+};
+
+} // namespace ura
+
+namespace ura::log {
 
 inline void notify(const std::string& summary, const std::string& body) {
   auto notification = notify_notification_new(summary.c_str(), body.c_str(), 0);

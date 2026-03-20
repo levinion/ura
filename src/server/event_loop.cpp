@@ -14,8 +14,8 @@
 namespace ura {
 
 UraServer* UraServer::init() {
-  log::init();
   this->setup_signal();
+  this->logger = UraLogger::init();
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
   this->dispatcher = UraDispatcher<128>::init();
@@ -315,7 +315,6 @@ void UraServer::destroy() {
   wlr_backend_destroy(this->backend);
   this->runtime->remove(nullptr);
   wl_display_destroy(this->display);
-  log::destroy();
 }
 
 UraServer::~UraServer() {
