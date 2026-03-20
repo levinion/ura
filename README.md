@@ -18,7 +18,7 @@ Lua is a general-purpose language supported by many editors and LSPs (like `lua_
 
 Dependencies include:
 
-- [wlroots-git](https://aur.archlinux.org/packages/wlroots-git)
+- wlroots0.19
 - [luajit](http://luajit.org/)
 - [libnotify](https://gitlab.gnome.org/GNOME/libnotify)
 - [spdlog](https://github.com/gabime/spdlog)
@@ -120,7 +120,7 @@ ura.hook.add("window-new", function(e)
 	local win = ura.class.UraWindow:new(e.id)
 	local app_id = win:app_id()
 	assert(app_id)
-	if string.match(app_id, "fzfmenu") then
+	if app_id == "fzfmenu" then
 		win:set_layout("floating")
 		win:resize(1000, 600)
 		win:center()

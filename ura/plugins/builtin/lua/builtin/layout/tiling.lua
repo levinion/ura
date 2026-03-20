@@ -2,6 +2,7 @@ local M = {}
 
 ---@param opt table?
 function M.setup(opt)
+  ---@param win UraWindow
   local function apply(win)
     if not win:is_mapped() then
       return
@@ -15,10 +16,17 @@ function M.setup(opt)
     assert(windows)
 
     local tiling_windows = {}
+    local weights = 0
 
     for _, w in ipairs(windows) do
       if w:layout() == "tiling" then
         table.insert(tiling_windows, w)
+        if not w:userdata().weight then
+          w:update_userdata(function(t)
+            t.weight = 1
+          end)
+        end
+        weights = weights + w:userdata().weight
       end
     end
 
@@ -27,15 +35,16 @@ function M.setup(opt)
       return
     end
 
-    local index = -1
-    for i, w in ipairs(tiling_windows) do
-      if w == win then
-        index = i - 1
+    local pre_weights = 0
+    local index = 0
+    for _, w in ipairs(tiling_windows) do
+      if w ~= win then
+        pre_weights = pre_weights + w:userdata().weight
+        index = index + 1
+      else
         break
       end
     end
-
-    assert(index ~= -1)
 
     local outer_r = opt and opt.outer_r or 10
     local outer_l = opt and opt.outer_l or 10
@@ -44,9 +53,10 @@ function M.setup(opt)
     local inner = opt and opt.inner or 10
 
     local gaps = sum - 1
-    local w = (usable.width - (outer_r + outer_l) - inner * gaps) / sum
+    local available_width = usable.width - (outer_r + outer_l) - inner * gaps
+    local w = available_width / (weights / win:userdata().weight)
     local h = usable.height - (outer_t + outer_b)
-    local x = usable.x + outer_l + (w + inner) * index
+    local x = usable.x + outer_l + available_width * (pre_weights / weights) + (index * inner)
     local y = usable.y + outer_t
     win:resize(w, h)
     win:move(x, y)

@@ -10,7 +10,7 @@ RUN groupadd -g "${GID}" dev \
 
 RUN pacman -Syu --noconfirm \
     && pacman -S --noconfirm \
-      git libnotify spdlog luajit wayland-protocols \
+      git libnotify spdlog luajit wlroots0.19 wayland-protocols \
       cmake ninja sccache nlohmann-json cli11 cargo abseil-cpp
 
 USER dev
@@ -23,7 +23,7 @@ RUN git clone https://aur.archlinux.org/pikaur.git\
     && cd pikaur \
     && makepkg -si --noconfirm
 
-RUN pikaur -S --noconfirm sol2 wlroots-git
+RUN pikaur -S --noconfirm sol2
 
 WORKDIR /home/dev/ura
 

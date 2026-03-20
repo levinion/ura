@@ -294,7 +294,7 @@ void UraOutput::set_tags(Vec<std::string>&& tags) {
   server->seat->focus_lru();
 
   auto args = flexible::create_table();
-  args.add("id", this->id());
+  args.set("id", this->id());
   args.set(
     "from",
     sol::as_table(std::vector(old_tags.begin(), old_tags.end()))
@@ -337,7 +337,6 @@ void UraOutput::restore_context() {
   auto server = UraServer::get_instance();
   assert(server->view->output_contexts.contains(this->name));
   auto& context = server->view->output_contexts[this->name];
-  assert(context.has_value());
   this->tags = context.tags;
 }
 

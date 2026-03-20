@@ -322,14 +322,18 @@ void UraToplevel::map() {
   auto server = UraServer::get_instance();
 
   auto args = flexible::create_table();
-  args.add("id", this->id());
+  args.set("id", this->id());
+  args.set("initial", this->initial_map);
+
   server->lua->emit_hook("pre-window-map", args);
 
   wlr_scene_node_set_enabled(&this->scene_tree->node, true);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
-  this->set_border_invisible(true);
+  this->set_border_visible(true);
 
   server->lua->emit_hook("window-map", args);
+
+  this->initial_map = false;
 }
 
 void UraToplevel::unmap() {
@@ -339,12 +343,12 @@ void UraToplevel::unmap() {
   auto server = UraServer::get_instance();
 
   auto args = flexible::create_table();
-  args.add("id", this->id());
+  args.set("id", this->id());
   server->lua->emit_hook("pre-window-unmap", args);
 
   wlr_scene_node_set_enabled(&this->scene_tree->node, false);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
-  this->set_border_invisible(false);
+  this->set_border_visible(false);
 
   if (server->seat->focused_toplevel() == this) {
     server->seat->unfocus();
@@ -520,6 +524,8 @@ bool UraToplevel::is_tag_matched() {
 }
 
 void UraToplevel::set_opacity(float opacity) {
+  if (this->opacity == opacity)
+    return;
   this->opacity = opacity;
   wlr_scene_node_for_each_buffer(
     &this->scene_tree->node,
@@ -619,7 +625,7 @@ void UraToplevel::resize_borders(int width, int height) {
   );
 }
 
-void UraToplevel::set_border_invisible(bool flag) {
+void UraToplevel::set_border_visible(bool flag) {
   for (auto border : this->borders) {
     wlr_scene_node_set_enabled(&border->node, flag);
   }

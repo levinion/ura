@@ -65,11 +65,12 @@ public:
   void set_border_color(std::string_view color);
   void resize_borders(int width, int height);
   void move_borders(int x, int y);
-  void set_border_invisible(bool flag);
+  void set_border_visible(bool flag);
 
 private:
   void dismiss_popups();
   bool prepared = false;
+  bool initial_map = true;
   std::array<wlr_scene_rect*, 4> borders;
 
   template<typename T>

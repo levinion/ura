@@ -12,7 +12,7 @@ file(GLOB_RECURSE SRC src/*.c src/*.cpp)
 add_executable(${NAME} ${SRC})
 
 if(CMAKE_BUILD_TYPE MATCHES 'Release')
-	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
 # include header
@@ -33,12 +33,12 @@ target_compile_options(${NAME} PRIVATE -Wall -Wextra
 find_package(PkgConfig REQUIRED)
 
 function(target_add_dependence target pkgname)
-	pkg_check_modules(${pkgname} REQUIRED ${pkgname})
-	target_link_libraries(${target} PRIVATE ${${pkgname}_LIBRARIES})
-	target_include_directories(${target} PRIVATE ${${pkgname}_INCLUDE_DIRS})
+  pkg_check_modules(${pkgname} REQUIRED ${pkgname})
+  target_link_libraries(${target} PRIVATE ${${pkgname}_LIBRARIES})
+  target_include_directories(${target} PRIVATE ${${pkgname}_INCLUDE_DIRS})
 endfunction()
 
-target_add_dependence(${NAME} wlroots-0.21)
+target_add_dependence(${NAME} wlroots-0.19)
 target_add_dependence(${NAME} wayland-server)
 target_add_dependence(${NAME} xkbcommon)
 target_add_dependence(${NAME} luajit)

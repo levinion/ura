@@ -167,6 +167,14 @@ function M.find(t, f)
 end
 
 ---@param t table
+---@param f fun(i:integer,v:any):boolean
+function M.for_each(t, f)
+  for i, v in pairs(t) do
+    f(i, v)
+  end
+end
+
+---@param t table
 ---@return table
 function M.unique(t)
   local checked = {}

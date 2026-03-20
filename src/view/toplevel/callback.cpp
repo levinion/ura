@@ -16,15 +16,13 @@ void on_new_toplevel(wl_listener* listener, void* data) {
 void on_toplevel_map(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  if (!toplevel->mapped())
-    toplevel->map();
+  toplevel->map();
 }
 
 void on_toplevel_unmap(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  if (toplevel->mapped())
-    toplevel->unmap();
+  toplevel->unmap();
 }
 
 void on_toplevel_commit(wl_listener* listener, void* data) {
