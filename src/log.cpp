@@ -50,6 +50,7 @@ void init() {
 
 void destroy() {
   notify_uninit();
+  spdlog::shutdown();
 }
 
 } // namespace ura::log

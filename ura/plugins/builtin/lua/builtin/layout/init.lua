@@ -1,5 +1,6 @@
 local M = {}
 
+---@param opt ?table
 function M.setup(opt)
   opt = opt or {}
 
