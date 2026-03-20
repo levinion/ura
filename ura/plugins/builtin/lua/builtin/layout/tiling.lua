@@ -111,6 +111,30 @@ function M.setup(opt)
     local output = ura.class.UraOutput:new(e.id)
     apply_all(output:tags())
   end, o)
+
+  ---@class UraWindow
+  ---@field shrink fun(self: UraWindow, ratio: number)
+  ---@field expand fun(self: UraWindow, ratio: number)
+
+  ---@param ratio number
+  function ura.class.UraWindow:shrink(ratio)
+    local w = ura.class.UraWindow:current()
+    assert(w)
+    w:update_userdata(function(t)
+      t.weight = t.weight - ratio
+    end)
+    apply_all(w:tags())
+  end
+
+  ---@param ratio number
+  function ura.class.UraWindow:expand(ratio)
+    local w = ura.class.UraWindow:current()
+    assert(w)
+    w:update_userdata(function(t)
+      t.weight = t.weight + ratio
+    end)
+    apply_all(w:tags())
+  end
 end
 
 return M

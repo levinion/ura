@@ -1,7 +1,4 @@
-require("builtin.layout.tiling").setup()
-require("builtin.layout.fullscreen").setup()
-require("builtin.layout.maximize").setup()
-require("builtin.layout.floating").setup()
+require("builtin.layout").setup()
 
 ura.keymap.set({ "super+t" }, function()
   ura.api.spawn("foot")
@@ -105,6 +102,14 @@ end)
 
 ura.keymap.set({ "super+k" }, function()
   ura.cmd.focus_up()
+end)
+
+ura.keymap.set({ "super+left" }, function()
+  ura.class.UraWindow:current():shrink(0.1)
+end)
+
+ura.keymap.set({ "super+right" }, function()
+  ura.class.UraWindow:current():expand(0.1)
 end)
 
 for i = 1, 10 do
