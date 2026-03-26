@@ -114,8 +114,6 @@ function M.setup(opt)
 
   ---@class UraWindow
   ---@field shrink fun(self: UraWindow, ratio: number)
-  ---@field expand fun(self: UraWindow, ratio: number)
-
   ---@param ratio number
   function ura.class.UraWindow:shrink(ratio)
     local w = ura.class.UraWindow:current()
@@ -126,6 +124,8 @@ function M.setup(opt)
     apply_all(w:tags())
   end
 
+  ---@class UraWindow
+  ---@field expand fun(self: UraWindow, ratio: number)
   ---@param ratio number
   function ura.class.UraWindow:expand(ratio)
     local w = ura.class.UraWindow:current()

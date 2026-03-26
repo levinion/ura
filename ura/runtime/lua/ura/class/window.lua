@@ -387,36 +387,4 @@ function UraWindow:update_userdata(f)
   self:set_userdata(userdata)
 end
 
----@return string|nil
-function UraWindow:layout()
-  local userdata = self:userdata()
-  return userdata and userdata.layout or nil
-end
-
----@param layout string
-function UraWindow:set_layout(layout)
-  local old_layout = self:layout()
-  if old_layout == layout then
-    return
-  end
-  self:update_userdata(function(t)
-    t.layout = layout
-  end)
-  ura.hook.emit("window-layout-change", {
-    id = self.id,
-    from = old_layout,
-    to = layout,
-  })
-end
-
----@param layout string
-function UraWindow:toggle_layout(layout)
-  local old = self:layout()
-  if old ~= layout then
-    self:set_layout(layout)
-  else
-    self:set_layout(ura.opt["default_layout"] or "tiling")
-  end
-end
-
 return UraWindow

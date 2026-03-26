@@ -15,14 +15,19 @@ sol::table create_table() {
 json to_json(object& obj) {
   if (obj.is<sol::nil_t>())
     return {};
-  if (obj.is<bool>())
+  if (obj.get_type() == sol::type::boolean)
     return obj.as<bool>();
-  if (obj.is<double>() && obj.is<int64_t>())
-    return obj.as<double>();
-  if (obj.is<uint64_t>())
-    return obj.as<uint64_t>();
-  if (obj.is<int64_t>())
-    return obj.as<int64_t>();
+  if (obj.get_type() == sol::type::number) {
+    double val = obj.as<double>();
+    double iptr;
+    if (std::modf(val, &iptr) == 0.0
+        && val >= static_cast<double>(std::numeric_limits<int64_t>::min())
+        && val <= static_cast<double>(std::numeric_limits<int64_t>::max())) {
+      return static_cast<int64_t>(val);
+    } else {
+      return val;
+    }
+  }
   if (obj.is<std::string>())
     return obj.as<std::string>();
   if (obj.is<sol::function>())
