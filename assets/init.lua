@@ -126,7 +126,10 @@ end
 
 ura.hook.add("window-new", function(e)
   local win = ura.class.UraWindow:new(e.id)
-  win:set_layout("tiling")
+
+  if win:layout() == nil then
+    win:set_layout("tiling")
+  end
 end)
 
 ura.hook.add("window-map", function(e)
