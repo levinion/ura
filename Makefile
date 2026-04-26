@@ -17,17 +17,13 @@ sudo-install:
 	sudo $(MAKE) install
 
 install:
-	install -d $(DESTDIR)/usr/bin
-	install -Dm755 ./build/ura $(DESTDIR)/usr/bin/
-	install -d $(DESTDIR)/usr/share/wayland-sessions
-	install -Dm644 ./assets/ura.desktop $(DESTDIR)/usr/share/wayland-sessions/
-	install -d $(DESTDIR)/etc/ura
-	install -Dm644 ./assets/init.lua $(DESTDIR)/etc/ura/
-	install -d $(DESTDIR)/usr/share/zsh/site-functions
-	install -Dm644 ./assets/completions/zsh/* $(DESTDIR)/usr/share/zsh/site-functions/
+	install -Dm755 ./build/ura -t $(DESTDIR)/usr/bin/
+	install -Dm644 ./assets/ura.desktop -t $(DESTDIR)/usr/share/wayland-sessions/
+	install -Dm644 ./assets/init.lua -t $(DESTDIR)/etc/ura/
+	install -Dm644 ./assets/completions/zsh/* -t $(DESTDIR)/usr/share/zsh/site-functions/
 	cp -r ura $(DESTDIR)/usr/share/
-	install -Dm755 ./tools/scripts/* $(DESTDIR)/usr/bin/
-	install -Dm755 ./tools/ura-shell/target/release/ura-shell $(DESTDIR)/usr/bin/
+	install -Dm755 ./tools/scripts/* -t $(DESTDIR)/usr/bin/
+	install -Dm755 ./tools/ura-shell/target/release/ura-shell -t $(DESTDIR)/usr/bin/
 
 init: CMakeLists.txt include/protocols $(PROTOCOL_HEADERS) src/ipc.c
 	cmake -B build \
