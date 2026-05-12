@@ -238,6 +238,9 @@ end
 --- @param y integer
 --- @param opt { duration?: integer, fps?: number }|nil
 function UraWindow:move(x, y, opt)
+  x = math.floor(x)
+  y = math.floor(y)
+
   if self:userdata().move_timer then
     self:update_userdata(function(t)
       ura.api.clear_interval(t.move_timer)
@@ -291,6 +294,9 @@ end
 --- @param height integer
 --- @param opt { duration?: integer, fps?: number }|nil
 function UraWindow:resize(width, height, opt)
+  width = math.floor(width)
+  height = math.floor(height)
+
   if self:userdata().resize_timer then
     self:update_userdata(function(t)
       ura.api.clear_interval(t.resize_timer)

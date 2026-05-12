@@ -73,7 +73,7 @@ void focus_window(uint64_t id) {
   server->seat->focus(toplevel);
 }
 
-std::optional<uint64_t> get_current_window() {
+sol::optional<uint64_t> get_current_window() {
   auto server = UraServer::get_instance();
   auto toplevel = server->seat->focused_toplevel();
   if (!toplevel)
@@ -107,7 +107,7 @@ void resize_window(uint64_t id, int width, int height) {
   toplevel->resize(width, height);
 }
 
-std::optional<uint64_t> get_current_output() {
+sol::optional<uint64_t> get_current_output() {
   auto server = UraServer::get_instance();
   auto output = server->view->current_output();
   if (!output)
@@ -224,7 +224,7 @@ void set_window_z_index(uint64_t id, int z) {
   toplevel->set_z_index(z);
 }
 
-std::optional<uint64_t> get_output(std::string name) {
+sol::optional<uint64_t> get_output(std::string name) {
   auto server = UraServer::get_instance();
   auto output = server->view->get_output_by_name(name);
   if (!output)
@@ -257,7 +257,7 @@ void notify(std::string summary, std::string body) {
   log::notify(summary, body);
 }
 
-std::optional<int> set_timeout(flexible::function f, double timeout) {
+sol::optional<int> set_timeout(flexible::function f, double timeout) {
   auto server = UraServer::get_instance();
   if (timeout <= 0) {
     f();
@@ -275,7 +275,7 @@ void clear_timeout(int fd) {
   server->dispatcher->clear_timer(fd);
 }
 
-std::optional<int> set_interval(flexible::function f, double interval) {
+sol::optional<int> set_interval(flexible::function f, double interval) {
   auto server = UraServer::get_instance();
   if (interval <= 0) {
     f();
@@ -293,7 +293,7 @@ void clear_interval(int fd) {
   server->dispatcher->clear_timer(fd);
 }
 
-std::optional<int> get_window_z_index(uint64_t id) {
+sol::optional<int> get_window_z_index(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
@@ -326,21 +326,21 @@ flexible::object get_output_usable_geometry(uint64_t id) {
   return output->usable_area.to_table();
 }
 
-std::optional<float> get_output_scale(uint64_t id) {
+sol::optional<float> get_output_scale(uint64_t id) {
   auto output = UraOutput::from(id);
   if (!output)
     return {};
   return output->scale();
 }
 
-std::optional<std::string> get_window_app_id(uint64_t id) {
+sol::optional<std::string> get_window_app_id(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
   return toplevel->app_id();
 }
 
-std::optional<std::string> get_window_title(uint64_t id) {
+sol::optional<std::string> get_window_title(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
@@ -354,7 +354,7 @@ void set_window_fullscreen(uint64_t id, bool flag) {
   toplevel->set_fullscreen(flag);
 }
 
-std::optional<bool> is_window_fullscreen(uint64_t id) {
+sol::optional<bool> is_window_fullscreen(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
@@ -368,7 +368,7 @@ void set_window_resizing(uint64_t id, bool flag) {
   toplevel->set_resizing(flag);
 }
 
-std::optional<bool> is_window_resizing(uint64_t id) {
+sol::optional<bool> is_window_resizing(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
@@ -382,7 +382,7 @@ void set_window_maximized(uint64_t id, bool flag) {
   toplevel->set_maximized(flag);
 }
 
-std::optional<bool> is_window_maximized(uint64_t id) {
+sol::optional<bool> is_window_maximized(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
@@ -396,7 +396,7 @@ flexible::object get_window_geometry(uint64_t id) {
   return toplevel->geometry.to_table();
 }
 
-std::optional<uint64_t> get_window_output(uint64_t id) {
+sol::optional<uint64_t> get_window_output(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
@@ -467,7 +467,7 @@ flexible::object get_all_windows() {
   return table;
 }
 
-std::optional<std::string> get_output_name(uint64_t id) {
+sol::optional<std::string> get_output_name(uint64_t id) {
   auto output = UraOutput::from(id);
   if (!output)
     return {};
@@ -483,25 +483,29 @@ flexible::object get_all_outputs() {
   return table;
 }
 
-std::optional<bool> is_window_mapped(uint64_t id) {
+sol::optional<bool> is_window_mapped(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
   return toplevel->mapped();
 }
 
-std::optional<bool> is_window_focused(uint64_t id) {
+sol::optional<bool> is_window_focused(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
   return toplevel->is_focused();
 }
 
-std::optional<uint64_t> get_keybinding_id(std::string pattern) {
-  return util::get_keybinding_id(pattern);
+sol::optional<uint64_t> get_keybinding_id(std::string pattern) {
+  if (auto id = util::get_keybinding_id(pattern); id.has_value()) {
+    return id.value();
+  } else {
+    return {};
+  }
 }
 
-std::optional<uint64_t> get_window_lru(uint64_t id) {
+sol::optional<uint64_t> get_window_lru(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
@@ -517,7 +521,7 @@ long time_since_epoch() {
   return std::chrono::steady_clock::now().time_since_epoch().count();
 }
 
-std::optional<float> get_window_opacity(uint64_t id) {
+sol::optional<float> get_window_opacity(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
@@ -540,7 +544,7 @@ void set_window_border_color(uint64_t id, std::string color) {
   toplevel->set_border_color(color);
 }
 
-std::optional<std::string> get_window_border_color(uint64_t id) {
+sol::optional<std::string> get_window_border_color(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};

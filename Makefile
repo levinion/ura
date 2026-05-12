@@ -25,7 +25,7 @@ install:
 	install -Dm755 ./tools/scripts/* -t $(DESTDIR)/usr/bin/
 	install -Dm755 ./tools/ura-shell/target/release/ura-shell -t $(DESTDIR)/usr/bin/
 
-init: CMakeLists.txt include/protocols $(PROTOCOL_HEADERS) src/ipc.c
+init: CMakeLists.txt include/protocols $(PROTOCOL_HEADERS) src/ipc.c cmake/CPM.cmake
 	cmake -B build \
 		$(NINJA) \
 		$(LAUNCHER) \
@@ -67,3 +67,6 @@ include/protocols/%-protocol.h: ./protocols/%.xml
 src/ipc.c: ./protocols/ura-ipc.xml
 	wayland-scanner private-code $< $@
 
+cmake/CPM.cmake:
+	mkdir -p cmake
+	wget -O $@ https://github.com/cpm-cmake/CPM.cmake/releases/latest/download/get_cpm.cmake

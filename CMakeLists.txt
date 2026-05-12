@@ -12,7 +12,7 @@ file(GLOB_RECURSE SRC src/*.c src/*.cpp)
 add_executable(${NAME} ${SRC})
 
 if(CMAKE_BUILD_TYPE MATCHES 'Release')
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
 # include header
@@ -33,16 +33,15 @@ target_compile_options(${NAME} PRIVATE -Wall -Wextra
 find_package(PkgConfig REQUIRED)
 
 function(target_add_dependence target pkgname)
-  pkg_check_modules(${pkgname} REQUIRED ${pkgname})
-  target_link_libraries(${target} PRIVATE ${${pkgname}_LIBRARIES})
-  target_include_directories(${target} PRIVATE ${${pkgname}_INCLUDE_DIRS})
+	pkg_check_modules(${pkgname} REQUIRED ${pkgname})
+	target_link_libraries(${target} PRIVATE ${${pkgname}_LIBRARIES})
+	target_include_directories(${target} PRIVATE ${${pkgname}_INCLUDE_DIRS})
 endfunction()
 
 target_add_dependence(${NAME} wlroots-0.19)
 target_add_dependence(${NAME} wayland-server)
 target_add_dependence(${NAME} xkbcommon)
 target_add_dependence(${NAME} luajit)
-target_add_dependence(${NAME} sol2)
 target_add_dependence(${NAME} CLI11)
 target_add_dependence(${NAME} libnotify)
 target_add_dependence(${NAME} spdlog)
@@ -51,3 +50,7 @@ target_add_dependence(${NAME} nlohmann_json)
 target_add_dependence(${NAME} absl_strings)
 target_add_dependence(${NAME} absl_inlined_vector)
 target_add_dependence(${NAME} absl_flat_hash_map)
+
+include(cmake/CPM.cmake)
+CPMAddPackage("gh:ThePhD/sol2#c1f95a773c6f8f4fde8ca3efe872e7286afe4444")
+target_link_libraries(${NAME} PRIVATE sol2)

@@ -15,16 +15,6 @@ RUN pacman -Syu --noconfirm \
 
 USER dev
 
-RUN mkdir /tmp/pikaur
-
-WORKDIR /tmp/pikaur
-
-RUN git clone https://aur.archlinux.org/pikaur.git\
-    && cd pikaur \
-    && makepkg -si --noconfirm
-
-RUN pikaur -S --noconfirm sol2
-
 WORKDIR /home/dev/ura
 
 CMD ["/bin/bash"]

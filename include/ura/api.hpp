@@ -12,42 +12,42 @@ namespace ura::api::core {
 void terminate();
 void spawn(std::string cmd);
 void notify(std::string summary, std::string body);
-std::optional<int> set_timeout(flexible::function f, double timeout);
+sol::optional<int> set_timeout(flexible::function f, double timeout);
 void clear_timeout(int fd);
-std::optional<int> set_interval(flexible::function f, double timeout);
+sol::optional<int> set_interval(flexible::function f, double timeout);
 void clear_interval(int fd);
 // idle
 void notify_idle_activity();
 void set_idle_inhibitor(bool flag);
 // win
 void close_window(uint64_t id);
-std::optional<uint64_t> get_current_window();
-std::optional<uint64_t> get_window_output(uint64_t id);
+sol::optional<uint64_t> get_current_window();
+sol::optional<uint64_t> get_window_output(uint64_t id);
 void focus_window(uint64_t id);
 void set_window_z_index(uint64_t id, int z);
-std::optional<int> get_window_z_index(uint64_t id);
+sol::optional<int> get_window_z_index(uint64_t id);
 void activate_window(uint64_t id);
 void move_window(uint64_t id, int x, int y);
 void resize_window(uint64_t id, int width, int height);
-std::optional<std::string> get_window_app_id(uint64_t id);
-std::optional<std::string> get_window_title(uint64_t id);
+sol::optional<std::string> get_window_app_id(uint64_t id);
+sol::optional<std::string> get_window_title(uint64_t id);
 void set_window_fullscreen(uint64_t id, bool flag);
-std::optional<bool> is_window_fullscreen(uint64_t id);
+sol::optional<bool> is_window_fullscreen(uint64_t id);
 void set_window_resizing(uint64_t id, bool flag);
-std::optional<bool> is_window_resizing(uint64_t id);
+sol::optional<bool> is_window_resizing(uint64_t id);
 void set_window_maximized(uint64_t id, bool flag);
-std::optional<bool> is_window_maximized(uint64_t id);
+sol::optional<bool> is_window_maximized(uint64_t id);
 flexible::object get_window_geometry(uint64_t id);
 void set_window_tags(uint64_t id, std::vector<std::string> tags);
 flexible::object get_window_tags(uint64_t id);
 flexible::object get_all_windows();
-std::optional<uint64_t> get_window_lru(uint64_t id);
-std::optional<bool> is_window_mapped(uint64_t id);
-std::optional<bool> is_window_focused(uint64_t id);
-std::optional<float> get_window_opacity(uint64_t id);
+sol::optional<uint64_t> get_window_lru(uint64_t id);
+sol::optional<bool> is_window_mapped(uint64_t id);
+sol::optional<bool> is_window_focused(uint64_t id);
+sol::optional<float> get_window_opacity(uint64_t id);
 void set_window_opacity(uint64_t id, float opacity);
 void set_window_border_color(uint64_t id, std::string color);
-std::optional<std::string> get_window_border_color(uint64_t id);
+sol::optional<std::string> get_window_border_color(uint64_t id);
 
 // input
 void set_keyboard_repeat(int rate, int delay);
@@ -61,13 +61,13 @@ std::string get_cursor_shape();
 sol::object get_cursor_pos();
 
 // output
-std::optional<uint64_t> get_current_output();
-std::optional<uint64_t> get_output(std::string name);
+sol::optional<uint64_t> get_current_output();
+sol::optional<uint64_t> get_output(std::string name);
 flexible::object get_all_outputs();
-std::optional<std::string> get_output_name(uint64_t id);
+sol::optional<std::string> get_output_name(uint64_t id);
 flexible::object get_output_logical_geometry(uint64_t id);
 flexible::object get_output_usable_geometry(uint64_t id);
-std::optional<float> get_output_scale(uint64_t id);
+sol::optional<float> get_output_scale(uint64_t id);
 void set_output_tags(uint64_t id, std::vector<std::string> tags);
 flexible::object get_output_tags(uint64_t id);
 
@@ -86,7 +86,7 @@ void set_userdata(uint64_t id, flexible::object obj);
 flexible::object get_userdata(uint64_t id);
 
 // util
-std::optional<uint64_t> get_keybinding_id(std::string pattern);
+sol::optional<uint64_t> get_keybinding_id(std::string pattern);
 long time_since_epoch();
 
 //TODO: std::vector<std::string> translate_keybinding_id(uint64_t id);
