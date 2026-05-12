@@ -53,6 +53,11 @@ std::unique_ptr<UraLogger> UraLogger::init() {
     "ura",
     spdlog::sinks_init_list { ansicolor_sink, syslog_sink }
   );
+
+  logger->spdlog_logger->set_error_handler([](const std::string& err_msg) {
+    // do nothing here
+  });
+
   spdlog::set_default_logger(logger->spdlog_logger);
   spdlog::set_level(logger->level.as_spd_level());
 
