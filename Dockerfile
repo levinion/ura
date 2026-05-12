@@ -10,8 +10,8 @@ RUN groupadd -g "${GID}" dev \
 
 RUN pacman -Syu --noconfirm \
     && pacman -S --noconfirm \
-      git libnotify spdlog luajit wlroots0.19 wayland-protocols \
-      cmake ninja sccache nlohmann-json cli11 cargo abseil-cpp
+      git libnotify spdlog luajit wlroots0.20 wayland-protocols \
+      cmake ninja sccache nlohmann-json cxxopts cargo abseil-cpp
 
 USER dev
 
