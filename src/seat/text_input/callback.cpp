@@ -4,6 +4,7 @@
 #include "ura/core/runtime.hpp"
 #include "ura/seat/text_input.hpp"
 #include "ura/seat/seat.hpp"
+#include "ura/view/client.hpp"
 #include "ura/view/view.hpp"
 
 // TEXT INPUT V3
@@ -73,9 +74,11 @@ void on_text_input_commit(wl_listener* listener, void* data) {
 void on_text_input_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto text_input = server->runtime->fetch<wlr_text_input_v3*>(listener);
-  if (server->seat->text_input->input_method
-      && text_input == server->seat->text_input->get_active_text_input()
-      && server->seat->text_input->input_method->active)
+  if (
+    server->seat->text_input->input_method
+    && text_input == server->seat->text_input->get_active_text_input()
+    && server->seat->text_input->input_method->active
+  )
     wlr_input_method_v2_send_deactivate(server->seat->text_input->input_method);
   server->seat->text_input->text_inputs.remove(text_input);
   server->runtime->remove(text_input);
@@ -177,11 +180,35 @@ void on_input_method_new_popup_surface(wl_listener* listener, void* data) {
 
   popup->popup_surface = popup_surface;
   popup->popup_surface->data = popup;
+
+  // get focused surface's scene_tree
+  wlr_scene_tree* scene_tree = nullptr;
+
+  auto focused = server->view->foreground_client();
+  if (!focused) {
+    delete popup;
+    return;
+  }
+
+  if (focused->type == UraSurfaceType::Toplevel) {
+    auto toplevel = focused->transform<UraToplevel>();
+    scene_tree = toplevel->scene_tree;
+  } else if (focused->type == UraSurfaceType::LayerShell) {
+    auto layershell = focused->transform<UraLayerShell>();
+    scene_tree = layershell->scene_tree;
+  }
+
+  if (!scene_tree) {
+    delete popup;
+    return;
+  }
+
+  // create node as a subsurface of parent's scene_tree
+  popup->scene_tree =
+    wlr_scene_subsurface_tree_create(scene_tree, popup->popup_surface->surface);
+  wlr_scene_node_raise_to_top(&popup->scene_tree->node);
+
   server->seat->text_input->popups.push_back(popup);
-  popup->scene_tree = wlr_scene_subsurface_tree_create(
-    server->view->get_scene_tree_or_create(UraSceneLayer::Popup),
-    popup->popup_surface->surface
-  );
 
   server->runtime->register_callback(
     &popup_surface->events.destroy,

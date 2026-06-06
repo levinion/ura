@@ -21,7 +21,9 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
 
   // get the layer scene tree based on layer_shell's type
   this->layer = layer_surface->pending.layer;
-  auto layer_scene_tree = server->view->get_layer_by_type(this->layer);
+  auto layer_scene_tree = server->view->get_scene_tree_or_create(
+    server->view->get_z_index_by_type(this->layer)
+  );
   // create a scene tree for the layer_shell's surface
   auto scene_surface =
     wlr_scene_layer_surface_v1_create(layer_scene_tree, layer_surface);
@@ -105,14 +107,17 @@ void UraLayerShell::commit() {
   auto output = server->view->get_output_by_name(this->output);
   if (!output)
     return;
-  if (this->layer_surface->initialized
-      && this->layer_surface->current.committed
-        & WLR_LAYER_SURFACE_V1_STATE_LAYER) {
+  if (
+    this->layer_surface->initialized
+    && this->layer_surface->current.committed & WLR_LAYER_SURFACE_V1_STATE_LAYER
+  ) {
     // put the surface under proper layer
     output->layer_shells_from_layer(this->layer).remove(this);
     this->layer = this->layer_surface->current.layer;
     output->layer_shells_from_layer(this->layer).push_back(this);
-    auto layer = server->view->get_layer_by_type(this->layer);
+    auto layer = server->view->get_scene_tree_or_create(
+      server->view->get_z_index_by_type(this->layer)
+    );
     wlr_scene_node_reparent(&this->scene_tree->node, layer);
   }
 
@@ -126,8 +131,10 @@ void UraLayerShell::commit() {
   if (height == 0)
     height = output_geo.height;
 
-  if (width != this->layer_surface->current.actual_width
-      || height != this->layer_surface->current.actual_height) {
+  if (
+    width != this->layer_surface->current.actual_width
+    || height != this->layer_surface->current.actual_height
+  ) {
     wlr_layer_surface_v1_configure(this->layer_surface, width, height);
     output->configure_layers();
   }

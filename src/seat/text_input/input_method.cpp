@@ -14,8 +14,8 @@ void UraInputMethodPopup::constrain(wlr_text_input_v3* text_input) {
   auto popup_rect = Vec4<int>();
 
   // transform local coordination to global coordination
-  popup_rect.x = parent->geometry.x + cursor_rect.x;
-  popup_rect.y = parent->geometry.y + cursor_rect.y + cursor_rect.height;
+  popup_rect.x = cursor_rect.x;
+  popup_rect.y = cursor_rect.y + cursor_rect.height;
   popup_rect.width = this->popup_surface->surface->current.width;
   popup_rect.height = this->popup_surface->surface->current.height;
 
@@ -24,11 +24,12 @@ void UraInputMethodPopup::constrain(wlr_text_input_v3* text_input) {
   if (!output)
     return;
   auto geo = output->logical_geometry();
-  auto avaliable_right = geo.x + geo.width - (popup_rect.x + popup_rect.width);
-  auto avaliable_bottom =
-    geo.y + geo.height - (popup_rect.y + popup_rect.height);
+  auto avaliable_right =
+    geo.x + geo.width - (parent->geometry.x + popup_rect.x + popup_rect.width);
+  auto avaliable_bottom = geo.y + geo.height
+    - (parent->geometry.y + popup_rect.y + popup_rect.height);
   if (avaliable_right < 0)
-    popup_rect.x = geo.x + geo.width - popup_rect.width;
+    popup_rect.x = geo.x + geo.width - popup_rect.width - parent->geometry.x;
   if (avaliable_bottom < 0)
     popup_rect.y -= cursor_rect.height + popup_rect.height;
 

@@ -62,26 +62,19 @@ std::optional<UraClient> UraView::foreground_client() {
   return client;
 }
 
-wlr_scene_tree* UraView::get_layer_by_type(zwlr_layer_shell_v1_layer type) {
-  wlr_scene_tree* layer;
-  auto server = UraServer::get_instance();
+int UraView::get_z_index_by_type(zwlr_layer_shell_v1_layer type) {
   switch (type) {
     case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
-      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Background);
-      break;
+      return UraSceneLayer::Background;
     case ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM:
-      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Bottom);
-      break;
+      return UraSceneLayer::Bottom;
     case ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY:
-      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Overlay);
-      break;
+      return UraSceneLayer::Overlay;
     case ZWLR_LAYER_SHELL_V1_LAYER_TOP:
-      layer = server->view->get_scene_tree_or_create(UraSceneLayer::Top);
-      break;
+      return UraSceneLayer::Top;
     default:
       std::unreachable();
   }
-  return layer;
 }
 
 void UraView::notify_scale(wlr_surface* surface, double scale) {
