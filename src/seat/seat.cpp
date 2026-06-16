@@ -84,11 +84,13 @@ void UraSeat::unfocus() {
 }
 
 void UraSeat::focus(UraClient client) {
-  if (!client.surface || client.type == UraSurfaceType::Popup
-      || client.type == UraSurfaceType::SessionLock
-      || client.type == UraSurfaceType::Null
-      || client.type == UraSurfaceType::Unknown
-      || this->seat->keyboard_state.focused_surface == client.surface)
+  if (
+    !client.surface || client.type == UraSurfaceType::Popup
+    || client.type == UraSurfaceType::SessionLock
+    || client.type == UraSurfaceType::Null
+    || client.type == UraSurfaceType::Unknown
+    || this->seat->keyboard_state.focused_surface == client.surface
+  )
     return;
   auto focused = this->focused_client();
   if (focused)
@@ -113,25 +115,27 @@ void UraSeat::focus_lru() {
     std::max_element(toplevels.begin(), toplevels.end(), [](auto a, auto b) {
       return a->lru < b->lru;
     });
-  auto layer_shells = server->view->layer_shells()
-    | std::views::filter([](auto v) { return v->focusable(); })
-    | std::ranges::to<std::vector<UraLayerShell*>>();
-  auto layer_shell = std::max_element(
-    layer_shells.begin(),
-    layer_shells.end(),
-    [](auto a, auto b) { return a->lru < b->lru; }
-  );
-  if (toplevel != toplevels.end() && layer_shell != layer_shells.end()) {
-    if ((*toplevel)->lru > (*layer_shell)->lru)
-      server->seat->focus(*toplevel);
-    else {
-      server->seat->focus(*layer_shell);
-    }
-  } else if (toplevel != toplevels.end()) {
+  // auto layer_shells = server->view->layer_shells()
+  //   | std::views::filter([](auto v) { return v->focusable(); })
+  //   | std::ranges::to<std::vector<UraLayerShell*>>();
+  // auto layer_shell = std::max_element(
+  //   layer_shells.begin(),
+  //   layer_shells.end(),
+  //   [](auto a, auto b) { return a->lru < b->lru; }
+  // );
+  // if (toplevel != toplevels.end() && layer_shell != layer_shells.end()) {
+  //   if ((*toplevel)->lru > (*layer_shell)->lru)
+  //     server->seat->focus(*toplevel);
+  //   else {
+  //     server->seat->focus(*layer_shell);
+  //   }
+  // } else if (toplevel != toplevels.end()) {
+  //   server->seat->focus(*toplevel);
+  // } else if (layer_shell != layer_shells.end()) {
+  //   server->seat->focus(*layer_shell);
+  // }
+  if (toplevel != toplevels.end())
     server->seat->focus(*toplevel);
-  } else if (layer_shell != layer_shells.end()) {
-    server->seat->focus(*layer_shell);
-  }
 }
 
 void UraSeat::notify_idle_activity() {
