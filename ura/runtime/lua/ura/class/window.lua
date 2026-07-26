@@ -219,6 +219,7 @@ function UraWindow:set_opacity(opacity, opt)
       if t >= 1.0 and tb.opacity_timer then
         ura.api.clear_interval(tb.opacity_timer)
         tb.opacity_timer = nil
+        ura.api.set_window_opacity(self.id, opacity)
       end
     end, 1000 / fps)
   end)
@@ -241,7 +242,14 @@ function UraWindow:move(x, y, opt)
   x = math.floor(x)
   y = math.floor(y)
 
-  if self:userdata().move_timer then
+  local userdata = self:userdata()
+
+  -- early return if same task exists
+  if userdata.move_timer and userdata.geometry and userdata.geometry.x == x and userdata.geometry.y == y then
+    return
+  end
+
+  if userdata.move_timer then
     self:update_userdata(function(t)
       ura.api.clear_interval(t.move_timer)
       t.move_timer = nil
@@ -252,6 +260,10 @@ function UraWindow:move(x, y, opt)
   assert(geo)
   local start_x = geo.x
   local start_y = geo.y
+
+  if start_x == x and start_y == y then
+    return
+  end
 
   self:update_userdata(function(t)
     t.geometry = t.geometry or {}
@@ -285,6 +297,7 @@ function UraWindow:move(x, y, opt)
       if t >= 1.0 and tb.move_timer then
         ura.api.clear_interval(tb.move_timer)
         tb.move_timer = nil
+        ura.api.move_window(self.id, x, y)
       end
     end, 1000 / fps)
   end)
@@ -297,7 +310,19 @@ function UraWindow:resize(width, height, opt)
   width = math.floor(width)
   height = math.floor(height)
 
-  if self:userdata().resize_timer then
+  local userdata = self:userdata()
+
+  -- early return if same task exists
+  if
+    userdata.resize_timer
+    and userdata.geometry
+    and userdata.geometry.width == width
+    and userdata.geometry.height == height
+  then
+    return
+  end
+
+  if userdata.resize_timer then
     self:update_userdata(function(t)
       ura.api.clear_interval(t.resize_timer)
       t.resize_timer = nil
@@ -309,6 +334,10 @@ function UraWindow:resize(width, height, opt)
   assert(geo)
   local start_w = geo.width
   local start_h = geo.height
+
+  if start_w == width and start_h == height then
+    return
+  end
 
   self:update_userdata(function(t)
     t.geometry = t.geometry or {}
@@ -343,6 +372,7 @@ function UraWindow:resize(width, height, opt)
       if t >= 1.0 and tb.resize_timer then
         ura.api.clear_interval(tb.resize_timer)
         tb.resize_timer = nil
+        ura.api.resize_window(self.id, width, height)
         self:set_resizing(false)
       end
     end, 1000 / fps)
