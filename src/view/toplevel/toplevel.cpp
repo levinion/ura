@@ -139,8 +139,10 @@ void UraToplevel::commit() {
       output->output
     );
     // let the client to decide its size
-    if (this->xdg_toplevel->base->current.geometry.width == 0
-        || this->xdg_toplevel->base->current.geometry.height == 0) {
+    if (
+      this->xdg_toplevel->base->current.geometry.width == 0
+      || this->xdg_toplevel->base->current.geometry.height == 0
+    ) {
       wlr_xdg_toplevel_set_size(this->xdg_toplevel, 0, 0);
       return;
     }
@@ -149,8 +151,10 @@ void UraToplevel::commit() {
   // second commit
   if (!this->prepared) {
     // set a default size if the given size is invalid
-    if (this->xdg_toplevel->base->current.geometry.width == 0
-        || this->xdg_toplevel->base->current.geometry.height == 0) {
+    if (
+      this->xdg_toplevel->base->current.geometry.width == 0
+      || this->xdg_toplevel->base->current.geometry.height == 0
+    ) {
       this->resize(800, 600);
     } else {
       this->geometry.width = this->xdg_toplevel->base->current.geometry.width;
@@ -171,8 +175,10 @@ void UraToplevel::commit() {
 }
 
 void UraToplevel::focus() {
-  if (!this->xdg_toplevel->base->initialized || this->is_focused()
-      || !this->mapped())
+  if (
+    !this->xdg_toplevel->base->initialized || this->is_focused()
+    || !this->mapped()
+  )
     return;
 
   auto server = UraServer::get_instance();
@@ -228,8 +234,10 @@ UraToplevel* UraToplevel::from(wlr_surface* surface) {
 
 UraToplevel* UraToplevel::from(uint64_t id) {
   auto server = UraServer::get_instance();
-  if (server->globals.contains(id)
-      && server->globals[id].type == UraGlobalType::Toplevel)
+  if (
+    server->globals.contains(id)
+    && server->globals[id].type == UraGlobalType::Toplevel
+  )
     return reinterpret_cast<UraToplevel*>(id);
   return nullptr;
 }
@@ -241,8 +249,10 @@ void UraToplevel::activate() {
 
   auto results =
     server->lua->emit_hook<std::vector<bool>>("pre-window-activate", args);
-  if (results
-      && std::find(results->begin(), results->end(), false) != results->end())
+  if (
+    results
+    && std::find(results->begin(), results->end(), false) != results->end()
+  )
     return;
 
   auto output = this->output();
@@ -462,8 +472,10 @@ UraOutput* UraToplevel::output() {
   auto server = UraServer::get_instance();
   for (auto& [_, output] : server->view->outputs) {
     auto geo = output->logical_geometry();
-    if (this->geometry.x >= geo.x && this->geometry.x < geo.x + geo.width
-        && this->geometry.y >= geo.y && this->geometry.y < geo.y + geo.height) {
+    if (
+      this->geometry.x >= geo.x && this->geometry.x < geo.x + geo.width
+      && this->geometry.y >= geo.y && this->geometry.y < geo.y + geo.height
+    ) {
       return output;
     }
   }

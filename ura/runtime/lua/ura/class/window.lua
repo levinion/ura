@@ -104,15 +104,7 @@ end
 
 ---@return table|nil
 function UraWindow:geometry()
-  local userdata = self:userdata()
-  if userdata and userdata.geometry then
-    return userdata.geometry
-  else
-    self:update_userdata(function(t)
-      t.geometry = ura.api.get_window_geometry(self.id)
-    end)
-    return self:userdata().geometry
-  end
+  return ura.api.get_window_geometry(self.id)
 end
 
 ---@return integer|nil
@@ -167,15 +159,7 @@ end
 
 ---@return number|nil
 function UraWindow:opacity()
-  local userdata = self:userdata()
-  if userdata and userdata.opacity then
-    return userdata.opacity
-  else
-    self:update_userdata(function(t)
-      t.opacity = ura.api.get_window_opacity(self.id)
-    end)
-    return self:userdata().opacity
-  end
+  return ura.api.get_window_opacity(self.id)
 end
 
 ---@param opacity number
@@ -189,10 +173,6 @@ function UraWindow:set_opacity(opacity, opt)
   end
 
   local start_opacity = ura.api.get_window_opacity(self.id)
-
-  self:update_userdata(function(t)
-    t.opacity = opacity
-  end)
 
   local duration = opt and opt.duration or ura.opt.animation_duration or 200
   local fps = opt and opt.fps or ura.opt.animation_fps or 60
@@ -244,11 +224,6 @@ function UraWindow:move(x, y, opt)
 
   local userdata = self:userdata()
 
-  -- early return if same task exists
-  if userdata.move_timer and userdata.geometry and userdata.geometry.x == x and userdata.geometry.y == y then
-    return
-  end
-
   if userdata.move_timer then
     self:update_userdata(function(t)
       ura.api.clear_interval(t.move_timer)
@@ -256,7 +231,7 @@ function UraWindow:move(x, y, opt)
     end)
   end
 
-  local geo = ura.api.get_window_geometry(self.id)
+  local geo = self:geometry()
   assert(geo)
   local start_x = geo.x
   local start_y = geo.y
@@ -264,12 +239,6 @@ function UraWindow:move(x, y, opt)
   if start_x == x and start_y == y then
     return
   end
-
-  self:update_userdata(function(t)
-    t.geometry = t.geometry or {}
-    t.geometry.x = x
-    t.geometry.y = y
-  end)
 
   local duration = opt and opt.duration or ura.opt.animation_duration or 200
   local fps = opt and opt.fps or ura.opt.animation_fps or 60
@@ -312,16 +281,6 @@ function UraWindow:resize(width, height, opt)
 
   local userdata = self:userdata()
 
-  -- early return if same task exists
-  if
-    userdata.resize_timer
-    and userdata.geometry
-    and userdata.geometry.width == width
-    and userdata.geometry.height == height
-  then
-    return
-  end
-
   if userdata.resize_timer then
     self:update_userdata(function(t)
       ura.api.clear_interval(t.resize_timer)
@@ -330,7 +289,7 @@ function UraWindow:resize(width, height, opt)
     self:set_resizing(false)
   end
 
-  local geo = ura.api.get_window_geometry(self.id)
+  local geo = self:geometry()
   assert(geo)
   local start_w = geo.width
   local start_h = geo.height
@@ -338,12 +297,6 @@ function UraWindow:resize(width, height, opt)
   if start_w == width and start_h == height then
     return
   end
-
-  self:update_userdata(function(t)
-    t.geometry = t.geometry or {}
-    t.geometry.width = width
-    t.geometry.height = height
-  end)
 
   local duration = opt and opt.duration or ura.opt.animation_duration or 200
   local fps = opt and opt.fps or ura.opt.animation_fps or 60

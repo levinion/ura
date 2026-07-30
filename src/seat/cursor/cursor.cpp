@@ -212,8 +212,10 @@ void UraCursor::process_button(wlr_pointer_button_event* event) {
   );
 
   auto results = server->lua->emit_hook<std::vector<bool>>("mouse-key", args);
-  if (results
-      && std::find(results->begin(), results->end(), false) != results->end())
+  if (
+    results
+    && std::find(results->begin(), results->end(), false) != results->end()
+  )
     return;
 
   if (event->state == WL_POINTER_BUTTON_STATE_PRESSED) {
@@ -304,8 +306,10 @@ void UraCursor::process_axis(wlr_pointer_axis_event* event) {
     args.set("id", id);
     auto results =
       server->lua->emit_hook<std::vector<bool>>("mouse-axis", args);
-    if (results
-        && std::find(results->begin(), results->end(), false) != results->end())
+    if (
+      results
+      && std::find(results->begin(), results->end(), false) != results->end()
+    )
       return;
 
     if (server->lua->emit_keybinding(id)) {
