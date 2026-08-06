@@ -1,6 +1,6 @@
 # Ura
 
-<img src="/assets/icon.png" style="width:30%">
+<img src="assets/icon.png" style="width:30%">
 
 **Ura** is a brand-new Wayland compositor built on **wlroots**, written in **C++**, and uses **Lua (LuaJIT)** as its configuration system.
 
@@ -8,9 +8,9 @@ The strength of Ura lies in its high customizability. Through a **hook mechanism
 
 Lua is a general-purpose language supported by many editors and LSPs (like `lua_ls`). This enables features such as error checking, syntax highlighting, and auto-completion for configuration files, allowing you to configure the compositor as if you're writing actual code.
 
-<img src="/assets/show.png" style="width:100%">
+<img src="assets/show.png" style="width:100%">
 
-<img src="/assets/show.webp" style="width:100%">
+<img src="assets/show.webp" style="width:100%">
 
 ## Installation
 

@@ -185,7 +185,14 @@ void UraCursor::process_motion(
       static auto timer = -1;
       server->dispatcher->clear_timer(timer);
       timer = server->dispatcher->set_timeout(
-        callback,
+        [=]() {
+          // the timeout removes itself from the dispatcher when it fires,
+          // leaving `timer` with a stale fd; reset it so the next
+          // clear_timer() can't accidentally kill an unrelated timer
+          // that recycled the same fd number (e.g. a window animation)
+          timer = -1;
+          callback();
+        },
         std::chrono::milliseconds(delay)
       );
     }
