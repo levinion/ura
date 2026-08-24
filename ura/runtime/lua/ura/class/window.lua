@@ -122,6 +122,11 @@ function UraWindow:is_fullscreen()
   return ura.api.is_window_fullscreen(self.id)
 end
 
+---@return boolean|nil
+function UraWindow:is_fullscreen_requested()
+  return ura.api.is_window_fullscreen_requested(self.id)
+end
+
 --- @param flag boolean
 function UraWindow:set_fullscreen(flag)
   ura.api.set_window_fullscreen(self.id, flag)
@@ -140,6 +145,11 @@ end
 ---@return boolean|nil
 function UraWindow:is_maximized()
   return ura.api.is_window_maximized(self.id)
+end
+
+---@return boolean|nil
+function UraWindow:is_maximized_requested()
+  return ura.api.is_window_maximized_requested(self.id)
 end
 
 --- @param flag boolean

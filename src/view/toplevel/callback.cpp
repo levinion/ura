@@ -54,8 +54,6 @@ void on_toplevel_destroy(wl_listener* listener, void* data) {
 void on_toplevel_request_maximize(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  if (!toplevel->xdg_toplevel->base->initialized)
-    return;
   auto args = flexible::create_table();
   args.set("id", toplevel->id());
   server->lua->emit_hook("window-request-maximize", args);
@@ -64,8 +62,6 @@ void on_toplevel_request_maximize(wl_listener* listener, void* data) {
 void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  if (!toplevel->xdg_toplevel->base->initialized)
-    return;
   auto args = flexible::create_table();
   args.set("id", toplevel->id());
   server->lua->emit_hook("window-request-fullscreen", args);

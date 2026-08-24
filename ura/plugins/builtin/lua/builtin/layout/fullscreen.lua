@@ -17,6 +17,12 @@ function M.setup()
     end
   end
 
+  ura.hook.add("window-new", function(e)
+    if ura.api.is_window_fullscreen_requested(e.id) then
+      ura.class.UraWindow:new(e.id):set_layout("fullscreen")
+    end
+  end, { ns = "layout.fullscreen", priority = ura.g.priority.instant })
+
   ura.hook.add("window-layout-change", function(e)
     local win = ura.class.UraWindow:new(e.id)
     if e.to == "fullscreen" then
@@ -32,6 +38,13 @@ function M.setup()
       win:update_userdata(function(t)
         t.focus_exclusive = nil
       end)
+    end
+  end, { ns = "layout.fullscreen" })
+
+  ura.hook.add("window-map", function(e)
+    local win = ura.class.UraWindow:new(e.id)
+    if win:layout() == "fullscreen" then
+      apply(win)
     end
   end, { ns = "layout.fullscreen" })
 

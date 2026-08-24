@@ -361,6 +361,13 @@ sol::optional<bool> is_window_fullscreen(uint64_t id) {
   return toplevel->is_fullscreen();
 }
 
+sol::optional<bool> is_window_fullscreen_requested(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->xdg_toplevel->requested.fullscreen;
+}
+
 void set_window_resizing(uint64_t id, bool flag) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
@@ -387,6 +394,13 @@ sol::optional<bool> is_window_maximized(uint64_t id) {
   if (!toplevel)
     return {};
   return toplevel->is_maximized();
+}
+
+sol::optional<bool> is_window_maximized_requested(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->xdg_toplevel->requested.maximized;
 }
 
 flexible::object get_window_geometry(uint64_t id) {

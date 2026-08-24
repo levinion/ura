@@ -67,6 +67,9 @@ ura.api = {
   --- @return boolean|nil
   is_window_fullscreen = function(id) end,
   --- @param id integer
+  --- @return boolean|nil
+  is_window_fullscreen_requested = function(id) end,
+  --- @param id integer
   --- @param flag boolean
   set_window_resizing = function(id, flag) end,
   --- @param id integer
@@ -78,6 +81,9 @@ ura.api = {
   --- @param id integer
   --- @return boolean|nil
   is_window_maximized = function(id) end,
+  --- @param id integer
+  --- @return boolean|nil
+  is_window_maximized_requested = function(id) end,
   --- @param id any
   --- @return table|nil
   get_window_geometry = function(id) end,

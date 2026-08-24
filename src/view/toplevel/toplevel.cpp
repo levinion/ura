@@ -160,7 +160,17 @@ void UraToplevel::commit() {
       this->geometry.width = this->xdg_toplevel->base->current.geometry.width;
       this->geometry.height = this->xdg_toplevel->base->current.geometry.height;
     }
-    this->center();
+    if (this->xdg_toplevel->requested.fullscreen) {
+      auto geo = output->logical_geometry();
+      this->geometry = geo;
+      wlr_scene_node_set_position(&this->scene_tree->node, geo.x, geo.y);
+    } else if (this->xdg_toplevel->requested.maximized) {
+      auto geo = output->usable_area;
+      this->geometry = geo;
+      wlr_scene_node_set_position(&this->scene_tree->node, geo.x, geo.y);
+    } else {
+      this->center();
+    }
     this->resize_borders(this->geometry.width, this->geometry.height);
     this->move_borders(this->geometry.x, this->geometry.y);
     this->prepared = true;
