@@ -107,6 +107,13 @@ function M.setup(opt)
     apply_all(e.to)
   end, o)
 
+  ura.hook.add("window-map", function(e)
+    local win = ura.class.UraWindow:new(e.id)
+    if win:layout() == "tiling" then
+      apply_all(win:output():tags())
+    end
+  end, o)
+
   ura.hook.add("output-usable-geometry-change", function(e)
     local output = ura.class.UraOutput:new(e.id)
     apply_all(output:tags())
