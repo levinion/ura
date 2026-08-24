@@ -82,12 +82,32 @@ UraPopup* UraPopup::from(wlr_surface* surface) {
   return static_cast<UraPopup*>(surface->data);
 }
 
-void UraPopup::unconstrain() {
-  if (!this->xdg_popup->base->initial_commit)
-    return;
+UraOutput* UraPopup::output() {
+  auto tmp = this->xdg_popup->parent;
+  while (tmp) {
+    auto c = UraClient::from(tmp);
+    if (c.type == UraSurfaceType::Toplevel) {
+      if (auto o = c.transform<UraToplevel>()->output())
+        return o;
+      break;
+    } else if (c.type == UraSurfaceType::LayerShell) {
+      auto ls = c.transform<UraLayerShell>();
+      if (ls->layer_surface->output)
+        return UraOutput::from(ls->layer_surface->output);
+      break;
+    } else if (c.type == UraSurfaceType::Popup) {
+      tmp = c.transform<UraPopup>()->xdg_popup->parent;
+    } else {
+      break;
+    }
+  }
+  return UraServer::get_instance()->view->current_output();
+}
 
-  auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
+void UraPopup::unconstrain() {
+  auto output = this->output();
+  if (!output)
+    return;
   auto box = output->logical_geometry().to_wlr_box();
 
   auto current = this->xdg_popup->parent;

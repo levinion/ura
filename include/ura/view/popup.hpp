@@ -2,6 +2,7 @@
 
 #include <memory>
 #include "ura/ura.hpp"
+#include "ura/view/output.hpp"
 
 namespace ura {
 
@@ -19,6 +20,7 @@ public:
   void destroy();
   uint64_t id();
   void unfocus();
+  UraOutput* output();
 
 private:
   void unconstrain();
