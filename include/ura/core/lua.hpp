@@ -1,8 +1,8 @@
 #pragma once
 
-#include <expected>
 #include <sol/forward.hpp>
 #include <sol/sol.hpp>
+#include "ura/core/status.hpp"
 #include "ura/util/flexible.hpp"
 
 namespace ura {
@@ -13,9 +13,9 @@ public:
   std::string lua_stdout;
 
   static std::unique_ptr<Lua> init();
-  void load_runtime();
-  std::expected<std::string, std::string> execute(std::string_view script);
-  std::expected<std::string, std::string> execute_file(std::string_view path);
+  Status load_runtime();
+  StatusOr<std::string> execute(std::string_view script);
+  StatusOr<std::string> execute_file(std::string_view path);
 
   template<typename T>
   std::optional<T> emit_hook(std::string name, flexible::object args) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 #include <vector>
 #include "ura/core/server.hpp"
 
@@ -43,9 +44,9 @@ public:
 
 private:
   // listener to data
-  absl::flat_hash_map<wl_listener*, void*> storage;
+  std::unordered_map<wl_listener*, void*> storage;
   // data to listeners
-  absl::flat_hash_map<void*, std::vector<std::unique_ptr<wl_listener>>>
+  std::unordered_map<void*, std::vector<std::unique_ptr<wl_listener>>>
     listeners;
 };
 } // namespace ura

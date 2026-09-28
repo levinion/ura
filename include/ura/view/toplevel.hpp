@@ -47,12 +47,15 @@ public:
   bool is_focused();
   uint64_t id();
   void set_fullscreen(bool flag);
+  void set_fullscreen_output(UraOutput* output);
   bool is_fullscreen();
   void set_resizing(bool flag);
   bool is_resizing();
   void set_maximized(bool flag);
   bool is_maximized();
   UraOutput* output();
+  void update_output();
+  void output_destroyed(UraOutput* output);
   double scale();
   void set_scale(double scale);
   void set_tags(Vec<std::string>&& tags);
@@ -69,6 +72,16 @@ public:
 
 private:
   void dismiss_popups();
+  void set_output(UraOutput* output);
+  void apply_fullscreen_output(UraOutput* output, bool save_restore);
+  void apply_pending_fullscreen_output();
+  void restore_fullscreen_output();
+  UraOutput* foreign_output = nullptr;
+  double preferred_scale = -1.0;
+  bool fullscreen_output_restore_valid = false;
+  Vec4<int> fullscreen_output_restore_geometry;
+  Vec<std::string> fullscreen_output_restore_tags;
+  std::string pending_fullscreen_output;
   bool prepared = false;
   bool initial_map = true;
   std::array<wlr_scene_rect*, 4> borders;

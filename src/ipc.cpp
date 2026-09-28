@@ -75,7 +75,7 @@ void on_ura_ipc_request(wl_listener* listener, void* data) {
   if (result) {
     ura_ipc_send_reply(event->resource, 0, result.value().c_str());
   } else {
-    ura_ipc_send_reply(event->resource, -1, result.error().c_str());
+    ura_ipc_send_reply(event->resource, -1, result.error().message.c_str());
   }
 }
 } // namespace ura

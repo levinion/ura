@@ -1,4 +1,5 @@
 #include "ura/view/toplevel.hpp"
+#include "ura/view/output.hpp"
 #include "ura/core/server.hpp"
 #include "ura/ura.hpp"
 #include "ura/core/callback.hpp"
@@ -27,6 +28,12 @@ void on_foreign_toplevel_handle_request_fullscreen(
 
   auto args = flexible::create_table();
   args.set("id", toplevel->id());
+  args.set("fullscreen", event->fullscreen);
+  if (auto output = UraOutput::from(event->output)) {
+    args.set("output_id", output->id());
+    if (event->fullscreen)
+      toplevel->set_fullscreen_output(output);
+  }
   server->lua->emit_hook("window-request-fullscreen", args);
 }
 } // namespace ura

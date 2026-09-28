@@ -8,11 +8,12 @@ namespace ura {
 
 class UraLayerShell;
 class UraSessionLockSurface;
-class UraPopup;
 
 class UraOutputContext {
 public:
   Vec<std::string> tags;
+  Vec4<int> logical_geometry;
+  float scale = 1.0f;
 };
 
 class UraOutput {
@@ -30,13 +31,12 @@ public:
   void apply(wlr_output_configuration_v1* config);
   void destroy();
   void set_scale(float scale);
+  void refresh_geometry();
   Vec4<int> physical_geometry();
   Vec4<int> logical_geometry();
   float scale();
 
   void set_dpms_mode(bool flag);
-
-  Vec<UraPopup*> popups;
 
   Vec4<int> usable_area;
   UraSessionLockSurface* session_lock_surface = nullptr;
@@ -49,7 +49,13 @@ public:
 
 private:
   wlr_scene_rect* background;
+  float last_notified_scale = 1.0f;
+  bool last_geometry_enabled = false;
+  Vec4<int> last_logical_geometry;
   void update_background();
+  void attach_layer_shells();
+  void detach_layer_shells();
+  void apply_layout(wlr_output_configuration_v1* config);
 
   Vec<UraLayerShell*> bottom_surfaces;
   Vec<UraLayerShell*> background_surfaces;
@@ -64,7 +70,7 @@ private:
   );
 
   void save_context();
-  void restore_context();
+  std::optional<UraOutputContext> restore_context();
   UraOutputContext context();
 };
 

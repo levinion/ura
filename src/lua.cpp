@@ -1,9 +1,8 @@
 #include "ura/core/lua.hpp"
-#include <absl/strings/ascii.h>
 #include "ura/api.hpp"
 #include "ura/core/log.hpp"
 #include "ura/core/server.hpp"
-#include <expected>
+#include "ura/util/string.hpp"
 #include <filesystem>
 #include <format>
 #include <memory>
@@ -129,37 +128,34 @@ std::unique_ptr<Lua> Lua::init() {
   return lua;
 }
 
-void Lua::load_runtime() {
+Status Lua::load_runtime() {
   api::core::prepend_package_path("/usr/share/ura/runtime/lua/?/init.lua");
   api::core::prepend_package_path("/usr/share/ura/runtime/lua/?.lua");
-  auto result = this->execute("require('ura')");
-  if (!result) {
-    log::error("{}", result.error());
-    exit(1);
-  }
+  RETURN_IF_ERROR(this->execute("require('ura')"));
+  return Ok();
 }
 
-std::expected<std::string, std::string> Lua::execute(std::string_view script) {
+StatusOr<std::string> Lua::execute(std::string_view script) {
   this->lua_stdout.clear();
   auto result = this->state.safe_script(script, sol::script_pass_on_error);
   if (result.valid())
-    return std::string(absl::StripAsciiWhitespace(this->lua_stdout));
+    return std::string(util::strip_ascii_whitespace(this->lua_stdout));
   sol::error err = result;
-  return std::unexpected(err.what());
+  return ScriptError(err.what());
 }
 
-std::expected<std::string, std::string> Lua::execute_file(std::string_view p) {
+StatusOr<std::string> Lua::execute_file(std::string_view p) {
   this->lua_stdout.clear();
   auto path = std::filesystem::path(p);
   if (!std::filesystem::is_regular_file(path))
-    return std::unexpected(
+    return ScriptError(
       std::format("[ura] path not exists or invalid: {}", path.string())
     );
   auto result = this->state.safe_script_file(path, sol::script_pass_on_error);
   if (result.valid())
-    return std::string(absl::StripAsciiWhitespace(this->lua_stdout));
+    return std::string(util::strip_ascii_whitespace(this->lua_stdout));
   sol::error err = result;
-  return std::unexpected(std::string(path) + ": " + std::string(err.what()));
+  return ScriptError(std::string(path) + ": " + std::string(err.what()));
 }
 
 // return true if success

@@ -4,9 +4,10 @@
 #include "ura/ura.hpp"
 #include "ura/core/dispatcher.hpp"
 #include "ipc.hpp"
-#include <absl/container/flat_hash_map.h>
+#include <unordered_map>
 #include "ura/core/global.hpp"
 #include "ura/core/log.hpp"
+#include "ura/core/status.hpp"
 
 namespace ura {
 // extern
@@ -57,11 +58,11 @@ public:
   std::unique_ptr<UraDispatcher<128>> dispatcher;
   std::unique_ptr<UraLogger> logger;
 
-  absl::flat_hash_map<uint64_t, UraGlobal> globals;
+  std::unordered_map<uint64_t, UraGlobal> globals;
 
   static UraServer* get_instance();
-  UraServer* init();
-  void run();
+  Status init();
+  Status run();
   void destroy();
   void terminate();
   ~UraServer();
@@ -69,14 +70,14 @@ public:
 private:
   static UraServer* instance;
   bool quit = false;
-  void setup_ipc();
+  Status setup_ipc();
   void setup_signal();
   void setup_seat();
   void setup_toplevel();
   void setup_popup();
   void setup_output();
   void setup_compositor();
-  void setup_base();
+  Status setup_base();
   void setup_decoration();
   void setup_layer_shell();
   void setup_activation();

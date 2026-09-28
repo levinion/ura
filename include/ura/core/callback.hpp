@@ -11,6 +11,7 @@ void on_output_frame(wl_listener* listener, void* data);
 void on_output_request_state(wl_listener* listener, void* data);
 void on_output_destroy(wl_listener* listener, void* data);
 void on_output_manager_apply(wl_listener* listener, void* data);
+void on_output_layout_change(wl_listener* listener, void* data);
 void on_output_power_manager_set_mode(wl_listener* listener, void* data);
 
 // seat/callback.cpp

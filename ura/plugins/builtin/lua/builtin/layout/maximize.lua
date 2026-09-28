@@ -3,8 +3,14 @@ local M = {}
 ---@param opt ?table
 function M.setup(opt)
   local function apply(win)
-    local geo = win:output():usable_geometry()
-    assert(geo)
+    local output = win:output()
+    if not output then
+      return
+    end
+    local geo = output:usable_geometry()
+    if not geo or geo.width <= 0 or geo.height <= 0 then
+      return
+    end
     local outer_r = opt and opt.outer_r or 10
     local outer_l = opt and opt.outer_l or 10
     local outer_t = opt and opt.outer_t or 10
@@ -43,10 +49,11 @@ function M.setup(opt)
     end
   end, { ns = "layout.maximize" })
 
-  ura.hook.add("output-usable-geometry-change", function(_)
-    local wins = ura.class.UraWindow:from_tags(ura.class.UraOutput:current():tags())
+  ura.hook.add("output-usable-geometry-change", function(e)
+    local output = ura.class.UraOutput:new(e.id)
+    local wins = ura.class.UraWindow:from_tags(output:tags())
     for _, win in ipairs(wins) do
-      if win:layout() == "maximize" then
+      if win:output() == output and win:layout() == "maximize" then
         apply(win)
       end
     end

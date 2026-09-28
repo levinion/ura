@@ -1,8 +1,10 @@
 #pragma once
 
-#include <absl/container/inlined_vector.h>
 #include <algorithm>
+#include <array>
 #include <cstddef>
+#include <optional>
+#include <vector>
 #include "ura/util/flexible.hpp"
 #include "wlr/util/box.h"
 
@@ -68,9 +70,9 @@ public:
   }
 };
 
-template<typename T, std::size_t N = 128>
-struct Vec: public absl::InlinedVector<T, N> {
-  using absl::InlinedVector<T, N>::InlinedVector;
+template<typename T>
+struct Vec: public std::vector<T> {
+  using std::vector<T>::vector;
 
   std::optional<T> get(int index) {
     if (index < 0 || static_cast<std::size_t>(index) >= this->size()) {
@@ -79,12 +81,13 @@ struct Vec: public absl::InlinedVector<T, N> {
     return (*this)[index];
   }
 
-  void remove(T v) {
-    this->erase(std::remove(this->begin(), this->end(), v), this->end());
+  void remove(const T& value) {
+    auto new_end = std::ranges::remove(*this, value).begin();
+    this->erase(new_end, this->end());
   }
 
-  bool contains(T v) {
-    return std::find(this->begin(), this->end(), v) != this->end();
+  bool contains(const T& value) const {
+    return std::ranges::find(*this, value) != this->end();
   }
 
   flexible::object to_table() {

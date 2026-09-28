@@ -36,6 +36,7 @@ int main(int argc, char** argv) {
   }
 
   auto server = ura::UraServer::get_instance();
-  server->init();
-  server->run();
+  EXIT_IF_ERROR(server->init());
+  EXIT_IF_ERROR(server->run());
+  return 0;
 }

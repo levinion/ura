@@ -1,5 +1,6 @@
 #include "ura/util/flexible.hpp"
 #include "ura/view/toplevel.hpp"
+#include "ura/view/output.hpp"
 #include "ura/core/runtime.hpp"
 #include "ura/core/server.hpp"
 #include "ura/core/callback.hpp"
@@ -64,6 +65,16 @@ void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
   auto args = flexible::create_table();
   args.set("id", toplevel->id());
+  args.set(
+    "requested_fullscreen",
+    toplevel->xdg_toplevel->requested.fullscreen
+  );
+  auto output =
+    UraOutput::from(toplevel->xdg_toplevel->requested.fullscreen_output);
+  if (output)
+    args.set("output_id", output->id());
+  if (toplevel->xdg_toplevel->requested.fullscreen)
+    toplevel->set_fullscreen_output(output);
   server->lua->emit_hook("window-request-fullscreen", args);
 }
 

@@ -81,6 +81,10 @@ struct State {
     ura_ipc: Option<ura_ipc::UraIpc>,
 }
 
+fn inline_args(path: Option<String>, args: Vec<String>) -> Vec<String> {
+    path.into_iter().chain(args).collect()
+}
+
 impl Dispatch<wl_registry::WlRegistry, ()> for State {
     fn event(
         state: &mut Self,
@@ -124,7 +128,7 @@ fn main() -> Result<()> {
     match cli.code {
         Some(code) => {
             let client = Client::new()?;
-            client.execute(code, cli.args);
+            client.execute(code, inline_args(cli.path, cli.args));
             client.run()
         }
         None => match cli.path {
@@ -147,5 +151,41 @@ fn main() -> Result<()> {
                 }
             }
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Cli, inline_args};
+    use clap::Parser;
+
+    #[test]
+    fn parses_inline_code() {
+        let cli = Cli::try_parse_from(["ura-shell", "-c", "print('ok')"]).unwrap();
+        assert_eq!(cli.code.as_deref(), Some("print('ok')"));
+        assert!(cli.path.is_none());
+        assert!(cli.args.is_empty());
+    }
+
+    #[test]
+    fn collects_inline_arguments() {
+        let cli = Cli::try_parse_from(["ura-shell", "-c", "print(arg[1])", "alpha", "--literal"])
+            .unwrap();
+        assert_eq!(inline_args(cli.path, cli.args), ["alpha", "--literal"]);
+    }
+
+    #[test]
+    fn parses_script_and_arguments() {
+        let cli = Cli::try_parse_from(["ura-shell", "config.lua", "alpha", "--literal"]).unwrap();
+        assert_eq!(cli.path.as_deref(), Some("config.lua"));
+        assert_eq!(cli.args, ["alpha", "--literal"]);
+    }
+
+    #[test]
+    fn no_arguments_selects_stdin_mode() {
+        let cli = Cli::try_parse_from(["ura-shell"]).unwrap();
+        assert!(cli.code.is_none());
+        assert!(cli.path.is_none());
+        assert!(cli.args.is_empty());
     }
 }

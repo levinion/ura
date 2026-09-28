@@ -14,7 +14,6 @@ namespace ura {
 
 bool UraPopup::init(wlr_xdg_popup* xdg_popup) {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
   if (xdg_popup->parent) {
     auto client = UraClient::from(xdg_popup->parent);
     this->parent = std::make_unique<UraClient>(client);
@@ -60,8 +59,6 @@ bool UraPopup::init(wlr_xdg_popup* xdg_popup) {
       xdg_popup->base
     );
   }
-
-  output->popups.push_back(this);
 
   this->xdg_popup = xdg_popup;
   this->xdg_popup->base->surface->data = this;
@@ -120,8 +117,8 @@ void UraPopup::unconstrain() {
         auto toplevel = parent.transform<UraToplevel>();
         int lx, ly;
         wlr_scene_node_coords(&toplevel->scene_tree->node, &lx, &ly);
-        box.x = -lx;
-        box.y = -ly;
+        box.x -= lx;
+        box.y -= ly;
         break;
       }
       case UraSurfaceType::LayerShell: {
@@ -129,8 +126,8 @@ void UraPopup::unconstrain() {
         auto layer_shell = parent.transform<UraLayerShell>();
         int lx, ly;
         wlr_scene_node_coords(&layer_shell->scene_tree->node, &lx, &ly);
-        box.x = -lx;
-        box.y = -ly;
+        box.x -= lx;
+        box.y -= ly;
         break;
       }
       case UraSurfaceType::Popup: {
@@ -154,8 +151,6 @@ void UraPopup::commit() {
 
 void UraPopup::destroy() {
   auto server = UraServer::get_instance();
-  auto output = server->view->current_output();
-  output->popups.remove(this);
   server->runtime->remove(this);
   wlr_xdg_popup *_popup, *tmp;
   wl_list_for_each_safe(_popup, tmp, &this->xdg_popup->base->popups, link) {

@@ -62,6 +62,7 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
   // add this shell to output's layer
   auto& list = output->layer_shells_from_layer(layer_surface->pending.layer);
   list.push_back(this);
+  server->view->layer_shell_surfaces.push_back(this);
 }
 
 UraLayerShell* UraLayerShell::from(wlr_surface* surface) {
@@ -87,11 +88,15 @@ void UraLayerShell::unfocus() {
 }
 
 void UraLayerShell::map() {
-  wlr_scene_node_set_enabled(&this->scene_surface->tree->node, true);
   auto server = UraServer::get_instance();
   auto output = server->view->get_output_by_name(this->output);
-  if (output)
-    output->configure_layers();
+  auto geometry = output ? output->logical_geometry() : Vec4<int> {};
+  if (!output || geometry.width <= 0 || geometry.height <= 0) {
+    wlr_scene_node_set_enabled(&this->scene_surface->tree->node, false);
+    return;
+  }
+  wlr_scene_node_set_enabled(&this->scene_surface->tree->node, true);
+  output->configure_layers();
 }
 
 void UraLayerShell::unmap() {
@@ -121,11 +126,13 @@ void UraLayerShell::commit() {
     wlr_scene_node_reparent(&this->scene_tree->node, layer);
   }
 
+  auto output_geo = output->logical_geometry();
+  if (output_geo.width <= 0 || output_geo.height <= 0)
+    return;
+
   // configure size
   auto width = this->layer_surface->current.desired_width;
   auto height = this->layer_surface->current.desired_height;
-
-  auto output_geo = output->logical_geometry();
   if (width == 0)
     width = output_geo.width;
   if (height == 0)
@@ -135,6 +142,8 @@ void UraLayerShell::commit() {
     width != this->layer_surface->current.actual_width
     || height != this->layer_surface->current.actual_height
   ) {
+    if (width <= 0 || height <= 0)
+      return;
     wlr_layer_surface_v1_configure(this->layer_surface, width, height);
     output->configure_layers();
   }
@@ -147,17 +156,17 @@ void UraLayerShell::commit() {
 void UraLayerShell::destroy() {
   auto server = UraServer::get_instance();
   server->runtime->remove(this);
-  // remove from output's layer
+  server->view->layer_shell_surfaces.remove(this);
   auto output = server->view->get_output_by_name(this->output);
-  if (!output)
-    return;
-  auto& layer = output->layer_shells_from_layer(this->layer);
-  layer.remove(this);
-  if (this->focusable()) {
-    server->seat->focus_lru();
+  if (output) {
+    auto& layer = output->layer_shells_from_layer(this->layer);
+    layer.remove(this);
+    if (this->focusable())
+      server->seat->focus_lru();
   }
   this->dismiss_popups();
-  output->configure_layers();
+  if (output)
+    output->configure_layers();
 
   server->globals.erase(this->id());
 }

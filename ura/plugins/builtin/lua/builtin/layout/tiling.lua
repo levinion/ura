@@ -19,7 +19,7 @@ function M.setup(opt)
     local weights = 0
 
     for _, w in ipairs(windows) do
-      if w:layout() == "tiling" then
+      if w:output() == output and w:is_mapped() and w:layout() == "tiling" then
         table.insert(tiling_windows, w)
         if not w:userdata().weight then
           w:update_userdata(function(t)
@@ -62,11 +62,14 @@ function M.setup(opt)
     win:move(x, y)
   end
 
-  ---@param tags table<string>
-  local function apply_all(tags)
-    local wins = ura.class.UraWindow:from_tags(tags)
+  ---@param output UraOutput|nil
+  local function apply_all(output)
+    if not output then
+      return
+    end
+    local wins = ura.class.UraWindow:from_tags(output:tags())
     for _, win in ipairs(wins) do
-      if win:layout() == "tiling" then
+      if win:output() == output and win:layout() == "tiling" then
         apply(win)
       end
     end
@@ -79,44 +82,43 @@ function M.setup(opt)
 
   ura.hook.add("window-layout-change", function(e)
     local win = ura.class.UraWindow:new(e.id)
-    local tags = win:output():tags()
+    local output = win:output()
     if e.to == "tiling" then
       win:set_z_index(ura.g.layer.normal)
-      apply_all(tags)
+      apply_all(output)
     elseif e.from == "tiling" then
-      apply_all(tags)
+      apply_all(output)
     end
   end, o)
 
   ura.hook.add("window-close", function(e)
     local win = ura.class.UraWindow:new(e.id)
     if win:layout() == "tiling" then
-      apply_all(win:output():tags())
+      apply_all(win:output())
     end
   end, o)
 
   ura.hook.add("window-tags-change", function(e)
     local win = ura.class.UraWindow:new(e.id)
     if win:layout() == "tiling" then
-      apply_all(e.from)
-      apply_all(e.to)
+      apply_all(win:output())
     end
   end, o)
 
   ura.hook.add("output-tags-change", function(e)
-    apply_all(e.to)
+    apply_all(ura.class.UraOutput:new(e.id))
   end, o)
 
   ura.hook.add("window-map", function(e)
     local win = ura.class.UraWindow:new(e.id)
     if win:layout() == "tiling" then
-      apply_all(win:output():tags())
+      apply_all(win:output())
     end
   end, o)
 
   ura.hook.add("output-usable-geometry-change", function(e)
     local output = ura.class.UraOutput:new(e.id)
-    apply_all(output:tags())
+    apply_all(output)
   end, o)
 
   ---@class UraWindow
@@ -126,9 +128,9 @@ function M.setup(opt)
     local w = ura.class.UraWindow:current()
     assert(w)
     w:update_userdata(function(t)
-      t.weight = t.weight - ratio
+      t.weight = math.max(0.1, (t.weight or 1) - ratio)
     end)
-    apply_all(w:tags())
+    apply_all(w:output())
   end
 
   ---@class UraWindow
@@ -138,9 +140,9 @@ function M.setup(opt)
     local w = ura.class.UraWindow:current()
     assert(w)
     w:update_userdata(function(t)
-      t.weight = t.weight + ratio
+      t.weight = (t.weight or 1) + ratio
     end)
-    apply_all(w:tags())
+    apply_all(w:output())
   end
 end
 

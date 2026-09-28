@@ -13,16 +13,16 @@
 
 namespace ura {
 
-UraServer* UraServer::init() {
+Status UraServer::init() {
   this->setup_signal();
   this->logger = UraLogger::init();
   this->runtime = UraRuntime::init();
   this->view = UraView::init();
-  this->dispatcher = UraDispatcher<128>::init();
+  ASSIGN_OR_RETURN(this->dispatcher, UraDispatcher<128>::init());
   this->lua = Lua::init();
 
-  this->setup_base();
-  this->setup_ipc();
+  RETURN_IF_ERROR(this->setup_base());
+  RETURN_IF_ERROR(this->setup_ipc());
   this->setup_drm();
   this->setup_compositor();
   this->setup_output();
@@ -37,27 +37,28 @@ UraServer* UraServer::init() {
   this->setup_foreign();
   this->setup_text_input();
   this->setup_others();
-  return this;
+  return Ok();
 }
 
-void UraServer::setup_base() {
+Status UraServer::setup_base() {
   this->display = wl_display_create();
+  if (!this->display)
+    return ResourceExhausted("failed to create Wayland display");
+
   auto event_loop = wl_display_get_event_loop(this->display);
   this->backend = wlr_backend_autocreate(event_loop, &this->session);
-  if (!this->backend) {
-    log::error("failed to create wlr_backend");
-    exit(1);
-  }
+  if (!this->backend)
+    return DeviceError("failed to create wlroots backend");
+
   this->renderer = wlr_renderer_autocreate(this->backend);
-  if (!this->renderer) {
-    log::error("failed to create wlr_renderer");
-    exit(1);
-  }
+  if (!this->renderer)
+    return DeviceError("failed to create wlroots renderer");
+
   this->allocator = wlr_allocator_autocreate(this->backend, this->renderer);
-  if (!this->allocator) {
-    log::error("failed to create wlr_allocator");
-    exit(1);
-  }
+  if (!this->allocator)
+    return ResourceExhausted("failed to create wlroots allocator");
+
+  return Ok();
 }
 
 void UraServer::setup_compositor() {
@@ -85,6 +86,11 @@ void UraServer::setup_output() {
   // create scene
   this->scene_layout =
     wlr_scene_attach_output_layout(this->view->scene, this->output_layout);
+  this->runtime->register_callback(
+    &this->output_layout->events.change,
+    on_output_layout_change,
+    nullptr
+  );
 
   // output_manager_v1
   wlr_xdg_output_manager_v1_create(this->display, this->output_layout);
@@ -269,23 +275,18 @@ void UraServer::setup_others() {
   wlr_alpha_modifier_v1_create(this->display);
 }
 
-void UraServer::run() {
-  this->lua->load_runtime();
+Status UraServer::run() {
+  RETURN_IF_ERROR(this->lua->load_runtime());
   this->lua->emit_hook("prepare", {});
 
   // create wayland socket
   auto socket = wl_display_add_socket_auto(this->display);
-  if (!socket) {
-    wlr_backend_destroy(this->backend);
-    exit(1);
-  }
+  if (!socket)
+    return IoError("failed to create Wayland socket");
 
   // start backend
-  if (!wlr_backend_start(this->backend)) {
-    wlr_backend_destroy(this->backend);
-    wl_display_destroy(this->display);
-    exit(1);
-  }
+  if (!wlr_backend_start(this->backend))
+    return DeviceError("failed to start wlroots backend");
 
   // set env
   setenv("WAYLAND_DISPLAY", socket, true);
@@ -293,18 +294,19 @@ void UraServer::run() {
 
   auto event_loop = wl_display_get_event_loop(this->display);
   // wayland event_loop
-  this->dispatcher->add_task(wl_event_loop_get_fd(event_loop), [=, this]() {
-    if (wl_event_loop_dispatch(event_loop, 0) == -1)
-      return false;
-    wl_display_flush_clients(this->display);
-    return true;
-  });
+  RETURN_IF_ERROR(
+    this->dispatcher->add_task(wl_event_loop_get_fd(event_loop), [=, this]() {
+      if (wl_event_loop_dispatch(event_loop, 0) == -1)
+        return false;
+      wl_display_flush_clients(this->display);
+      return true;
+    })
+  );
   this->lua->emit_hook("ready", {});
 
-  while (!this->quit) {
-    if (!dispatcher->dispatch())
-      break;
-  }
+  while (!this->quit) RETURN_IF_ERROR(this->dispatcher->dispatch());
+
+  return Ok();
 }
 
 void UraServer::destroy() {
@@ -329,13 +331,17 @@ void UraServer::setup_signal() {
   sigaction(SIGCHLD, &sa, nullptr);
 }
 
-void UraServer::setup_ipc() {
+Status UraServer::setup_ipc() {
   this->ipc = ura_ipc_create(this->display);
+  if (!this->ipc)
+    return ResourceExhausted("failed to create ura IPC global");
+
   this->runtime->register_callback(
     &this->ipc->events.request,
     on_ura_ipc_request,
     nullptr
   );
+  return Ok();
 }
 
 } // namespace ura

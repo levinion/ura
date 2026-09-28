@@ -1,53 +1,70 @@
 #pragma once
-#include <absl/container/flat_hash_map.h>
+#include <unordered_map>
 #include <sys/epoll.h>
+#include <unistd.h>
 #include <array>
-#include <cassert>
+#include <cerrno>
+#include <cstring>
 #include <cstdint>
 #include <ctime>
 #include <functional>
 #include <memory>
 #include <sys/timerfd.h>
 #include <chrono>
+#include <string>
+#include <utility>
+#include "ura/core/status.hpp"
 
 namespace ura {
 
 template<int MAXEVENTS>
 class UraDispatcher {
 public:
-  static std::unique_ptr<UraDispatcher<MAXEVENTS>> init() {
+  static StatusOr<std::unique_ptr<UraDispatcher<MAXEVENTS>>> init() {
     auto dispatcher = std::make_unique<UraDispatcher<MAXEVENTS>>();
     dispatcher->fd = epoll_create1(0);
-    assert(dispatcher->fd != -1);
+    if (dispatcher->fd == -1) {
+      return IoError(
+        "epoll_create1 failed: " + std::string(std::strerror(errno))
+      );
+    }
     return dispatcher;
   }
 
-  // if it goes wrong, then a false value will be returned
-  bool dispatch() {
+  ~UraDispatcher() {
+    if (this->fd != -1)
+      close(this->fd);
+  }
+
+  Status dispatch() {
     int nfds = epoll_wait(this->fd, this->events.data(), MAXEVENTS, -1);
     if (nfds == -1) {
       if (errno == EINTR)
-        return true;
-      return false;
+        return Ok();
+      return IoError("epoll_wait failed: " + std::string(std::strerror(errno)));
     }
     for (int i = 0; i < nfds; i++) {
       auto current_fd = this->events[i].data.fd;
       if (this->tasks.contains(current_fd)) {
         auto task = this->tasks[current_fd];
         if (!task())
-          return false;
+          return Internal("event-loop task failed");
       }
     }
-    return true;
+    return Ok();
   }
 
-  void add_task(int fd, std::function<bool()> callback) {
+  Status add_task(int fd, std::function<bool()> callback) {
     epoll_event event {};
     event.events = EPOLLIN;
     event.data.fd = fd;
-    if (epoll_ctl(this->fd, EPOLL_CTL_ADD, fd, &event) == -1)
-      return;
-    this->tasks[fd] = callback;
+    if (epoll_ctl(this->fd, EPOLL_CTL_ADD, fd, &event) == -1) {
+      return IoError(
+        "epoll_ctl(EPOLL_CTL_ADD) failed: " + std::string(std::strerror(errno))
+      );
+    }
+    this->tasks[fd] = std::move(callback);
+    return Ok();
   }
 
   void remove_task(int fd) {
@@ -82,14 +99,17 @@ public:
       return -1;
     }
 
-    this->add_task(fd, [=, this]() {
-      uint64_t expirations;
-      if (read(fd, &expirations, sizeof(expirations)) > 0) {
-        callback();
-      }
-      this->remove_task(fd);
-      return true;
-    });
+    if (!this->add_task(fd, [=, this]() {
+          uint64_t expirations;
+          if (read(fd, &expirations, sizeof(expirations)) > 0) {
+            callback();
+          }
+          this->remove_task(fd);
+          return true;
+        })) {
+      close(fd);
+      return -1;
+    }
 
     return fd;
   }
@@ -128,13 +148,16 @@ public:
       return -1;
     }
 
-    this->add_task(fd, [=, this]() {
-      uint64_t expirations;
-      if (read(fd, &expirations, sizeof(expirations)) > 0) {
-        callback();
-      }
-      return true;
-    });
+    if (!this->add_task(fd, [=]() {
+          uint64_t expirations;
+          if (read(fd, &expirations, sizeof(expirations)) > 0) {
+            callback();
+          }
+          return true;
+        })) {
+      close(fd);
+      return -1;
+    }
 
     return fd;
   }
@@ -144,9 +167,9 @@ public:
   }
 
 private:
-  int fd;
+  int fd = -1;
   std::array<epoll_event, MAXEVENTS> events;
-  absl::flat_hash_map<int, std::function<bool()>> tasks;
+  std::unordered_map<int, std::function<bool()>> tasks;
 };
 
 } // namespace ura

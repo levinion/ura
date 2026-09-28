@@ -84,7 +84,7 @@ ura.api = {
   --- @param id integer
   --- @return boolean|nil
   is_window_maximized_requested = function(id) end,
-  --- @param id any
+  --- @param id integer
   --- @return table|nil
   get_window_geometry = function(id) end,
   --- @param id integer
@@ -124,19 +124,13 @@ ura.api = {
   --- @param theme string
   --- @param size integer
   set_cursor_theme = function(theme, size) end,
-  --- @return string
-  get_cursor_theme = function() end,
-  --- @return integer
-  get_cursor_size = function() end,
   --- @param flag boolean
   set_cursor_visible = function(flag) end,
   --- @return boolean
-  is_cursor_visible = function() end,
+  get_cursor_visible = function() end,
   --- @param name string
   set_cursor_shape = function(name) end,
-  --- @return string
-  get_cursor_shape = function() end,
-  --- @return table
+  --- @return {x: number, y: number}
   get_cursor_pos = function() end,
 
   -- output
@@ -147,8 +141,9 @@ ura.api = {
   get_output = function(name) end,
   --- @return table<integer>
   get_all_outputs = function() end,
+  --- @param id integer
   --- @return string|nil
-  get_output_name = function() end,
+  get_output_name = function(id) end,
   --- @param id integer
   --- @return table|nil
   get_output_logical_geometry = function(id) end,
@@ -159,7 +154,7 @@ ura.api = {
   --- @return number|nil
   get_output_scale = function(id) end,
   --- @param id integer
-  --- @param tags table< string>
+  --- @param tags table<string>
   set_output_tags = function(id, tags) end,
   --- @param id integer
   --- @return table<string>|nil

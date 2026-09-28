@@ -1,31 +1,30 @@
 #pragma once
 
 #include <cassert>
-#include <nlohmann/detail/value_t.hpp>
-#include <nlohmann/json_fwd.hpp>
 #include <optional>
 #include <sol/forward.hpp>
 #include <sol/object.hpp>
 #include <sol/state.hpp>
 #include <sol/types.hpp>
 #include <string_view>
-#include <nlohmann/json.hpp>
+#include <vector>
 #include <sol/sol.hpp>
-#include <absl/strings/str_split.h>
+#include "ura/util/json.hpp"
+#include "ura/util/string.hpp"
 
 namespace flexible {
 
 using object = sol::object;
 using table = sol::table;
 using function = sol::protected_function;
-using json = nlohmann::json;
+using json = ura::util::json;
 
 sol::nil_t nil();
 sol::table create_table();
 
 template<typename T>
 void set(table& t, std::string_view key, T&& value) {
-  std::vector<std::string> keys = absl::StrSplit(key, '.');
+  auto keys = ura::util::split(key, '.');
   auto current_table = t;
   for (std::size_t i = 0; i < keys.size() - 1; ++i) {
     auto& k = keys[i];
@@ -36,7 +35,7 @@ void set(table& t, std::string_view key, T&& value) {
 
 template<typename T>
 std::optional<T> get(table& t, std::string_view key) {
-  std::vector<std::string> keys = absl::StrSplit(key, '.');
+  auto keys = ura::util::split(key, '.');
   auto current_table = t;
   for (std::size_t i = 0; i < keys.size() - 1; ++i) {
     auto& k = keys[i];

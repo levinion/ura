@@ -11,7 +11,7 @@ RUN groupadd -g "${GID}" dev \
 RUN pacman -Syu --noconfirm \
     && pacman -S --noconfirm \
       git libnotify spdlog luajit wlroots0.20 wayland-protocols \
-      cmake ninja sccache nlohmann-json cxxopts cargo abseil-cpp
+      cmake ninja sccache glaze cxxopts cargo
 
 USER dev
 

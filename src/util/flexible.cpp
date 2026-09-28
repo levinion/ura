@@ -1,4 +1,5 @@
 #include "ura/util/flexible.hpp"
+#include <glaze/json/generic.hpp>
 #include "ura/core/server.hpp"
 #include "ura/core/lua.hpp"
 
@@ -14,7 +15,7 @@ sol::table create_table() {
 
 json to_json(object& obj) {
   if (obj.is<sol::nil_t>())
-    return {};
+    return nullptr;
   if (obj.get_type() == sol::type::boolean)
     return obj.as<bool>();
   if (obj.get_type() == sol::type::number) {
@@ -42,7 +43,7 @@ json to_json(object& obj) {
       }
     }
     if (!is_array) {
-      auto dst = nlohmann::json::object();
+      auto dst = json::object_t{};
       for (auto& [key, v] : src) {
         if (key.is<std::string>())
           dst[key.as<std::string>()] = to_json(v);
@@ -52,14 +53,14 @@ json to_json(object& obj) {
       }
       return dst;
     } else {
-      auto dst = nlohmann::json::array();
+      auto dst = json::array_t{};
       for (auto& [_, v] : src) {
         dst.push_back(to_json(v));
       }
       return dst;
     }
   }
-  return {};
+  return nullptr;
 }
 
 flexible::object from(json& j) {
@@ -68,28 +69,26 @@ flexible::object from(json& j) {
     return sol::nil;
   if (j.is_boolean())
     return sol::make_object(state, j.get<bool>());
-  if (j.is_number_integer())
-    return sol::make_object(state, j.get<int>());
-  if (j.is_number_unsigned())
+  if (j.is_int64())
+    return sol::make_object(state, j.get<int64_t>());
+  if (j.is_uint64())
     return sol::make_object(state, j.get<uint64_t>());
-  if (j.is_number_float())
+  if (j.is_double())
     return sol::make_object(state, j.get<double>());
   if (j.is_string()) {
     return sol::make_object(state, j.get<std::string>());
   }
   if (j.is_array()) {
-    auto src = j;
     auto dst = create_table();
     int i = 1;
-    for (auto& v : src) {
+    for (auto& v : j.get_array()) {
       dst[i++] = from(v);
     }
     return dst;
   }
   if (j.is_object()) {
-    auto src = j;
     auto dst = create_table();
-    for (auto& [k, v] : src.items()) {
+    for (auto& [k, v] : j.get_object()) {
       dst[k] = from(v);
     }
     return dst;
@@ -98,8 +97,8 @@ flexible::object from(json& j) {
 }
 
 object from_str(std::string_view str) {
-  auto result = nlohmann::json::parse(str, nullptr, false, false);
-  if (result.is_discarded())
+  json result;
+  if (!ura::util::parse_json(str, result))
     return {};
   return from(result);
 }

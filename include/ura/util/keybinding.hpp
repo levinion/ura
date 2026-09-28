@@ -1,13 +1,13 @@
 #pragma once
-#include <absl/strings/ascii.h>
 #include <wayland-server-protocol.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 #include "ura/ura.hpp"
-#include <absl/strings/str_split.h>
+#include "ura/util/string.hpp"
 #include <linux/input-event-codes.h>
 
 namespace ura::util {
@@ -31,11 +31,11 @@ inline uint64_t construct_keybinding_id(uint8_t mod, uint32_t sym) {
 
 inline std::optional<uint64_t> get_keybinding_id(std::string_view pattern) {
   // modifiers str to modifiers bit
-  std::vector<std::string> keys = absl::StrSplit(pattern, '+');
+  auto keys = split(pattern, '+');
   if (keys.empty())
     return {};
   for (auto& key : keys) {
-    key = absl::AsciiStrToLower(absl::StripAsciiWhitespace(key));
+    key = ascii_lower(strip_ascii_whitespace(key));
   }
   uint8_t mod = 0;
   if (keys.size() > 1) {

@@ -22,7 +22,6 @@ Dependencies include:
 - [luajit](http://luajit.org/)
 - [libnotify](https://gitlab.gnome.org/GNOME/libnotify)
 - [spdlog](https://github.com/gabime/spdlog)
-- [abseil-cpp](https://github.com/abseil/abseil-cpp)
 
 Make dependencies include:
 
@@ -32,7 +31,7 @@ Make dependencies include:
 - make
 - cmake
 - pkgconf
-- [nlohmann-json](https://github.com/nlohmann/json)
+- [Glaze](https://github.com/stephenberry/glaze)
 - cxxopts
 - ninja (optional)
 - sccache (optional)
@@ -41,6 +40,12 @@ Make dependencies include:
 git clone https://github.com/levinion/ura.git
 cd ura
 make
+```
+
+Run the C++ and tool tests with:
+
+```shell
+ctest --test-dir build --output-on-failure
 ```
 
 ### Docker
@@ -59,11 +64,7 @@ paru/yay -S ura-git
 
 ## Configuration
 
-Ura's configuration files are searched in the following order:
-
-- `$XDG_CONFIG_HOME/ura/init.lua`
-- `$HOME/.config/ura/init.lua`
-- `/etc/ura/init.lua`
+Ura looks for its configuration in `$XDG_CONFIG_HOME/ura/init.lua` when `XDG_CONFIG_HOME` is set, or `$HOME/.config/ura/init.lua` otherwise. If that selected user path is missing, it falls back to `/etc/ura/init.lua`.
 
 The [default configuration file](/assets/init.lua) is installed with Ura at `/etc/ura/init.lua`. If you wish to modify it, it's recommended to copy it to your user directory before making changes.
 
@@ -104,7 +105,7 @@ ura.hook.add("prepare", function(_)
 end)
 ```
 
-Use the `ready` hook (note: hook names may change across versions) to start applications just before the compositor starts running:
+Use the `ready` hook to start applications after the compositor backend is running:
 
 ```lua
 ura.hook.add("ready", function(_)
@@ -113,7 +114,7 @@ ura.hook.add("ready", function(_)
 end)
 ```
 
-The `window-new` hook is triggered when a new top-level window is created and focused. You can use it to apply window-specific styling:
+The `window-new` hook runs when a new top-level window is prepared, before its first map. You can use it to apply window-specific styling:
 
 ```lua
 ura.hook.add("window-new", function(e)
@@ -128,13 +129,9 @@ ura.hook.add("window-new", function(e)
 end)
 ```
 
-...
-
-More hooks could be found in the WIKI (TODO)。
+For the complete Lua-side API, see the [Lua API reference](docs/lua-api.md), including the [hook names and event payloads](docs/lua-api/hooks.md).
 
 More configuration examples are available at: [examples](https://github.com/levinion/dotfiles/tree/main/user/ura/.config/ura)
-
-For more infomation, please visit [Ura Wiki](https://github.com/levinion/ura/wiki)
 
 ## Dev
 

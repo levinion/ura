@@ -31,9 +31,19 @@ UraOutput* UraView::current_output() {
   auto pos = server->seat->cursor->position();
   auto output =
     wlr_output_layout_output_at(server->output_layout, pos.x, pos.y);
-  if (!output)
-    return nullptr;
-  return UraOutput::from(output);
+  if (!output) {
+    double x, y;
+    wlr_output_layout_closest_point(
+      server->output_layout,
+      nullptr,
+      pos.x,
+      pos.y,
+      &x,
+      &y
+    );
+    output = wlr_output_layout_output_at(server->output_layout, x, y);
+  }
+  return output ? UraOutput::from(output) : nullptr;
 }
 
 UraOutput* UraView::get_output_by_name(std::string_view name) {
@@ -83,12 +93,7 @@ void UraView::notify_scale(wlr_surface* surface, double scale) {
 }
 
 Vec<UraLayerShell*> UraView::layer_shells() {
-  Vec<UraLayerShell*> layer_shells;
-  for (auto [_, output] : this->outputs) {
-    auto shells = output->layer_shells();
-    layer_shells.insert(layer_shells.begin(), shells.begin(), shells.end());
-  }
-  return layer_shells;
+  return this->layer_shell_surfaces;
 }
 
 } // namespace ura

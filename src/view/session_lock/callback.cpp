@@ -7,6 +7,17 @@
 #include "ura/seat/seat.hpp"
 
 namespace ura {
+namespace {
+void restore_session_after_unlock(UraSessionLock* lock) {
+  auto server = UraServer::get_instance();
+  server->seat->locked = false;
+  server->seat->unfocus();
+  wlr_scene_node_set_enabled(&lock->scene_tree->node, false);
+  server->seat->cursor->set_visible(true);
+  server->seat->focus_lru();
+}
+} // namespace
+
 void on_new_session_lock(wl_listener* listener, void* data) {
   auto session_lock = static_cast<wlr_session_lock_v1*>(data);
   auto server = UraServer::get_instance();
@@ -36,6 +47,9 @@ void on_new_session_lock(wl_listener* listener, void* data) {
 void on_session_lock_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto lock = server->runtime->fetch<UraSessionLock*>(listener);
+  // A killed lock client may be destroyed without sending the unlock event.
+  if (server->seat->locked)
+    restore_session_after_unlock(lock);
   server->runtime->remove(lock);
   delete lock;
 }
@@ -43,11 +57,7 @@ void on_session_lock_destroy(wl_listener* listener, void* data) {
 void on_session_lock_unlock(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto lock = server->runtime->fetch<UraSessionLock*>(listener);
-  server->seat->locked = false;
-  server->seat->unfocus();
-  wlr_scene_node_set_enabled(&lock->scene_tree->node, false);
-  server->seat->cursor->set_visible(true);
-  server->seat->focus_lru();
+  restore_session_after_unlock(lock);
 }
 
 void on_session_lock_new_surface(wl_listener* listener, void* data) {
@@ -84,7 +94,8 @@ void on_session_lock_new_surface(wl_listener* listener, void* data) {
 void on_session_lock_surface_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto lock_surface = server->runtime->fetch<UraSessionLockSurface*>(listener);
-  lock_surface->output->session_lock_surface = nullptr;
+  if (lock_surface->output)
+    lock_surface->output->session_lock_surface = nullptr;
   server->runtime->remove(lock_surface);
   delete lock_surface;
 }

@@ -1,11 +1,10 @@
 #pragma once
-#include <absl/strings/ascii.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
 #include <array>
 #include <cctype>
 #include <optional>
 #include <string>
-#include <absl/strings/str_split.h>
+#include <string_view>
 
 namespace ura::util {
 

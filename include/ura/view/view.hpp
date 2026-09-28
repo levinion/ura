@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <map>
+#include <unordered_map>
 #include "ura/ura.hpp"
 #include "ura/view/output.hpp"
 
@@ -24,9 +25,10 @@ class UraView {
 public:
   wlr_scene* scene;
   std::map<int, wlr_scene_tree*> layers;
-  absl::flat_hash_map<std::string, UraOutput*> outputs;
-  absl::flat_hash_map<std::string, UraOutputContext> output_contexts;
+  std::unordered_map<std::string, UraOutput*> outputs;
+  std::unordered_map<std::string, UraOutputContext> output_contexts;
   Vec<UraToplevel*> toplevels;
+  Vec<UraLayerShell*> layer_shell_surfaces;
 
   static std::unique_ptr<UraView> init();
   wlr_scene_tree* get_scene_tree_or_create(int z);

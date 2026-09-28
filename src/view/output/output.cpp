@@ -7,8 +7,9 @@
 #include "ura/util/rgb.hpp"
 #include "ura/util/vec.hpp"
 #include "ura/view/layer_shell.hpp"
+#include "ura/view/toplevel.hpp"
+#include "ura/view/session_lock.hpp"
 #include <array>
-#include <cassert>
 #include <ranges>
 #include "ura/view/view.hpp"
 #include "ura/core/lua.hpp"
@@ -38,6 +39,12 @@ void UraOutput::init(wlr_output* _wlr_output) {
   // bind render and allocator to this output
   wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
 
+  auto restored_context = this->restore_context();
+  auto resume = restored_context.has_value();
+  auto restored_geometry =
+    restored_context ? restored_context->logical_geometry : Vec4<int> {};
+  this->last_notified_scale = this->scale();
+
   // register callback
   server->runtime
     ->register_callback(&this->output->events.frame, on_output_frame, this);
@@ -49,14 +56,19 @@ void UraOutput::init(wlr_output* _wlr_output) {
   server->runtime
     ->register_callback(&this->output->events.destroy, on_output_destroy, this);
 
-  // set usable area to full area
-  this->usable_area = this->logical_geometry();
-
-  this->update_background();
-
-  // add this output to scene layout
-  auto output_layout_output =
-    wlr_output_layout_add_auto(server->output_layout, this->output);
+  // add this output to scene layout before using its global logical geometry
+  wlr_output_layout_output* output_layout_output;
+  if (resume && restored_geometry.width > 0 && restored_geometry.height > 0) {
+    output_layout_output = wlr_output_layout_add(
+      server->output_layout,
+      this->output,
+      restored_geometry.x,
+      restored_geometry.y
+    );
+  } else {
+    output_layout_output =
+      wlr_output_layout_add_auto(server->output_layout, this->output);
+  }
 
   auto scene_output =
     wlr_scene_output_create(server->view->scene, this->output);
@@ -66,11 +78,16 @@ void UraOutput::init(wlr_output* _wlr_output) {
     scene_output
   );
 
-  auto resume = server->view->output_contexts.contains(this->name);
+  // set usable area to full area
+  this->usable_area = this->logical_geometry();
+  this->last_logical_geometry = this->usable_area;
+  this->last_geometry_enabled =
+    this->usable_area.width > 0 && this->usable_area.height > 0;
+  this->update_background();
+
   server->view->outputs[this->name] = this;
-  if (resume) {
-    this->restore_context();
-  }
+  this->attach_layer_shells();
+  this->refresh_geometry();
 
   auto configuration = wlr_output_configuration_v1_create();
   for (auto [_, output] : server->view->outputs) {
@@ -94,13 +111,15 @@ void UraOutput::init(wlr_output* _wlr_output) {
 }
 
 UraOutput* UraOutput::from(wlr_output* output) {
-  return static_cast<UraOutput*>(output->data);
+  return output ? static_cast<UraOutput*>(output->data) : nullptr;
 }
 
 UraOutput* UraOutput::from(uint64_t id) {
   auto server = UraServer::get_instance();
-  if (server->globals.contains(id)
-      && server->globals[id].type == UraGlobalType::Output)
+  if (
+    server->globals.contains(id)
+    && server->globals[id].type == UraGlobalType::Output
+  )
     return reinterpret_cast<UraOutput*>(id);
   return nullptr;
 }
@@ -111,10 +130,67 @@ UraOutput* UraOutput::from(std::string_view name) {
 }
 
 void UraOutput::set_scale(float scale) {
-  if (this->output->scale != scale) {
-    this->output->scale = scale;
-    this->update_background();
+  if (this->output->scale == scale)
+    return;
+
+  this->output->scale = scale;
+  this->refresh_geometry();
+
+  auto server = UraServer::get_instance();
+  for (auto toplevel : server->view->toplevels) {
+    if (toplevel->output() == this)
+      toplevel->set_scale(scale);
   }
+}
+
+void UraOutput::refresh_geometry() {
+  auto geometry = this->logical_geometry();
+  bool enabled = geometry.width > 0 && geometry.height > 0;
+  bool scale_changed = this->last_notified_scale != this->scale()
+    || (enabled && !this->last_geometry_enabled);
+  this->last_notified_scale = this->scale();
+  this->last_geometry_enabled = enabled;
+  if (enabled)
+    this->last_logical_geometry = geometry;
+  this->update_background();
+
+  auto server = UraServer::get_instance();
+  for (auto layer_shell : this->layer_shells()) {
+    wlr_scene_node_set_enabled(
+      &layer_shell->scene_tree->node,
+      enabled && layer_shell->layer_surface->surface->mapped
+    );
+    if (enabled && scale_changed) {
+      server->view->notify_scale(
+        layer_shell->layer_surface->surface,
+        this->scale()
+      );
+    }
+  }
+  if (this->session_lock_surface) {
+    if (enabled) {
+      wlr_scene_node_set_enabled(
+        &this->session_lock_surface->scene_tree->node,
+        true
+      );
+      wlr_scene_node_set_position(
+        &this->session_lock_surface->scene_tree->node,
+        geometry.x,
+        geometry.y
+      );
+      wlr_session_lock_surface_v1_configure(
+        this->session_lock_surface->surface,
+        geometry.width,
+        geometry.height
+      );
+    } else {
+      wlr_scene_node_set_enabled(
+        &this->session_lock_surface->scene_tree->node,
+        false
+      );
+    }
+  }
+  this->configure_layers();
 }
 
 float UraOutput::scale() {
@@ -135,10 +211,48 @@ void UraOutput::commit() {
 
 void UraOutput::destroy() {
   auto server = UraServer::get_instance();
+  for (auto toplevel : server->view->toplevels)
+    toplevel->output_destroyed(this);
+  this->detach_layer_shells();
+  if (this->session_lock_surface) {
+    wlr_scene_node_set_enabled(
+      &this->session_lock_surface->scene_tree->node,
+      false
+    );
+    this->session_lock_surface->output = nullptr;
+    this->session_lock_surface = nullptr;
+  }
   this->save_context();
   server->runtime->remove(this);
   server->view->outputs.erase(this->name);
   server->globals.erase(this->id());
+  wlr_scene_node_destroy(&this->background->node);
+}
+
+void UraOutput::attach_layer_shells() {
+  auto server = UraServer::get_instance();
+  for (auto layer_shell : server->view->layer_shell_surfaces) {
+    if (layer_shell->output != this->name)
+      continue;
+    if (layer_shell->layer_surface->initialized)
+      layer_shell->layer = layer_shell->layer_surface->current.layer;
+    auto& layer = this->layer_shells_from_layer(layer_shell->layer);
+    if (!layer.contains(layer_shell))
+      layer.push_back(layer_shell);
+    auto scene_layer = server->view->get_scene_tree_or_create(
+      server->view->get_z_index_by_type(layer_shell->layer)
+    );
+    wlr_scene_node_reparent(&layer_shell->scene_tree->node, scene_layer);
+    layer_shell->layer_surface->output = this->output;
+  }
+}
+
+void UraOutput::detach_layer_shells() {
+  for (auto layer_shell : this->layer_shells()) {
+    wlr_scene_node_set_enabled(&layer_shell->scene_tree->node, false);
+    if (layer_shell->layer_surface->output == this->output)
+      layer_shell->layer_surface->output = nullptr;
+  }
 }
 
 Vec<UraLayerShell*>&
@@ -194,9 +308,20 @@ void UraOutput::configure_layer(
 
 bool UraOutput::configure_layers() {
   auto server = UraServer::get_instance();
-  if (server->view->current_output() != this)
-    return false;
-  auto full_area = this->logical_geometry().to_wlr_box();
+  auto geometry = this->logical_geometry();
+  if (geometry.width <= 0 || geometry.height <= 0) {
+    for (auto layer_shell : this->layer_shells())
+      wlr_scene_node_set_enabled(&layer_shell->scene_tree->node, false);
+    if (this->usable_area.empty())
+      return false;
+    this->usable_area = {};
+    auto args = flexible::create_table();
+    args.set("id", this->id());
+    server->lua->emit_hook("output-usable-geometry-change", args);
+    return true;
+  }
+
+  auto full_area = geometry.to_wlr_box();
   auto usable_area = full_area;
   for (auto exclusive : { true, false }) {
     // overlay
@@ -228,10 +353,11 @@ bool UraOutput::configure_layers() {
       exclusive
     );
   }
-  if (this->usable_area.x != usable_area.x
-      || this->usable_area.y != usable_area.y
-      || this->usable_area.width != usable_area.width
-      || this->usable_area.height != usable_area.height) {
+  if (
+    this->usable_area.x != usable_area.x || this->usable_area.y != usable_area.y
+    || this->usable_area.width != usable_area.width
+    || this->usable_area.height != usable_area.height
+  ) {
     this->usable_area = Vec4<int>::from(usable_area);
     auto args = flexible::create_table();
     args.set("id", this->id());
@@ -246,9 +372,12 @@ Vec4<int> UraOutput::physical_geometry() {
 }
 
 Vec4<int> UraOutput::logical_geometry() {
-  int width, height;
-  wlr_output_effective_resolution(this->output, &width, &height);
-  return { 0, 0, width, height };
+  auto server = UraServer::get_instance();
+  wlr_box box {};
+  if (!wlr_output_layout_get(server->output_layout, this->output))
+    return {};
+  wlr_output_layout_get_box(server->output_layout, this->output, &box);
+  return { box.x, box.y, box.width, box.height };
 }
 
 void UraOutput::set_dpms_mode(bool flag) {
@@ -259,15 +388,22 @@ void UraOutput::set_dpms_mode(bool flag) {
 
 void UraOutput::update_background() {
   auto logical_geometry = this->logical_geometry();
-  if (this->background->width != logical_geometry.width
-      || this->background->height != logical_geometry.height)
+  wlr_scene_node_set_enabled(
+    &this->background->node,
+    logical_geometry.width > 0 && logical_geometry.height > 0
+  );
+  if (logical_geometry.width > 0 && logical_geometry.height > 0
+      && (this->background->width != logical_geometry.width
+          || this->background->height != logical_geometry.height))
     wlr_scene_rect_set_size(
       this->background,
       logical_geometry.width,
       logical_geometry.height
     );
-  if (this->background->node.x != logical_geometry.x
-      || this->background->node.y != logical_geometry.y)
+  if (
+    this->background->node.x != logical_geometry.x
+    || this->background->node.y != logical_geometry.y
+  )
     wlr_scene_node_set_position(
       &this->background->node,
       logical_geometry.x,
@@ -317,10 +453,9 @@ void UraOutput::apply(wlr_output_configuration_v1* config) {
   }
   auto server = UraServer::get_instance();
   if (wlr_backend_commit(server->backend, states, states_len)) {
+    this->apply_layout(config);
     wlr_output_configuration_v1_send_succeeded(config);
     wlr_output_manager_v1_set_configuration(server->output_manager, config);
-    this->configure_layers();
-    this->update_background();
   } else {
     wlr_output_configuration_v1_send_failed(config);
     wlr_output_configuration_v1_destroy(config);
@@ -328,21 +463,61 @@ void UraOutput::apply(wlr_output_configuration_v1* config) {
   delete states;
 }
 
+void UraOutput::apply_layout(wlr_output_configuration_v1* config) {
+  auto server = UraServer::get_instance();
+  wlr_output_configuration_head_v1* head;
+  wl_list_for_each(head, &config->heads, link) {
+    if (!head->state.enabled) {
+      wlr_output_layout_remove(server->output_layout, head->state.output);
+      continue;
+    }
+    bool was_in_layout =
+      wlr_output_layout_get(server->output_layout, head->state.output);
+    auto layout_output = wlr_output_layout_add(
+      server->output_layout,
+      head->state.output,
+      head->state.x,
+      head->state.y
+    );
+    if (was_in_layout || !layout_output)
+      continue;
+
+    auto scene_output =
+      wlr_scene_get_scene_output(server->view->scene, head->state.output);
+    if (!scene_output) {
+      scene_output =
+        wlr_scene_output_create(server->view->scene, head->state.output);
+    }
+    if (scene_output) {
+      wlr_scene_output_layout_add_output(
+        server->scene_layout,
+        layout_output,
+        scene_output
+      );
+    }
+  }
+}
+
 void UraOutput::save_context() {
   auto server = UraServer::get_instance();
   server->view->output_contexts[this->name] = this->context();
 }
 
-void UraOutput::restore_context() {
+std::optional<UraOutputContext> UraOutput::restore_context() {
   auto server = UraServer::get_instance();
-  assert(server->view->output_contexts.contains(this->name));
-  auto& context = server->view->output_contexts[this->name];
-  this->tags = context.tags;
+  auto context = server->view->output_contexts.find(this->name);
+  if (context == server->view->output_contexts.end())
+    return {};
+  this->tags = context->second.tags;
+  this->output->scale = context->second.scale;
+  return context->second;
 }
 
 UraOutputContext UraOutput::context() {
   UraOutputContext ctx;
   ctx.tags = this->tags;
+  ctx.logical_geometry = this->last_logical_geometry;
+  ctx.scale = this->scale();
   return ctx;
 }
 

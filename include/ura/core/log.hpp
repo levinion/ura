@@ -1,12 +1,12 @@
 #pragma once
 
-#include <absl/strings/ascii.h>
 #include <fmt/base.h>
 #include <libnotify/notify.h>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
 #include <utility>
 #include "ura/ura.hpp" // IWYU pragma: keep
+#include "ura/util/string.hpp"
 
 namespace ura {
 
@@ -16,7 +16,7 @@ public:
 
   inline static UraLogLevel from_str(std::string _level) {
     auto log_level = UraLogLevel {};
-    auto level_str = absl::AsciiStrToLower(_level);
+    auto level_str = util::ascii_lower(_level);
     if (level_str == "debug")
       log_level.level = Level::Debug;
     else if (level_str == "error")

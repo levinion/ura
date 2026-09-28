@@ -11,9 +11,8 @@
 #include "ura/view/view.hpp"
 #include "ura/view/toplevel.hpp"
 #include "ura/util/keybinding.hpp"
+#include "ura/util/string.hpp"
 #include "ura/seat/seat.hpp"
-#include <absl/strings/str_split.h>
-#include <absl/strings/str_join.h>
 #include <fcntl.h>
 #include <libinput.h>
 #include <sys/types.h>
@@ -123,12 +122,12 @@ void append_package_path(std::string path) {
   auto package_path = package.value().get<std::optional<std::string>>("path");
   if (!package_path)
     return;
-  std::vector<std::string> paths = absl::StrSplit(package_path.value(), ';');
+  auto paths = util::split(package_path.value(), ';');
   auto set = std::unordered_set(paths.begin(), paths.end());
   if (set.contains(path))
     return;
   paths.push_back(path);
-  std::string result = absl::StrJoin(paths, ";");
+  std::string result = util::join(paths, ";");
   package.value().set("path", result);
 }
 
@@ -140,12 +139,12 @@ void prepend_package_path(std::string path) {
   auto package_path = package.value().get<std::optional<std::string>>("path");
   if (!package_path)
     return;
-  std::vector<std::string> paths = absl::StrSplit(package_path.value(), ';');
+  auto paths = util::split(package_path.value(), ';');
   auto set = std::unordered_set(paths.begin(), paths.end());
   if (set.contains(path))
     return;
   paths.insert(paths.begin(), path);
-  std::string result = absl::StrJoin(paths, ";");
+  std::string result = util::join(paths, ";");
   package.value().set("path", result);
 }
 
@@ -434,8 +433,7 @@ flexible::object get_userdata(uint64_t id) {
 }
 
 std::string to_json(flexible::object obj) {
-  return flexible::to_json(obj)
-    .dump(-1, ' ', false, nlohmann::detail::error_handler_t::ignore);
+  return ura::util::stringify_json(flexible::to_json(obj));
 }
 
 flexible::object parse_json(std::string str) {

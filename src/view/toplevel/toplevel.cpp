@@ -123,10 +123,21 @@ void UraToplevel::destroy() {
 
 void UraToplevel::commit() {
   auto server = UraServer::get_instance();
-  auto output = this->output();
+  UraOutput* output = nullptr;
+  if (
+    this->xdg_toplevel->requested.fullscreen
+    && this->xdg_toplevel->requested.fullscreen_output
+  ) {
+    output = UraOutput::from(this->xdg_toplevel->requested.fullscreen_output);
+  }
+  if (!output)
+    output = this->output();
+  if (!output)
+    output = server->view->current_output();
   if (!output || !this->xdg_toplevel->base->initialized) {
     return;
   }
+  this->set_output(output);
   // first commit
   if (this->xdg_toplevel->base->initial_commit) {
     if (this->decoration)
@@ -134,10 +145,6 @@ void UraToplevel::commit() {
         this->decoration,
         WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
       );
-    wlr_foreign_toplevel_handle_v1_output_enter(
-      this->foreign_handle,
-      output->output
-    );
     // let the client to decide its size
     if (
       this->xdg_toplevel->base->current.geometry.width == 0
@@ -162,18 +169,19 @@ void UraToplevel::commit() {
     }
     if (this->xdg_toplevel->requested.fullscreen) {
       auto geo = output->logical_geometry();
-      this->geometry = geo;
-      wlr_scene_node_set_position(&this->scene_tree->node, geo.x, geo.y);
+      this->resize(geo.width, geo.height);
+      this->move(geo.x, geo.y);
     } else if (this->xdg_toplevel->requested.maximized) {
       auto geo = output->usable_area;
-      this->geometry = geo;
-      wlr_scene_node_set_position(&this->scene_tree->node, geo.x, geo.y);
+      this->resize(geo.width, geo.height);
+      this->move(geo.x, geo.y);
     } else {
       this->center();
     }
     this->resize_borders(this->geometry.width, this->geometry.height);
     this->move_borders(this->geometry.x, this->geometry.y);
     this->prepared = true;
+    this->apply_pending_fullscreen_output();
 
     auto args = flexible::create_table();
     args.set("id", this->id());
@@ -277,10 +285,25 @@ bool UraToplevel::move(int x, int y) {
   if (x == this->geometry.x && y == this->geometry.y)
     return false;
 
+  auto old_output = this->prepared ? this->output() : nullptr;
   this->geometry.x = x;
   this->geometry.y = y;
   wlr_scene_node_set_position(&this->scene_tree->node, x, y);
   this->move_borders(x, y);
+  if (this->prepared) {
+    auto new_output = this->output();
+    this->set_output(new_output);
+    if (old_output != new_output) {
+      if (this->is_tag_matched()) {
+        this->map();
+      } else {
+        auto refocus = this->is_focused();
+        this->unmap();
+        if (refocus)
+          UraServer::get_instance()->seat->focus_lru();
+      }
+    }
+  }
 
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
@@ -327,16 +350,14 @@ bool UraToplevel::resize(int width, int height) {
 
 void UraToplevel::close() {
   wlr_xdg_toplevel_send_close(this->xdg_toplevel);
-  auto output = this->output();
-  if (output)
-    wlr_foreign_toplevel_handle_v1_output_leave(
-      this->foreign_handle,
-      output->output
-    );
+  this->set_output(nullptr);
 }
 
 void UraToplevel::map() {
-  if (this->mapped() || !this->is_tag_matched())
+  if (
+    this->mapped() || !this->xdg_toplevel->base->surface->mapped
+    || !this->is_tag_matched()
+  )
     return;
 
   auto server = UraServer::get_instance();
@@ -440,11 +461,66 @@ uint64_t UraToplevel::id() {
 }
 
 void UraToplevel::set_fullscreen(bool flag) {
+  if (!flag) {
+    this->pending_fullscreen_output.clear();
+    this->restore_fullscreen_output();
+  }
   if (!this->xdg_toplevel->base->initialized)
     return;
   wlr_xdg_toplevel_set_fullscreen(this->xdg_toplevel, flag);
   if (this->foreign_handle)
     wlr_foreign_toplevel_handle_v1_set_fullscreen(this->foreign_handle, flag);
+}
+
+void UraToplevel::set_fullscreen_output(UraOutput* output) {
+  if (!output)
+    return;
+  if (!this->prepared) {
+    this->pending_fullscreen_output = output->name;
+    return;
+  }
+  if (this->output() == output)
+    return;
+  this->apply_fullscreen_output(output, true);
+}
+
+void UraToplevel::apply_fullscreen_output(
+  UraOutput* output,
+  bool save_restore
+) {
+  auto geometry = output->logical_geometry();
+  if (geometry.width <= 0 || geometry.height <= 0)
+    return;
+  if (save_restore && !this->fullscreen_output_restore_valid) {
+    this->fullscreen_output_restore_geometry = this->geometry;
+    this->fullscreen_output_restore_tags = this->tags;
+    this->fullscreen_output_restore_valid = true;
+  }
+  this->move(geometry.x, geometry.y);
+  auto tags = output->tags;
+  this->set_tags(std::move(tags));
+}
+
+void UraToplevel::apply_pending_fullscreen_output() {
+  if (this->pending_fullscreen_output.empty())
+    return;
+  auto server = UraServer::get_instance();
+  auto output =
+    server->view->get_output_by_name(this->pending_fullscreen_output);
+  this->pending_fullscreen_output.clear();
+  if (output)
+    this->apply_fullscreen_output(output, false);
+}
+
+void UraToplevel::restore_fullscreen_output() {
+  if (!this->fullscreen_output_restore_valid)
+    return;
+  this->fullscreen_output_restore_valid = false;
+  auto geometry = this->fullscreen_output_restore_geometry;
+  auto tags = std::move(this->fullscreen_output_restore_tags);
+  this->move(geometry.x, geometry.y);
+  this->resize(geometry.width, geometry.height);
+  this->set_tags(std::move(tags));
 }
 
 bool UraToplevel::is_fullscreen() {
@@ -480,16 +556,50 @@ bool UraToplevel::mapped() {
 
 UraOutput* UraToplevel::output() {
   auto server = UraServer::get_instance();
-  for (auto& [_, output] : server->view->outputs) {
-    auto geo = output->logical_geometry();
-    if (
-      this->geometry.x >= geo.x && this->geometry.x < geo.x + geo.width
-      && this->geometry.y >= geo.y && this->geometry.y < geo.y + geo.height
-    ) {
-      return output;
-    }
+  if (this->geometry.width <= 0 || this->geometry.height <= 0)
+    return server->view->current_output();
+
+  auto output = wlr_output_layout_output_at(
+    server->output_layout,
+    this->geometry.x,
+    this->geometry.y
+  );
+  if (!output) {
+    auto x = this->geometry.x + this->geometry.width / 2;
+    auto y = this->geometry.y + this->geometry.height / 2;
+    output = wlr_output_layout_output_at(server->output_layout, x, y);
   }
-  return nullptr;
+  if (output)
+    return UraOutput::from(output);
+  return server->view->current_output();
+}
+
+void UraToplevel::set_output(UraOutput* output) {
+  if (this->foreign_output != output) {
+    if (this->foreign_output) {
+      wlr_foreign_toplevel_handle_v1_output_leave(
+        this->foreign_handle,
+        this->foreign_output->output
+      );
+    }
+    if (output) {
+      wlr_foreign_toplevel_handle_v1_output_enter(
+        this->foreign_handle,
+        output->output
+      );
+    }
+    this->foreign_output = output;
+  }
+  this->set_scale(output ? output->scale() : 1.0);
+}
+
+void UraToplevel::update_output() {
+  this->set_output(this->output());
+}
+
+void UraToplevel::output_destroyed(UraOutput* output) {
+  if (this->foreign_output == output)
+    this->set_output(nullptr);
 }
 
 double UraToplevel::scale() {
@@ -500,6 +610,9 @@ double UraToplevel::scale() {
 }
 
 void UraToplevel::set_scale(double scale) {
+  if (this->preferred_scale == scale)
+    return;
+  this->preferred_scale = scale;
   auto server = UraServer::get_instance();
   server->view->notify_scale(this->xdg_toplevel->base->surface, scale);
 }
