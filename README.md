@@ -131,7 +131,7 @@ end)
 
 For the complete Lua-side API, see the [Lua API reference](docs/lua-api.md), including the [hook names and event payloads](docs/lua-api/hooks.md).
 
-More configuration examples are available at: [examples](https://github.com/levinion/dotfiles/tree/main/user/ura/.config/ura)
+More configuration examples are available at: [my dotfiles](https://github.com/levinion/dotfiles/tree/main/linux/user/ura/.config/ura)
 
 ## Dev
 
