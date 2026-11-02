@@ -23,6 +23,8 @@ Dependencies include:
 - [libnotify](https://gitlab.gnome.org/GNOME/libnotify)
 - [spdlog](https://github.com/gabime/spdlog)
 - [EnTT](https://github.com/skypjack/entt) (auto-imported by CPM)
+- raylib (only `rlgl.h` is required; the raylib window/2D modules are not initialized)
+- EGL, OpenGL ES 2.0, GBM and libdrm
 
 Make dependencies include:
 
@@ -63,6 +65,56 @@ sudo make install
 paru/yay -S ura-git
 ```
 
+## Renderer backend
+
+Ura ships its own wlroots renderer implementation, `ura_raylib_renderer_create()`.
+It is a complete `wlr_renderer`, not a post-processing layer on top of
+`wlr_scene`: it owns the EGL context, imports SHM and DMA-BUF buffers, creates
+render passes, manages buffer lifetimes and performs explicit timeline
+synchronization. wlr_scene is used as its first test client.
+
+`wlr_renderer_autocreate()` is no longer used. If the raylib renderer cannot be
+created, compositor startup fails instead of silently switching to wlroots'
+renderer.
+
+The implementation lives in [`src/render/raylib`](src/render/raylib):
+
+- `renderer.cpp` — `wlr_renderer_impl`, format queries, timers and factory
+- `render_pass.cpp` — `wlr_render_pass_impl`, clipping, transforms and explicit sync
+- `texture.cpp` — SHM/DMA-BUF textures, updates and readback
+- `egl.cpp` — GBM/surfaceless EGL context and extension loading
+- `buffer.cpp` — DMA-BUF import, modifiers, multi-plane EGLImages and FBOs
+- `shader.cpp` — GLES2 shader programs and direct quad submission
+- `resources.cpp` — DRM/EGL format sets and pixel-format mapping
+- `effects.cpp` — optional rlgl-based post-processing hook
+- `rlgl_es.cpp` — an in-tree OpenGL ES 2.0 build of raylib's rlgl
+
+The system raylib package is often built for desktop OpenGL 3.3, so Ura compiles
+rlgl for ES 2.0 directly and never calls `InitWindow()` or creates a second
+graphical context. EGL and OpenGL ES come from the system graphics stack
+(Mesa/GBM or the vendor driver); there is no ANGLE, archlinuxcn or AUR
+dependency.
+
+The renderer implements wlroots 0.20's unstable renderer interfaces. Keep the
+wlroots 0.20.x headers and `src/render/raylib` in sync when upgrading wlroots.
+
+If no DRM node is supplied by the backend, Ura opens a render node or uses a
+surfaceless EGL context; `WLR_RENDER_DRM_DEVICE` can select a specific node.
+`WLR_RENDERER` no longer has any effect on Ura's renderer selection.
+
+An optional rlgl effect is available for validating the extra-draw path:
+
+```shell
+URA_RAYLIB_EFFECT_TINT='#RRGGBBAA' ura
+```
+
+The renderer test exercises DMA-BUF output import, scene commits, SHM texture
+upload, render passes and readback:
+
+```shell
+ctest --test-dir build -R ura-raylib-renderer --output-on-failure
+```
+
 ## Configuration
 
 Ura looks for its configuration in `$XDG_CONFIG_HOME/ura/init.lua` when `XDG_CONFIG_HOME` is set, or `$HOME/.config/ura/init.lua` otherwise. If that selected user path is missing, it falls back to `/etc/ura/init.lua`.
@@ -99,7 +151,7 @@ The `prepare` hook runs after the Lua module is initialized, but before composit
 
 ```lua
 ura.hook.add("prepare", function(_)
-  ura.api.set_env("WLR_RENDERER", "vulkan")
+  ura.api.set_env("WLR_RENDER_DRM_DEVICE", "/dev/dri/renderD128")
   ura.api.set_env("WLR_NO_HARDWARE_CURSORS", "0")
   ura.api.set_env("LIBVA_DRIVER_NAME", "nvidia")
   ura.api.set_env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")

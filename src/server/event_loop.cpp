@@ -1,4 +1,5 @@
 #include <memory>
+#include <cstdlib>
 #include "ura/core/dispatcher.hpp"
 #include "ura/core/log.hpp"
 #include "ura/seat/cursor.hpp"
@@ -9,6 +10,7 @@
 #include "ura/ura.hpp"
 #include "ura/view/view.hpp"
 #include "ura/core/lua.hpp"
+#include "ura/render/raylib/raylib_renderer.hpp"
 #include <sys/epoll.h>
 
 namespace ura {
@@ -51,9 +53,10 @@ Status UraServer::setup_base() {
   if (!this->backend)
     return DeviceError("failed to create wlroots backend");
 
-  this->renderer = wlr_renderer_autocreate(this->backend);
+  this->renderer = ura_raylib_renderer_create(this->backend);
   if (!this->renderer)
-    return DeviceError("failed to create wlroots renderer");
+    return DeviceError("failed to create raylib renderer");
+  log::info("Using raylib/rlgl renderer backend");
 
   this->allocator = wlr_allocator_autocreate(this->backend, this->renderer);
   if (!this->allocator)

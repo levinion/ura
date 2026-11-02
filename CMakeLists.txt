@@ -45,6 +45,8 @@ function(target_add_dependence target pkgname)
 	target_include_directories(${target} PRIVATE ${${pkgname}_INCLUDE_DIRS})
 endfunction()
 
+target_add_dependence(${NAME} egl)
+target_add_dependence(${NAME} glesv2)
 target_add_dependence(${NAME} wlroots-0.20)
 target_add_dependence(${NAME} wayland-server)
 target_add_dependence(${NAME} xkbcommon)
@@ -53,6 +55,15 @@ target_add_dependence(${NAME} libnotify)
 target_add_dependence(${NAME} spdlog)
 target_add_dependence(${NAME} libinput)
 target_add_dependence(${NAME} cxxopts)
+target_add_dependence(${NAME} gbm)
+target_add_dependence(${NAME} libdrm)
+target_add_dependence(${NAME} pixman-1)
+
+find_path(RLGL_INCLUDE_DIR NAMES rlgl.h)
+if(NOT RLGL_INCLUDE_DIR)
+	message(FATAL_ERROR "rlgl.h not found. Install raylib (it ships rlgl.h).")
+endif()
+target_include_directories(${NAME} PRIVATE ${RLGL_INCLUDE_DIR})
 
 include(cmake/CPM.cmake)
 CPMAddPackage("gh:ThePhD/sol2#c1f95a773c6f8f4fde8ca3efe872e7286afe4444")
@@ -85,6 +96,40 @@ if(BUILD_TESTING)
   add_test(NAME ura-json-integer-ranges COMMAND ura-json-tests integer-ranges)
   add_test(NAME ura-json-nested-round-trip COMMAND ura-json-tests nested-round-trip)
   add_test(NAME ura-json-invalid-input COMMAND ura-json-tests invalid-json)
+
+  set(RAYLIB_RENDERER_SOURCES
+    src/render/raylib/buffer.cpp
+    src/render/raylib/effects.cpp
+    src/render/raylib/egl.cpp
+    src/render/raylib/render_pass.cpp
+    src/render/raylib/renderer.cpp
+    src/render/raylib/resources.cpp
+    src/render/raylib/rlgl_es.cpp
+    src/render/raylib/shader.cpp
+    src/render/raylib/texture.cpp
+  )
+  add_executable(ura-raylib-renderer-tests
+    tests/raylib_renderer.cpp
+    ${RAYLIB_RENDERER_SOURCES}
+  )
+  target_include_directories(ura-raylib-renderer-tests PRIVATE
+    include/
+    include/protocols/
+    ${RLGL_INCLUDE_DIR}
+  )
+  target_compile_definitions(ura-raylib-renderer-tests PRIVATE WLR_USE_UNSTABLE)
+  target_compile_options(ura-raylib-renderer-tests PRIVATE
+    -Wall -Wextra -Wno-unused-parameter -fno-exceptions
+  )
+  target_add_dependence(ura-raylib-renderer-tests wlroots-0.20)
+  target_add_dependence(ura-raylib-renderer-tests wayland-server)
+  target_add_dependence(ura-raylib-renderer-tests egl)
+  target_add_dependence(ura-raylib-renderer-tests glesv2)
+  target_add_dependence(ura-raylib-renderer-tests gbm)
+  target_add_dependence(ura-raylib-renderer-tests libdrm)
+  target_add_dependence(ura-raylib-renderer-tests pixman-1)
+  add_test(NAME ura-raylib-renderer COMMAND ura-raylib-renderer-tests)
+  set_tests_properties(ura-raylib-renderer PROPERTIES SKIP_RETURN_CODE 77)
 
   pkg_check_modules(WLROOTS_TEST REQUIRED IMPORTED_TARGET wlroots-0.20)
   pkg_check_modules(XKBCOMMON_TEST REQUIRED IMPORTED_TARGET xkbcommon)
