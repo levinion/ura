@@ -32,6 +32,7 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
   this->scene_surface = scene_surface;
   this->scene_tree = scene_surface->tree;
   layer_surface->surface->data = this;
+  this->entity = server->entities->create_layer_shell(this);
 
   server->view->notify_scale(
     layer_surface->surface,
@@ -67,6 +68,10 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
 
 UraLayerShell* UraLayerShell::from(wlr_surface* surface) {
   return static_cast<UraLayerShell*>(surface->data);
+}
+
+UraLayerShell* UraLayerShell::from(uint64_t id) {
+  return UraServer::get_instance()->entities->layer_shell(id);
 }
 
 void UraLayerShell::focus() {
@@ -168,7 +173,8 @@ void UraLayerShell::destroy() {
   if (output)
     output->configure_layers();
 
-  server->globals.erase(this->id());
+  server->entities->destroy(this->entity);
+  this->entity = entt::null;
 }
 
 void UraLayerShell::dismiss_popups() {
@@ -179,7 +185,7 @@ void UraLayerShell::dismiss_popups() {
 }
 
 uint64_t UraLayerShell::id() {
-  return reinterpret_cast<uint64_t>(this);
+  return UraEntityRegistry::to_id(this->entity);
 }
 
 bool UraLayerShell::focusable() {

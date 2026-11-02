@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ura/core/entity.hpp"
 #include "ura/core/server.hpp"
 #include "ura/ura.hpp"
 #include "ura/util/vec.hpp"
@@ -13,6 +14,7 @@ class UraOutput;
 
 class UraToplevel {
 public:
+  entt::entity entity { entt::null };
   bool destroying = false;
   wlr_xdg_toplevel* xdg_toplevel;
   wlr_scene_tree* scene_tree;
@@ -89,9 +91,7 @@ private:
   template<typename T>
   std::optional<T> get_userdata(std::string_view name) {
     auto server = UraServer::get_instance();
-    if (!server->globals.contains(this->id()))
-      return {};
-    return server->globals[this->id()].get_userdata<T>(name);
+    return server->entities->get_userdata<T>(this->id(), name);
   }
 };
 

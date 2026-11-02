@@ -16,6 +16,7 @@ namespace ura {
 void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   auto server = UraServer::get_instance();
   this->xdg_toplevel = xdg_toplevel;
+  this->entity = server->entities->create_toplevel(this);
   this->z_index = UraSceneLayer::Normal;
   this->scene_tree = wlr_scene_xdg_surface_create(
     server->view->get_scene_tree_or_create(this->z_index),
@@ -99,8 +100,6 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     on_foreign_toplevel_handle_request_activate,
     this
   );
-
-  server->globals[this->id()] = UraGlobalType::Toplevel;
 }
 
 void UraToplevel::destroy() {
@@ -118,7 +117,9 @@ void UraToplevel::destroy() {
   args.set("id", this->id());
   server->lua->emit_hook("window-close", args);
 
-  server->globals.erase(this->id());
+  // Keep the entity resolvable while window-close runs, then invalidate it.
+  server->entities->destroy(this->entity);
+  this->entity = entt::null;
 }
 
 void UraToplevel::commit() {
@@ -251,13 +252,7 @@ UraToplevel* UraToplevel::from(wlr_surface* surface) {
 }
 
 UraToplevel* UraToplevel::from(uint64_t id) {
-  auto server = UraServer::get_instance();
-  if (
-    server->globals.contains(id)
-    && server->globals[id].type == UraGlobalType::Toplevel
-  )
-    return reinterpret_cast<UraToplevel*>(id);
-  return nullptr;
+  return UraServer::get_instance()->entities->toplevel(id);
 }
 
 void UraToplevel::activate() {
@@ -457,7 +452,7 @@ void UraToplevel::dismiss_popups() {
 }
 
 uint64_t UraToplevel::id() {
-  return reinterpret_cast<uint64_t>(this);
+  return UraEntityRegistry::to_id(this->entity);
 }
 
 void UraToplevel::set_fullscreen(bool flag) {

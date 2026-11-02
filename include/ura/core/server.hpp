@@ -5,7 +5,7 @@
 #include "ura/core/dispatcher.hpp"
 #include "ipc.hpp"
 #include <unordered_map>
-#include "ura/core/global.hpp"
+#include "ura/core/entity.hpp"
 #include "ura/core/log.hpp"
 #include "ura/core/status.hpp"
 
@@ -53,12 +53,11 @@ public:
 
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;
+  std::unique_ptr<UraEntityRegistry> entities;
   std::unique_ptr<UraSeat> seat;
   std::unique_ptr<UraView> view;
   std::unique_ptr<UraDispatcher<128>> dispatcher;
   std::unique_ptr<UraLogger> logger;
-
-  std::unordered_map<uint64_t, UraGlobal> globals;
 
   static UraServer* get_instance();
   Status init();

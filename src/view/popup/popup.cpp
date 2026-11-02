@@ -62,6 +62,7 @@ bool UraPopup::init(wlr_xdg_popup* xdg_popup) {
 
   this->xdg_popup = xdg_popup;
   this->xdg_popup->base->surface->data = this;
+  this->entity = server->entities->create_popup(this);
 
   // callbacks
   server->runtime->register_callback(
@@ -77,6 +78,10 @@ bool UraPopup::init(wlr_xdg_popup* xdg_popup) {
 
 UraPopup* UraPopup::from(wlr_surface* surface) {
   return static_cast<UraPopup*>(surface->data);
+}
+
+UraPopup* UraPopup::from(uint64_t id) {
+  return UraServer::get_instance()->entities->popup(id);
 }
 
 UraOutput* UraPopup::output() {
@@ -156,11 +161,12 @@ void UraPopup::destroy() {
   wl_list_for_each_safe(_popup, tmp, &this->xdg_popup->base->popups, link) {
     wlr_xdg_popup_destroy(_popup);
   }
-  server->globals.erase(this->id());
+  server->entities->destroy(this->entity);
+  this->entity = entt::null;
 }
 
 uint64_t UraPopup::id() {
-  return reinterpret_cast<uint64_t>(this);
+  return UraEntityRegistry::to_id(this->entity);
 }
 
 void UraPopup::unfocus() {

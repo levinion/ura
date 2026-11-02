@@ -420,16 +420,11 @@ sol::optional<uint64_t> get_window_output(uint64_t id) {
 }
 
 void set_userdata(uint64_t id, flexible::object obj) {
-  auto server = UraServer::get_instance();
-  if (server->globals.contains(id))
-    server->globals[id].userdata = obj;
+  UraServer::get_instance()->entities->set_userdata(id, obj);
 }
 
 flexible::object get_userdata(uint64_t id) {
-  auto server = UraServer::get_instance();
-  if (server->globals.contains(id))
-    return server->globals[id].userdata;
-  return {};
+  return UraServer::get_instance()->entities->userdata(id);
 }
 
 std::string to_json(flexible::object obj) {

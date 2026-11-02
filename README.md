@@ -22,6 +22,7 @@ Dependencies include:
 - [luajit](http://luajit.org/)
 - [libnotify](https://gitlab.gnome.org/GNOME/libnotify)
 - [spdlog](https://github.com/gabime/spdlog)
+- [EnTT](https://github.com/skypjack/entt) (auto-imported by CPM)
 
 Make dependencies include:
 

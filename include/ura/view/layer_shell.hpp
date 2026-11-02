@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ura/core/entity.hpp"
 #include "ura/ura.hpp"
 #include <string>
 
@@ -9,6 +10,7 @@ class UraOutput;
 
 class UraLayerShell {
 public:
+  entt::entity entity { entt::null };
   wlr_layer_surface_v1* layer_surface;
   wlr_scene_layer_surface_v1* scene_surface;
   wlr_scene_tree* scene_tree;

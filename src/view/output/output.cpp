@@ -24,6 +24,7 @@ void UraOutput::init(wlr_output* _wlr_output) {
   this->output = _wlr_output;
   this->output->data = this;
   this->name = this->output->name;
+  this->entity = server->entities->create_output(this);
   auto tags =
     server->lua->get_option<std::vector<std::string>>("default_output_tags")
       .value_or(std::vector<std::string> { ":1" });
@@ -106,8 +107,6 @@ void UraOutput::init(wlr_output* _wlr_output) {
   else {
     server->lua->emit_hook("output-new", args);
   }
-
-  server->globals[this->id()] = UraGlobalType::Output;
 }
 
 UraOutput* UraOutput::from(wlr_output* output) {
@@ -115,13 +114,7 @@ UraOutput* UraOutput::from(wlr_output* output) {
 }
 
 UraOutput* UraOutput::from(uint64_t id) {
-  auto server = UraServer::get_instance();
-  if (
-    server->globals.contains(id)
-    && server->globals[id].type == UraGlobalType::Output
-  )
-    return reinterpret_cast<UraOutput*>(id);
-  return nullptr;
+  return UraServer::get_instance()->entities->output(id);
 }
 
 UraOutput* UraOutput::from(std::string_view name) {
@@ -225,7 +218,8 @@ void UraOutput::destroy() {
   this->save_context();
   server->runtime->remove(this);
   server->view->outputs.erase(this->name);
-  server->globals.erase(this->id());
+  server->entities->destroy(this->entity);
+  this->entity = entt::null;
   wlr_scene_node_destroy(&this->background->node);
 }
 
@@ -412,7 +406,7 @@ void UraOutput::update_background() {
 }
 
 uint64_t UraOutput::id() {
-  return reinterpret_cast<uint64_t>(this);
+  return UraEntityRegistry::to_id(this->entity);
 }
 
 void UraOutput::set_tags(Vec<std::string>&& tags) {

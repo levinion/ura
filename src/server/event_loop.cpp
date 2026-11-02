@@ -20,6 +20,7 @@ Status UraServer::init() {
   this->view = UraView::init();
   ASSIGN_OR_RETURN(this->dispatcher, UraDispatcher<128>::init());
   this->lua = Lua::init();
+  this->entities = std::make_unique<UraEntityRegistry>();
 
   RETURN_IF_ERROR(this->setup_base());
   RETURN_IF_ERROR(this->setup_ipc());

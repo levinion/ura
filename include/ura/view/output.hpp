@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ura/core/entity.hpp"
 #include "ura/core/server.hpp"
 #include "ura/util/vec.hpp"
 #include <sol/sol.hpp>
@@ -18,6 +19,7 @@ public:
 
 class UraOutput {
 public:
+  entt::entity entity { entt::null };
   wlr_output* output;
   std::string name;
   Vec<std::string> tags;

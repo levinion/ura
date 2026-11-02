@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ura/core/entity.hpp"
 #include <memory>
 #include "ura/ura.hpp"
 #include "ura/view/output.hpp"
@@ -10,6 +11,7 @@ class UraClient;
 
 class UraPopup {
 public:
+  entt::entity entity { entt::null };
   wlr_xdg_popup* xdg_popup;
   wlr_scene_tree* scene_tree;
   std::unique_ptr<UraClient> parent;

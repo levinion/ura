@@ -58,11 +58,28 @@ include(cmake/CPM.cmake)
 CPMAddPackage("gh:ThePhD/sol2#c1f95a773c6f8f4fde8ca3efe872e7286afe4444")
 target_link_libraries(${NAME} PRIVATE sol2)
 
+CPMAddPackage(
+  NAME EnTT
+  GITHUB_REPOSITORY skypjack/entt
+  GIT_TAG v3.16.0
+)
+target_link_libraries(${NAME} PRIVATE EnTT::EnTT)
+
 include(CTest)
 if(BUILD_TESTING)
   add_executable(ura-json-tests tests/json.cpp src/util/json.cpp)
   target_include_directories(ura-json-tests PRIVATE include/)
   target_include_directories(ura-json-tests SYSTEM PRIVATE ${GLAZE_INCLUDE_DIR})
+
+  add_executable(ura-entity-tests tests/entity.cpp src/core/entity.cpp)
+  target_include_directories(ura-entity-tests PRIVATE include/)
+  target_include_directories(ura-entity-tests SYSTEM PRIVATE ${GLAZE_INCLUDE_DIR})
+  target_link_libraries(ura-entity-tests PRIVATE EnTT::EnTT sol2)
+  target_add_dependence(ura-entity-tests luajit)
+
+  add_test(NAME ura-core-entity-identity COMMAND ura-entity-tests identity)
+  add_test(NAME ura-core-entity-stale-handle COMMAND ura-entity-tests stale-handle)
+  add_test(NAME ura-core-entity-userdata COMMAND ura-entity-tests userdata)
 
   add_test(NAME ura-json-primitives COMMAND ura-json-tests primitives)
   add_test(NAME ura-json-integer-ranges COMMAND ura-json-tests integer-ranges)
