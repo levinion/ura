@@ -1,4 +1,5 @@
 #include "ura/view/toplevel.hpp"
+#include "ura/scene/layer.hpp"
 #include "ura/util/flexible.hpp"
 #include "ura/ura.hpp"
 #include "ura/util/rgb.hpp"
@@ -13,28 +14,56 @@
 
 namespace ura {
 
+UraScene& UraToplevel::scene_model() {
+  return *UraServer::get_instance()->view->scene;
+}
+
+const Transform& UraToplevel::transform() {
+  return this->scene_model().get<Transform>(this->entity);
+}
+
+const Geometry& UraToplevel::geometry() {
+  return this->scene_model().get<Geometry>(this->entity);
+}
+
+const Visibility& UraToplevel::visibility() {
+  return this->scene_model().get<Visibility>(this->entity);
+}
+
+const ZOrder& UraToplevel::z_order() {
+  return this->scene_model().get<ZOrder>(this->entity);
+}
+
+const WindowTags& UraToplevel::tags() {
+  return this->scene_model().get<WindowTags>(this->entity);
+}
+
+const Opacity& UraToplevel::opacity() {
+  return this->scene_model().get<Opacity>(this->entity);
+}
+
 void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   auto server = UraServer::get_instance();
   this->xdg_toplevel = xdg_toplevel;
   this->entity = server->entities->create_toplevel(this);
-  this->z_index = UraSceneLayer::Normal;
-  this->scene_tree = wlr_scene_xdg_surface_create(
-    server->view->get_scene_tree_or_create(this->z_index),
-    xdg_toplevel->base
-  );
-  wlr_scene_node_set_enabled(&this->scene_tree->node, false);
+
   auto output = server->view->current_output();
-  if (output) {
-    this->tags = output->tags;
-  } else {
-    this->tags = {};
-  }
+  WindowTags tags;
+  if (output)
+    tags.values.assign(output->tags.begin(), output->tags.end());
+
+  server->view->scene->attach_toplevel(
+    this->entity,
+    Transform {},
+    Geometry {},
+    std::move(tags),
+    ZOrder { UraSceneLayer::Normal, 0 }
+  );
+
   xdg_toplevel->base->surface->data = this;
   this->set_scale(this->scale());
 
   server->view->toplevels.push_back(this);
-
-  this->create_borders();
 
   // register callback
   {
@@ -105,6 +134,10 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
 void UraToplevel::destroy() {
   auto server = UraServer::get_instance();
   this->destroying = true;
+  for (auto* popup : server->seat->text_input->popups) {
+    if (popup->parent == this)
+      popup->parent = nullptr;
+  }
   server->view->toplevels.remove(this);
   if (this->is_focused()) {
     server->seat->focus_lru();
@@ -120,6 +153,7 @@ void UraToplevel::destroy() {
   // Keep the entity resolvable while window-close runs, then invalidate it.
   server->entities->destroy(this->entity);
   this->entity = entt::null;
+  server->view->schedule_frames();
 }
 
 void UraToplevel::commit() {
@@ -165,8 +199,10 @@ void UraToplevel::commit() {
     ) {
       this->resize(800, 600);
     } else {
-      this->geometry.width = this->xdg_toplevel->base->current.geometry.width;
-      this->geometry.height = this->xdg_toplevel->base->current.geometry.height;
+      auto geometry = this->geometry();
+      geometry.width = this->xdg_toplevel->base->current.geometry.width;
+      geometry.height = this->xdg_toplevel->base->current.geometry.height;
+      server->view->scene->set_geometry(this->entity, geometry);
     }
     if (this->xdg_toplevel->requested.fullscreen) {
       auto geo = output->logical_geometry();
@@ -179,8 +215,6 @@ void UraToplevel::commit() {
     } else {
       this->center();
     }
-    this->resize_borders(this->geometry.width, this->geometry.height);
-    this->move_borders(this->geometry.x, this->geometry.y);
     this->prepared = true;
     this->apply_pending_fullscreen_output();
 
@@ -190,7 +224,7 @@ void UraToplevel::commit() {
   }
 
   // update opacity
-  this->set_opacity(this->opacity);
+  this->set_opacity(this->opacity().value);
 }
 
 void UraToplevel::focus() {
@@ -204,7 +238,7 @@ void UraToplevel::focus() {
   auto seat = server->seat->seat;
   auto surface = this->xdg_toplevel->base->surface;
 
-  wlr_scene_node_raise_to_top(&this->scene_tree->node);
+  server->view->scene->raise(this->entity);
   wlr_xdg_toplevel_set_activated(this->xdg_toplevel, true);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
   auto keyboard = wlr_seat_get_keyboard(seat);
@@ -271,20 +305,21 @@ void UraToplevel::activate() {
   auto output = this->output();
   if (!output)
     return;
-  output->set_tags(std::move(this->tags));
+  auto tags = this->tags().values;
+  output->set_tags(Vec<std::string>(tags.begin(), tags.end()));
   server->seat->focus(this);
   server->lua->emit_hook("window-activate", args);
 }
 
 bool UraToplevel::move(int x, int y) {
-  if (x == this->geometry.x && y == this->geometry.y)
+  auto transform = this->transform();
+  if (x == transform.x && y == transform.y)
     return false;
 
   auto old_output = this->prepared ? this->output() : nullptr;
-  this->geometry.x = x;
-  this->geometry.y = y;
-  wlr_scene_node_set_position(&this->scene_tree->node, x, y);
-  this->move_borders(x, y);
+  transform.x = x;
+  transform.y = y;
+  this->scene_model().set_transform(this->entity, transform);
   if (this->prepared) {
     auto new_output = this->output();
     this->set_output(new_output);
@@ -328,13 +363,14 @@ bool UraToplevel::resize(int width, int height) {
     height = std::max(height, this->xdg_toplevel->current.min_height);
   }
 
-  if (width == this->geometry.width && height == this->geometry.height)
+  auto geometry = this->geometry();
+  if (width == geometry.width && height == geometry.height)
     return false;
 
-  this->geometry.width = width;
-  this->geometry.height = height;
+  geometry.width = width;
+  geometry.height = height;
+  this->scene_model().set_geometry(this->entity, geometry);
   wlr_xdg_toplevel_set_size(this->xdg_toplevel, width, height);
-  this->resize_borders(width, height);
 
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
@@ -363,9 +399,8 @@ void UraToplevel::map() {
 
   server->lua->emit_hook("pre-window-map", args);
 
-  wlr_scene_node_set_enabled(&this->scene_tree->node, true);
+  this->scene_model().set_visible(this->entity, true);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
-  this->set_border_visible(true);
 
   server->lua->emit_hook("window-map", args);
 
@@ -373,7 +408,9 @@ void UraToplevel::map() {
 }
 
 void UraToplevel::unmap() {
-  if (!this->mapped())
+  // The surface's mapped flag may already be false when the unmap signal is
+  // emitted, so use our scene visibility as the source of truth here.
+  if (!this->visibility().visible)
     return;
 
   auto server = UraServer::get_instance();
@@ -382,9 +419,8 @@ void UraToplevel::unmap() {
   args.set("id", this->id());
   server->lua->emit_hook("pre-window-unmap", args);
 
-  wlr_scene_node_set_enabled(&this->scene_tree->node, false);
+  this->scene_model().set_visible(this->entity, false);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
-  this->set_border_visible(false);
 
   if (server->seat->focused_toplevel() == this) {
     server->seat->unfocus();
@@ -421,12 +457,9 @@ void UraToplevel::set_app_id(std::string app_id) {
 }
 
 void UraToplevel::set_z_index(int z_index) {
-  auto server = UraServer::get_instance();
-  if (this->z_index != z_index) {
-    auto layer = server->view->get_scene_tree_or_create(z_index);
-    wlr_scene_node_reparent(&this->scene_tree->node, layer);
-    this->z_index = z_index;
-  }
+  if (this->z_order().layer == z_index)
+    return;
+  this->scene_model().set_layer(this->entity, z_index);
 }
 
 bool UraToplevel::is_focused() {
@@ -439,7 +472,14 @@ void UraToplevel::center() {
   if (!output)
     return;
   auto area = this->output()->usable_area;
-  auto geo = this->geometry;
+  auto transform = this->transform();
+  auto geometry = this->geometry();
+  auto geo = Vec4<int> {
+    transform.x,
+    transform.y,
+    geometry.width,
+    geometry.height,
+  };
   geo.center(area);
   this->move(geo.x, geo.y);
 }
@@ -487,8 +527,17 @@ void UraToplevel::apply_fullscreen_output(
   if (geometry.width <= 0 || geometry.height <= 0)
     return;
   if (save_restore && !this->fullscreen_output_restore_valid) {
-    this->fullscreen_output_restore_geometry = this->geometry;
-    this->fullscreen_output_restore_tags = this->tags;
+    auto transform = this->transform();
+    auto geometry = this->geometry();
+    this->fullscreen_output_restore_geometry = Vec4<int> {
+      transform.x,
+      transform.y,
+      geometry.width,
+      geometry.height,
+    };
+    auto tags = this->tags().values;
+    this->fullscreen_output_restore_tags =
+      Vec<std::string>(tags.begin(), tags.end());
     this->fullscreen_output_restore_valid = true;
   }
   this->move(geometry.x, geometry.y);
@@ -546,22 +595,24 @@ bool UraToplevel::mapped() {
   if (!this->xdg_toplevel->base->initialized)
     return false;
   return this->xdg_toplevel->base->surface->mapped
-    && this->scene_tree->node.enabled;
+    && this->visibility().visible;
 }
 
 UraOutput* UraToplevel::output() {
   auto server = UraServer::get_instance();
-  if (this->geometry.width <= 0 || this->geometry.height <= 0)
+  auto transform = this->transform();
+  auto geometry = this->geometry();
+  if (geometry.width <= 0 || geometry.height <= 0)
     return server->view->current_output();
 
   auto output = wlr_output_layout_output_at(
     server->output_layout,
-    this->geometry.x,
-    this->geometry.y
+    transform.x,
+    transform.y
   );
   if (!output) {
-    auto x = this->geometry.x + this->geometry.width / 2;
-    auto y = this->geometry.y + this->geometry.height / 2;
+    auto x = transform.x + geometry.width / 2;
+    auto y = transform.y + geometry.height / 2;
     output = wlr_output_layout_output_at(server->output_layout, x, y);
   }
   if (output)
@@ -613,8 +664,10 @@ void UraToplevel::set_scale(double scale) {
 }
 
 void UraToplevel::set_tags(Vec<std::string>&& tags) {
-  auto old_tags = this->tags;
-  this->tags = tags;
+  auto old_tags = this->tags().values;
+  WindowTags next_tags;
+  next_tags.values.assign(tags.begin(), tags.end());
+  this->scene_model().set_tags(this->entity, std::move(next_tags));
 
   auto server = UraServer::get_instance();
 
@@ -632,10 +685,7 @@ void UraToplevel::set_tags(Vec<std::string>&& tags) {
     "from",
     sol::as_table(std::vector(old_tags.begin(), old_tags.end()))
   );
-  args.set(
-    "to",
-    sol::as_table(std::vector(this->tags.begin(), this->tags.end()))
-  );
+  args.set("to", sol::as_table(this->tags().values));
   server->lua->emit_hook("window-tags-change", args);
 }
 
@@ -645,7 +695,7 @@ bool UraToplevel::is_tag_matched() {
     return false;
   auto matched = false;
   for (auto& tag : output->tags) {
-    if (this->tags.contains(tag)) {
+    if (this->tags().contains(tag)) {
       matched = true;
       break;
     }
@@ -654,111 +704,18 @@ bool UraToplevel::is_tag_matched() {
 }
 
 void UraToplevel::set_opacity(float opacity) {
-  if (this->opacity == opacity)
-    return;
-  this->opacity = opacity;
-  wlr_scene_node_for_each_buffer(
-    &this->scene_tree->node,
-    [](struct wlr_scene_buffer* buffer, int sx, int sy, void* data) {
-      auto self = static_cast<UraToplevel*>(data);
-      wlr_scene_buffer_set_opacity(buffer, self->opacity);
-    },
-    this
-  );
+  this->scene_model().set_opacity(this->entity, opacity);
 }
 
-void UraToplevel::create_borders() {
-  auto color = util::hex2rgba(this->border_color).value();
-  for (int i = 0; i < 4; i++) {
-    this->borders[i] =
-      wlr_scene_rect_create(this->scene_tree, 0, 0, color.data());
-    wlr_scene_node_set_enabled(&this->borders[i]->node, false);
-  }
+unsigned int UraToplevel::border_width() {
+  return this->get_userdata<unsigned int>("border_width").value_or(1);
 }
 
 void UraToplevel::set_border_color(std::string_view color) {
-  if (auto cs = util::hex2rgba(color)) {
-    this->border_color = color;
-    for (auto border : this->borders) {
-      wlr_scene_rect_set_color(border, cs->data());
-    }
-  }
-}
-
-void UraToplevel::move_borders(int x, int y) {
-  auto border_width =
-    this->get_userdata<unsigned int>("border_width").value_or(1);
-  // top border
-  wlr_scene_node_set_position(
-    &this->borders[0]->node,
-    -border_width,
-    -border_width
-  );
-  // right border
-  wlr_scene_node_set_position(
-    &this->borders[1]->node,
-    this->geometry.width,
-    -border_width
-  );
-  // bottom border
-  wlr_scene_node_set_position(
-    &this->borders[2]->node,
-    -border_width,
-    this->geometry.height
-  );
-  // left border
-  wlr_scene_node_set_position(
-    &this->borders[3]->node,
-    -border_width,
-    -border_width
-  );
-}
-
-void UraToplevel::resize_borders(int width, int height) {
-  auto border_width =
-    this->get_userdata<unsigned int>("border_width").value_or(1);
-  // top border
-  wlr_scene_rect_set_size(
-    this->borders[0],
-    width + 2 * border_width,
-    border_width
-  );
-  // right border
-  wlr_scene_rect_set_size(
-    this->borders[1],
-    border_width,
-    height + 2 * border_width
-  );
-  // right border
-  wlr_scene_node_set_position(
-    &this->borders[1]->node,
-    this->geometry.width,
-    -border_width
-  );
-  // bottom border
-  wlr_scene_rect_set_size(
-    this->borders[2],
-    width + 2 * border_width,
-    border_width
-  );
-  // bottom border
-  wlr_scene_node_set_position(
-    &this->borders[2]->node,
-    -border_width,
-    this->geometry.height
-  );
-  // left border
-  wlr_scene_rect_set_size(
-    this->borders[3],
-    border_width,
-    height + 2 * border_width
-  );
-}
-
-void UraToplevel::set_border_visible(bool flag) {
-  for (auto border : this->borders) {
-    wlr_scene_node_set_enabled(&border->node, flag);
-  }
+  if (!util::hex2rgba(color))
+    return;
+  this->border_color = color;
+  UraServer::get_instance()->view->schedule_frames();
 }
 
 } // namespace ura

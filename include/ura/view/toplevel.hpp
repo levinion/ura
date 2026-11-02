@@ -2,6 +2,7 @@
 
 #include "ura/core/entity.hpp"
 #include "ura/core/server.hpp"
+#include "ura/scene/components.hpp"
 #include "ura/ura.hpp"
 #include "ura/util/vec.hpp"
 #include <string>
@@ -11,19 +12,23 @@
 namespace ura {
 
 class UraOutput;
+class UraScene;
 
 class UraToplevel {
 public:
   entt::entity entity { entt::null };
   bool destroying = false;
   wlr_xdg_toplevel* xdg_toplevel;
-  wlr_scene_tree* scene_tree;
-  int z_index;
   wlr_xdg_toplevel_decoration_v1* decoration;
   wlr_foreign_toplevel_handle_v1* foreign_handle;
-  Vec<std::string> tags;
   uint64_t lru = 0;
-  Vec4<int> geometry;
+
+  const Transform& transform();
+  const Geometry& geometry();
+  const Visibility& visibility();
+  const ZOrder& z_order();
+  const WindowTags& tags();
+  const Opacity& opacity();
 
   static UraToplevel* from(wlr_surface* surface);
   static UraToplevel* from(uint64_t id);
@@ -62,17 +67,14 @@ public:
   void set_scale(double scale);
   void set_tags(Vec<std::string>&& tags);
   bool is_tag_matched();
-  float opacity = 1.f;
   void set_opacity(float opacity);
 
-  void create_borders();
+  unsigned int border_width();
   std::string border_color = "#00000000";
   void set_border_color(std::string_view color);
-  void resize_borders(int width, int height);
-  void move_borders(int x, int y);
-  void set_border_visible(bool flag);
 
 private:
+  UraScene& scene_model();
   void dismiss_popups();
   void set_output(UraOutput* output);
   void apply_fullscreen_output(UraOutput* output, bool save_restore);
@@ -86,7 +88,6 @@ private:
   std::string pending_fullscreen_output;
   bool prepared = false;
   bool initial_map = true;
-  std::array<wlr_scene_rect*, 4> borders;
 
   template<typename T>
   std::optional<T> get_userdata(std::string_view name) {

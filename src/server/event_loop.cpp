@@ -19,10 +19,10 @@ Status UraServer::init() {
   this->setup_signal();
   this->logger = UraLogger::init();
   this->runtime = UraRuntime::init();
-  this->view = UraView::init();
+  this->entities = std::make_unique<UraEntityRegistry>();
+  this->view = UraView::init(*this->entities);
   ASSIGN_OR_RETURN(this->dispatcher, UraDispatcher<128>::init());
   this->lua = Lua::init();
-  this->entities = std::make_unique<UraEntityRegistry>();
 
   RETURN_IF_ERROR(this->setup_base());
   RETURN_IF_ERROR(this->setup_ipc());
@@ -87,9 +87,6 @@ void UraServer::setup_output() {
     nullptr
   );
 
-  // create scene
-  this->scene_layout =
-    wlr_scene_attach_output_layout(this->view->scene, this->output_layout);
   this->runtime->register_callback(
     &this->output_layout->events.change,
     on_output_layout_change,

@@ -8,14 +8,13 @@
 
 namespace ura {
 namespace {
-void restore_session_after_unlock(UraSessionLock* lock) {
-  auto server = UraServer::get_instance();
-  server->seat->locked = false;
-  server->seat->unfocus();
-  wlr_scene_node_set_enabled(&lock->scene_tree->node, false);
-  server->seat->cursor->set_visible(true);
-  server->seat->focus_lru();
-}
+  void restore_session_after_unlock(UraSessionLock* lock) {
+    auto server = UraServer::get_instance();
+    server->seat->locked = false;
+    server->seat->unfocus();
+    server->seat->cursor->set_visible(true);
+    server->seat->focus_lru();
+  }
 } // namespace
 
 void on_new_session_lock(wl_listener* listener, void* data) {
@@ -23,9 +22,6 @@ void on_new_session_lock(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto lock = new UraSessionLock;
   lock->lock = session_lock;
-  lock->scene_tree = wlr_scene_tree_create(
-    server->view->get_scene_tree_or_create(UraSceneLayer::LockScreen)
-  );
   server->runtime->register_callback(
     &session_lock->events.new_surface,
     on_session_lock_new_surface,
@@ -62,14 +58,10 @@ void on_session_lock_unlock(wl_listener* listener, void* data) {
 
 void on_session_lock_new_surface(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto lock = server->runtime->fetch<UraSessionLock*>(listener);
   auto surface = static_cast<wlr_session_lock_surface_v1*>(data);
 
   auto lock_surface = new UraSessionLockSurface;
   lock_surface->surface = surface;
-  auto scene_tree =
-    wlr_scene_subsurface_tree_create(lock->scene_tree, surface->surface);
-  lock_surface->scene_tree = scene_tree;
   auto output = UraOutput::from(surface->output);
   lock_surface->output = output;
   output->session_lock_surface = lock_surface;
@@ -77,7 +69,6 @@ void on_session_lock_new_surface(wl_listener* listener, void* data) {
   surface->surface->data = lock_surface;
 
   auto geo = output->logical_geometry();
-  wlr_scene_node_set_position(&scene_tree->node, geo.x, geo.y);
   wlr_session_lock_surface_v1_configure(surface, geo.width, geo.height);
   server->runtime->register_callback(
     &surface->events.destroy,
@@ -89,6 +80,7 @@ void on_session_lock_new_surface(wl_listener* listener, void* data) {
   server->seat->cursor->set_visible(false);
   server->seat->locked = true;
   lock_surface->focus();
+  server->view->schedule_frames();
 }
 
 void on_session_lock_surface_destroy(wl_listener* listener, void* data) {
@@ -98,5 +90,6 @@ void on_session_lock_surface_destroy(wl_listener* listener, void* data) {
     lock_surface->output->session_lock_surface = nullptr;
   server->runtime->remove(lock_surface);
   delete lock_surface;
+  server->view->schedule_frames();
 }
 } // namespace ura

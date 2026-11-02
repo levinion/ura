@@ -296,7 +296,7 @@ sol::optional<int> get_window_z_index(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
-  return toplevel->z_index;
+  return toplevel->z_order().layer;
 }
 
 std::string get_cursor_theme() {
@@ -406,7 +406,15 @@ flexible::object get_window_geometry(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
-  return toplevel->geometry.to_table();
+  auto transform = toplevel->transform();
+  auto geometry = toplevel->geometry();
+  auto box = Vec4<int> {
+    transform.x,
+    transform.y,
+    geometry.width,
+    geometry.height,
+  };
+  return box.to_table();
 }
 
 sol::optional<uint64_t> get_window_output(uint64_t id) {
@@ -462,7 +470,9 @@ flexible::object get_window_tags(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
-  return toplevel->tags.to_table();
+  auto table = flexible::create_table();
+  for (auto& tag : toplevel->tags().values) table.add(tag);
+  return table;
 }
 
 flexible::object get_all_windows() {
@@ -532,7 +542,7 @@ sol::optional<float> get_window_opacity(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
-  return toplevel->opacity;
+  return toplevel->opacity().value;
 }
 
 void set_window_opacity(uint64_t id, float opacity) {

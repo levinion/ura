@@ -47,8 +47,7 @@ void on_output_manager_apply(wl_listener* listener, void* data) {
 
 void on_output_layout_change(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  for (auto [_, output] : server->view->outputs)
-    output->refresh_geometry();
+  for (auto [_, output] : server->view->outputs) output->refresh_geometry();
 
   bool needs_refocus = false;
   for (auto toplevel : server->view->toplevels) {

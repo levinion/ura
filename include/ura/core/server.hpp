@@ -4,7 +4,6 @@
 #include "ura/ura.hpp"
 #include "ura/core/dispatcher.hpp"
 #include "ipc.hpp"
-#include <unordered_map>
 #include "ura/core/entity.hpp"
 #include "ura/core/log.hpp"
 #include "ura/core/status.hpp"
@@ -27,7 +26,6 @@ public:
   wlr_session* session;
   wlr_renderer* renderer;
   wlr_allocator* allocator;
-  wlr_scene_output_layout* scene_layout;
   wlr_output_layout* output_layout;
   wlr_xdg_shell* xdg_shell;
   wlr_server_decoration_manager* server_decoration_manager;

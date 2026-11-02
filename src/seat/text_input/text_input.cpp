@@ -38,8 +38,10 @@ wlr_text_input_v3* UraTextInput::get_active_text_input() {
 }
 
 void UraTextInput::send_state(wlr_text_input_v3* text_input) {
-  if (!this->input_method || !text_input->focused_surface
-      || !this->input_method->active)
+  if (
+    !this->input_method || !text_input->focused_surface
+    || !this->input_method->active
+  )
     return;
   wlr_input_method_v2_send_surrounding_text(
     input_method,

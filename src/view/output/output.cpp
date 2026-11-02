@@ -1,4 +1,6 @@
 #include "ura/view/output.hpp"
+#include "ura/render/frame_renderer.hpp"
+#include "ura/scene/frame_planner.hpp"
 #include "ura/util/flexible.hpp"
 #include "ura/core/server.hpp"
 #include "ura/core/runtime.hpp"
@@ -30,12 +32,8 @@ void UraOutput::init(wlr_output* _wlr_output) {
       .value_or(std::vector<std::string> { ":1" });
   this->tags = Vec<std::string>(tags.begin(), tags.end());
 
-  this->background = wlr_scene_rect_create(
-    server->view->get_scene_tree_or_create(UraSceneLayer::Clear),
-    0,
-    0,
-    util::hex2rgba("#1D727A").value().data()
-  );
+  this->background_color = util::hex2rgba("#1D727A").value();
+  wlr_damage_ring_init(&this->frame_damage_ring);
 
   // bind render and allocator to this output
   wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
@@ -57,34 +55,22 @@ void UraOutput::init(wlr_output* _wlr_output) {
   server->runtime
     ->register_callback(&this->output->events.destroy, on_output_destroy, this);
 
-  // add this output to scene layout before using its global logical geometry
-  wlr_output_layout_output* output_layout_output;
   if (resume && restored_geometry.width > 0 && restored_geometry.height > 0) {
-    output_layout_output = wlr_output_layout_add(
+    wlr_output_layout_add(
       server->output_layout,
       this->output,
       restored_geometry.x,
       restored_geometry.y
     );
   } else {
-    output_layout_output =
-      wlr_output_layout_add_auto(server->output_layout, this->output);
+    wlr_output_layout_add_auto(server->output_layout, this->output);
   }
-
-  auto scene_output =
-    wlr_scene_output_create(server->view->scene, this->output);
-  wlr_scene_output_layout_add_output(
-    server->scene_layout,
-    output_layout_output,
-    scene_output
-  );
 
   // set usable area to full area
   this->usable_area = this->logical_geometry();
   this->last_logical_geometry = this->usable_area;
   this->last_geometry_enabled =
     this->usable_area.width > 0 && this->usable_area.height > 0;
-  this->update_background();
 
   server->view->outputs[this->name] = this;
   this->attach_layer_shells();
@@ -145,14 +131,10 @@ void UraOutput::refresh_geometry() {
   this->last_geometry_enabled = enabled;
   if (enabled)
     this->last_logical_geometry = geometry;
-  this->update_background();
 
   auto server = UraServer::get_instance();
   for (auto layer_shell : this->layer_shells()) {
-    wlr_scene_node_set_enabled(
-      &layer_shell->scene_tree->node,
-      enabled && layer_shell->layer_surface->surface->mapped
-    );
+    layer_shell->refresh_visibility(enabled);
     if (enabled && scale_changed) {
       server->view->notify_scale(
         layer_shell->layer_surface->surface,
@@ -160,46 +142,53 @@ void UraOutput::refresh_geometry() {
       );
     }
   }
-  if (this->session_lock_surface) {
-    if (enabled) {
-      wlr_scene_node_set_enabled(
-        &this->session_lock_surface->scene_tree->node,
-        true
-      );
-      wlr_scene_node_set_position(
-        &this->session_lock_surface->scene_tree->node,
-        geometry.x,
-        geometry.y
-      );
-      wlr_session_lock_surface_v1_configure(
-        this->session_lock_surface->surface,
-        geometry.width,
-        geometry.height
-      );
-    } else {
-      wlr_scene_node_set_enabled(
-        &this->session_lock_surface->scene_tree->node,
-        false
-      );
-    }
+  if (this->session_lock_surface && enabled) {
+    wlr_session_lock_surface_v1_configure(
+      this->session_lock_surface->surface,
+      geometry.width,
+      geometry.height
+    );
   }
   this->configure_layers();
+  server->view->schedule_frames();
 }
 
 float UraOutput::scale() {
   return this->output->scale;
 }
 
+wlr_damage_ring* UraOutput::damage_ring() {
+  return &this->frame_damage_ring;
+}
+
 void UraOutput::commit() {
   auto server = UraServer::get_instance();
-  auto scene = server->view->scene;
-  auto scene_output = wlr_scene_get_scene_output(scene, this->output);
-  // commit scene_output
-  wlr_scene_output_commit(scene_output, nullptr);
-  // notify clients
+  auto plan = server->view->frame_planner->build(this);
+  if (plan.logical_box.width <= 0 || plan.logical_box.height <= 0)
+    return;
+  if (!plan.full_redraw && plan.damage.empty())
+    return;
+  if (!render_frame(server->renderer, plan)) {
+    wlr_log(WLR_ERROR, "Ura frame renderer failed");
+    return;
+  }
+
   timespec now;
   clock_gettime(CLOCK_MONOTONIC, &now);
-  wlr_scene_output_send_frame_done(scene_output, &now);
+  for (auto& frame_surface : plan.surfaces) {
+    auto* surface = frame_surface.surface;
+    auto* sync = wlr_linux_drm_syncobj_v1_get_surface_state(surface);
+    if (
+      sync && surface->buffer && surface->buffer->base.n_locks > 0
+      && !wlr_linux_drm_syncobj_v1_state_signal_release_with_buffer(
+        sync,
+        &surface->buffer->base
+      )
+    )
+      wlr_log(WLR_ERROR, "Failed to signal surface release timeline");
+    if (frame_surface.primary_output)
+      wlr_surface_send_frame_done(surface, &now);
+  }
 }
 
 void UraOutput::destroy() {
@@ -208,19 +197,16 @@ void UraOutput::destroy() {
     toplevel->output_destroyed(this);
   this->detach_layer_shells();
   if (this->session_lock_surface) {
-    wlr_scene_node_set_enabled(
-      &this->session_lock_surface->scene_tree->node,
-      false
-    );
     this->session_lock_surface->output = nullptr;
     this->session_lock_surface = nullptr;
   }
   this->save_context();
+  wlr_damage_ring_finish(&this->frame_damage_ring);
+  server->view->frame_planner->remove(this);
   server->runtime->remove(this);
   server->view->outputs.erase(this->name);
   server->entities->destroy(this->entity);
   this->entity = entt::null;
-  wlr_scene_node_destroy(&this->background->node);
 }
 
 void UraOutput::attach_layer_shells() {
@@ -233,17 +219,17 @@ void UraOutput::attach_layer_shells() {
     auto& layer = this->layer_shells_from_layer(layer_shell->layer);
     if (!layer.contains(layer_shell))
       layer.push_back(layer_shell);
-    auto scene_layer = server->view->get_scene_tree_or_create(
+    layer_shell->set_scene_layer(
       server->view->get_z_index_by_type(layer_shell->layer)
     );
-    wlr_scene_node_reparent(&layer_shell->scene_tree->node, scene_layer);
+    layer_shell->refresh_visibility(true);
     layer_shell->layer_surface->output = this->output;
   }
 }
 
 void UraOutput::detach_layer_shells() {
   for (auto layer_shell : this->layer_shells()) {
-    wlr_scene_node_set_enabled(&layer_shell->scene_tree->node, false);
+    layer_shell->refresh_visibility(false);
     if (layer_shell->layer_surface->output == this->output)
       layer_shell->layer_surface->output = nullptr;
   }
@@ -292,11 +278,7 @@ void UraOutput::configure_layer(
     if ((layer_shell->layer_surface->current.exclusive_zone > 0) != exclusive) {
       continue;
     }
-    wlr_scene_layer_surface_v1_configure(
-      layer_shell->scene_surface,
-      full_area,
-      usable_area
-    );
+    layer_shell->configure(full_area, usable_area);
   }
 }
 
@@ -305,7 +287,7 @@ bool UraOutput::configure_layers() {
   auto geometry = this->logical_geometry();
   if (geometry.width <= 0 || geometry.height <= 0) {
     for (auto layer_shell : this->layer_shells())
-      wlr_scene_node_set_enabled(&layer_shell->scene_tree->node, false);
+      layer_shell->refresh_visibility(false);
     if (this->usable_area.empty())
       return false;
     this->usable_area = {};
@@ -380,31 +362,6 @@ void UraOutput::set_dpms_mode(bool flag) {
   wlr_output_commit_state(this->output, &wlr_state);
 }
 
-void UraOutput::update_background() {
-  auto logical_geometry = this->logical_geometry();
-  wlr_scene_node_set_enabled(
-    &this->background->node,
-    logical_geometry.width > 0 && logical_geometry.height > 0
-  );
-  if (logical_geometry.width > 0 && logical_geometry.height > 0
-      && (this->background->width != logical_geometry.width
-          || this->background->height != logical_geometry.height))
-    wlr_scene_rect_set_size(
-      this->background,
-      logical_geometry.width,
-      logical_geometry.height
-    );
-  if (
-    this->background->node.x != logical_geometry.x
-    || this->background->node.y != logical_geometry.y
-  )
-    wlr_scene_node_set_position(
-      &this->background->node,
-      logical_geometry.x,
-      logical_geometry.y
-    );
-}
-
 uint64_t UraOutput::id() {
   return UraEntityRegistry::to_id(this->entity);
 }
@@ -475,20 +432,6 @@ void UraOutput::apply_layout(wlr_output_configuration_v1* config) {
     );
     if (was_in_layout || !layout_output)
       continue;
-
-    auto scene_output =
-      wlr_scene_get_scene_output(server->view->scene, head->state.output);
-    if (!scene_output) {
-      scene_output =
-        wlr_scene_output_create(server->view->scene, head->state.output);
-    }
-    if (scene_output) {
-      wlr_scene_output_layout_add_output(
-        server->scene_layout,
-        layout_output,
-        scene_output
-      );
-    }
   }
 }
 

@@ -10,14 +10,6 @@ extern "C" {
 
 namespace ura::render::raylib {
 
-// Optional post-processing hook, disabled by default:
-//
-//   URA_RAYLIB_EFFECT_TINT=#RRGGBBAA ura
-//
-// This path deliberately goes through rlgl's immediate-mode batch. Keeping it
-// out of the wlr_scene hot path avoids rlgl's global batch state interacting
-// with the direct-GL renderer, while still providing a real rlgl integration
-// point for custom effects.
 void effects_apply(Renderer* renderer, RenderPass* pass) {
   if (!renderer || !pass || !renderer->rlgl_ready || !renderer->effect.valid)
     return;

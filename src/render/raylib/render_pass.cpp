@@ -684,13 +684,13 @@ bool render_pass_submit(RenderPass* pass) {
     }
   }
 
+  glFinish();
+
   if (pass->signal_timeline) {
     if (!signal_timeline(pass)) {
       wlr_log(WLR_ERROR, "Failed to signal render timeline");
       ok = false;
     }
-  } else {
-    glFlush();
   }
 
   if (pass->timer && pass->timer->started) {

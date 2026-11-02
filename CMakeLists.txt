@@ -92,6 +92,21 @@ if(BUILD_TESTING)
   add_test(NAME ura-core-entity-stale-handle COMMAND ura-entity-tests stale-handle)
   add_test(NAME ura-core-entity-userdata COMMAND ura-entity-tests userdata)
 
+  add_executable(ura-scene-tests
+    tests/scene.cpp
+    src/core/entity.cpp
+    src/scene/scene.cpp
+  )
+  target_include_directories(ura-scene-tests PRIVATE include/)
+  target_include_directories(ura-scene-tests SYSTEM PRIVATE ${GLAZE_INCLUDE_DIR})
+  target_link_libraries(ura-scene-tests PRIVATE EnTT::EnTT sol2)
+  target_add_dependence(ura-scene-tests luajit)
+
+  add_test(NAME ura-scene-snapshot-order COMMAND ura-scene-tests snapshot-order)
+  add_test(NAME ura-scene-stale-handle COMMAND ura-scene-tests stale-handle)
+  add_test(NAME ura-scene-components COMMAND ura-scene-tests components)
+  add_test(NAME ura-scene-layer-shell COMMAND ura-scene-tests layer-shell)
+
   add_test(NAME ura-json-primitives COMMAND ura-json-tests primitives)
   add_test(NAME ura-json-integer-ranges COMMAND ura-json-tests integer-ranges)
   add_test(NAME ura-json-nested-round-trip COMMAND ura-json-tests nested-round-trip)
@@ -130,6 +145,30 @@ if(BUILD_TESTING)
   target_add_dependence(ura-raylib-renderer-tests pixman-1)
   add_test(NAME ura-raylib-renderer COMMAND ura-raylib-renderer-tests)
   set_tests_properties(ura-raylib-renderer PROPERTIES SKIP_RETURN_CODE 77)
+
+  add_executable(ura-frame-renderer-tests
+    tests/frame_renderer.cpp
+    src/render/frame_renderer.cpp
+    ${RAYLIB_RENDERER_SOURCES}
+  )
+  target_include_directories(ura-frame-renderer-tests PRIVATE
+    include/
+    include/protocols/
+    ${RLGL_INCLUDE_DIR}
+  )
+  target_compile_definitions(ura-frame-renderer-tests PRIVATE WLR_USE_UNSTABLE)
+  target_compile_options(ura-frame-renderer-tests PRIVATE
+    -Wall -Wextra -Wno-unused-parameter -fno-exceptions
+  )
+  target_add_dependence(ura-frame-renderer-tests wlroots-0.20)
+  target_add_dependence(ura-frame-renderer-tests wayland-server)
+  target_add_dependence(ura-frame-renderer-tests egl)
+  target_add_dependence(ura-frame-renderer-tests glesv2)
+  target_add_dependence(ura-frame-renderer-tests gbm)
+  target_add_dependence(ura-frame-renderer-tests libdrm)
+  target_add_dependence(ura-frame-renderer-tests pixman-1)
+  add_test(NAME ura-frame-renderer COMMAND ura-frame-renderer-tests)
+  set_tests_properties(ura-frame-renderer PROPERTIES SKIP_RETURN_CODE 77)
 
   pkg_check_modules(WLROOTS_TEST REQUIRED IMPORTED_TARGET wlroots-0.20)
   pkg_check_modules(XKBCOMMON_TEST REQUIRED IMPORTED_TARGET xkbcommon)

@@ -5,10 +5,12 @@
 
 namespace ura {
 
+class UraToplevel;
+
 class UraInputMethodPopup {
 public:
   wlr_input_popup_surface_v2* popup_surface;
-  wlr_scene_tree* scene_tree;
+  UraToplevel* parent = nullptr;
   Vec4<int> geometry = { 0, 0, 0, 0 };
   void constrain(wlr_text_input_v3* text_input);
 };

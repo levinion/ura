@@ -68,10 +68,10 @@ paru/yay -S ura-git
 ## Renderer backend
 
 Ura ships its own wlroots renderer implementation, `ura_raylib_renderer_create()`.
-It is a complete `wlr_renderer`, not a post-processing layer on top of
-`wlr_scene`: it owns the EGL context, imports SHM and DMA-BUF buffers, creates
-render passes, manages buffer lifetimes and performs explicit timeline
-synchronization. wlr_scene is used as its first test client.
+It is a complete `wlr_renderer`: it owns the EGL context, imports SHM and
+DMA-BUF buffers, creates render passes, manages buffer lifetimes and performs
+explicit timeline synchronization. Ura no longer uses `wlr_scene` for
+composition, damage tracking, hit testing, layer layout or output commits.
 
 `wlr_renderer_autocreate()` is no longer used. If the raylib renderer cannot be
 created, compositor startup fails instead of silently switching to wlroots'
@@ -108,8 +108,19 @@ An optional rlgl effect is available for validating the extra-draw path:
 URA_RAYLIB_EFFECT_TINT='#RRGGBBAA' ura
 ```
 
-The renderer test exercises DMA-BUF output import, scene commits, SHM texture
-upload, render passes and readback:
+The EnTT scene is now the authoritative scene model. The output path builds
+a frame plan from it, tracks scene and surface-commit damage, renders toplevel
+borders as frame-plan rectangles, and commits through the raylib renderer.
+Surface enter/leave, preferred scale, frame scheduling and render-completion
+synchronization are handled by Ura itself.
+
+Direct scanout is enabled for eligible fullscreen, full-output layer and lock
+surfaces. If a frame does not satisfy the scanout constraints, it falls back to
+GPU composition automatically.
+
+The renderer test exercises DMA-BUF output import, SHM texture upload, render
+passes and readback. The frame renderer test covers full and partial-damage
+output commits:
 
 ```shell
 ctest --test-dir build -R ura-raylib-renderer --output-on-failure

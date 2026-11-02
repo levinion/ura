@@ -13,7 +13,6 @@ class UraPopup {
 public:
   entt::entity entity { entt::null };
   wlr_xdg_popup* xdg_popup;
-  wlr_scene_tree* scene_tree;
   std::unique_ptr<UraClient> parent;
   bool init(wlr_xdg_popup* xdg_popup);
   static UraPopup* from(wlr_surface* surface);

@@ -4,6 +4,7 @@
 #include "ura/core/server.hpp"
 #include "ura/util/vec.hpp"
 #include <sol/sol.hpp>
+#include <array>
 
 namespace ura {
 
@@ -23,6 +24,7 @@ public:
   wlr_output* output;
   std::string name;
   Vec<std::string> tags;
+  std::array<float, 4> background_color { { 0.f, 0.f, 0.f, 1.f } };
 
   void init(wlr_output* output);
   static UraOutput* from(wlr_output* output);
@@ -39,6 +41,7 @@ public:
   float scale();
 
   void set_dpms_mode(bool flag);
+  wlr_damage_ring* damage_ring();
 
   Vec4<int> usable_area;
   UraSessionLockSurface* session_lock_surface = nullptr;
@@ -50,11 +53,10 @@ public:
   void set_tags(Vec<std::string>&& tags);
 
 private:
-  wlr_scene_rect* background;
+  wlr_damage_ring frame_damage_ring;
   float last_notified_scale = 1.0f;
   bool last_geometry_enabled = false;
   Vec4<int> last_logical_geometry;
-  void update_background();
   void attach_layer_shells();
   void detach_layer_shells();
   void apply_layout(wlr_output_configuration_v1* config);

@@ -1,6 +1,7 @@
 #include "ura/core/server.hpp"
 #include "ura/seat/text_input.hpp"
 #include "ura/view/client.hpp"
+#include "ura/view/view.hpp"
 
 namespace ura {
 
@@ -24,12 +25,13 @@ void UraInputMethodPopup::constrain(wlr_text_input_v3* text_input) {
   if (!output)
     return;
   auto geo = output->logical_geometry();
+  auto parent_transform = parent->transform();
   auto avaliable_right =
-    geo.x + geo.width - (parent->geometry.x + popup_rect.x + popup_rect.width);
+    geo.x + geo.width - (parent_transform.x + popup_rect.x + popup_rect.width);
   auto avaliable_bottom = geo.y + geo.height
-    - (parent->geometry.y + popup_rect.y + popup_rect.height);
+    - (parent_transform.y + popup_rect.y + popup_rect.height);
   if (avaliable_right < 0)
-    popup_rect.x = geo.x + geo.width - popup_rect.width - parent->geometry.x;
+    popup_rect.x = geo.x + geo.width - popup_rect.width - parent_transform.x;
   if (avaliable_bottom < 0)
     popup_rect.y -= cursor_rect.height + popup_rect.height;
 
@@ -38,14 +40,9 @@ void UraInputMethodPopup::constrain(wlr_text_input_v3* text_input) {
     &cursor_rect
   );
 
-  if (this->geometry.x != popup_rect.x || this->geometry.y != popup_rect.y) {
-    wlr_scene_node_set_position(
-      &this->scene_tree->node,
-      popup_rect.x,
-      popup_rect.y
-    );
+  if (this->geometry != popup_rect) {
+    this->geometry = popup_rect;
+    UraServer::get_instance()->view->schedule_frames();
   }
-
-  this->geometry = popup_rect;
 }
 } // namespace ura

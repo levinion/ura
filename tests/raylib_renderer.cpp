@@ -146,42 +146,14 @@ int main() {
     return 1;
   }
 
-  wlr_scene* scene = wlr_scene_create();
-  wlr_scene_output* scene_output = wlr_scene_output_create(scene, output);
-  if (!scene || !scene_output) {
-    fprintf(stderr, "failed to create scene output\n");
-    wlr_allocator_destroy(allocator);
-    wlr_renderer_destroy(renderer);
-    wlr_backend_destroy(backend);
-    wl_display_destroy(display);
-    return 1;
-  }
-
-  const float background[4] = { 0.1f, 0.2f, 0.3f, 1.0f };
-  wlr_scene_rect_create(&scene->tree, 320, 200, background);
-
   TestBuffer* source = create_test_buffer(32, 32, 0xFFFF0000);
   if (!source) {
     fprintf(stderr, "failed to create test buffer\n");
     return 1;
   }
-  wlr_scene_buffer* scene_buffer =
-    wlr_scene_buffer_create(&scene->tree, &source->base);
-  wlr_scene_node_set_position(&scene_buffer->node, 16, 16);
-
-  bool ok = wlr_scene_output_commit(scene_output, nullptr);
-  if (!ok) {
-    fprintf(stderr, "scene output commit failed\n");
-    return 1;
-  }
-  ok = wlr_scene_output_commit(scene_output, nullptr);
-  if (!ok) {
-    fprintf(stderr, "second scene output commit failed\n");
-    return 1;
-  }
 
   // Exercise texture import and the render pass API directly, including the
-  // SHM render-target readback path. This is independent from wlr_scene.
+  // SHM render-target readback path.
   TestBuffer* target = create_test_buffer(64, 64, 0);
   wlr_texture* texture = wlr_texture_from_buffer(renderer, &source->base);
   if (!target || !texture) {
@@ -189,8 +161,23 @@ int main() {
     return 1;
   }
 
+  wlr_drm_syncobj_timeline* wait_timeline = nullptr;
+  wlr_drm_syncobj_timeline* signal_timeline = nullptr;
+  int drm_fd = wlr_renderer_get_drm_fd(renderer);
+  if (drm_fd >= 0) {
+    wait_timeline = wlr_drm_syncobj_timeline_create(drm_fd);
+    if (wait_timeline)
+      wlr_drm_syncobj_timeline_signal(wait_timeline, 1);
+    signal_timeline = wlr_drm_syncobj_timeline_create(drm_fd);
+  }
+
+  wlr_buffer_pass_options pass_options {};
+  if (signal_timeline) {
+    pass_options.signal_timeline = signal_timeline;
+    pass_options.signal_point = 1;
+  }
   wlr_render_pass* pass =
-    wlr_renderer_begin_buffer_pass(renderer, &target->base, nullptr);
+    wlr_renderer_begin_buffer_pass(renderer, &target->base, &pass_options);
   if (!pass) {
     fprintf(stderr, "failed to begin render pass\n");
     return 1;
@@ -201,14 +188,6 @@ int main() {
   rect_options.color = { .r = 1.0f, .g = 1.0f, .b = 1.0f, .a = 1.0f };
   rect_options.blend_mode = WLR_RENDER_BLEND_MODE_NONE;
   wlr_render_pass_add_rect(pass, &rect_options);
-
-  wlr_drm_syncobj_timeline* wait_timeline = nullptr;
-  int drm_fd = wlr_renderer_get_drm_fd(renderer);
-  if (drm_fd >= 0) {
-    wait_timeline = wlr_drm_syncobj_timeline_create(drm_fd);
-    if (wait_timeline)
-      wlr_drm_syncobj_timeline_signal(wait_timeline, 1);
-  }
 
   wlr_render_texture_options texture_options {};
   texture_options.texture = texture;
@@ -261,6 +240,10 @@ int main() {
   unsetenv("URA_RAYLIB_EFFECT_TINT");
   if (wait_timeline)
     wlr_drm_syncobj_timeline_unref(wait_timeline);
+  if (signal_timeline) {
+    wlr_drm_syncobj_timeline_signal(signal_timeline, UINT64_MAX);
+    wlr_drm_syncobj_timeline_unref(signal_timeline);
+  }
   if (pixel_at(effect_target, 0, 0) != 0xFF00FF00u) {
     fprintf(
       stderr,
@@ -319,8 +302,6 @@ int main() {
 
   wlr_texture_destroy(texture);
   wlr_buffer_drop(&target->base);
-  wlr_scene_output_destroy(scene_output);
-  wlr_scene_node_destroy(&scene->tree.node);
   wlr_buffer_drop(&source->base);
   wlr_output_destroy(output);
   wlr_allocator_destroy(allocator);

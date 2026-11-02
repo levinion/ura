@@ -181,32 +181,12 @@ void on_input_method_new_popup_surface(wl_listener* listener, void* data) {
   popup->popup_surface = popup_surface;
   popup->popup_surface->data = popup;
 
-  // get focused surface's scene_tree
-  wlr_scene_tree* scene_tree = nullptr;
-
   auto focused = server->view->foreground_client();
-  if (!focused) {
+  if (!focused || focused->type != UraSurfaceType::Toplevel) {
     delete popup;
     return;
   }
-
-  if (focused->type == UraSurfaceType::Toplevel) {
-    auto toplevel = focused->transform<UraToplevel>();
-    scene_tree = toplevel->scene_tree;
-  } else if (focused->type == UraSurfaceType::LayerShell) {
-    auto layershell = focused->transform<UraLayerShell>();
-    scene_tree = layershell->scene_tree;
-  }
-
-  if (!scene_tree) {
-    delete popup;
-    return;
-  }
-
-  // create node as a subsurface of parent's scene_tree
-  popup->scene_tree =
-    wlr_scene_subsurface_tree_create(scene_tree, popup->popup_surface->surface);
-  wlr_scene_node_raise_to_top(&popup->scene_tree->node);
+  popup->parent = focused->transform<UraToplevel>();
 
   server->seat->text_input->popups.push_back(popup);
 
@@ -236,41 +216,36 @@ void on_input_method_popup_surface_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto input_popup = server->runtime->fetch<UraInputMethodPopup*>(listener);
   server->runtime->remove(input_popup);
-  wlr_scene_node_destroy(&input_popup->scene_tree->node);
+  server->seat->text_input->popups.remove(input_popup);
   delete input_popup;
+  server->view->schedule_frames();
 }
 
 void on_input_method_popup_surface_map(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto input_popup = server->runtime->fetch<UraInputMethodPopup*>(listener);
-  if (input_popup->scene_tree->node.enabled)
-    return;
   auto active_text_input = server->seat->text_input->get_active_text_input();
   if (!active_text_input)
     return;
   input_popup->constrain(active_text_input);
-  wlr_scene_node_set_enabled(&input_popup->scene_tree->node, true);
+  server->view->schedule_frames();
 }
 
 void on_input_method_popup_surface_unmap(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  auto input_popup = server->runtime->fetch<UraInputMethodPopup*>(listener);
-  if (!input_popup->scene_tree->node.enabled)
-    return;
-  if (input_popup->scene_tree) {
-    wlr_scene_node_set_enabled(&input_popup->scene_tree->node, false);
-  }
+  server->view->schedule_frames();
 }
 
 void on_input_method_popup_surface_commit(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto input_popup = server->runtime->fetch<UraInputMethodPopup*>(listener);
-  if (!input_popup->scene_tree->node.enabled)
+  if (!input_popup->popup_surface->surface->mapped)
     return;
   auto active_text_input = server->seat->text_input->get_active_text_input();
   if (!active_text_input)
     return;
   input_popup->constrain(active_text_input);
+  server->view->schedule_frames();
 }
 
 } // namespace ura
