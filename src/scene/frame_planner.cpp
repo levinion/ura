@@ -67,7 +67,8 @@ FramePlan UraFramePlanner::build(
     || !same_box(previous.logical_box, plan.logical_box)
     || previous.scale != output.scale || previous.transform != output.transform
     || output.software_cursor
-    || previous.software_cursor != output.software_cursor;
+    || previous.software_cursor != output.software_cursor
+    || previous.force_full_redraw;
   if (full_redraw) {
     plan.full_redraw = true;
     plan.damage.push_back(plan.logical_box);
@@ -235,8 +236,21 @@ void UraFramePlanner::commit_state(UraOutput* output, OutputState&& next) {
   if (it == this->outputs.end())
     return;
   auto entered = std::move(it->second.entered_surfaces);
+  auto scales = std::move(it->second.notified_scales);
   it->second = std::move(next);
   it->second.entered_surfaces = std::move(entered);
+  it->second.notified_scales = std::move(scales);
+}
+
+void UraFramePlanner::abort_frame(UraOutput* output) {
+  auto it = this->outputs.find(output);
+  if (it == this->outputs.end())
+    return;
+
+  // Keep the last successfully presented surface history and the protocol
+  // association already announced by finish_plan(). Only force the next plan
+  // to repaint the whole output so a failed frame cannot leave stale pixels.
+  it->second.force_full_redraw = true;
 }
 
 } // namespace ura

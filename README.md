@@ -112,20 +112,22 @@ URA_RAYLIB_EFFECT_TINT='#RRGGBBAA' ura
 ```
 
 The EnTT scene is now the authoritative scene model. Frame preparation is
-split into explicit stages: a main-thread task discovery and immutable world
-snapshot, parallel per-output frame planning, a main-thread enter/leave and
-primary-output merge, and finally the GPU/output commit. Surface-tree snapshot
-tasks are split per scene item, so a single output with multiple windows or a
-bar can use the worker pool even without a second monitor. Worker threads only
-read disjoint wlroots surface trees and the immutable snapshot; they never
-mutate the ECS registry or wlroots. Single-output frame planning stays inline
-to avoid thread overhead, while multi-output planning uses the same small
-persistent worker pool.
+split into explicit stages: main-thread task discovery and surface-tree
+collection into an immutable world snapshot, pure CPU per-output frame planning,
+a main-thread enter/leave and primary-output merge, and finally the GPU/output
+commit. Surface traversal, texture lookup and timeline access stay on the main
+thread because they use wlroots state; worker threads only consume the finished
+snapshot. Per-output planning runs inline for small plans and uses the small
+persistent worker pool only when the estimated work is large enough to amortize
+thread wake-up.
 
 The output path tracks scene and surface-commit damage, renders toplevel
 borders as frame-plan rectangles, and commits through the raylib renderer.
 Surface enter/leave, preferred scale, frame scheduling and render-completion
-synchronization are handled by Ura itself.
+synchronization are handled by Ura itself. A transient render failure keeps the
+last successful frame history and output association, forces a full repaint and
+retries with exponential backoff; disabling or removing an output performs the
+full leave/reset path.
 
 To profile the frame stages, run with `URA_FRAME_PROFILE=1`. Ura logs a summary
 every five seconds with world/plan/merge/render timings, full-redraw counts,

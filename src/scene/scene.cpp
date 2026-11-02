@@ -225,6 +225,9 @@ void UraScene::touch(entt::entity entity, DirtyFlag flag) {
 }
 
 void UraScene::invalidate() {
+  // Structural changes (entity destruction, explicit invalidation) must move
+  // the snapshot version even though no component was touched.
+  ++this->current_epoch;
   this->notify_dirty();
 }
 

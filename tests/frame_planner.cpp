@@ -116,6 +116,60 @@ bool test_rect_damage() {
   return !color.full_redraw && !color.damage.empty();
 }
 
+bool test_abort_frame_retry() {
+  ura::UraFramePlanner planner;
+  auto* output = fake_output(0x9000);
+  auto* state = planner.prepare_output(output);
+
+  ura::OutputFrameState output_state {
+    .output = output,
+    .enabled = true,
+    .name = "OUT-1",
+    .logical_box = { 0, 0, 100, 100 },
+  };
+
+  ura::FrameWorldSnapshot world;
+  world.surfaces.push_back(surface_at(0xA000, 10, 10, 40, 40, 1));
+  world.operations.push_back({ ura::FrameOperationKind::Surface, 0 });
+
+  ura::UraFramePlanner::OutputState next;
+  auto first = planner.build(output_state, *state, next, world);
+  if (!first.full_redraw)
+    return false;
+  planner.commit_state(output, std::move(next));
+
+  auto* associated = reinterpret_cast<wlr_surface*>(0xB000);
+  state = planner.prepare_output(output);
+  state->entered_surfaces.insert(associated);
+  state->notified_scales[associated] = 1;
+
+  // A frame was planned but its render failed, so its candidate state must not
+  // be committed. abort_frame() keeps the protocol association but asks for a
+  // full repaint on the retry.
+  ura::UraFramePlanner::OutputState failed_next;
+  auto failed = planner.build(output_state, *state, failed_next, world);
+  if (failed.full_redraw || !failed.damage.empty())
+    return false;
+  planner.abort_frame(output);
+
+  state = planner.prepare_output(output);
+  if (!state->entered_surfaces.contains(associated))
+    return false;
+  if (!state->notified_scales.contains(associated))
+    return false;
+
+  ura::UraFramePlanner::OutputState retry_next;
+  auto retry = planner.build(output_state, *state, retry_next, world);
+  if (!retry.full_redraw || retry.damage.size() != 1)
+    return false;
+  planner.commit_state(output, std::move(retry_next));
+
+  state = planner.prepare_output(output);
+  ura::UraFramePlanner::OutputState idle_next;
+  auto idle = planner.build(output_state, *state, idle_next, world);
+  return !idle.full_redraw && idle.damage.empty() && idle.surfaces.size() == 1;
+}
+
 } // namespace
 
 int main() {
@@ -125,6 +179,10 @@ int main() {
   }
   if (!test_rect_damage()) {
     std::cerr << "rect damage test failed\n";
+    return 1;
+  }
+  if (!test_abort_frame_retry()) {
+    std::cerr << "abort frame retry test failed\n";
     return 1;
   }
   return 0;

@@ -86,6 +86,19 @@ void UraWorkerPool::run() {
 
 void UraWorkerPool::parallel_for(
   std::size_t count,
+  std::size_t estimated_work,
+  const std::function<void(std::size_t)>& fn
+) {
+  constexpr std::size_t min_parallel_work = 256;
+  if (count < 2 || estimated_work < min_parallel_work) {
+    for (std::size_t i = 0; i < count; ++i) fn(i);
+    return;
+  }
+  this->parallel_for(count, fn);
+}
+
+void UraWorkerPool::parallel_for(
+  std::size_t count,
   const std::function<void(std::size_t)>& fn
 ) {
   if (count == 0)

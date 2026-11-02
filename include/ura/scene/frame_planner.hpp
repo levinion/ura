@@ -25,6 +25,10 @@ public:
   );
   void finish_plan(UraOutput* output, FramePlan& plan);
   void commit_state(UraOutput* output, OutputState&& next);
+  // Discards the candidate frame history while preserving protocol state
+  // (entered surfaces and notified scales) after a transient render failure.
+  void abort_frame(UraOutput* output);
+  // Full output teardown: sends leave and forgets all history.
   void reset_output(UraOutput* output);
   void remove(UraOutput* output);
   void forget_surface(wlr_surface* surface);
@@ -52,7 +56,9 @@ public:
     float scale = 1.f;
     enum wl_output_transform transform = WL_OUTPUT_TRANSFORM_NORMAL;
     bool software_cursor = false;
+    bool force_full_redraw = false;
     std::unordered_set<wlr_surface*> entered_surfaces;
+    std::unordered_map<wlr_surface*, float> notified_scales;
     std::vector<PreviousSurface> surfaces;
     std::vector<PreviousRect> rects;
     std::vector<wlr_box> orphan_damage;

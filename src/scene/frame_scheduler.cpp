@@ -1,5 +1,6 @@
 #include "ura/scene/frame_scheduler.hpp"
 
+#include <algorithm>
 #include <utility>
 #include <vector>
 
@@ -10,6 +11,13 @@
 #include "ura/view/view.hpp"
 
 namespace ura {
+
+struct UraFrameScheduler::RetryState {
+  UraFrameScheduler* scheduler = nullptr;
+  UraOutput* output = nullptr;
+  wl_event_source* source = nullptr;
+  uint32_t failures = 0;
+};
 
 namespace {
 
@@ -53,6 +61,73 @@ UraFrameScheduler::UraFrameScheduler(
   planner(planner),
   profiler(profiler) {}
 
+UraFrameScheduler::~UraFrameScheduler() {
+  this->shutdown();
+}
+
+void UraFrameScheduler::shutdown() {
+  for (auto& [output, retry] : this->retries) {
+    if (retry->source)
+      wl_event_source_remove(retry->source);
+    retry->source = nullptr;
+  }
+  this->retries.clear();
+}
+
+int UraFrameScheduler::handle_retry(void* data) {
+  auto* retry = static_cast<RetryState*>(data);
+  auto* scheduler = retry->scheduler;
+  auto* output = retry->output;
+
+  // Keep the timer source around for the next backoff interval. It is removed
+  // on a successful commit, output teardown or scheduler shutdown.
+  scheduler->dirty_outputs.insert(output);
+  if (output && output->output && output->output->enabled)
+    wlr_output_schedule_frame(output->output);
+  return 0;
+}
+
+void UraFrameScheduler::schedule_retry(UraOutput* output) {
+  if (!output || !output->output || !output->output->enabled)
+    return;
+
+  auto it = this->retries.find(output);
+  if (it == this->retries.end()) {
+    auto retry = std::make_unique<RetryState>();
+    retry->scheduler = this;
+    retry->output = output;
+    it = this->retries.emplace(output, std::move(retry)).first;
+  }
+
+  auto& retry = *it->second;
+  retry.failures = std::min<uint32_t>(retry.failures + 1, 5);
+  auto delay = std::min<uint32_t>(16u << (retry.failures - 1), 250u);
+
+  if (!retry.source) {
+    auto* server = UraServer::get_instance();
+    if (!server || !server->display) {
+      wlr_output_schedule_frame(output->output);
+      return;
+    }
+    auto* loop = wl_display_get_event_loop(server->display);
+    retry.source = wl_event_loop_add_timer(loop, handle_retry, &retry);
+    if (!retry.source) {
+      wlr_output_schedule_frame(output->output);
+      return;
+    }
+  }
+  wl_event_source_timer_update(retry.source, static_cast<int>(delay));
+}
+
+void UraFrameScheduler::cancel_retry(UraOutput* output) {
+  auto it = this->retries.find(output);
+  if (it == this->retries.end())
+    return;
+  if (it->second->source)
+    wl_event_source_remove(it->second->source);
+  this->retries.erase(it);
+}
+
 void UraFrameScheduler::invalidate() {
   this->all_dirty = true;
   this->world_dirty = true;
@@ -66,6 +141,7 @@ void UraFrameScheduler::mark_output_dirty(UraOutput* output) {
 }
 
 void UraFrameScheduler::invalidate_output(UraOutput* output) {
+  this->cancel_retry(output);
   this->plans.erase(output);
   this->pending_states.erase(output);
   this->active_outputs.erase(output);
@@ -78,7 +154,7 @@ void UraFrameScheduler::invalidate_output(UraOutput* output) {
 void UraFrameScheduler::ensure_world() {
   if (!this->world_dirty)
     return;
-  this->world = build_frame_world(this->pool);
+  this->world = build_frame_world();
   this->world_dirty = false;
 }
 
@@ -114,14 +190,16 @@ void UraFrameScheduler::rebuild_all() {
   this->active_outputs = std::move(next_active);
 
   std::vector<FramePlan> results(outputs.size());
-  this->pool.parallel_for(outputs.size(), [&](std::size_t index) {
-    results[index] = this->planner.build(
-      outputs[index],
-      *previous_states[index],
-      next_states[index],
-      this->world
-    );
-  });
+  auto estimated_work = outputs.size() * this->world.operations.size();
+  this->pool
+    .parallel_for(outputs.size(), estimated_work, [&](std::size_t index) {
+      results[index] = this->planner.build(
+        outputs[index],
+        *previous_states[index],
+        next_states[index],
+        this->world
+      );
+    });
   auto after_plan = UraFrameProfiler::Clock::now();
 
   this->plans.clear();
@@ -227,6 +305,7 @@ FramePlan UraFrameScheduler::take(UraOutput* output) {
 }
 
 void UraFrameScheduler::commit(UraOutput* output) {
+  this->cancel_retry(output);
   auto it = this->pending_states.find(output);
   if (it == this->pending_states.end())
     return;
@@ -234,11 +313,21 @@ void UraFrameScheduler::commit(UraOutput* output) {
   this->pending_states.erase(it);
 }
 
-void UraFrameScheduler::abort(UraOutput* output) {
-  this->invalidate_output(output);
+void UraFrameScheduler::abort_frame(UraOutput* output) {
+  if (!output || !output->output || !output->output->enabled) {
+    this->invalidate_output(output);
+    return;
+  }
+
+  this->plans.erase(output);
+  this->pending_states.erase(output);
+  this->planner.abort_frame(output);
+  this->dirty_outputs.insert(output);
+  this->schedule_retry(output);
 }
 
 void UraFrameScheduler::remove(UraOutput* output) {
+  this->cancel_retry(output);
   this->plans.erase(output);
   this->pending_states.erase(output);
   this->active_outputs.erase(output);

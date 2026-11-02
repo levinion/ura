@@ -21,6 +21,13 @@ public:
   std::size_t size() const;
   void
   parallel_for(std::size_t count, const std::function<void(std::size_t)>& fn);
+  // Runs inline when the estimated amount of work is too small to amortize
+  // worker wake-up and synchronization.
+  void parallel_for(
+    std::size_t count,
+    std::size_t estimated_work,
+    const std::function<void(std::size_t)>& fn
+  );
 
 private:
   struct Shared;

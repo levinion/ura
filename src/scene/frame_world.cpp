@@ -298,7 +298,7 @@ namespace {
 
 } // namespace
 
-FrameWorldSnapshot build_frame_world(UraWorkerPool& pool) {
+FrameWorldSnapshot build_frame_world() {
   FrameWorldSnapshot world;
   auto* server = UraServer::get_instance();
   world.locked = server->seat->locked;
@@ -331,10 +331,12 @@ FrameWorldSnapshot build_frame_world(UraWorkerPool& pool) {
   if (tasks.empty())
     return world;
 
-  std::vector<WorldChunk> chunks(tasks.size());
-  pool.parallel_for(tasks.size(), [&](std::size_t index) {
-    chunks[index] = build_chunk(tasks[index]);
-  });
+  // Surface traversal, texture lookup and timeline state access stay on the
+  // main thread. Only the resulting immutable snapshot may cross into the
+  // worker pool for pure frame planning.
+  std::vector<WorldChunk> chunks;
+  chunks.reserve(tasks.size());
+  for (auto& task : tasks) chunks.push_back(build_chunk(task));
 
   for (auto& chunk : chunks) {
     auto surface_offset = world.surfaces.size();

@@ -182,7 +182,7 @@ void UraOutput::commit() {
   }
   auto* profiler = server->view->frame_profiler.get();
   if (plan.logical_box.width <= 0 || plan.logical_box.height <= 0) {
-    server->view->frame_scheduler->abort(this);
+    server->view->frame_scheduler->invalidate_output(this);
     profiler->record_skip();
     profiler->maybe_report();
     return;
@@ -207,7 +207,7 @@ void UraOutput::commit() {
   profiler->maybe_report();
   if (!rendered) {
     wlr_log(WLR_ERROR, "Ura frame renderer failed");
-    server->view->frame_scheduler->abort(this);
+    server->view->frame_scheduler->abort_frame(this);
     return;
   }
   server->view->frame_scheduler->commit(this);

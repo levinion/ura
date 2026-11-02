@@ -49,5 +49,15 @@ int main() {
     return 1;
   }
 
+  bool low_work_off_main = false;
+  pool.parallel_for(64, 1, [&](std::size_t) {
+    if (std::this_thread::get_id() != main_thread)
+      low_work_off_main = true;
+  });
+  if (low_work_off_main) {
+    std::cerr << "low-work task should run inline\n";
+    return 1;
+  }
+
   return 0;
 }

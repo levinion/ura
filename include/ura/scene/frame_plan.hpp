@@ -38,8 +38,6 @@ struct FrameRect {
   int index = 0;
 };
 
-// Immutable scene snapshot produced on the main thread. Workers only consume
-// this data and never touch the ECS registry or wlroots.
 struct FrameSurfaceSnapshot {
   wlr_surface* surface = nullptr;
   wlr_texture* texture = nullptr;

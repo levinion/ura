@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -20,16 +21,23 @@ class UraFrameProfiler;
 class UraFrameScheduler {
 public:
   UraFrameScheduler(UraFramePlanner& planner, UraFrameProfiler& profiler);
+  ~UraFrameScheduler();
 
   FramePlan take(UraOutput* output);
   void commit(UraOutput* output);
-  void abort(UraOutput* output);
+  // A transient render failure: keep enter/leave state, force full damage and
+  // retry after a short backoff.
+  void abort_frame(UraOutput* output);
   void invalidate();
   void mark_output_dirty(UraOutput* output);
   void invalidate_output(UraOutput* output);
   void remove(UraOutput* output);
+  // Stops retry timers before the Wayland event loop is destroyed.
+  void shutdown();
 
 private:
+  struct RetryState;
+
   UraFramePlanner& planner;
   UraFrameProfiler& profiler;
   UraWorkerPool pool;
@@ -46,8 +54,12 @@ private:
   std::unordered_set<UraOutput*> active_outputs;
   std::unordered_map<UraOutput*, CachedPlan> plans;
   std::unordered_map<UraOutput*, UraFramePlanner::OutputState> pending_states;
+  std::unordered_map<UraOutput*, std::unique_ptr<RetryState>> retries;
 
   void ensure_world();
+  void schedule_retry(UraOutput* output);
+  void cancel_retry(UraOutput* output);
+  static int handle_retry(void* data);
   void rebuild_all();
   void rebuild_output(UraOutput* output);
   FramePlan build_single(UraOutput* output);

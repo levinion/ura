@@ -157,9 +157,12 @@ bool test_snapshot_cache() {
   if (updated != cached || updated->items[0].transform.x != 20)
     return false;
 
+  auto epoch_before_destroy = scene.epoch();
   entities.destroy(first);
+  auto epoch_after_destroy = scene.epoch();
   auto* after_destroy = &scene.snapshot();
-  return after_destroy == cached && after_destroy->items.size() == 1
+  return epoch_after_destroy > epoch_before_destroy && after_destroy == cached
+    && after_destroy->items.size() == 1
     && after_destroy->items[0].id == ura::UraEntityRegistry::to_id(second);
 }
 

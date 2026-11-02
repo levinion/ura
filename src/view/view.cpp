@@ -88,8 +88,17 @@ void UraView::schedule_surface(wlr_surface* surface) {
     scheduled = true;
   }
 
-  if (!scheduled)
-    return;
+  if (!scheduled) {
+    // A newly created surface has no current_outputs until its first
+    // frame is presented and enter is sent. Do not lose that first commit.
+    auto* output = this->current_output();
+    if (output && output->output && output->output->enabled) {
+      this->frame_scheduler->mark_output_dirty(output);
+      wlr_output_schedule_frame(output->output);
+    } else {
+      this->schedule_frames();
+    }
+  }
 }
 
 void UraView::schedule_frames() {
