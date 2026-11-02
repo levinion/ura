@@ -38,6 +38,16 @@ void UraOutput::init(wlr_output* _wlr_output) {
   // bind render and allocator to this output
   wlr_output_init_render(_wlr_output, server->allocator, server->renderer);
 
+  if (
+    wlr_backend_is_drm(_wlr_output->backend)
+    && _wlr_output->backend->features.timeline
+    && server->renderer->features.timeline
+  ) {
+    int drm_fd = wlr_renderer_get_drm_fd(server->renderer);
+    if (drm_fd >= 0)
+      this->render_timeline = wlr_drm_syncobj_timeline_create(drm_fd);
+  }
+
   auto restored_context = this->restore_context();
   auto resume = restored_context.has_value();
   auto restored_geometry =
@@ -150,6 +160,8 @@ void UraOutput::refresh_geometry() {
     );
   }
   this->configure_layers();
+  if (!enabled)
+    server->view->frame_scheduler->invalidate_output(this);
   server->view->schedule_frames();
 }
 
@@ -163,15 +175,42 @@ wlr_damage_ring* UraOutput::damage_ring() {
 
 void UraOutput::commit() {
   auto server = UraServer::get_instance();
-  auto plan = server->view->frame_planner->build(this);
-  if (plan.logical_box.width <= 0 || plan.logical_box.height <= 0)
-    return;
-  if (!plan.full_redraw && plan.damage.empty())
-    return;
-  if (!render_frame(server->renderer, plan)) {
-    wlr_log(WLR_ERROR, "Ura frame renderer failed");
+  auto plan = server->view->frame_scheduler->take(this);
+  if (this->render_timeline) {
+    plan.render_timeline = this->render_timeline;
+    plan.render_point = ++this->render_point;
+  }
+  auto* profiler = server->view->frame_profiler.get();
+  if (plan.logical_box.width <= 0 || plan.logical_box.height <= 0) {
+    server->view->frame_scheduler->abort(this);
+    profiler->record_skip();
+    profiler->maybe_report();
     return;
   }
+  if (!plan.full_redraw && plan.damage.empty()) {
+    server->view->frame_scheduler->commit(this);
+    profiler->record_skip();
+    profiler->maybe_report();
+    return;
+  }
+
+  auto render_start = UraFrameProfiler::Clock::now();
+  bool rendered = render_frame(server->renderer, plan);
+  profiler->record_render(
+    UraFrameProfiler::Clock::now() - render_start,
+    plan.surfaces.size(),
+    plan.damage.size(),
+    plan.operations.size(),
+    plan.full_redraw,
+    rendered
+  );
+  profiler->maybe_report();
+  if (!rendered) {
+    wlr_log(WLR_ERROR, "Ura frame renderer failed");
+    server->view->frame_scheduler->abort(this);
+    return;
+  }
+  server->view->frame_scheduler->commit(this);
 
   timespec now;
   clock_gettime(CLOCK_MONOTONIC, &now);
@@ -201,8 +240,13 @@ void UraOutput::destroy() {
     this->session_lock_surface = nullptr;
   }
   this->save_context();
+  if (this->render_timeline) {
+    wlr_drm_syncobj_timeline_signal(this->render_timeline, UINT64_MAX);
+    wlr_drm_syncobj_timeline_unref(this->render_timeline);
+    this->render_timeline = nullptr;
+  }
   wlr_damage_ring_finish(&this->frame_damage_ring);
-  server->view->frame_planner->remove(this);
+  server->view->frame_scheduler->remove(this);
   server->runtime->remove(this);
   server->view->outputs.erase(this->name);
   server->entities->destroy(this->entity);

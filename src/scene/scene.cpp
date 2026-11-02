@@ -4,7 +4,13 @@
 
 namespace ura {
 
-UraScene::UraScene(UraEntityRegistry& entities) : entities(entities) {}
+UraScene::UraScene(UraEntityRegistry& entities) : entities(entities) {
+  entities.set_destroy_callback([this] { this->invalidate(); });
+}
+
+UraScene::~UraScene() {
+  this->entities.set_destroy_callback({});
+}
 
 void UraScene::attach_toplevel(
   entt::entity entity,
@@ -133,8 +139,12 @@ void UraScene::set_dirty_callback(std::function<void()> callback) {
   this->dirty_callback = std::move(callback);
 }
 
-SceneSnapshot UraScene::snapshot() const {
-  SceneSnapshot result;
+const SceneSnapshot& UraScene::snapshot() const {
+  if (!this->snapshot_dirty)
+    return this->cached_snapshot;
+
+  auto& result = this->cached_snapshot;
+  result.items.clear();
   result.epoch = this->current_epoch;
 
   auto view = this->entities.raw()
@@ -178,11 +188,12 @@ SceneSnapshot UraScene::snapshot() const {
       return lhs.id < rhs.id;
     }
   );
+  this->snapshot_dirty = false;
   return result;
 }
 
 std::optional<uint64_t> UraScene::topmost_at(int x, int y) const {
-  auto current = this->snapshot();
+  auto& current = this->snapshot();
   for (auto item = current.items.rbegin(); item != current.items.rend();
        ++item) {
     if (!item->visibility.visible || item->visibility.occluded)
@@ -213,7 +224,12 @@ void UraScene::touch(entt::entity entity, DirtyFlag flag) {
   this->notify_dirty();
 }
 
+void UraScene::invalidate() {
+  this->notify_dirty();
+}
+
 void UraScene::notify_dirty() {
+  this->snapshot_dirty = true;
   if (this->dirty_callback)
     this->dirty_callback();
 }

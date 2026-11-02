@@ -684,13 +684,15 @@ bool render_pass_submit(RenderPass* pass) {
     }
   }
 
-  glFinish();
-
   if (pass->signal_timeline) {
     if (!signal_timeline(pass)) {
       wlr_log(WLR_ERROR, "Failed to signal render timeline");
       ok = false;
     }
+  } else if (!pass->shm_texture) {
+    // No explicit synchronization was supplied by the caller. Keep the
+    // legacy GPU-completion barrier only for this fallback path.
+    glFinish();
   }
 
   if (pass->timer && pass->timer->started) {

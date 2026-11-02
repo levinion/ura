@@ -5,21 +5,21 @@ namespace ura {
 
 namespace {
 
-template<typename Ref>
-entt::entity create_ref(entt::registry& registry, Ref ref) {
-  auto entity = registry.create();
-  registry.emplace<Ref>(entity, ref);
-  registry.emplace<LuaUserdata>(entity);
-  return entity;
-}
+  template<typename Ref>
+  entt::entity create_ref(entt::registry& registry, Ref ref) {
+    auto entity = registry.create();
+    registry.emplace<Ref>(entity, ref);
+    registry.emplace<LuaUserdata>(entity);
+    return entity;
+  }
 
-template<typename Ref, typename T>
-T* lookup(const entt::registry& registry, entt::entity entity) {
-  if (entity == entt::null || !registry.valid(entity))
-    return nullptr;
-  auto* ref = registry.try_get<Ref>(entity);
-  return ref ? ref->object : nullptr;
-}
+  template<typename Ref, typename T>
+  T* lookup(const entt::registry& registry, entt::entity entity) {
+    if (entity == entt::null || !registry.valid(entity))
+      return nullptr;
+    auto* ref = registry.try_get<Ref>(entity);
+    return ref ? ref->object : nullptr;
+  }
 
 } // namespace
 
@@ -82,11 +82,19 @@ bool UraEntityRegistry::contains(uint64_t id) const {
 void UraEntityRegistry::destroy(entt::entity entity) {
   if (!this->contains(entity))
     return;
+  if (this->destroy_callback)
+    this->destroy_callback();
   this->registry.destroy(entity);
 }
 
 void UraEntityRegistry::clear() {
+  if (this->destroy_callback)
+    this->destroy_callback();
   this->registry.clear();
+}
+
+void UraEntityRegistry::set_destroy_callback(std::function<void()> callback) {
+  this->destroy_callback = std::move(callback);
 }
 
 flexible::object UraEntityRegistry::userdata(uint64_t id) const {

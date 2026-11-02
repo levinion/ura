@@ -5,6 +5,7 @@
 
 extern "C" {
 #include <wlr/backend/headless.h>
+#include <wlr/render/drm_syncobj.h>
 }
 
 int main() {
@@ -62,6 +63,13 @@ int main() {
   plan.background_color = { 0.1f, 0.2f, 0.3f, 1.f };
   plan.full_redraw = true;
 
+  wlr_drm_syncobj_timeline* timeline = nullptr;
+  int drm_fd = wlr_renderer_get_drm_fd(renderer);
+  if (drm_fd >= 0)
+    timeline = wlr_drm_syncobj_timeline_create(drm_fd);
+  plan.render_timeline = timeline;
+  plan.render_point = timeline ? 1 : 0;
+
   bool ok = ura::render_frame(renderer, plan);
   if (ok) {
     plan.full_redraw = false;
@@ -80,9 +88,15 @@ int main() {
         .index = 0,
       }
     );
+    if (timeline)
+      plan.render_point = 2;
     ok = ura::render_frame(renderer, plan);
   }
 
+  if (timeline) {
+    wlr_drm_syncobj_timeline_signal(timeline, UINT64_MAX);
+    wlr_drm_syncobj_timeline_unref(timeline);
+  }
   wlr_allocator_destroy(allocator);
   wlr_renderer_destroy(renderer);
   wlr_backend_destroy(backend);

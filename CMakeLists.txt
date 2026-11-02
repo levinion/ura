@@ -106,6 +106,26 @@ if(BUILD_TESTING)
   add_test(NAME ura-scene-stale-handle COMMAND ura-scene-tests stale-handle)
   add_test(NAME ura-scene-components COMMAND ura-scene-tests components)
   add_test(NAME ura-scene-layer-shell COMMAND ura-scene-tests layer-shell)
+  add_test(NAME ura-scene-snapshot-cache COMMAND ura-scene-tests snapshot-cache)
+
+  find_package(Threads REQUIRED)
+  add_executable(ura-worker-pool-tests
+    tests/worker_pool.cpp
+    src/util/worker_pool.cpp
+  )
+  target_include_directories(ura-worker-pool-tests PRIVATE include/)
+  target_link_libraries(ura-worker-pool-tests PRIVATE Threads::Threads)
+  add_test(NAME ura-worker-pool COMMAND ura-worker-pool-tests)
+
+  add_executable(ura-frame-planner-tests
+    tests/frame_planner.cpp
+    src/scene/frame_planner.cpp
+  )
+  target_include_directories(ura-frame-planner-tests PRIVATE include/ include/protocols/)
+  target_compile_definitions(ura-frame-planner-tests PRIVATE WLR_USE_UNSTABLE)
+  target_add_dependence(ura-frame-planner-tests wlroots-0.20)
+  target_add_dependence(ura-frame-planner-tests wayland-server)
+  add_test(NAME ura-frame-planner COMMAND ura-frame-planner-tests)
 
   add_test(NAME ura-json-primitives COMMAND ura-json-tests primitives)
   add_test(NAME ura-json-integer-ranges COMMAND ura-json-tests integer-ranges)

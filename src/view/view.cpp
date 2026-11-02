@@ -30,6 +30,11 @@ std::unique_ptr<UraView> UraView::init(UraEntityRegistry& entities) {
   auto view = std::make_unique<UraView>();
   view->scene = std::make_unique<UraScene>(entities);
   view->frame_planner = std::make_unique<UraFramePlanner>();
+  view->frame_profiler = std::make_unique<UraFrameProfiler>();
+  view->frame_scheduler = std::make_unique<UraFrameScheduler>(
+    *view->frame_planner,
+    *view->frame_profiler
+  );
   view->scene->set_dirty_callback([view = view.get()] {
     view->schedule_frames();
   });
@@ -39,7 +44,7 @@ std::unique_ptr<UraView> UraView::init(UraEntityRegistry& entities) {
 void UraView::handle_surface_commit(wl_listener* listener, void* data) {
   UraView::SurfaceListener* surface_listener = nullptr;
   surface_listener = wl_container_of(listener, surface_listener, commit);
-  surface_listener->view->schedule_frames();
+  surface_listener->view->schedule_surface(surface_listener->surface);
 }
 
 void UraView::handle_surface_destroy(wl_listener* listener, void* data) {
@@ -68,7 +73,27 @@ void UraView::track_surface(wlr_surface* surface) {
   this->surface_listeners[surface] = std::move(listener);
 }
 
+void UraView::schedule_surface(wlr_surface* surface) {
+  if (!surface)
+    return;
+
+  bool scheduled = false;
+  wlr_surface_output* surface_output;
+  wl_list_for_each(surface_output, &surface->current_outputs, link) {
+    auto* output = UraOutput::from(surface_output->output);
+    if (!output || !output->output || !output->output->enabled)
+      continue;
+    this->frame_scheduler->mark_output_dirty(output);
+    wlr_output_schedule_frame(output->output);
+    scheduled = true;
+  }
+
+  if (!scheduled)
+    return;
+}
+
 void UraView::schedule_frames() {
+  this->frame_scheduler->invalidate();
   for (auto& [name, output] : this->outputs) {
     if (output->output && output->output->enabled)
       wlr_output_schedule_frame(output->output);
@@ -144,7 +169,7 @@ std::optional<UraClient> UraView::client_at(double lx, double ly) {
     return make_client(surface, sx, sy);
   }
 
-  auto snapshot = this->scene->snapshot();
+  auto& snapshot = this->scene->snapshot();
   for (auto item = snapshot.items.rbegin(); item != snapshot.items.rend();
        ++item) {
     if (!item->visibility.visible || item->visibility.occluded)

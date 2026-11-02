@@ -193,7 +193,33 @@ bool render_frame(wlr_renderer* renderer, const FramePlan& plan) {
     return false;
   }
 
-  auto* pass = wlr_renderer_begin_buffer_pass(renderer, buffer, nullptr);
+  wlr_output_state_set_buffer(&state, buffer);
+  wlr_output_state_set_damage(&state, &damage);
+
+  bool use_timeline = plan.render_timeline && plan.render_point != 0;
+  if (use_timeline) {
+    wlr_output_state test {};
+    wlr_output_state_init(&test);
+    if (wlr_output_state_copy(&test, &state)) {
+      wlr_output_state_set_wait_timeline(
+        &test,
+        plan.render_timeline,
+        plan.render_point
+      );
+      use_timeline = wlr_output_test_state(wlr_output, &test);
+    } else {
+      use_timeline = false;
+    }
+    wlr_output_state_finish(&test);
+  }
+
+  wlr_buffer_pass_options pass_options {};
+  if (use_timeline) {
+    pass_options.signal_timeline = plan.render_timeline;
+    pass_options.signal_point = plan.render_point;
+  }
+
+  auto* pass = wlr_renderer_begin_buffer_pass(renderer, buffer, &pass_options);
   if (!pass) {
     if (plan.damage_ring)
       wlr_damage_ring_add_whole(plan.damage_ring);
@@ -296,8 +322,13 @@ bool render_frame(wlr_renderer* renderer, const FramePlan& plan) {
     return false;
   }
 
-  wlr_output_state_set_buffer(&state, buffer);
-  wlr_output_state_set_damage(&state, &damage);
+  if (use_timeline) {
+    wlr_output_state_set_wait_timeline(
+      &state,
+      plan.render_timeline,
+      plan.render_point
+    );
+  }
   wlr_buffer_unlock(buffer);
 
   bool ok = wlr_output_commit_state(wlr_output, &state);

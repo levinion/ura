@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string_view>
 #include <entt/entt.hpp>
@@ -64,6 +65,7 @@ public:
 
   flexible::object userdata(uint64_t id) const;
   void set_userdata(uint64_t id, flexible::object value);
+  void set_destroy_callback(std::function<void()> callback);
 
   template<typename T>
   std::optional<T> get_userdata(uint64_t id, std::string_view name) const {
@@ -84,6 +86,7 @@ public:
 
 private:
   entt::registry registry;
+  std::function<void()> destroy_callback;
 };
 
 } // namespace ura

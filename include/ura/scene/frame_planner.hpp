@@ -14,11 +14,21 @@ class UraOutput;
 
 class UraFramePlanner {
 public:
-  FramePlan build(UraOutput* output);
+  struct OutputState;
+
+  OutputState* prepare_output(UraOutput* output);
+  FramePlan build(
+    const OutputFrameState& output,
+    const OutputState& previous,
+    OutputState& next,
+    const FrameWorldSnapshot& world
+  );
+  void finish_plan(UraOutput* output, FramePlan& plan);
+  void commit_state(UraOutput* output, OutputState&& next);
+  void reset_output(UraOutput* output);
   void remove(UraOutput* output);
   void forget_surface(wlr_surface* surface);
 
-private:
   struct PreviousSurface {
     wlr_surface* surface = nullptr;
     wlr_box dst_box {};

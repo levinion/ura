@@ -13,6 +13,7 @@ namespace ura {
 class UraScene {
 public:
   explicit UraScene(UraEntityRegistry& entities);
+  ~UraScene();
 
   void attach_toplevel(
     entt::entity entity,
@@ -59,7 +60,8 @@ public:
     return this->entities.raw().try_get<T>(entity);
   }
 
-  SceneSnapshot snapshot() const;
+  const SceneSnapshot& snapshot() const;
+  void invalidate();
   void set_dirty_callback(std::function<void()> callback);
 
   std::optional<uint64_t> topmost_at(int x, int y) const;
@@ -73,6 +75,8 @@ private:
   uint64_t current_epoch = 1;
   uint64_t next_order = 1;
   std::function<void()> dirty_callback;
+  mutable SceneSnapshot cached_snapshot;
+  mutable bool snapshot_dirty = true;
 
   void touch(entt::entity entity, DirtyFlag flag);
   void notify_dirty();

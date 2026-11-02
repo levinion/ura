@@ -54,6 +54,8 @@ public:
 
 private:
   wlr_damage_ring frame_damage_ring;
+  wlr_drm_syncobj_timeline* render_timeline = nullptr;
+  uint64_t render_point = 0;
   float last_notified_scale = 1.0f;
   bool last_geometry_enabled = false;
   Vec4<int> last_logical_geometry;

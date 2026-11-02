@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include "ura/ura.hpp"
 #include "ura/scene/frame_planner.hpp"
+#include "ura/scene/frame_profile.hpp"
+#include "ura/scene/frame_scheduler.hpp"
 #include "ura/scene/scene.hpp"
 #include "ura/view/output.hpp"
 
@@ -13,6 +15,8 @@ class UraView {
 public:
   std::unique_ptr<UraScene> scene;
   std::unique_ptr<UraFramePlanner> frame_planner;
+  std::unique_ptr<UraFrameProfiler> frame_profiler;
+  std::unique_ptr<UraFrameScheduler> frame_scheduler;
   std::unordered_map<std::string, UraOutput*> outputs;
   std::unordered_map<std::string, UraOutputContext> output_contexts;
   Vec<UraToplevel*> toplevels;
@@ -29,6 +33,7 @@ public:
   Vec<UraLayerShell*> layer_shells();
   void notify_scale(wlr_surface* surface, double scale);
   void track_surface(wlr_surface* surface);
+  void schedule_surface(wlr_surface* surface);
   void schedule_frames();
 
 private:

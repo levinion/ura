@@ -123,6 +123,46 @@ bool test_layer_shell_order() {
     && toplevel_hit && *toplevel_hit == ura::UraEntityRegistry::to_id(toplevel);
 }
 
+bool test_snapshot_cache() {
+  ura::UraEntityRegistry entities;
+  ura::UraScene scene(entities);
+  auto first = entities.create_toplevel(fake_toplevel(0x7000));
+  auto second = entities.create_toplevel(fake_toplevel(0x8000));
+
+  scene.attach_toplevel(
+    first,
+    ura::Transform { 0, 0, 0.f, 1.0 },
+    ura::Geometry { 100, 100 },
+    ura::WindowTags { { "1" } },
+    ura::ZOrder { ura::UraSceneLayer::Normal, 0 }
+  );
+  scene.attach_toplevel(
+    second,
+    ura::Transform { 10, 10, 0.f, 1.0 },
+    ura::Geometry { 50, 50 },
+    ura::WindowTags { { "1" } },
+    ura::ZOrder { ura::UraSceneLayer::Floating, 0 }
+  );
+  scene.set_visible(first, true);
+  scene.set_visible(second, true);
+
+  auto* cached = &scene.snapshot();
+  if (cached->items.size() != 2)
+    return false;
+  if (&scene.snapshot() != cached)
+    return false;
+
+  scene.set_transform(first, ura::Transform { 20, 30, 0.f, 1.0 });
+  auto* updated = &scene.snapshot();
+  if (updated != cached || updated->items[0].transform.x != 20)
+    return false;
+
+  entities.destroy(first);
+  auto* after_destroy = &scene.snapshot();
+  return after_destroy == cached && after_destroy->items.size() == 1
+    && after_destroy->items[0].id == ura::UraEntityRegistry::to_id(second);
+}
+
 bool test_components_and_dirty_state() {
   ura::UraEntityRegistry entities;
   ura::UraScene scene(entities);
@@ -172,6 +212,8 @@ int main(int argc, char** argv) {
     passed = test_components_and_dirty_state();
   else if (name == "layer-shell")
     passed = test_layer_shell_order();
+  else if (name == "snapshot-cache")
+    passed = test_snapshot_cache();
   else {
     std::cerr << "Unknown test case: " << name << '\n';
     return 2;

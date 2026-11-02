@@ -95,8 +95,11 @@ graphical context. EGL and OpenGL ES come from the system graphics stack
 (Mesa/GBM or the vendor driver); there is no ANGLE, archlinuxcn or AUR
 dependency.
 
-The renderer implements wlroots 0.20's unstable renderer interfaces. Keep the
-wlroots 0.20.x headers and `src/render/raylib` in sync when upgrading wlroots.
+The renderer implements wlroots 0.20's unstable renderer interfaces. DRM output
+composition uses an EGL native fence as a render timeline and passes it to
+`wlr_output_state_set_wait_timeline()`; `glFinish()` remains only as a fallback
+for SHM readback or backends without timeline support. Keep the wlroots 0.20.x
+headers and `src/render/raylib` in sync when upgrading wlroots.
 
 If no DRM node is supplied by the backend, Ura opens a render node or uses a
 surfaceless EGL context; `WLR_RENDER_DRM_DEVICE` can select a specific node.
@@ -108,11 +111,25 @@ An optional rlgl effect is available for validating the extra-draw path:
 URA_RAYLIB_EFFECT_TINT='#RRGGBBAA' ura
 ```
 
-The EnTT scene is now the authoritative scene model. The output path builds
-a frame plan from it, tracks scene and surface-commit damage, renders toplevel
+The EnTT scene is now the authoritative scene model. Frame preparation is
+split into explicit stages: a main-thread task discovery and immutable world
+snapshot, parallel per-output frame planning, a main-thread enter/leave and
+primary-output merge, and finally the GPU/output commit. Surface-tree snapshot
+tasks are split per scene item, so a single output with multiple windows or a
+bar can use the worker pool even without a second monitor. Worker threads only
+read disjoint wlroots surface trees and the immutable snapshot; they never
+mutate the ECS registry or wlroots. Single-output frame planning stays inline
+to avoid thread overhead, while multi-output planning uses the same small
+persistent worker pool.
+
+The output path tracks scene and surface-commit damage, renders toplevel
 borders as frame-plan rectangles, and commits through the raylib renderer.
 Surface enter/leave, preferred scale, frame scheduling and render-completion
 synchronization are handled by Ura itself.
+
+To profile the frame stages, run with `URA_FRAME_PROFILE=1`. Ura logs a summary
+every five seconds with world/plan/merge/render timings, full-redraw counts,
+damage boxes and per-frame task/surface counts.
 
 Direct scanout is enabled for eligible fullscreen, full-output layer and lock
 surfaces. If a frame does not satisfy the scanout constraints, it falls back to
