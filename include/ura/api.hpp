@@ -36,6 +36,13 @@ void animate_window_move(
   flexible::object easing
 );
 void resize_window(uint64_t id, int width, int height);
+void animate_window_rotation(
+  uint64_t id,
+  double degrees,
+  double duration,
+  flexible::object easing
+);
+sol::optional<double> get_window_rotation(uint64_t id);
 void animate_window_opacity(
   uint64_t id,
   float opacity,
@@ -81,7 +88,29 @@ sol::optional<bool> is_window_mapped(uint64_t id);
 sol::optional<bool> is_window_focused(uint64_t id);
 sol::optional<float> get_window_opacity(uint64_t id);
 void set_window_opacity(uint64_t id, float opacity);
-void set_window_effect(uint64_t id, flexible::object spec);
+flexible::object define_effect(flexible::object spec);
+bool set_window_effect_instance(
+  uint64_t id,
+  uint64_t effect_id,
+  uint32_t generation,
+  flexible::object uniforms,
+  flexible::object options
+);
+flexible::object find_effect(std::string name);
+flexible::object define_texture(std::string path);
+flexible::object find_texture(std::string name);
+bool undefine_texture(uint64_t id, uint32_t generation);
+bool undefine_effect(uint64_t id, uint32_t generation);
+void clear_effects();
+void migrate_effects();
+void animate_window_effect_uniform(
+  uint64_t id,
+  std::string name,
+  flexible::object from,
+  flexible::object to,
+  double duration,
+  flexible::object easing
+);
 void clear_window_effect(uint64_t id);
 void set_window_border_color(uint64_t id, std::string color);
 sol::optional<std::string> get_window_border_color(uint64_t id);

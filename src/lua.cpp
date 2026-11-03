@@ -56,6 +56,8 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.animate_window_move", api::core::animate_window_move);
   LUAAPI("api.resize_window", api::core::resize_window);
   LUAAPI("api.animate_window_resize", api::core::animate_window_resize);
+  LUAAPI("api.animate_window_rotation", api::core::animate_window_rotation);
+  LUAAPI("api.get_window_rotation", api::core::get_window_rotation);
   LUAAPI("api.animate_window_opacity", api::core::animate_window_opacity);
   LUAAPI("api.animate_window_open", api::core::animate_window_open);
   LUAAPI("api.animate_window_close", api::core::animate_window_close);
@@ -89,7 +91,22 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.get_window_lru", api::core::get_window_lru);
   LUAAPI("api.get_window_opacity", api::core::get_window_opacity);
   LUAAPI("api.set_window_opacity", api::core::set_window_opacity);
-  LUAAPI("api.set_window_effect", api::core::set_window_effect);
+  LUAAPI("api.define_effect", api::core::define_effect);
+  LUAAPI(
+    "api.set_window_effect_instance",
+    api::core::set_window_effect_instance
+  );
+  LUAAPI("api.find_effect", api::core::find_effect);
+  LUAAPI("api.define_texture", api::core::define_texture);
+  LUAAPI("api.find_texture", api::core::find_texture);
+  LUAAPI("api.undefine_texture", api::core::undefine_texture);
+  LUAAPI("api.undefine_effect", api::core::undefine_effect);
+  LUAAPI("api.clear_effects", api::core::clear_effects);
+  LUAAPI("api.migrate_effects", api::core::migrate_effects);
+  LUAAPI(
+    "api.animate_window_effect_uniform",
+    api::core::animate_window_effect_uniform
+  );
   LUAAPI("api.clear_window_effect", api::core::clear_window_effect);
   LUAAPI("api.get_window_border_color", api::core::get_window_border_color);
   LUAAPI("api.set_window_border_color", api::core::set_window_border_color);

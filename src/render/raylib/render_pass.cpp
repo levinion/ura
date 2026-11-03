@@ -7,8 +7,10 @@
 
 #include <unistd.h>
 
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 
 extern "C" {
 #include <wlr/util/box.h>
@@ -714,16 +716,23 @@ static void effect_target_destroy(EffectTarget& target) {
 }
 
 void effect_targets_finish(Renderer* renderer) {
-  if (!renderer)
+  if (!renderer || !renderer->effect_targets)
     return;
-  for (auto& target : renderer->effect_targets) effect_target_destroy(target);
+  for (auto& target : *renderer->effect_targets) effect_target_destroy(target);
+  delete renderer->effect_targets;
+  renderer->effect_targets = nullptr;
 }
 
-static bool
+static EffectTarget*
 effect_target_ensure(Renderer* renderer, int index, int width, int height) {
-  auto& target = renderer->effect_targets[index];
+  if (!renderer->effect_targets)
+    renderer->effect_targets = new std::vector<EffectTarget>;
+  auto& targets = *renderer->effect_targets;
+  if (targets.size() <= static_cast<std::size_t>(index))
+    targets.resize(static_cast<std::size_t>(index) + 1);
+  auto& target = targets[index];
   if (target.texture && target.width == width && target.height == height)
-    return true;
+    return &target;
 
   effect_target_destroy(target);
 
@@ -759,14 +768,14 @@ effect_target_ensure(Renderer* renderer, int index, int width, int height) {
   auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   if (status != GL_FRAMEBUFFER_COMPLETE) {
-    log::error("Effect framebuffer is incomplete: 0x{:x}", status);
+    log::error("EffectInstance framebuffer is incomplete: 0x{:x}", status);
     effect_target_destroy(target);
-    return false;
+    return nullptr;
   }
 
   target.width = width;
   target.height = height;
-  return true;
+  return &target;
 }
 
 static void effect_pass_begin(int width, int height, GLuint fbo) {
@@ -782,7 +791,6 @@ static void draw_effect_copy(
   Renderer* renderer,
   Texture* source,
   const wlr_render_texture_options* options,
-  const Effect& effect,
   int target_width,
   int target_height,
   const wlr_box& dst,
@@ -809,13 +817,7 @@ static void draw_effect_copy(
   shader_set_projection(shader.mvp, target_width, target_height);
   glUniform1i(shader.texture, 0);
   glUniform4f(shader.color, 1.0f, 1.0f, 1.0f, alpha);
-  glUniform4f(
-    shader.tint,
-    effect.color[0],
-    effect.color[1],
-    effect.color[2],
-    effect.color[3]
-  );
+  glUniform4f(shader.tint, 1.0f, 1.0f, 1.0f, 1.0f);
   if (shader.opaque >= 0)
     glUniform1f(shader.opaque, source->has_alpha ? 0.0f : 1.0f);
   glActiveTexture(GL_TEXTURE0);
@@ -835,14 +837,46 @@ static void draw_effect_copy(
   glUseProgram(0);
 }
 
-static void draw_effect_blur(
+static void draw_effect_rect(
   Renderer* renderer,
+  int target_width,
+  int target_height,
+  const wlr_box& dst,
+  const wlr_render_color& color
+) {
+  auto& shader = renderer->rect;
+  if (!shader.valid)
+    return;
+
+  float x1 = static_cast<float>(dst.x);
+  float y1 = static_cast<float>(dst.y);
+  float x2 = static_cast<float>(dst.x + dst.width);
+  float y2 = static_cast<float>(dst.y + dst.height);
+  const float vertices[] = {
+    x1, y1, x2, y1, x2, y2, x1, y1, x2, y2, x1, y2,
+  };
+
+  reset_vertex_attributes();
+  glUseProgram(shader.id);
+  shader_set_projection(shader.mvp, target_width, target_height);
+  glUniform4f(shader.color, color.r, color.g, color.b, color.a);
+  glEnableVertexAttribArray(shader.pos_attrib);
+  glVertexAttribPointer(shader.pos_attrib, 2, GL_FLOAT, GL_FALSE, 0, vertices);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+  glDisableVertexAttribArray(shader.pos_attrib);
+  glUseProgram(0);
+}
+
+static void draw_effect_pass(
+  Renderer* renderer,
+  EffectPassProgram& pass_program,
+  const EffectPass& pass,
+  const EffectInstance& instance,
+  const std::vector<GLuint>& inputs,
   GLuint source,
   GLuint fbo,
   int width,
-  int height,
-  float dx,
-  float dy
+  int height
 ) {
   effect_pass_begin(width, height, fbo);
 
@@ -853,15 +887,59 @@ static void draw_effect_blur(
     0.0f, 0.0f, 0.0f, 0.0f, w, h,    1.0f, 1.0f, 0.0f, h, 0.0f, 1.0f,
   };
 
-  auto& shader = renderer->effect_blur;
+  auto& shader = pass_program.shader;
   reset_vertex_attributes();
   glUseProgram(shader.id);
   shader_set_projection(shader.mvp, width, height);
-  glUniform1i(shader.texture, 0);
-  glUniform4f(shader.color, 1.0f, 1.0f, 1.0f, 1.0f);
-  glUniform2f(shader.direction, dx, dy);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, source);
+  if (shader.texture >= 0)
+    glUniform1i(shader.texture, 0);
+
+  auto upload = [&](const EffectUniform& uniform) {
+    auto it = pass_program.uniforms.find(uniform.name);
+    if (it == pass_program.uniforms.end() || it->second < 0)
+      return;
+    auto location = it->second;
+    auto* values = uniform.values.data();
+    switch (uniform.type) {
+      case EffectUniformType::Float:
+        glUniform1f(location, values[0]);
+        break;
+      case EffectUniformType::Int:
+      case EffectUniformType::Bool:
+        glUniform1i(location, static_cast<int>(values[0]));
+        break;
+      case EffectUniformType::Vec2:
+        glUniform2f(location, values[0], values[1]);
+        break;
+      case EffectUniformType::Vec3:
+        glUniform3f(location, values[0], values[1], values[2]);
+        break;
+      case EffectUniformType::Vec4:
+        glUniform4f(location, values[0], values[1], values[2], values[3]);
+        break;
+    }
+  };
+
+  for (auto& uniform : instance.uniforms) upload(uniform);
+  for (auto& uniform : pass.uniforms) upload(uniform);
+  if (pass_program.texel_size >= 0)
+    glUniform2f(pass_program.texel_size, 1.0f / w, 1.0f / h);
+
+  if (pass.inputs.empty()) {
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, source);
+    auto it = pass_program.samplers.find("texture0");
+    if (it != pass_program.samplers.end() && it->second >= 0)
+      glUniform1i(it->second, 0);
+  } else {
+    for (std::size_t i = 0; i < pass.inputs.size() && i < inputs.size(); ++i) {
+      glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(i));
+      glBindTexture(GL_TEXTURE_2D, inputs[i]);
+      auto it = pass_program.samplers.find(pass.inputs[i].name);
+      if (it != pass_program.samplers.end() && it->second >= 0)
+        glUniform1i(it->second, static_cast<int>(i));
+    }
+  }
   glEnableVertexAttribArray(shader.pos_attrib);
   glVertexAttribPointer(
     shader.pos_attrib,
@@ -881,7 +959,10 @@ static void draw_effect_composite(
   RenderPass* pass,
   GLuint texture,
   const wlr_box& dst,
-  const wlr_render_texture_options* options
+  const wlr_render_texture_options* options,
+  float rotation,
+  double rotation_center_x,
+  double rotation_center_y
 ) {
   Renderer* renderer = pass->renderer;
   auto& shader = renderer->tex_rgba;
@@ -895,17 +976,53 @@ static void draw_effect_composite(
   glViewport(0, 0, pass->width, pass->height);
   glDisable(GL_SCISSOR_TEST);
 
-  float x1 = static_cast<float>(dst.x);
-  float y1 = static_cast<float>(dst.y);
-  float x2 = static_cast<float>(dst.x + dst.width);
-  float y2 = static_cast<float>(dst.y + dst.height);
+  auto corner = [&](double x, double y) {
+    if (rotation == 0.f)
+      return std::array<double, 2> { x, y };
+    auto c = std::cos(rotation);
+    auto s = std::sin(rotation);
+    auto dx = x - rotation_center_x;
+    auto dy = y - rotation_center_y;
+    return std::array<double, 2> {
+      rotation_center_x + dx * c - dy * s,
+      rotation_center_y + dx * s + dy * c,
+    };
+  };
+  auto p0 = corner(dst.x, dst.y);
+  auto p1 = corner(dst.x + dst.width, dst.y);
+  auto p2 = corner(dst.x + dst.width, dst.y + dst.height);
+  auto p3 = corner(dst.x, dst.y + dst.height);
   const float vertices[] = {
-    x1, y1, 0.0f, 0.0f, x2, y1, 1.0f, 0.0f, x2, y2, 1.0f, 1.0f,
-    x1, y1, 0.0f, 0.0f, x2, y2, 1.0f, 1.0f, x1, y2, 0.0f, 1.0f,
+    static_cast<float>(p0[0]), static_cast<float>(p0[1]), 0.0f, 0.0f,
+    static_cast<float>(p1[0]), static_cast<float>(p1[1]), 1.0f, 0.0f,
+    static_cast<float>(p2[0]), static_cast<float>(p2[1]), 1.0f, 1.0f,
+    static_cast<float>(p0[0]), static_cast<float>(p0[1]), 0.0f, 0.0f,
+    static_cast<float>(p2[0]), static_cast<float>(p2[1]), 1.0f, 1.0f,
+    static_cast<float>(p3[0]), static_cast<float>(p3[1]), 0.0f, 1.0f,
   };
 
+  wlr_box damage_box = dst;
+  if (rotation != 0.f) {
+    auto left = std::min({ p0[0], p1[0], p2[0], p3[0] });
+    auto top = std::min({ p0[1], p1[1], p2[1], p3[1] });
+    auto right = std::max({ p0[0], p1[0], p2[0], p3[0] });
+    auto bottom = std::max({ p0[1], p1[1], p2[1], p3[1] });
+    damage_box = {
+      static_cast<int>(std::floor(left)),
+      static_cast<int>(std::floor(top)),
+      static_cast<int>(std::ceil(right) - std::floor(left)),
+      static_cast<int>(std::ceil(bottom) - std::floor(top)),
+    };
+  }
+
   pixman_region32_t region;
-  pixman_region32_init_rect(&region, dst.x, dst.y, dst.width, dst.height);
+  pixman_region32_init_rect(
+    &region,
+    damage_box.x,
+    damage_box.y,
+    damage_box.width,
+    damage_box.height
+  );
   if (options->clip)
     pixman_region32_intersect(&region, &region, options->clip);
 
@@ -941,18 +1058,22 @@ static void draw_effect_composite(
   glBindTexture(GL_TEXTURE_2D, 0);
   glUseProgram(0);
   pixman_region32_fini(&region);
-  damage_add_box(pass, &dst);
+  damage_add_box(pass, &damage_box);
 }
 
-bool render_pass_add_texture_group_effect(
+bool render_pass_add_group_effect(
   wlr_render_pass* base,
-  const wlr_render_texture_options* options,
+  const EffectGroupItem* items,
   std::size_t count,
-  const Effect& effect
+  const EffectInstance& effect,
+  float scale,
+  float rotation,
+  double rotation_center_x,
+  double rotation_center_y
 ) {
   if (
-    !base || base->impl != &render_pass_impl || !options || count == 0
-    || !effect.active()
+    !base || base->impl != &render_pass_impl || !items || count == 0
+    || (!effect.active() && rotation == 0.f)
   )
     return false;
 
@@ -961,15 +1082,27 @@ bool render_pass_add_texture_group_effect(
 
   wlr_box union_box {};
   bool has_box = false;
+  const pixman_region32_t* clip = nullptr;
   for (std::size_t i = 0; i < count; ++i) {
-    if (!options[i].texture)
-      return false;
-    Texture* source = wl_container_of(options[i].texture, source, base);
-    if (source->target != GL_TEXTURE_2D)
-      return false;
-
     wlr_box dst {};
-    wlr_render_texture_options_get_dst_box(&options[i], &dst);
+    const wlr_render_texture_options* texture = items[i].texture;
+    const wlr_render_rect_options* rect = items[i].rect;
+    if (texture) {
+      if (!texture->texture)
+        return false;
+      Texture* source = wl_container_of(texture->texture, source, base);
+      if (source->target != GL_TEXTURE_2D)
+        return false;
+      wlr_render_texture_options_get_dst_box(texture, &dst);
+      if (!clip)
+        clip = texture->clip;
+    } else if (rect) {
+      dst = rect->box;
+      if (!clip)
+        clip = rect->clip;
+    } else {
+      continue;
+    }
     if (dst.width <= 0 || dst.height <= 0)
       continue;
 
@@ -989,18 +1122,21 @@ bool render_pass_add_texture_group_effect(
   if (!has_box)
     return true;
 
-  int margin = 0;
-  if (effect.type == EffectType::Blur && effect.radius > 0.0f) {
-    auto radius = std::min(effect.radius, 64.0f);
-    margin = static_cast<int>(std::ceil(radius * 3.2307692308f));
-  }
-
-  wlr_box target_box {
-    .x = union_box.x - margin,
-    .y = union_box.y - margin,
-    .width = union_box.width + 2 * margin,
-    .height = union_box.height + 2 * margin,
+  auto logical_outset = effect.outset;
+  auto scale_outset = [&](int value) {
+    if (value <= 0)
+      return 0;
+    return static_cast<int>(
+      std::ceil(static_cast<float>(value) * std::max(scale, 0.0f))
+    );
   };
+  PaintOutset outset {
+    .left = scale_outset(logical_outset.left),
+    .top = scale_outset(logical_outset.top),
+    .right = scale_outset(logical_outset.right),
+    .bottom = scale_outset(logical_outset.bottom),
+  };
+  wlr_box target_box = outset.apply(union_box);
   if (target_box.width <= 0 || target_box.height <= 0)
     return false;
 
@@ -1022,111 +1158,180 @@ bool render_pass_add_texture_group_effect(
     egl_restore_context(&saved);
   };
 
-  if (
-    !effect_target_ensure(renderer, 0, target_box.width, target_box.height)
-    || !effect_target_ensure(renderer, 1, target_box.width, target_box.height)
-  ) {
-    restore();
-    return false;
+  auto target_count = effect.active() ? effect.pipeline->passes.size() + 1 : 2;
+  target_count = std::max<std::size_t>(target_count, 2);
+  for (std::size_t i = 0; i < target_count; ++i) {
+    if (!effect_target_ensure(
+          renderer,
+          static_cast<int>(i),
+          target_box.width,
+          target_box.height
+        )) {
+      restore();
+      return false;
+    }
   }
+  auto* target0 = &(*renderer->effect_targets)[0];
 
-  effect_pass_begin(
-    target_box.width,
-    target_box.height,
-    renderer->effect_targets[0].fbo
-  );
+  effect_pass_begin(target_box.width, target_box.height, target0->fbo);
   glEnable(GL_BLEND);
   glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
   bool drew_any = false;
   for (std::size_t i = 0; i < count; ++i) {
-    if (!options[i].texture)
-      continue;
-
-    if (!wait_for_timeline(
-          pass,
-          options[i].wait_timeline,
-          options[i].wait_point
-        ))
-      continue;
-
+    const wlr_render_texture_options* texture = items[i].texture;
+    const wlr_render_rect_options* rect = items[i].rect;
     wlr_box dst {};
-    wlr_render_texture_options_get_dst_box(&options[i], &dst);
-    if (dst.width <= 0 || dst.height <= 0)
-      continue;
+    if (texture) {
+      if (!texture->texture)
+        continue;
+      if (!wait_for_timeline(pass, texture->wait_timeline, texture->wait_point))
+        continue;
+      wlr_render_texture_options_get_dst_box(texture, &dst);
+      if (dst.width <= 0 || dst.height <= 0)
+        continue;
 
-    Texture* source = wl_container_of(options[i].texture, source, base);
-    wlr_box relative {
-      .x = dst.x - target_box.x,
-      .y = dst.y - target_box.y,
-      .width = dst.width,
-      .height = dst.height,
-    };
-    draw_effect_copy(
-      renderer,
-      source,
-      &options[i],
-      effect,
-      target_box.width,
-      target_box.height,
-      relative,
-      wlr_render_texture_options_get_alpha(&options[i])
-    );
-    drew_any = true;
+      Texture* source = wl_container_of(texture->texture, source, base);
+      wlr_box relative {
+        .x = dst.x - target_box.x,
+        .y = dst.y - target_box.y,
+        .width = dst.width,
+        .height = dst.height,
+      };
+      draw_effect_copy(
+        renderer,
+        source,
+        texture,
+        target_box.width,
+        target_box.height,
+        relative,
+        wlr_render_texture_options_get_alpha(texture)
+      );
+      drew_any = true;
+    } else if (rect) {
+      dst = rect->box;
+      if (dst.width <= 0 || dst.height <= 0)
+        continue;
+      wlr_box relative {
+        .x = dst.x - target_box.x,
+        .y = dst.y - target_box.y,
+        .width = dst.width,
+        .height = dst.height,
+      };
+      draw_effect_rect(
+        renderer,
+        target_box.width,
+        target_box.height,
+        relative,
+        rect->color
+      );
+      drew_any = true;
+    }
   }
 
   if (!drew_any) {
+    glDisable(GL_BLEND);
     restore();
     return true;
   }
 
   glDisable(GL_BLEND);
-  if (effect.type == EffectType::Blur && effect.radius > 0.0f) {
-    auto radius = std::min(effect.radius, 64.0f);
-    float dx = radius / (static_cast<float>(target_box.width) * 3.2307692308f);
-    float dy = radius / (static_cast<float>(target_box.height) * 3.2307692308f);
-    draw_effect_blur(
-      renderer,
-      renderer->effect_targets[0].texture,
-      renderer->effect_targets[1].fbo,
-      target_box.width,
-      target_box.height,
-      dx,
-      0.0f
-    );
-    draw_effect_blur(
-      renderer,
-      renderer->effect_targets[1].texture,
-      renderer->effect_targets[0].fbo,
-      target_box.width,
-      target_box.height,
-      0.0f,
-      dy
-    );
+  GLuint final_texture = target0->texture;
+  if (effect.active()) {
+    auto* program = effect_program_get(renderer, effect);
+    if (program) {
+      GLuint source = target0->texture;
+      for (std::size_t i = 0; i < program->passes.size(); ++i) {
+        auto& pass_program = program->passes[i];
+        auto& pass = effect.pipeline->passes[i];
+        auto& destination = (*renderer->effect_targets)[i + 1];
+
+        std::vector<GLuint> inputs;
+        inputs.reserve(pass.inputs.size());
+        for (auto& input : pass.inputs) {
+          if (input.texture) {
+            auto texture = effect_texture_get(renderer, *input.texture);
+            inputs.push_back(texture ? texture : target0->texture);
+            continue;
+          }
+          if (input.source == "source") {
+            inputs.push_back(target0->texture);
+            continue;
+          }
+          if (input.source == "previous") {
+            inputs.push_back(source);
+            continue;
+          }
+
+          GLuint texture = target0->texture;
+          for (std::size_t previous = 0; previous < i; ++previous) {
+            if (effect.pipeline->passes[previous].id == input.source) {
+              texture = (*renderer->effect_targets)[previous + 1].texture;
+              break;
+            }
+          }
+          inputs.push_back(texture);
+        }
+
+        draw_effect_pass(
+          renderer,
+          pass_program,
+          pass,
+          effect,
+          inputs,
+          source,
+          destination.fbo,
+          target_box.width,
+          target_box.height
+        );
+        source = destination.texture;
+      }
+      final_texture = source;
+    }
   }
 
-  auto composite = options[0];
-  composite.texture = nullptr;
+  wlr_render_texture_options composite {};
   composite.dst_box = target_box;
-  composite.alpha = nullptr;
-  composite.clip = options[0].clip;
+  composite.clip = clip;
   composite.blend_mode = WLR_RENDER_BLEND_MODE_PREMULTIPLIED;
-  composite.wait_timeline = nullptr;
-  composite.wait_point = 0;
   draw_effect_composite(
     pass,
-    renderer->effect_targets[0].texture,
+    final_texture,
     target_box,
-    &composite
+    &composite,
+    rotation,
+    rotation_center_x,
+    rotation_center_y
   );
   restore();
   return true;
 }
 
+bool render_pass_add_texture_group_effect(
+  wlr_render_pass* base,
+  const wlr_render_texture_options* options,
+  std::size_t count,
+  const EffectInstance& effect
+) {
+  if (!options || count == 0)
+    return false;
+  std::vector<EffectGroupItem> items;
+  items.reserve(count);
+  for (std::size_t i = 0; i < count; ++i)
+    items.push_back(EffectGroupItem { .texture = &options[i] });
+  return render_pass_add_group_effect(
+    base,
+    items.data(),
+    items.size(),
+    effect,
+    1.0f
+  );
+}
+
 bool render_pass_add_texture_effect(
   wlr_render_pass* base,
   const wlr_render_texture_options* options,
-  const Effect& effect
+  const EffectInstance& effect
 ) {
   return render_pass_add_texture_group_effect(base, options, 1, effect);
 }
@@ -1241,6 +1446,8 @@ void render_pass_add_texture(
 
 static bool render_pass_submit_cb(wlr_render_pass* pass) {
   RenderPass* render_pass = wl_container_of(pass, render_pass, base);
+  effect_programs_prune(render_pass->renderer);
+  effect_textures_prune(render_pass->renderer);
   return render_pass_submit(render_pass);
 }
 

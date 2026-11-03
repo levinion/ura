@@ -37,8 +37,10 @@ This page covers the low-level functions installed under `ura.api` and the Lua h
 | `resize_window(id, width, height)` | Set the layout target size. The compositor waits for a matching client commit before changing the visible size. |
 | `animate_window_resize(id, width, height, duration, easing)` | Send one final resize configure, wait for the matching surface commit, then FLIP-animate from the old visible rectangle to the committed content. |
 | `animate_window_opacity(id, opacity, duration, easing)` | Animate the window's opacity without moving or resizing it. `easing` may be a built-in name or a LUT table. |
-| `animate_window_open(id, duration, easing, options)` | Optional low-level opening animation. `options` may set `from_scale`, `from_opacity`, `to_scale`, and `to_opacity`. |
-| `animate_window_close(id, duration, easing, options)` | Capture the current surface tree and run a detached closing animation. `options` may set `to_scale` and `to_opacity`. |
+| `animate_window_rotation(id, degrees, duration, easing)` | Animate the window rotation around its center. |
+| `get_window_rotation(id)` | Current rotation in degrees, or `nil`. |
+| `animate_window_open(id, duration, easing, options)` | Optional low-level opening animation. `options` may set `from_scale`, `from_opacity`, `from_rotation`, `to_scale`, `to_opacity`, and `to_rotation` (rotation in degrees). |
+| `animate_window_close(id, duration, easing, options)` | Capture the current surface tree and run a detached closing animation. `options` may set `to_scale`, `to_opacity`, and `to_rotation` (degrees). |
 | `is_window_fullscreen(id)` / `is_window_fullscreen_requested(id)` | Current fullscreen state or the client's requested state; `nil` for an invalid ID. |
 | `set_window_fullscreen(id, enabled)` | Set fullscreen state. |
 | `is_window_maximized(id)` / `is_window_maximized_requested(id)` | Current maximized state or the client's requested state. |
@@ -48,7 +50,16 @@ This page covers the low-level functions installed under `ura.api` and the Lua h
 | `get_window_lru(id)` | Monotonic focus-order value, or `nil` for an invalid ID. It is useful for ordering, not as a timestamp. |
 | `get_window_opacity(id)` / `set_window_opacity(id, opacity)` | Read or set opacity in the range `[0, 1]`. Out-of-range values and invalid IDs are ignored by the setter. |
 | `get_window_border_color(id)` / `set_window_border_color(id, color)` | Read or set an `#RRGGBB` or `#RRGGBBAA` border color. |
-| `set_window_effect(id, spec)` / `clear_window_effect(id)` | Set or clear a multi-pass window effect (`blur`, `tint`, `mask`). |
+| `define_effect(spec)` | Register a plugin shader pipeline and return `{ id, generation, name }`, or `nil` on failure. Usually called through `ura.render.effect`. |
+| `find_effect(name)` | Look up a registered pipeline by name and return `{ id, generation, name }`, or `nil`. |
+| `define_texture(path)` | Load an image file into a CPU-side RGBA texture handle. Usually called through `ura.render.effect.texture`. |
+| `find_texture(name)` | Return `{ id, generation, name }` for a registered texture, or `nil`. |
+| `undefine_texture(id, generation)` | Remove a texture from the registry. Pipelines already referencing it retain the CPU image. |
+| `undefine_effect(id, generation)` | Remove a pipeline from the registry. Existing instances keep the CPU descriptor alive; their GPU programs are pruned after the last frame reference disappears. |
+| `clear_effects()` | Drop all registered pipelines and image textures. Used by `ura.cmd.reload`; existing scene instances retain their old shared descriptors until replaced. |
+| `migrate_effects()` | Rebind existing scene effects to newly registered pipelines with the same name. Uniform values are preserved by name/type. `ura.cmd.reload` calls this after a successful config reload. |
+| `set_window_effect_instance(id, effect_id, generation, uniforms, options)` | Apply a registered pipeline instance to a window. `options.outset` may override the pipeline outset. |
+| `animate_window_effect_uniform(id, name, from, to, duration, easing)` | Interpolate one scalar/vector effect uniform in C++. |
 | `get_window_tags(id)` / `set_window_tags(id, tags)` | Read or replace the window's array of string tags. |
 
 ### Outputs

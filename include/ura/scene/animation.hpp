@@ -163,6 +163,9 @@ struct AnimationOptions {
   EasingCurve easing = EasingCurve::from_name("in_out_cubic");
   bool animate_opacity = false;
   float opacity = 1.f;
+  bool animate_rotation = false;
+  // Radians, around the center of SceneNode.bounds.
+  float rotation = 0.f;
 };
 
 } // namespace ura

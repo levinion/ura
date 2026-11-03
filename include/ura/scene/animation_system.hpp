@@ -41,6 +41,15 @@ public:
   // Drop the animation without touching the visual state.
   void cancel(entt::entity entity);
 
+  // Add or replace one shader-uniform ramp. The C++ animation system samples
+  // it; Lua is only involved when the track is created.
+  void animate_effect_uniform(
+    entt::entity entity,
+    const EffectUniformTrack& track,
+    AnimationTimePoint now = AnimationClock::now()
+  );
+  void cancel_effect_uniforms(entt::entity entity);
+
   bool running(entt::entity entity) const;
   bool active(entt::entity entity) const;
   // Current sampled rectangle of a running animation, or the current
@@ -72,6 +81,11 @@ private:
     AnimationTimePoint now
   );
   void finish_transition(entt::entity entity);
+  bool apply_effect_uniform(
+    entt::entity entity,
+    const EffectUniformTrack& track,
+    const std::array<float, 4>& values
+  );
 };
 
 } // namespace ura

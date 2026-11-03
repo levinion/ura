@@ -73,7 +73,10 @@ namespace {
     // to the parent window geometry.
     double offset_x = 0.0;
     double offset_y = 0.0;
-    Effect effect;
+    EffectInstance effect;
+    float rotation = 0.f;
+    double rotation_center_x = 0.0;
+    double rotation_center_y = 0.0;
     uint64_t owner = 0;
   };
 
@@ -143,6 +146,9 @@ namespace {
     .seq = state->seq,
     .output_name = {},
     .effect = context->effect,
+    .rotation = context->rotation,
+    .rotation_center_x = context->rotation_center_x,
+    .rotation_center_y = context->rotation_center_y,
     .owner = context->owner,
   };
     wlr_surface_get_buffer_source_box(surface, &item.src_box);
@@ -176,6 +182,12 @@ namespace {
           .color = task.border_color,
           .owner = task.owner,
           .index = index,
+          .effect = task.item.effect,
+          .rotation = task.item.node.rotation,
+          .rotation_center_x =
+            task.item.node.bounds.x + task.item.node.bounds.width / 2.0,
+          .rotation_center_y =
+            task.item.node.bounds.y + task.item.node.bounds.height / 2.0,
         },
         .output_name = {},
       }
@@ -208,6 +220,9 @@ namespace {
       .offset_x = -static_cast<double>(content.geometry.x),
       .offset_y = -static_cast<double>(content.geometry.y),
       .effect = task.item.effect,
+      .rotation = task.item.node.rotation,
+      .rotation_center_x = bounds.x + bounds.width / 2.0,
+      .rotation_center_y = bounds.y + bounds.height / 2.0,
       .owner = task.owner,
     };
     wlr_surface_for_each_surface(
@@ -232,6 +247,9 @@ namespace {
         .offset_x = static_cast<double>(popup.x),
         .offset_y = static_cast<double>(popup.y),
         .effect = task.item.effect,
+        .rotation = task.item.node.rotation,
+        .rotation_center_x = bounds.x + bounds.width / 2.0,
+        .rotation_center_y = bounds.y + bounds.height / 2.0,
         .owner = task.owner,
       };
       wlr_surface_for_each_surface(
@@ -262,6 +280,9 @@ namespace {
       .scale_x = scale_x,
       .scale_y = scale_y,
       .effect = task.item.effect,
+      .rotation = task.item.node.rotation,
+      .rotation_center_x = bounds.x + bounds.width / 2.0,
+      .rotation_center_y = bounds.y + bounds.height / 2.0,
       .owner = task.item.id,
     };
     wlr_layer_surface_v1_for_each_surface(
@@ -282,6 +303,9 @@ namespace {
       .bounds_x = static_cast<double>(task.base.x),
       .bounds_y = static_cast<double>(task.base.y),
       .effect = {},
+      .rotation = 0.f,
+      .rotation_center_x = 0.0,
+      .rotation_center_y = 0.0,
       .owner = 0,
     };
     wlr_surface_for_each_surface(task.surface, collect_surface, &context);
@@ -340,6 +364,9 @@ namespace {
         .output_name = {},
         .content_id = frozen.content_id,
         .effect = task.item.effect,
+        .rotation = task.item.node.rotation,
+        .rotation_center_x = bounds.x + bounds.width / 2.0,
+        .rotation_center_y = bounds.y + bounds.height / 2.0,
         .owner = task.item.id,
       };
       append_surface(chunk, surface);

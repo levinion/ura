@@ -58,6 +58,7 @@ target_add_dependence(${NAME} cxxopts)
 target_add_dependence(${NAME} gbm)
 target_add_dependence(${NAME} libdrm)
 target_add_dependence(${NAME} pixman-1)
+target_add_dependence(${NAME} raylib)
 
 find_path(RLGL_INCLUDE_DIR NAMES rlgl.h)
 if(NOT RLGL_INCLUDE_DIR)
@@ -94,6 +95,16 @@ if(BUILD_TESTING)
 
   pkg_check_modules(WLROOTS_TEST REQUIRED IMPORTED_TARGET wlroots-0.20)
 
+  add_executable(ura-effect-registry-tests
+    tests/effect_registry.cpp
+    src/render/effect_registry.cpp
+  )
+  target_include_directories(ura-effect-registry-tests PRIVATE
+    include/
+    ${WLROOTS_TEST_INCLUDE_DIRS}
+  )
+  add_test(NAME ura-effect-registry COMMAND ura-effect-registry-tests)
+
   add_executable(ura-scene-tests
     tests/scene.cpp
     src/core/entity.cpp
@@ -114,6 +125,7 @@ if(BUILD_TESTING)
   add_test(NAME ura-scene-snapshot-cache COMMAND ura-scene-tests snapshot-cache)
   add_test(NAME ura-scene-session-lock COMMAND ura-scene-tests session-lock)
   add_test(NAME ura-scene-rect COMMAND ura-scene-tests rect)
+  add_test(NAME ura-scene-rotation COMMAND ura-scene-tests rotation)
 
   add_executable(ura-animation-tests
     tests/animation.cpp
@@ -138,6 +150,8 @@ if(BUILD_TESTING)
   add_test(NAME ura-animation-opacity-retarget COMMAND ura-animation-tests opacity-retarget)
   add_test(NAME ura-animation-transition-move-merge COMMAND ura-animation-tests transition-move-merge)
   add_test(NAME ura-animation-destroy-on-finish COMMAND ura-animation-tests destroy-on-finish)
+  add_test(NAME ura-animation-effect-uniform COMMAND ura-animation-tests effect-uniform)
+  add_test(NAME ura-animation-rotation COMMAND ura-animation-tests rotation)
 
   find_package(Threads REQUIRED)
   add_executable(ura-worker-pool-tests
@@ -166,6 +180,8 @@ if(BUILD_TESTING)
   set(RAYLIB_RENDERER_SOURCES
     src/render/raylib/buffer.cpp
     src/render/raylib/effects.cpp
+    src/render/raylib/effect_program.cpp
+    src/render/raylib/effect_texture.cpp
     src/render/raylib/egl.cpp
     src/render/raylib/render_pass.cpp
     src/render/raylib/renderer.cpp

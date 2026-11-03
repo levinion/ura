@@ -81,6 +81,7 @@ int main() {
         .color = { 1.f, 0.f, 0.f, 1.f },
         .owner = 1,
         .index = 0,
+        .effect = {},
       }
     );
     plan.operations.push_back(
@@ -136,28 +137,53 @@ int main() {
       plan.render_point = 3;
     ok = ura::render_frame(renderer, plan);
 
-    // Exercise the offscreen multi-pass path: copy, horizontal blur, vertical
-    // blur, then composite.
+    // Generic single-pass effect through the full frame renderer, including
+    // the same-owner border rectangle.
     if (ok) {
-      plan.surfaces[0].effect = ura::Effect {
-        .type = ura::EffectType::Blur,
-        .radius = 4.f,
-      };
+      plan.rects.push_back(
+        ura::FrameRect {
+          .dst_box = { 40, 40, 80, 2 },
+          .color = { 1.f, 0.f, 0.f, 1.f },
+          .owner = 1,
+          .index = 0,
+          .effect = {},
+        }
+      );
+      plan.operations.push_back(
+        ura::FrameOperation {
+          .kind = ura::FrameOperationKind::Rect,
+          .index = 0,
+        }
+      );
+      auto pipeline = std::make_shared<ura::EffectPipeline>();
+      pipeline->handle = ura::EffectHandle { .id = 11, .generation = 1 };
+      pipeline->name = "frame-effect";
+      pipeline->passes.push_back(
+        ura::EffectPass {
+          .id = {},
+          .fragment_shader = R"(
+#version 100
+precision mediump float;
+varying vec2 fragTexCoord;
+uniform sampler2D texture0;
+void main() {
+    gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+}
+)",
+          .inputs = {},
+          .uniforms = {},
+        }
+      );
+      ura::EffectInstance instance;
+      instance.pipeline = pipeline;
+      instance.version = 1;
+      instance.outset = { .left = 8, .top = 8, .right = 8, .bottom = 8 };
+      auto effect = instance;
+      plan.surfaces[0].effect = effect;
+      plan.rects[0].effect = effect;
       plan.full_redraw = true;
       if (timeline)
-        plan.render_point = 4;
-      ok = ura::render_frame(renderer, plan);
-    }
-
-    // Tint uses the same target/copy pipeline without the blur passes.
-    if (ok) {
-      plan.surfaces[0].effect = ura::Effect {
-        .type = ura::EffectType::Tint,
-        .color = { 0.5f, 0.8f, 1.0f, 0.75f },
-      };
-      plan.full_redraw = true;
-      if (timeline)
-        plan.render_point = 5;
+        plan.render_point = 6;
       ok = ura::render_frame(renderer, plan);
     }
 

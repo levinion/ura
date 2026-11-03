@@ -160,10 +160,22 @@ void UraScene::set_node_bounds(
   auto* current = this->try_get<SceneNode>(entity);
   if (!current || current->bounds == bounds)
     return;
-  auto previous = current->bounds;
+  auto previous = rotated_bounds(current->bounds, current->rotation);
   current->bounds = bounds;
+  auto next = rotated_bounds(bounds, current->rotation);
   this->touch(entity, DirtyFlag::Visual, false);
-  this->notify_visual_dirty(entity, previous, bounds);
+  this->notify_visual_dirty(entity, previous, next);
+}
+
+void UraScene::set_node_rotation(entt::entity entity, float radians) {
+  auto* current = this->try_get<SceneNode>(entity);
+  if (!current || current->rotation == radians)
+    return;
+  auto previous = rotated_bounds(current->bounds, current->rotation);
+  current->rotation = radians;
+  auto next = rotated_bounds(current->bounds, current->rotation);
+  this->touch(entity, DirtyFlag::Visual, false);
+  this->notify_visual_dirty(entity, previous, next);
 }
 
 void UraScene::sync_scene_node(entt::entity entity) {
@@ -197,6 +209,13 @@ WindowAnimation& UraScene::ensure_window_animation(entt::entity entity) {
   if (auto* animation = this->try_get<WindowAnimation>(entity))
     return *animation;
   return this->entities.raw().emplace<WindowAnimation>(entity);
+}
+
+EffectUniformAnimation&
+UraScene::ensure_effect_uniform_animation(entt::entity entity) {
+  if (auto* animation = this->try_get<EffectUniformAnimation>(entity))
+    return *animation;
+  return this->entities.raw().emplace<EffectUniformAnimation>(entity);
 }
 
 void UraScene::set_layer(entt::entity entity, int layer) {
@@ -236,7 +255,7 @@ void UraScene::set_opacity(entt::entity entity, float opacity) {
   this->notify_visual_dirty(entity, bounds, bounds);
 }
 
-void UraScene::set_effect(entt::entity entity, const Effect& effect) {
+void UraScene::set_effect(entt::entity entity, const EffectInstance& effect) {
   auto* current = this->try_get<ShaderEffect>(entity);
   if (!current)
     return;
@@ -244,10 +263,20 @@ void UraScene::set_effect(entt::entity entity, const Effect& effect) {
     return;
   auto* node = this->try_get<SceneNode>(entity);
   auto bounds = node ? node->bounds : Rect<double> {};
+  auto expand = [&](const PaintOutset& outset) {
+    return Rect<double> {
+      .x = bounds.x - outset.left,
+      .y = bounds.y - outset.top,
+      .width = bounds.width + outset.left + outset.right,
+      .height = bounds.height + outset.top + outset.bottom,
+    };
+  };
+  auto previous_bounds = expand(current->effect.outset);
   current->effect = effect;
+  auto current_bounds = expand(effect.outset);
   this->touch(entity, DirtyFlag::Effect, false);
   if (node)
-    this->notify_visual_dirty(entity, bounds, bounds);
+    this->notify_visual_dirty(entity, previous_bounds, current_bounds);
   else
     this->notify_dirty();
 }
@@ -323,7 +352,7 @@ const SceneSnapshot& UraScene::snapshot() const {
         .visibility = visibility,
         .z_order = z_order,
         .opacity = opacity,
-        .effect = shader_effect ? shader_effect->effect : Effect {},
+        .effect = shader_effect ? shader_effect->effect : EffectInstance {},
         .render_target = target ? target->resource : 0,
       }
     );
@@ -350,10 +379,23 @@ std::optional<uint64_t> UraScene::topmost_at(int x, int y) const {
        ++item) {
     if (!item->visibility.visible || item->visibility.occluded)
       continue;
-    auto& bounds = item->node.bounds;
+    auto& node = item->node;
+    auto& bounds = node.bounds;
+    auto px = static_cast<double>(x);
+    auto py = static_cast<double>(y);
+    if (node.rotation != 0.f) {
+      auto cx = bounds.x + bounds.width / 2.0;
+      auto cy = bounds.y + bounds.height / 2.0;
+      auto c = std::cos(node.rotation);
+      auto s = std::sin(node.rotation);
+      auto dx = px - cx;
+      auto dy = py - cy;
+      px = cx + dx * c + dy * s;
+      py = cy - dx * s + dy * c;
+    }
     auto right = bounds.x + bounds.width;
     auto bottom = bounds.y + bounds.height;
-    if (x >= bounds.x && x < right && y >= bounds.y && y < bottom)
+    if (px >= bounds.x && px < right && py >= bounds.y && py < bottom)
       return item->id;
   }
   return {};

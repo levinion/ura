@@ -293,6 +293,96 @@ bool test_opacity_survives_retarget() {
   return near(halfway, 0.75) && near(finished, 1.0);
 }
 
+bool test_rotation_animation() {
+  Fixture fixture;
+  auto start = ura::AnimationClock::now();
+  auto bounds = fixture.scene.node_bounds(fixture.entity);
+  auto options = ura::AnimationOptions {
+    .duration = std::chrono::milliseconds(100),
+    .easing = ura::EasingCurve::from_name("linear"),
+    .animate_rotation = true,
+    .rotation = 1.57079632679f,
+  };
+  fixture.animations
+    .animate_from(fixture.entity, bounds, bounds, options, start);
+  if (!fixture.animations.running(fixture.entity))
+    return false;
+
+  fixture.animations.tick(start + std::chrono::milliseconds(50));
+  auto halfway = fixture.scene.get<ura::SceneNode>(fixture.entity).rotation;
+  fixture.animations.tick(start + std::chrono::milliseconds(100));
+  auto finished = fixture.scene.get<ura::SceneNode>(fixture.entity).rotation;
+  return near(halfway, 0.78539816339) && near(finished, 1.57079632679);
+}
+
+bool test_effect_uniform_animation() {
+  Fixture fixture;
+  auto pipeline = std::make_shared<ura::EffectPipeline>();
+  pipeline->handle = ura::EffectHandle { .id = 77, .generation = 1 };
+  pipeline->name = "animation-test";
+  pipeline->uniforms = {
+    ura::EffectUniformDef {
+      .name = "amount",
+      .type = ura::EffectUniformType::Float,
+    },
+  };
+
+  ura::EffectInstance instance;
+  instance.pipeline = pipeline;
+  instance.uniforms = {
+    ura::EffectUniform {
+      .name = "amount",
+      .type = ura::EffectUniformType::Float,
+      .values = { { 0.f, 0.f, 0.f, 0.f } },
+    },
+  };
+  fixture.scene.set_effect(fixture.entity, instance);
+
+  auto start = ura::AnimationClock::now();
+  ura::EffectUniformTrack track {
+    .name = "amount",
+    .slot = 0,
+    .type = ura::EffectUniformType::Float,
+    .from = { { 0.f, 0.f, 0.f, 0.f } },
+    .to = { { 1.f, 0.f, 0.f, 0.f } },
+    .start = {},
+    .options =
+      ura::AnimationOptions {
+        .duration = std::chrono::milliseconds(100),
+        .easing = ura::EasingCurve::from_name("linear"),
+      },
+    .running = true,
+  };
+  fixture.animations.animate_effect_uniform(fixture.entity, track, start);
+  if (!fixture.animations.has_active())
+    return false;
+
+  auto value = [&] {
+    auto* shader_effect =
+      fixture.scene.try_get<ura::ShaderEffect>(fixture.entity);
+    if (!shader_effect)
+      return -1.f;
+    for (auto& uniform : shader_effect->effect.uniforms) {
+      if (uniform.name == "amount")
+        return uniform.values[0];
+    }
+    return -1.f;
+  };
+
+  if (!near(value(), 0.0))
+    return false;
+  fixture.animations.tick(start + std::chrono::milliseconds(50));
+  if (!near(value(), 0.5))
+    return false;
+  fixture.animations.tick(start + std::chrono::milliseconds(100));
+  if (!near(value(), 1.0) || fixture.animations.has_active())
+    return false;
+
+  // Non-continuous uniforms are rejected by the public API layer; the
+  // animation system itself uses the track type only for vector width.
+  return true;
+}
+
 bool test_transition_inherits_move_animation() {
   ura::WindowTransition transition;
   transition.options.duration = std::chrono::milliseconds(0);
@@ -364,6 +454,10 @@ int main(int argc, char** argv) {
     return test_opacity_only_animation() ? 0 : 1;
   if (test == "opacity-retarget")
     return test_opacity_survives_retarget() ? 0 : 1;
+  if (test == "effect-uniform")
+    return test_effect_uniform_animation() ? 0 : 1;
+  if (test == "rotation")
+    return test_rotation_animation() ? 0 : 1;
   if (test == "transition-move-merge")
     return test_transition_inherits_move_animation() ? 0 : 1;
   if (test == "destroy-on-finish")

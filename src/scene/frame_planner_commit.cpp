@@ -109,7 +109,9 @@ void UraFramePlanner::forget_surface(wlr_surface* surface) {
     state.notified_scales.erase(surface);
     for (auto& previous : state.surfaces) {
       if (previous.surface == surface)
-        state.orphan_damage.push_back(previous.dst_box);
+        state.orphan_damage.push_back(
+          previous.effect.outset.apply(previous.dst_box)
+        );
     }
     std::erase_if(state.surfaces, [&](const PreviousSurface& previous) {
       return previous.surface == surface;

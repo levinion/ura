@@ -64,7 +64,7 @@ namespace {
       return false;
     if (item.opacity != 1.f)
       return false;
-    if (item.effect.active())
+    if (item.effect.active() || item.rotation != 0.f)
       return false;
     if (surface->current.viewport.has_src || surface->current.viewport.has_dst)
       return false;
@@ -257,15 +257,33 @@ bool render_frame(wlr_renderer* renderer, const FramePlan& plan) {
     wlr_box dst = item.dst_box;
     output_box(plan, buffer->width, buffer->height, &dst);
 
+    wlr_box cull = dst;
+    if (item.rotation == 0.f && item.effect.active()) {
+      auto outset = item.effect.outset;
+      auto scaled = [&](int value) {
+        return static_cast<int>(
+          std::ceil(static_cast<float>(value) * wlr_output->scale)
+        );
+      };
+      auto left = scaled(outset.left);
+      auto top = scaled(outset.top);
+      auto right = scaled(outset.right);
+      auto bottom = scaled(outset.bottom);
+      cull.x -= left;
+      cull.y -= top;
+      cull.width += left + right;
+      cull.height += top + bottom;
+    }
+
     pixman_region32_t intersection;
     pixman_region32_init(&intersection);
     pixman_region32_intersect_rect(
       &intersection,
       &damage,
-      dst.x,
-      dst.y,
-      dst.width,
-      dst.height
+      cull.x,
+      cull.y,
+      cull.width,
+      cull.height
     );
     if (pixman_region32_empty(&intersection)) {
       pixman_region32_fini(&intersection);
@@ -318,7 +336,7 @@ bool render_frame(wlr_renderer* renderer, const FramePlan& plan) {
     }
 
     auto& first = plan.surfaces[operation.index];
-    if (!first.effect.active()) {
+    if (!first.effect.active() && first.rotation == 0.f) {
       auto options = make_texture_options(first);
       if (options) {
         wlr_render_pass_add_texture(pass, &*options);
@@ -332,37 +350,92 @@ bool render_frame(wlr_renderer* renderer, const FramePlan& plan) {
       continue;
     }
 
-    // Consecutive surfaces belonging to the same SceneNode are rendered into
-    // one offscreen target, so subsurfaces/CSD are blurred as a single window.
-    std::vector<wlr_render_texture_options> group;
-    std::vector<const FrameSurface*> group_items;
+    // Everything belonging to this SceneNode is composed into one offscreen
+    // target before the effect runs. This includes borders represented as
+    // FrameRect operations, not just the client surface tree.
+    std::vector<wlr_render_texture_options> group_textures;
+    std::vector<wlr_render_rect_options> group_rects;
+    std::vector<render::raylib::EffectGroupItem> group_items;
+    std::vector<const FrameSurface*> group_surfaces;
+    auto capacity = plan.operations.size() - i;
+    group_textures.reserve(capacity);
+    group_rects.reserve(capacity);
+    group_items.reserve(capacity);
+    group_surfaces.reserve(capacity);
+
+    auto make_rect_options = [&](const FrameRect& rect) {
+      wlr_box dst = rect.dst_box;
+      output_box(plan, buffer->width, buffer->height, &dst);
+      return wlr_render_rect_options {
+        .box = dst,
+        .color = {
+          .r = rect.color[0],
+          .g = rect.color[1],
+          .b = rect.color[2],
+          .a = rect.color[3],
+        },
+        .clip = &damage,
+        .blend_mode = WLR_RENDER_BLEND_MODE_PREMULTIPLIED,
+      };
+    };
+
     std::size_t j = i;
     while (j < plan.operations.size()) {
       auto& next_operation = plan.operations[j];
-      if (next_operation.kind != FrameOperationKind::Surface)
-        break;
+      if (next_operation.kind == FrameOperationKind::Rect) {
+        auto& rect = plan.rects[next_operation.index];
+        if (rect.owner != first.owner)
+          break;
+        auto options = make_rect_options(rect);
+        group_rects.push_back(options);
+        group_items.push_back(
+          render::raylib::EffectGroupItem { .rect = &group_rects.back() }
+        );
+        ++j;
+        continue;
+      }
+
       auto& item = plan.surfaces[next_operation.index];
       if (item.owner != first.owner || item.effect != first.effect)
         break;
       auto options = make_texture_options(item);
       if (options) {
-        group.push_back(*options);
-        group_items.push_back(&item);
+        group_textures.push_back(*options);
+        group_items.push_back(
+          render::raylib::EffectGroupItem { .texture = &group_textures.back() }
+        );
+        group_surfaces.push_back(&item);
       }
       ++j;
     }
 
-    if (!group.empty()) {
-      bool rendered = render::raylib::render_pass_add_texture_group_effect(
+    if (!group_items.empty()) {
+      wlr_box rotation_center {
+        .x = static_cast<int>(std::lround(first.rotation_center_x)),
+        .y = static_cast<int>(std::lround(first.rotation_center_y)),
+        .width = 1,
+        .height = 1,
+      };
+      output_box(plan, buffer->width, buffer->height, &rotation_center);
+      bool rendered = render::raylib::render_pass_add_group_effect(
         pass,
-        group.data(),
-        group.size(),
-        first.effect
+        group_items.data(),
+        group_items.size(),
+        first.effect,
+        wlr_output->scale,
+        first.rotation,
+        static_cast<double>(rotation_center.x),
+        static_cast<double>(rotation_center.y)
       );
       if (!rendered) {
-        for (auto& options : group) wlr_render_pass_add_texture(pass, &options);
+        for (auto& item : group_items) {
+          if (item.texture)
+            wlr_render_pass_add_texture(pass, item.texture);
+          else if (item.rect)
+            wlr_render_pass_add_rect(pass, item.rect);
+        }
       }
-      for (auto* item : group_items) {
+      for (auto* item : group_surfaces) {
         if (item->surface)
           wlr_presentation_surface_textured_on_output(
             item->surface,

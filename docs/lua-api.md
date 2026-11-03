@@ -18,6 +18,7 @@ This reference documents the Lua surface currently loaded by Ura. The global `ur
 | `ura.class` | Object wrappers such as `UraWindow` and `UraOutput`. |
 | `ura.hook` | Register, remove, or emit Lua hooks. |
 | `ura.animation` | Optional declarative policy from the `builtin.animation` plugin. |
+| `ura.render` | Define shader effect pipelines and apply them to windows. |
 | `ura.keymap` | Bind key or mouse patterns to Lua callbacks. |
 | `ura.opt` | User-defined configuration options; it starts as an empty table. |
 | `ura.fn` | Lua helpers for tables, tags, paths, and configuration loading. |
@@ -25,6 +26,8 @@ This reference documents the Lua surface currently loaded by Ura. The global `ur
 | `ura.g` | Read-only priority and scene-layer constants. |
 
 The built-in layout plugin extends `UraWindow` with layout helpers. Those methods are available when `builtin.layout` is loaded and set up (as in the shipped `assets/init.lua`). See [classes](lua-api/classes.md#built-in-layout-extension).
+
+`builtin.effects` is an optional example plugin for multi-pass shader effects. It is not loaded by default; see [window effects](lua-api/classes.md#effects).
 
 Ura replaces Lua's global `print(...)` with a buffered implementation; output is returned by the `ura-shell` command after the script completes.
 

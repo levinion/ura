@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -53,6 +54,8 @@ struct WindowLayout {
 // is running.
 struct SceneNode {
   Rect<double> bounds;
+  // Radians, around the center of `bounds`.
+  float rotation = 0.f;
 
   bool operator==(const SceneNode&) const = default;
 };
@@ -86,7 +89,7 @@ struct RenderTarget {
 };
 
 struct ShaderEffect {
-  Effect effect;
+  EffectInstance effect;
 };
 
 struct Visibility {
@@ -181,13 +184,34 @@ struct WindowAnimation {
 
   float from_opacity = 1.f;
   float to_opacity = 1.f;
+  float from_rotation = 0.f;
+  float to_rotation = 0.f;
   // Set by settle() so a layout retarget or commit-first transition can carry
   // the opacity part of an opening/closing animation across the pause.
   bool carry_opacity = false;
+  bool carry_rotation = false;
   // Used by detached close-animation nodes. The animation system defers
   // destruction by one frame so the final visual state is presented first.
   bool destroy_on_finish = false;
   bool destroy_pending = false;
+};
+
+// One scalar/vector uniform ramp. Tracks live outside WindowAnimation so the
+// layout animation and shader parameter animation remain independent.
+struct EffectUniformTrack {
+  std::string name;
+  // Index into EffectInstance::uniforms, resolved when the track is created.
+  std::size_t slot = static_cast<std::size_t>(-1);
+  EffectUniformType type = EffectUniformType::Float;
+  std::array<float, 4> from {};
+  std::array<float, 4> to {};
+  AnimationTimePoint start {};
+  AnimationOptions options;
+  bool running = true;
+};
+
+struct EffectUniformAnimation {
+  std::vector<EffectUniformTrack> tracks;
 };
 
 enum class DirtyFlag : uint32_t {

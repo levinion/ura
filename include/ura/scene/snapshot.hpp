@@ -24,7 +24,7 @@ struct SceneItemSnapshot {
   Visibility visibility;
   ZOrder z_order;
   Opacity opacity;
-  Effect effect;
+  EffectInstance effect;
   // Non-zero when this node samples a renderer-owned frozen texture instead
   // of a live client surface tree.
   uint64_t render_target = 0;

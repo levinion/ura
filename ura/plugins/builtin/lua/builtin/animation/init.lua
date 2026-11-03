@@ -114,14 +114,39 @@ function M.resolve(name, event, fallback_enabled)
   if type(spec.from) == "table" then
     spec.from_scale = spec.from.scale or spec.from_scale
     spec.from_opacity = spec.from.opacity or spec.from_opacity
+    spec.from_rotation = spec.from.rotation or spec.from_rotation
   end
   if type(spec.to) == "table" then
     spec.to_scale = spec.to.scale or spec.to_scale
     spec.to_opacity = spec.to.opacity or spec.to_opacity
+    spec.to_rotation = spec.to.rotation or spec.to_rotation
   end
 
   spec.duration = math.max(0, tonumber(spec.duration) or 0)
   return spec
+end
+
+local function apply_effect(win, spec)
+  local effect = spec.effect
+  if type(effect) == "string" then
+    effect = ura.render.effect.get(effect)
+  end
+  if type(effect) ~= "table" or not effect.id then
+    return
+  end
+  pcall(function()
+    win:set_effect(effect, spec.effect_uniforms or {})
+  end)
+end
+
+local function animate_uniforms(win, spec)
+  if type(spec.uniforms) ~= "table" then
+    return
+  end
+  win:animate_effect_uniforms(spec.uniforms, {
+    duration = spec.duration,
+    easing = spec.easing,
+  })
 end
 
 ura.animation = M
@@ -145,14 +170,16 @@ function M.setup(opt)
         kind = "window-open",
       }, false)
       if spec.enabled and (spec.duration or 0) > 0 then
+        apply_effect(win, spec)
         ura.api.animate_window_open(
           event.id,
           spec.duration,
           spec.easing,
           spec
         )
+        animate_uniforms(win, spec)
       end
-    end, { ns = "builtin.animation", priority = ura.g.priority.instant })
+    end, { ns = "builtin.animation", priority = ura.g.priority.slow })
   end
 
   if opt.close ~= false then
@@ -165,6 +192,8 @@ function M.setup(opt)
         kind = "window-close",
       }, false)
       if spec.enabled and (spec.duration or 0) > 0 then
+        apply_effect(win, spec)
+        animate_uniforms(win, spec)
         ura.api.animate_window_close(
           event.id,
           spec.duration,

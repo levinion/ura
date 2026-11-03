@@ -2,9 +2,12 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <type_traits>
 
+extern "C" {
 #include <wlr/util/box.h>
+}
 
 namespace ura {
 
@@ -98,6 +101,39 @@ struct Rect {
     };
   }
 };
+
+inline Rect<double> rotated_bounds(const Rect<double>& rect, double radians) {
+  if (rect.empty() || radians == 0.0)
+    return rect;
+
+  auto cx = rect.x + rect.width / 2.0;
+  auto cy = rect.y + rect.height / 2.0;
+  auto c = std::cos(radians);
+  auto s = std::sin(radians);
+  auto rotate = [&](double x, double y) {
+    auto dx = x - cx;
+    auto dy = y - cy;
+    return std::array<double, 2> {
+      cx + dx * c - dy * s,
+      cy + dx * s + dy * c,
+    };
+  };
+
+  auto p0 = rotate(rect.x, rect.y);
+  auto p1 = rotate(rect.x + rect.width, rect.y);
+  auto p2 = rotate(rect.x + rect.width, rect.y + rect.height);
+  auto p3 = rotate(rect.x, rect.y + rect.height);
+  auto left = std::min({ p0[0], p1[0], p2[0], p3[0] });
+  auto top = std::min({ p0[1], p1[1], p2[1], p3[1] });
+  auto right = std::max({ p0[0], p1[0], p2[0], p3[0] });
+  auto bottom = std::max({ p0[1], p1[1], p2[1], p3[1] });
+  return {
+    .x = left,
+    .y = top,
+    .width = right - left,
+    .height = bottom - top,
+  };
+}
 
 template<typename Scalar>
 inline Rect<Scalar>

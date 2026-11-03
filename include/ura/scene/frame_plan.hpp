@@ -31,7 +31,12 @@ struct FrameSurface {
   // Stable identity for surfaces without a wlr_surface (frozen render
   // targets). Zero means the identity is the wlr_surface pointer.
   uint64_t content_id = 0;
-  Effect effect;
+  EffectInstance effect;
+  // Whole-SceneNode rotation in radians, around this point in output-layout
+  // coordinates.
+  float rotation = 0.f;
+  double rotation_center_x = 0.0;
+  double rotation_center_y = 0.0;
   // SceneNode identity used to group multiple surfaces into one effect pass.
   uint64_t owner = 0;
   // Frame callbacks are completed by a single output only.
@@ -43,6 +48,10 @@ struct FrameRect {
   std::array<float, 4> color { { 0.f, 0.f, 0.f, 1.f } };
   uint64_t owner = 0;
   int index = 0;
+  EffectInstance effect;
+  float rotation = 0.f;
+  double rotation_center_x = 0.0;
+  double rotation_center_y = 0.0;
 };
 
 struct FrameSurfaceSnapshot {
@@ -59,7 +68,10 @@ struct FrameSurfaceSnapshot {
   bool lock_surface = false;
   bool allow_direct_scanout = false;
   uint64_t content_id = 0;
-  Effect effect;
+  EffectInstance effect;
+  float rotation = 0.f;
+  double rotation_center_x = 0.0;
+  double rotation_center_y = 0.0;
   // SceneNode identity used to group multiple surfaces into one effect pass.
   uint64_t owner = 0;
 };

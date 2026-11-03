@@ -49,8 +49,10 @@ public:
     const AnimationOptions& options,
     float from_scale,
     float from_opacity,
+    float from_rotation,
     float to_scale,
-    float to_opacity
+    float to_opacity,
+    float to_rotation
   );
   void request_close_animation(
     const AnimationOptions& options,
@@ -85,8 +87,8 @@ public:
   void set_tags(Vec<std::string>&& tags);
   bool is_tag_matched();
   void set_opacity(float opacity);
-  const Effect& effect();
-  void set_effect(const Effect& effect);
+  const EffectInstance& effect();
+  void set_effect(const EffectInstance& effect);
 
   unsigned int border_width();
   std::string border_color = "#00000000";

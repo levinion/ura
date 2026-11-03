@@ -99,6 +99,8 @@ static void renderer_destroy(wlr_renderer* wlr_renderer) {
   }
 
   if (current) {
+    effect_programs_finish(renderer);
+    effect_textures_finish(renderer);
     effect_targets_finish(renderer);
     shader_finish(renderer);
     if (renderer->rlgl_ready)
@@ -139,6 +141,8 @@ static void cleanup_failed_renderer(Renderer* renderer) {
   }
 
   if (current) {
+    effect_programs_finish(renderer);
+    effect_textures_finish(renderer);
     effect_targets_finish(renderer);
     if (renderer->rlgl_ready) {
       shader_finish(renderer);

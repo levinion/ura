@@ -132,9 +132,13 @@ bool test_frozen_surface_identity() {
 
   // Changing an effect invalidates the surface's damage even when its
   // geometry and texture sequence are unchanged.
-  world.surfaces[0].effect = ura::Effect {
-    .type = ura::EffectType::Blur,
-    .radius = 4.f,
+  auto pipeline = std::make_shared<ura::EffectPipeline>();
+  pipeline->handle = ura::EffectHandle { .id = 200, .generation = 1 };
+  pipeline->max_outset = { .left = 4, .top = 4, .right = 4, .bottom = 4 };
+  world.surfaces[0].effect = ura::EffectInstance {
+    .pipeline = pipeline,
+    .version = 1,
+    .outset = pipeline->max_outset,
   };
   state = planner.prepare_output(output);
   ura::UraFramePlanner::OutputState effect_next;
@@ -200,6 +204,7 @@ bool test_rect_damage() {
         .color = { 1.f, 0.f, 0.f, 1.f },
         .owner = 1,
         .index = 0,
+        .effect = {},
       },
       .output_name = {},
     }
@@ -217,6 +222,65 @@ bool test_rect_damage() {
   ura::UraFramePlanner::OutputState next_color;
   auto color = planner.build(output_state, *state, next_color, world);
   return !color.full_redraw && !color.damage.empty();
+}
+
+bool test_effect_outset_damage() {
+  ura::UraFramePlanner planner;
+  auto* output = fake_output(0x5200);
+  auto* state = planner.prepare_output(output);
+
+  ura::OutputFrameState output_state {
+    .output = output,
+    .enabled = true,
+    .name = "OUT-1",
+    .logical_box = { 0, 0, 200, 200 },
+  };
+
+  auto pipeline = std::make_shared<ura::EffectPipeline>();
+  pipeline->handle = ura::EffectHandle { .id = 7, .generation = 1 };
+  pipeline->max_outset = { .left = 5, .top = 5, .right = 5, .bottom = 5 };
+
+  ura::EffectInstance instance;
+  instance.pipeline = pipeline;
+  instance.version = 1;
+  instance.outset = { .left = 10, .top = 0, .right = 5, .bottom = 0 };
+
+  ura::FrameWorldSnapshot world;
+  world.surfaces.push_back(frozen_at(1, 50, 50, 20, 20));
+  world.operations.push_back({ ura::FrameOperationKind::Surface, 0 });
+
+  ura::UraFramePlanner::OutputState next;
+  auto first = planner.build(output_state, *state, next, world);
+  if (!first.full_redraw)
+    return false;
+  planner.commit_state(output, std::move(next));
+
+  world.surfaces[0].effect = instance;
+  state = planner.prepare_output(output);
+  ura::UraFramePlanner::OutputState effect_next;
+  auto effect = planner.build(output_state, *state, effect_next, world);
+  auto expanded = wlr_box { .x = 40, .y = 50, .width = 35, .height = 20 };
+  auto found_expanded =
+    std::ranges::any_of(effect.damage, [&](const wlr_box& box) {
+      return box.x == expanded.x && box.y == expanded.y
+        && box.width == expanded.width && box.height == expanded.height;
+    });
+  if (effect.full_redraw || !found_expanded)
+    return false;
+  planner.commit_state(output, std::move(effect_next));
+
+  // A uniform/version change must invalidate the expanded bounds even when the
+  // surface rectangle and sequence are unchanged.
+  world.surfaces[0].effect.version = 2;
+  state = planner.prepare_output(output);
+  ura::UraFramePlanner::OutputState uniform_next;
+  auto uniform = planner.build(output_state, *state, uniform_next, world);
+  auto expanded_count =
+    std::ranges::count_if(uniform.damage, [&](const wlr_box& box) {
+      return box.x == expanded.x && box.y == expanded.y
+        && box.width == expanded.width && box.height == expanded.height;
+    });
+  return !uniform.full_redraw && expanded_count == 2;
 }
 
 bool test_abort_frame_retry() {
@@ -290,6 +354,10 @@ int main() {
   }
   if (!test_rect_damage()) {
     std::cerr << "rect damage test failed\n";
+    return 1;
+  }
+  if (!test_effect_outset_damage()) {
+    std::cerr << "effect outset damage test failed\n";
     return 1;
   }
   if (!test_abort_frame_retry()) {

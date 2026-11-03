@@ -73,6 +73,14 @@ ura.api = {
   --- @param easing string|table
   animate_window_resize = function(id, width, height, duration, easing) end,
   --- @param id integer
+  --- @param degrees number
+  --- @param duration number Milliseconds
+  --- @param easing string|table
+  animate_window_rotation = function(id, degrees, duration, easing) end,
+  --- @param id integer
+  --- @return number|nil
+  get_window_rotation = function(id) end,
+  --- @param id integer
   --- @param opacity number
   --- @param duration number Milliseconds
   --- @param easing string|table
@@ -146,9 +154,30 @@ ura.api = {
   --- @param id integer
   --- @return string|nil
   get_window_border_color = function(id) end,
+  --- @param spec table
+  --- @return { id: integer, generation: integer, name: string }|nil
+  define_effect = function(spec) end,
   --- @param id integer
-  --- @param effect { type: string, radius?: number, color?: string|table }
-  set_window_effect = function(id, effect) end,
+  --- @param generation integer
+  --- @return boolean
+  find_effect = function(name) end,
+  undefine_effect = function(id, generation) end,
+  clear_effects = function() end,
+  migrate_effects = function() end,
+  --- @param id integer
+  --- @param effect_id integer
+  --- @param generation integer
+  --- @param uniforms table
+  --- @param options table
+  --- @return boolean
+  set_window_effect_instance = function(id, effect_id, generation, uniforms, options) end,
+  --- @param id integer
+  --- @param name string
+  --- @param from number|table|boolean
+  --- @param to number|table|boolean
+  --- @param duration number Milliseconds
+  --- @param easing string|table
+  animate_window_effect_uniform = function(id, name, from, to, duration, easing) end,
   --- @param id integer
   clear_window_effect = function(id) end,
 

@@ -11,6 +11,7 @@
 #include "ura/view/view.hpp"
 #include "ura/core/lua.hpp"
 #include "ura/render/raylib/raylib_renderer.hpp"
+#include "ura/render/effect_registry.hpp"
 #include <sys/epoll.h>
 
 namespace ura {
@@ -20,6 +21,7 @@ Status UraServer::init() {
   this->logger = UraLogger::init();
   this->runtime = UraRuntime::init();
   this->entities = std::make_unique<UraEntityRegistry>();
+  this->effects = std::make_unique<EffectRegistry>();
   this->view = UraView::init(*this->entities);
   ASSIGN_OR_RETURN(this->dispatcher, UraDispatcher<128>::init());
   this->lua = Lua::init();

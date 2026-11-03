@@ -18,6 +18,7 @@ class UraRuntime;
 class UraSeat;
 class Lua;
 class UraView;
+class EffectRegistry;
 
 class UraServer {
 public:
@@ -52,6 +53,7 @@ public:
   std::unique_ptr<UraRuntime> runtime;
   std::unique_ptr<Lua> lua;
   std::unique_ptr<UraEntityRegistry> entities;
+  std::unique_ptr<EffectRegistry> effects;
   std::unique_ptr<UraSeat> seat;
   std::unique_ptr<UraView> view;
   std::unique_ptr<UraDispatcher<128>> dispatcher;

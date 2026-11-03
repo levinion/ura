@@ -53,6 +53,10 @@ function M.focus_down()
 end
 
 function M.reload()
+  -- Pipelines are process-owned descriptors. Dropping them before restoring
+  -- the Lua context lets a reloaded config define fresh generations while
+  -- existing SceneNodes keep their old shared references alive.
+  ura.api.clear_effects()
   local status, v = ura.fn._load_config()
   if not status then
     error(v)
@@ -63,6 +67,7 @@ function M.reload()
     if not status2 then
       error(err)
     end
+    ura.api.migrate_effects()
   end
 end
 

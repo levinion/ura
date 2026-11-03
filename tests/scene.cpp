@@ -190,9 +190,16 @@ bool test_components_and_dirty_state() {
     ura::Rect<double> { .width = 20, .height = 30 }
   );
   scene.set_layer(entity, ura::UraSceneLayer::Top);
+  auto pipeline = std::make_shared<ura::EffectPipeline>();
+  pipeline->handle = ura::EffectHandle { .id = 300, .generation = 1 };
+  pipeline->max_outset = { .left = 4, .top = 4, .right = 4, .bottom = 4 };
   scene.set_effect(
     entity,
-    ura::Effect { .type = ura::EffectType::Blur, .radius = 4.f }
+    ura::EffectInstance {
+      .pipeline = pipeline,
+      .version = 1,
+      .outset = pipeline->max_outset,
+    }
   );
 
   auto& opacity = scene.get<ura::Opacity>(entity);
@@ -207,8 +214,29 @@ bool test_components_and_dirty_state() {
   return opacity.value == 1.f && tags.contains("gamma")
     && !tags.contains("alpha") && z_order.layer == ura::UraSceneLayer::Top
     && dirty.epoch > 0 && layout_flag != 0 && effect_flag != 0
-    && snapshot.items.size() == 1
-    && snapshot.items[0].effect.type == ura::EffectType::Blur;
+    && snapshot.items.size() == 1 && snapshot.items[0].effect.active()
+    && snapshot.items[0].effect.pipeline == pipeline;
+}
+
+bool test_rotation_hit_test() {
+  ura::UraEntityRegistry entities;
+  ura::UraScene scene(entities);
+  auto entity = entities.create_toplevel(fake_toplevel(0x9500));
+
+  scene.attach_toplevel(
+    entity,
+    ura::Rect<double> { .x = 0, .y = 0, .width = 100, .height = 100 },
+    ura::WindowTags {},
+    ura::ZOrder { ura::UraSceneLayer::Normal, 0 }
+  );
+  scene.set_visible(entity, true);
+  scene.set_node_rotation(entity, 0.78539816339f);
+
+  auto center = scene.topmost_at(50, 50);
+  auto inside = scene.topmost_at(50, 10);
+  auto rotated_outside = scene.topmost_at(5, 5);
+  return center && *center == ura::UraEntityRegistry::to_id(entity) && inside
+    && *inside == ura::UraEntityRegistry::to_id(entity) && !rotated_outside;
 }
 
 bool test_rect_intersection() {
@@ -307,6 +335,8 @@ int main(int argc, char** argv) {
     passed = test_session_lock_role();
   else if (name == "rect")
     passed = test_rect_intersection();
+  else if (name == "rotation")
+    passed = test_rotation_hit_test();
   else {
     std::cerr << "Unknown test case: " << name << '\n';
     return 2;

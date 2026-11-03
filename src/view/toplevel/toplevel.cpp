@@ -211,6 +211,15 @@ void UraToplevel::destroy() {
       ghost,
       RenderTarget { .resource = close_target }
     );
+    if (
+      auto* effect_animation =
+        registry.try_get<EffectUniformAnimation>(this->entity)
+    ) {
+      registry.emplace_or_replace<EffectUniformAnimation>(
+        ghost,
+        *effect_animation
+      );
+    }
     registry.emplace_or_replace<WindowTransition>(ghost, WindowTransition {});
     registry.emplace_or_replace<WindowAnimation>(ghost, WindowAnimation {});
     scene.invalidate();
@@ -675,8 +684,10 @@ void UraToplevel::animate_open(
   const AnimationOptions& options,
   float from_scale,
   float from_opacity,
+  float from_rotation,
   float to_scale,
-  float to_opacity
+  float to_opacity,
+  float to_rotation
 ) {
   auto server = UraServer::get_instance();
   auto* animations = server->view->animations.get();
@@ -693,8 +704,11 @@ void UraToplevel::animate_open(
   auto animation_options = options;
   animation_options.animate_opacity = true;
   animation_options.opacity = std::clamp(to_opacity, 0.f, 1.f);
+  animation_options.animate_rotation = from_rotation != to_rotation;
+  animation_options.rotation = to_rotation;
 
   scene->set_opacity(this->entity, std::clamp(from_opacity, 0.f, 1.f));
+  scene->set_node_rotation(this->entity, from_rotation);
   animations->animate_from(this->entity, from, to, animation_options);
 }
 
@@ -1210,11 +1224,11 @@ void UraToplevel::set_opacity(float opacity) {
   this->scene_model().set_opacity(this->entity, opacity);
 }
 
-const Effect& UraToplevel::effect() {
+const EffectInstance& UraToplevel::effect() {
   return this->scene_model().get<ShaderEffect>(this->entity).effect;
 }
 
-void UraToplevel::set_effect(const Effect& effect) {
+void UraToplevel::set_effect(const EffectInstance& effect) {
   this->scene_model().set_effect(this->entity, effect);
 }
 

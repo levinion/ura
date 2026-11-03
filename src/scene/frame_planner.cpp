@@ -19,10 +19,53 @@ namespace {
       && lhs.height == rhs.height;
   }
 
+  wlr_box rotated_box(
+    const wlr_box& box,
+    float rotation,
+    double center_x,
+    double center_y
+  ) {
+    if (rotation == 0.f)
+      return box;
+
+    auto c = std::cos(rotation);
+    auto s = std::sin(rotation);
+    auto rotate = [&](double x, double y) {
+      auto dx = x - center_x;
+      auto dy = y - center_y;
+      auto rx = center_x + dx * c - dy * s;
+      auto ry = center_y + dx * s + dy * c;
+      return std::array<double, 2> { rx, ry };
+    };
+    auto p0 = rotate(box.x, box.y);
+    auto p1 = rotate(box.x + box.width, box.y);
+    auto p2 = rotate(box.x + box.width, box.y + box.height);
+    auto p3 = rotate(box.x, box.y + box.height);
+    auto left = std::min({ p0[0], p1[0], p2[0], p3[0] });
+    auto top = std::min({ p0[1], p1[1], p2[1], p3[1] });
+    auto right = std::max({ p0[0], p1[0], p2[0], p3[0] });
+    auto bottom = std::max({ p0[1], p1[1], p2[1], p3[1] });
+    int x = static_cast<int>(std::floor(left));
+    int y = static_cast<int>(std::floor(top));
+    int w = static_cast<int>(std::ceil(right)) - x;
+    int h = static_cast<int>(std::ceil(bottom)) - y;
+    return { x, y, w, h };
+  }
+
   void add_damage(FramePlan& plan, const wlr_box& box) {
     wlr_box clipped;
     if (wlr_box_intersection(&clipped, &box, &plan.logical_box))
       plan.damage.push_back(clipped);
+  }
+
+  wlr_box surface_damage_box(const FrameSurface& surface) {
+    auto box = rotated_box(
+      surface.dst_box,
+      surface.rotation,
+      surface.rotation_center_x,
+      surface.rotation_center_y
+    );
+    return surface.effect.outset.apply(box);
   }
 
   void append_surface(FramePlan& plan, FrameSurface surface) {
@@ -94,12 +137,15 @@ FramePlan UraFramePlanner::build(
       if (!surface.output_name.empty() && surface.output_name != output.name)
         continue;
 
+      auto cull_box = rotated_box(
+        surface.dst_box,
+        surface.rotation,
+        surface.rotation_center_x,
+        surface.rotation_center_y
+      );
+      cull_box = surface.effect.outset.apply(cull_box);
       wlr_box intersection;
-      if (!wlr_box_intersection(
-            &intersection,
-            &surface.dst_box,
-            &plan.logical_box
-          ))
+      if (!wlr_box_intersection(&intersection, &cull_box, &plan.logical_box))
         continue;
 
       plan.allow_direct_scanout |= surface.allow_direct_scanout;
@@ -117,6 +163,9 @@ FramePlan UraFramePlanner::build(
           .seq = surface.seq,
           .content_id = surface.content_id,
           .effect = surface.effect,
+          .rotation = surface.rotation,
+          .rotation_center_x = surface.rotation_center_x,
+          .rotation_center_y = surface.rotation_center_y,
           .owner = surface.owner,
         }
       );
@@ -125,12 +174,14 @@ FramePlan UraFramePlanner::build(
       if (!rect.output_name.empty() && rect.output_name != output.name)
         continue;
 
+      auto rect_box = rotated_box(
+        rect.rect.dst_box,
+        rect.rect.rotation,
+        rect.rect.rotation_center_x,
+        rect.rect.rotation_center_y
+      );
       wlr_box intersection;
-      if (!wlr_box_intersection(
-            &intersection,
-            &rect.rect.dst_box,
-            &plan.logical_box
-          ))
+      if (!wlr_box_intersection(&intersection, &rect_box, &plan.logical_box))
         continue;
 
       append_rect(plan, rect.rect);
@@ -153,6 +204,9 @@ FramePlan UraFramePlanner::build(
         .seq = surface.seq,
         .order = i,
         .effect = surface.effect,
+        .rotation = surface.rotation,
+        .rotation_center_x = surface.rotation_center_x,
+        .rotation_center_y = surface.rotation_center_y,
       }
     );
     current_by_surface
@@ -170,6 +224,10 @@ FramePlan UraFramePlanner::build(
         .owner = rect.owner,
         .index = rect.index,
         .order = i,
+        .effect = rect.effect,
+        .rotation = rect.rotation,
+        .rotation_center_x = rect.rotation_center_x,
+        .rotation_center_y = rect.rotation_center_y,
       }
     );
   }
@@ -180,7 +238,15 @@ FramePlan UraFramePlanner::build(
         surface_identity(previous.surface, previous.content_id)
       );
       if (current_it == current_by_surface.end()) {
-        add_damage(plan, previous.dst_box);
+        add_damage(
+          plan,
+          previous.effect.outset.apply(rotated_box(
+            previous.dst_box,
+            previous.rotation,
+            previous.rotation_center_x,
+            previous.rotation_center_y
+          ))
+        );
         continue;
       }
 
@@ -191,12 +257,23 @@ FramePlan UraFramePlanner::build(
         || previous.transform != surface->transform
         || previous.opacity != surface->opacity
         || previous.effect != surface->effect || previous.order != order
+        || previous.rotation != surface->rotation
+        || previous.rotation_center_x != surface->rotation_center_x
+        || previous.rotation_center_y != surface->rotation_center_y
       ) {
-        add_damage(plan, previous.dst_box);
-        add_damage(plan, surface->dst_box);
+        add_damage(
+          plan,
+          previous.effect.outset.apply(rotated_box(
+            previous.dst_box,
+            previous.rotation,
+            previous.rotation_center_x,
+            previous.rotation_center_y
+          ))
+        );
+        add_damage(plan, surface_damage_box(*surface));
       }
       if (previous.seq != surface->seq)
-        add_damage(plan, surface->dst_box);
+        add_damage(plan, surface_damage_box(*surface));
     }
 
     for (auto& surface : current) {
@@ -208,7 +285,15 @@ FramePlan UraFramePlanner::build(
         }
       );
       if (!existed)
-        add_damage(plan, surface.dst_box);
+        add_damage(
+          plan,
+          surface.effect.outset.apply(rotated_box(
+            surface.dst_box,
+            surface.rotation,
+            surface.rotation_center_x,
+            surface.rotation_center_y
+          ))
+        );
     }
 
     for (auto& previous : previous.rects) {
@@ -217,16 +302,44 @@ FramePlan UraFramePlanner::build(
           return rect.owner == previous.owner && rect.index == previous.index;
         });
       if (current_it == current_rects.end()) {
-        add_damage(plan, previous.dst_box);
+        add_damage(
+          plan,
+          previous.effect.outset.apply(rotated_box(
+            previous.dst_box,
+            previous.rotation,
+            previous.rotation_center_x,
+            previous.rotation_center_y
+          ))
+        );
         continue;
       }
       if (
         !same_box(previous.dst_box, current_it->dst_box)
         || previous.color != current_it->color
+        || previous.effect != current_it->effect
         || previous.order != current_it->order
+        || previous.rotation != current_it->rotation
+        || previous.rotation_center_x != current_it->rotation_center_x
+        || previous.rotation_center_y != current_it->rotation_center_y
       ) {
-        add_damage(plan, previous.dst_box);
-        add_damage(plan, current_it->dst_box);
+        add_damage(
+          plan,
+          previous.effect.outset.apply(rotated_box(
+            previous.dst_box,
+            previous.rotation,
+            previous.rotation_center_x,
+            previous.rotation_center_y
+          ))
+        );
+        add_damage(
+          plan,
+          current_it->effect.outset.apply(rotated_box(
+            current_it->dst_box,
+            current_it->rotation,
+            current_it->rotation_center_x,
+            current_it->rotation_center_y
+          ))
+        );
       }
     }
 
@@ -236,7 +349,15 @@ FramePlan UraFramePlanner::build(
           return previous.owner == rect.owner && previous.index == rect.index;
         });
       if (!existed)
-        add_damage(plan, rect.dst_box);
+        add_damage(
+          plan,
+          rect.effect.outset.apply(rotated_box(
+            rect.dst_box,
+            rect.rotation,
+            rect.rotation_center_x,
+            rect.rotation_center_y
+          ))
+        );
     }
   }
 

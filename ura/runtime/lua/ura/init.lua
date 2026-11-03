@@ -5,6 +5,7 @@ ura.hook = require("ura.hook")
 ura.keymap = require("ura.keymap")
 ura.class = require("ura.class")
 ura.cmd = require("ura.cmd")
+ura.render = require("ura.render")
 
 ura.fn.load_dir("/usr/share/ura/plugins")
 ura.fn.load_dir("~/.local/share/ura/plugins")

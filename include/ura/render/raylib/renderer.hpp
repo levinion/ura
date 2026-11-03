@@ -10,6 +10,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <ctime>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "ura/render/effect.hpp"
 
 extern "C" {
 #include <wayland-server-core.h>
@@ -127,6 +132,28 @@ struct EffectTarget {
   int height = 0;
 };
 
+struct EffectPassProgram {
+  Shader shader;
+  std::unordered_map<std::string, int> uniforms;
+  std::unordered_map<std::string, int> samplers;
+  int texel_size = -1;
+};
+
+struct EffectProgram {
+  EffectHandle handle;
+  // Keep only a weak reference so unregistered pipelines can release their
+  // GPU programs once all EffectInstances/FramePlans are gone.
+  std::weak_ptr<const EffectPipeline> pipeline;
+  std::vector<EffectPassProgram> passes;
+  bool failed = false;
+};
+
+struct EffectProgramCache {
+  std::unordered_map<const EffectPipeline*, EffectProgram> programs;
+};
+
+struct EffectTextureCache;
+
 struct Renderer {
   wlr_renderer base;
   EglContext egl;
@@ -137,8 +164,9 @@ struct Renderer {
   Shader external;
   Shader effect;
   Shader effect_copy;
-  Shader effect_blur;
-  EffectTarget effect_targets[2];
+  std::vector<EffectTarget>* effect_targets;
+  EffectProgramCache* effect_programs;
+  EffectTextureCache* effect_textures;
   GLuint white_texture;
   bool rlgl_ready;
   wl_list buffers; // Buffer::link
@@ -219,6 +247,14 @@ void renderer_finish_surface_formats(Renderer* renderer);
 bool shader_init(Renderer* renderer);
 void shader_finish(Renderer* renderer);
 void shader_set_projection(int location, int width, int height);
+Shader shader_load_fragment(const char* fragment_source);
+EffectProgram*
+effect_program_get(Renderer* renderer, const EffectInstance& instance);
+void effect_programs_prune(Renderer* renderer);
+void effect_programs_finish(Renderer* renderer);
+GLuint effect_texture_get(Renderer* renderer, const EffectTexture& texture);
+void effect_textures_prune(Renderer* renderer);
+void effect_textures_finish(Renderer* renderer);
 // buffer.cpp
 Buffer* buffer_get(Renderer* renderer, wlr_buffer* buffer);
 void buffer_finish(Buffer* buffer);

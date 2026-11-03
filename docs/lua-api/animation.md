@@ -26,8 +26,12 @@ ura.animation.define("window-resize", {
 ura.animation.define("window-open", {
   duration = 180,
   easing = "out_cubic",
-  from = { scale = 0.9, opacity = 0.0 },
-  to = { scale = 1.0, opacity = 1.0 },
+  from = { scale = 0.9, opacity = 0.0, rotation = -4.0 },
+  to = { scale = 1.0, opacity = 1.0, rotation = 0.0 },
+  effect = "my-open-effect",
+  uniforms = {
+    amount = { from = 0.0, to = 1.0 },
+  },
 })
 
 ura.animation.define("window-close", {
@@ -46,7 +50,11 @@ Recognized keys:
 | `enabled` | Set to `false` to disable the animation. |
 | `from.scale` / `to.scale` | Scale relative to the current `SceneNode.bounds`, around its center. |
 | `from.opacity` / `to.opacity` | Opacity endpoints. Used by `window-open`, `window-close`, and `window-opacity`. |
+| `from.rotation` / `to.rotation` | Rotation endpoints in degrees. Used by `window-rotation` and the open/close hooks. |
 | `properties` | Reserved for future property filtering. |
+| `uniforms` | Map of effect uniform ramps: `{ name = { from = ..., to = ... } }`. Applied by `window-open`/`window-close`; the window must have an active pipeline effect. |
+| `effect` | Optional pipeline table or registered pipeline name. Applied before open/close effect animation and uniform tracks start. |
+| `effect_uniforms` | Optional static values passed to `window:set_effect()` when `effect` is selected. |
 
 The built-in names include `linear`, `in_quad`, `out_quad`, `in_out_quad`,
 `in_cubic`, `out_cubic`, `in_out_cubic`, `in_quart`, `out_quart`,
@@ -80,14 +88,19 @@ changes should animate too.
 
 `window-open` and `window-close` are handled by the plugin's
 `window-map` / `window-close` hooks with `fallback_enabled = false`. They only
-run when a definition or hook enables them. The low-level APIs are:
+run when a definition or hook enables them. The open hook runs at
+`ura.g.priority.slow`, so default-priority `window-map` hooks can install the
+effect before its uniform tracks start. Close uniform tracks are copied to the
+detached closing SceneNode before capture. The low-level APIs are:
 
 ```lua
 ura.api.animate_window_open(id, duration, easing, {
   from_scale = 0.92,
   from_opacity = 0.0,
+  from_rotation = -3.0,
   to_scale = 1.0,
   to_opacity = 1.0,
+  to_rotation = 0.0,
 })
 
 ura.api.animate_window_close(id, duration, easing, {

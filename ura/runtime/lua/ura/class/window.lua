@@ -194,6 +194,30 @@ function UraWindow:is_focused()
 end
 
 ---@return number|nil
+function UraWindow:rotation()
+  return ura.api.get_window_rotation(self.id)
+end
+
+---@param degrees number
+---@param opt { duration?: integer, fps?: number, easing?: string|fun(t: number): number }|nil
+function UraWindow:set_rotation(degrees, opt)
+  local current = self:rotation() or 0
+  local spec = resolve_animation("window-rotation", {
+    id = self.id,
+    app_id = self:app_id(),
+    title = self:title(),
+    from = current,
+    to = degrees,
+    opt = opt,
+  }, opt)
+  if not spec.enabled or (spec.duration or 0) <= 0 then
+    ura.api.animate_window_rotation(self.id, degrees, 0, spec.easing)
+    return
+  end
+  ura.api.animate_window_rotation(self.id, degrees, spec.duration, spec.easing)
+end
+
+---@return number|nil
 function UraWindow:opacity()
   return ura.api.get_window_opacity(self.id)
 end
@@ -224,13 +248,54 @@ function UraWindow:set_opacity(opacity, opt)
 end
 
 ---@param effect table
-function UraWindow:set_effect(effect)
-  ura.api.set_window_effect(self.id, effect)
+---@param uniforms table|nil
+---@param options table|nil
+function UraWindow:set_effect(effect, uniforms, options)
+  if type(effect) ~= "table" or not effect.id then
+    error("set_effect expects a pipeline returned by ura.render.effect")
+  end
+  local ok = ura.api.set_window_effect_instance(
+    self.id,
+    effect.id,
+    effect.generation or 1,
+    uniforms or {},
+    options or {}
+  )
+  if not ok then
+    error("failed to apply effect")
+  end
+end
+
+---@param name string
+---@param from number|table|boolean
+---@param to number|table|boolean
+---@param opt { duration?: integer, easing?: string|fun(t: number): number }|nil
+function UraWindow:animate_effect_uniform(name, from, to, opt)
+  opt = opt or {}
+  ura.api.animate_window_effect_uniform(
+    self.id,
+    name,
+    from,
+    to,
+    opt.duration or 200,
+    opt.easing or "in_out_cubic"
+  )
 end
 
 function UraWindow:clear_effect()
   ura.api.clear_window_effect(self.id)
 end
+---@param uniforms table
+---@param opt { duration?: integer, easing?: string|fun(t: number): number }|nil
+function UraWindow:animate_effect_uniforms(uniforms, opt)
+  opt = opt or {}
+  for name, spec in pairs(uniforms or {}) do
+    if type(spec) == "table" and spec.from ~= nil and spec.to ~= nil then
+      self:animate_effect_uniform(name, spec.from, spec.to, opt)
+    end
+  end
+end
+
 
 ---@return string|nil
 function UraWindow:border_color()

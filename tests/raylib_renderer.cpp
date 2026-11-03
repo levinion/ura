@@ -201,59 +201,224 @@ int main() {
   texture_options.wait_point = 1;
   wlr_render_pass_add_texture(pass, &texture_options);
 
-  // Run the same texture through the offscreen tint pipeline. This exercises
-  // target allocation, the copy pass, and compositing into the SHM target.
-  auto effect_options = texture_options;
-  effect_options.dst_box = { .x = 32, .y = 32, .width = 16, .height = 16 };
-  auto tint = ura::Effect {
-    .type = ura::EffectType::Tint,
-    .color = { 0.5f, 0.5f, 1.0f, 1.0f },
+  // Generic single-pass effect. This exercises the plugin-facing pipeline
+  // path, shader compilation/cache, and typed vec4 uniform upload.
+  auto pipeline = std::make_shared<ura::EffectPipeline>();
+  pipeline->handle = ura::EffectHandle { .id = 1, .generation = 1 };
+  pipeline->name = "test-color";
+  pipeline->passes.push_back(
+    ura::EffectPass {
+      .id = {},
+      .fragment_shader = R"(
+#version 100
+precision mediump float;
+varying vec2 fragTexCoord;
+uniform sampler2D texture0;
+uniform vec4 effectColor;
+void main() {
+    gl_FragColor = effectColor;
+}
+)",
+      .inputs = {},
+      .uniforms = {},
+    }
+  );
+  pipeline->uniforms = {
+    ura::EffectUniformDef {
+      .name = "effectColor",
+      .type = ura::EffectUniformType::Vec4,
+    },
   };
+  ura::EffectInstance instance;
+  instance.pipeline = pipeline;
+  instance.outset = {};
+  instance.uniforms = {
+    ura::EffectUniform {
+      .name = "effectColor",
+      .type = ura::EffectUniformType::Vec4,
+      .values = { { 0.f, 1.f, 0.f, 1.f } },
+    },
+  };
+  auto custom_effect = instance;
+  auto custom_options = texture_options;
+  custom_options.dst_box = { .x = 48, .y = 8, .width = 16, .height = 16 };
   if (!ura::render::raylib::render_pass_add_texture_effect(
         pass,
-        &effect_options,
-        tint
+        &custom_options,
+        custom_effect
       )) {
-    fprintf(stderr, "effect render pass failed\n");
+    fprintf(stderr, "custom effect render pass failed\n");
     return 1;
   }
 
-  // Separable blur uses two additional offscreen passes. A solid red source
-  // must still come back red rather than an empty/transparent target.
-  auto blur_options = texture_options;
-  blur_options.dst_box = { .x = 32, .y = 16, .width = 16, .height = 16 };
-  auto blur = ura::Effect {
-    .type = ura::EffectType::Blur,
-    .radius = 4.f,
+  // Two-pass generic effect: pass 1 copies the source, pass 2 emits blue.
+  // This exercises intermediate target ping-pong and per-pass programs.
+  auto multi_pipeline = std::make_shared<ura::EffectPipeline>();
+  multi_pipeline->handle = ura::EffectHandle { .id = 2, .generation = 1 };
+  multi_pipeline->name = "test-multipass";
+  multi_pipeline->passes = {
+    ura::EffectPass {
+      .id = {},
+      .fragment_shader = R"(
+#version 100
+precision mediump float;
+varying vec2 fragTexCoord;
+uniform sampler2D texture0;
+void main() {
+    gl_FragColor = texture2D(texture0, fragTexCoord);
+}
+)",
+      .inputs = {},
+      .uniforms = {},
+    },
+    ura::EffectPass {
+      .id = {},
+      .fragment_shader = R"(
+#version 100
+precision mediump float;
+varying vec2 fragTexCoord;
+uniform sampler2D texture0;
+uniform vec2 texelSize;
+uniform vec4 passColor;
+void main() {
+    gl_FragColor = passColor;
+}
+)",
+      .inputs = {},
+      .uniforms = {
+        ura::EffectUniform {
+          .name = "passColor",
+          .type = ura::EffectUniformType::Vec4,
+          .values = { { 0.f, 0.f, 1.f, 1.f } },
+        },
+      },
+    },
   };
+  ura::EffectInstance multi_instance;
+  multi_instance.pipeline = multi_pipeline;
+  auto multi_effect = multi_instance;
+  auto multi_options = texture_options;
+  multi_options.dst_box = { .x = 48, .y = 32, .width = 16, .height = 16 };
   if (!ura::render::raylib::render_pass_add_texture_effect(
         pass,
-        &blur_options,
-        blur
+        &multi_options,
+        multi_effect
       )) {
-    fprintf(stderr, "blur effect render pass failed\n");
+    fprintf(stderr, "multi-pass effect render pass failed\n");
     return 1;
   }
 
-  // Two surfaces of the same SceneNode go through one group target and one
-  // effect application. This is what keeps CSD/subsurfaces from developing
-  // independent blur seams.
-  auto group_a = texture_options;
-  group_a.dst_box = { .x = 8, .y = 48, .width = 16, .height = 16 };
-  auto group_b = texture_options;
-  group_b.dst_box = { .x = 32, .y = 48, .width = 16, .height = 16 };
-  wlr_render_texture_options group_options[] = { group_a, group_b };
-  auto group_tint = ura::Effect {
-    .type = ura::EffectType::Tint,
-    .color = { 0.5f, 0.5f, 1.0f, 1.0f },
-  };
-  if (!ura::render::raylib::render_pass_add_texture_group_effect(
+  // Plugin image texture input. The external 1x1 texture is green while the
+  // window source is red, so the output proves the sampler was uploaded.
+  auto image_texture = std::make_shared<ura::EffectTexture>();
+  image_texture->width = 1;
+  image_texture->height = 1;
+  image_texture->pixels = { 0, 255, 0, 255 };
+  auto texture_pipeline = std::make_shared<ura::EffectPipeline>();
+  texture_pipeline->handle = ura::EffectHandle { .id = 4, .generation = 1 };
+  texture_pipeline->name = "test-texture";
+  texture_pipeline->passes.push_back(
+    ura::EffectPass {
+      .id = {},
+      .fragment_shader = R"(
+#version 100
+precision mediump float;
+varying vec2 fragTexCoord;
+uniform sampler2D noise;
+void main() { gl_FragColor = texture2D(noise, fragTexCoord); }
+)",
+      .inputs = {
+        ura::EffectPassInput {
+          .name = "noise",
+          .source = "texture",
+          .texture = image_texture,
+        },
+      },
+      .uniforms = {},
+    }
+  );
+  ura::EffectInstance texture_instance;
+  texture_instance.pipeline = texture_pipeline;
+  auto texture_effect = texture_instance;
+  auto external_options = texture_options;
+  external_options.dst_box = { .x = 28, .y = 8, .width = 16, .height = 16 };
+  if (!ura::render::raylib::render_pass_add_texture_effect(
         pass,
-        group_options,
-        2,
-        group_tint
+        &external_options,
+        texture_effect
       )) {
-    fprintf(stderr, "group effect render pass failed\n");
+    fprintf(stderr, "texture effect render pass failed\n");
+    return 1;
+  }
+
+  // Three-pass graph with named intermediate targets and two samplers.
+  auto graph_pipeline = std::make_shared<ura::EffectPipeline>();
+  graph_pipeline->handle = ura::EffectHandle { .id = 3, .generation = 1 };
+  graph_pipeline->name = "test-graph";
+  graph_pipeline->passes = {
+    ura::EffectPass {
+      .id = "copy",
+      .fragment_shader = R"(
+#version 100
+precision mediump float;
+varying vec2 fragTexCoord;
+uniform sampler2D texture0;
+void main() { gl_FragColor = texture2D(texture0, fragTexCoord); }
+)",
+      .inputs = {},
+      .uniforms = {},
+    },
+    ura::EffectPass {
+      .id = "green",
+      .fragment_shader = R"(
+#version 100
+precision mediump float;
+varying vec2 fragTexCoord;
+uniform sampler2D texture0;
+void main() { gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0); }
+)",
+      .inputs = {},
+      .uniforms = {},
+    },
+    ura::EffectPass {
+      .id = {},
+      .fragment_shader = R"(
+#version 100
+precision mediump float;
+varying vec2 fragTexCoord;
+uniform sampler2D input0;
+uniform sampler2D input1;
+void main() {
+  gl_FragColor = texture2D(input0, fragTexCoord)
+    + texture2D(input1, fragTexCoord);
+}
+)",
+      .inputs = {
+        ura::EffectPassInput {
+          .name = "input0",
+          .source = "copy",
+          .texture = {},
+        },
+        ura::EffectPassInput {
+          .name = "input1",
+          .source = "green",
+          .texture = {},
+        },
+      },
+      .uniforms = {},
+    },
+  };
+  ura::EffectInstance graph_instance;
+  graph_instance.pipeline = graph_pipeline;
+  auto graph_effect = graph_instance;
+  auto graph_options = texture_options;
+  graph_options.dst_box = { .x = 8, .y = 32, .width = 16, .height = 16 };
+  if (!ura::render::raylib::render_pass_add_texture_effect(
+        pass,
+        &graph_options,
+        graph_effect
+      )) {
+    fprintf(stderr, "effect graph render pass failed\n");
     return 1;
   }
 
@@ -264,7 +429,6 @@ int main() {
 
   uint32_t white = pixel_at(target, 0, 0);
   uint32_t red = pixel_at(target, 12, 12);
-  uint32_t tinted = pixel_at(target, 36, 36);
   if (white != 0xFFFFFFFFu) {
     fprintf(stderr, "unexpected background pixel: 0x%08x\n", white);
     return 1;
@@ -273,31 +437,28 @@ int main() {
     fprintf(stderr, "unexpected textured pixel: 0x%08x\n", red);
     return 1;
   }
-  auto tinted_red = (tinted >> 16) & 0xFFu;
-  if (
-    (tinted & 0xFF000000u) != 0xFF000000u || tinted_red < 0x70u
-    || tinted_red > 0x90u || (tinted & 0x0000FFFFu) != 0
-  ) {
-    fprintf(stderr, "unexpected effect pixel: 0x%08x\n", tinted);
+  uint32_t custom = pixel_at(target, 52, 12);
+  if (custom != 0xFF00FF00u) {
+    fprintf(stderr, "unexpected custom effect pixel: 0x%08x\n", custom);
     return 1;
   }
 
-  uint32_t blurred = pixel_at(target, 36, 20);
-  if (blurred != 0xFFFF0000u) {
-    fprintf(stderr, "unexpected blur pixel: 0x%08x\n", blurred);
+  uint32_t multi = pixel_at(target, 52, 36);
+  if (multi != 0xFF0000FFu) {
+    fprintf(stderr, "unexpected multi-pass pixel: 0x%08x\n", multi);
     return 1;
   }
 
-  for (auto point : { std::pair { 12, 52 }, std::pair { 36, 52 } }) {
-    uint32_t grouped = pixel_at(target, point.first, point.second);
-    auto grouped_red = (grouped >> 16) & 0xFFu;
-    if (
-      (grouped & 0xFF000000u) != 0xFF000000u || grouped_red < 0x70u
-      || grouped_red > 0x90u || (grouped & 0x0000FFFFu) != 0
-    ) {
-      fprintf(stderr, "unexpected group effect pixel: 0x%08x\n", grouped);
-      return 1;
-    }
+  uint32_t external = pixel_at(target, 32, 12);
+  if (external != 0xFF00FF00u) {
+    fprintf(stderr, "unexpected external texture pixel: 0x%08x\n", external);
+    return 1;
+  }
+
+  uint32_t graph = pixel_at(target, 12, 36);
+  if (graph != 0xFFFFFF00u) {
+    fprintf(stderr, "unexpected graph effect pixel: 0x%08x\n", graph);
+    return 1;
   }
 
   // A non-zero src_box must select the requested sub-rectangle of the
@@ -394,6 +555,64 @@ int main() {
     return 1;
   }
   wlr_buffer_drop(&effect_target->base);
+
+  // Rotation-only composition: the window is rendered into an offscreen
+  // target and composited as a rotated quad.
+  TestBuffer* rotation_target = create_test_buffer(32, 32, 0);
+  if (!rotation_target) {
+    fprintf(stderr, "failed to create rotation target\n");
+    return 1;
+  }
+  wlr_render_pass* rotation_pass =
+    wlr_renderer_begin_buffer_pass(renderer, &rotation_target->base, nullptr);
+  if (!rotation_pass) {
+    fprintf(stderr, "failed to begin rotation render pass\n");
+    return 1;
+  }
+  wlr_render_rect_options rotation_background {};
+  rotation_background.box = { .x = 0, .y = 0, .width = 32, .height = 32 };
+  rotation_background.color = { .r = 1.0f, .g = 1.0f, .b = 1.0f, .a = 1.0f };
+  rotation_background.blend_mode = WLR_RENDER_BLEND_MODE_NONE;
+  wlr_render_pass_add_rect(rotation_pass, &rotation_background);
+
+  auto rotation_options = texture_options;
+  rotation_options.dst_box = { .x = 8, .y = 8, .width = 16, .height = 16 };
+  rotation_options.wait_timeline = nullptr;
+  rotation_options.wait_point = 0;
+  ura::render::raylib::EffectGroupItem rotation_item {
+    .texture = &rotation_options,
+  };
+  ura::EffectInstance rotation_effect;
+  if (!ura::render::raylib::render_pass_add_group_effect(
+        rotation_pass,
+        &rotation_item,
+        1,
+        rotation_effect,
+        1.0f,
+        0.78539816339f,
+        16.0,
+        16.0
+      )) {
+    fprintf(stderr, "rotation render pass failed\n");
+    return 1;
+  }
+  if (!wlr_render_pass_submit(rotation_pass)) {
+    fprintf(stderr, "rotation render pass submit failed\n");
+    return 1;
+  }
+  if (
+    pixel_at(rotation_target, 16, 16) != 0xFFFF0000u
+    || pixel_at(rotation_target, 8, 8) != 0xFFFFFFFFu
+  ) {
+    fprintf(
+      stderr,
+      "unexpected rotation pixels: center=0x%08x corner=0x%08x\n",
+      pixel_at(rotation_target, 16, 16),
+      pixel_at(rotation_target, 8, 8)
+    );
+    return 1;
+  }
+  wlr_buffer_drop(&rotation_target->base);
 
   // Top/bottom orientation check. This catches a mismatch between the scene
   // projection, glScissor coordinates and SHM readback orientation.

@@ -41,7 +41,10 @@ public:
     float opacity = 1.f;
     uint32_t seq = 0;
     std::size_t order = 0;
-    Effect effect;
+    EffectInstance effect;
+    float rotation = 0.f;
+    double rotation_center_x = 0.0;
+    double rotation_center_y = 0.0;
   };
 
   struct PreviousRect {
@@ -50,6 +53,10 @@ public:
     uint64_t owner = 0;
     int index = 0;
     std::size_t order = 0;
+    EffectInstance effect;
+    float rotation = 0.f;
+    double rotation_center_x = 0.0;
+    double rotation_center_y = 0.0;
   };
 
   struct OutputState {

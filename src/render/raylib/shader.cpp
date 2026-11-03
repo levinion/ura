@@ -110,23 +110,6 @@ void main() {
 }
 )";
 
-static const char* effect_blur_fragment_source = R"(
-#version 100
-precision mediump float;
-varying vec2 fragTexCoord;
-uniform sampler2D texture0;
-uniform vec4 colDiffuse;
-uniform vec2 direction;
-void main() {
-    vec4 color = texture2D(texture0, fragTexCoord) * 0.2270270270;
-    color += texture2D(texture0, fragTexCoord + direction * 1.3846153846) * 0.3162162162;
-    color += texture2D(texture0, fragTexCoord - direction * 1.3846153846) * 0.3162162162;
-    color += texture2D(texture0, fragTexCoord + direction * 3.2307692308) * 0.0702702703;
-    color += texture2D(texture0, fragTexCoord - direction * 3.2307692308) * 0.0702702703;
-    gl_FragColor = color * colDiffuse;
-}
-)";
-
 static const char* external_fragment_source = R"(
 #version 100
 #extension GL_OES_EGL_image_external : require
@@ -166,8 +149,12 @@ static GLuint compile_shader(GLenum type, const char* source) {
   return shader;
 }
 
-static Shader
-load_shader(const char* vs, const char* fs, bool require_texture) {
+static Shader load_shader(
+  const char* vs,
+  const char* fs,
+  bool require_texture,
+  bool require_color = true
+) {
   Shader shader {};
   init_shader_locations(&shader);
 
@@ -232,8 +219,9 @@ load_shader(const char* vs, const char* fs, bool require_texture) {
   shader.locs[RL_SHADER_LOC_COLOR_DIFFUSE] = shader.color;
   shader.locs[RL_SHADER_LOC_MAP_DIFFUSE] = shader.texture;
 
-  shader.valid = shader.mvp >= 0 && shader.color >= 0 && shader.pos_attrib >= 0
-    && (!require_texture || shader.texture >= 0);
+  shader.valid = shader.mvp >= 0 && shader.pos_attrib >= 0
+    && (!require_texture || shader.texture >= 0)
+    && (!require_color || shader.color >= 0);
   if (!shader.valid) {
     log::error("Raylib renderer shader is missing required inputs");
     glDeleteProgram(shader.id);
@@ -249,7 +237,6 @@ bool shader_init(Renderer* renderer) {
   memset(&renderer->external, 0, sizeof(renderer->external));
   memset(&renderer->effect, 0, sizeof(renderer->effect));
   memset(&renderer->effect_copy, 0, sizeof(renderer->effect_copy));
-  memset(&renderer->effect_blur, 0, sizeof(renderer->effect_blur));
 
   renderer->rect =
     load_shader(vertex_shader_source, rect_fragment_source, false);
@@ -257,8 +244,6 @@ bool shader_init(Renderer* renderer) {
     load_shader(vertex_shader_source, effect_fragment_source, true);
   renderer->effect_copy =
     load_shader(texture_vertex_source, effect_copy_fragment_source, true);
-  renderer->effect_blur =
-    load_shader(texture_vertex_source, effect_blur_fragment_source, true);
   // rlgl's non-VAO batch path binds every standard attribute location. Keep
   // unused ones valid for the optional effect pass.
   renderer->effect.locs[RL_SHADER_LOC_VERTEX_NORMAL] =
@@ -276,8 +261,7 @@ bool shader_init(Renderer* renderer) {
     !renderer->rect.valid || !renderer->effect.valid
     || renderer->effect.tint < 0 || !renderer->tex_rgba.valid
     || !renderer->tex_rgbx.valid || !renderer->effect_copy.valid
-    || renderer->effect_copy.tint < 0 || !renderer->effect_blur.valid
-    || renderer->effect_blur.direction < 0
+    || renderer->effect_copy.tint < 0
   ) {
     log::error("Failed to load raylib renderer shaders");
     shader_finish(renderer);
@@ -301,7 +285,6 @@ void shader_finish(Renderer* renderer) {
   for (Shader* shader : { &renderer->rect,
                           &renderer->effect,
                           &renderer->effect_copy,
-                          &renderer->effect_blur,
                           &renderer->tex_rgba,
                           &renderer->tex_rgbx,
                           &renderer->external }) {
@@ -311,6 +294,10 @@ void shader_finish(Renderer* renderer) {
       shader->valid = false;
     }
   }
+}
+
+Shader shader_load_fragment(const char* fragment_source) {
+  return load_shader(texture_vertex_source, fragment_source, false, false);
 }
 
 void shader_set_projection(int location, int width, int height) {
