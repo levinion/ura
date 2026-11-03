@@ -45,6 +45,7 @@ The following names are emitted by the compositor or shipped Lua plugins in the 
 | `pre-window-activate` | `{ id }` | Before activating a window. Returning `false` from any callback cancels activation. |
 | `window-activate` | `{ id }` | After activation and focus have been applied. |
 | `window-move` / `window-resize` | `{ id }` | Window geometry changes. |
+| `window-animation-start` | `{ kind, id, app_id, title, from, to }` | Resolve a window animation. Return a table that overrides `duration`, `easing`, `enabled`, `from`/`to` scale or opacity. This runs once per animation start, not per frame. |
 | `window-title-change` / `window-app_id-change` | `{ id }` | The corresponding toplevel metadata changes. |
 | `window-tags-change` | `{ id, from, to }` | Window tags changed; `from` and `to` are arrays of strings. |
 | `window-request-maximize` | `{ id }` | A client requests maximization. The built-in layout plugin handles this by toggling the `maximize` layout. |

@@ -1,11 +1,8 @@
 #include "ura/scene/frame_profile.hpp"
+#include "ura/core/log.hpp"
 
 #include <cstdlib>
 #include <cstring>
-
-extern "C" {
-#include <wlr/util/log.h>
-}
 
 namespace ura {
 
@@ -99,10 +96,9 @@ void UraFrameProfiler::maybe_report() {
     return;
 
   auto frames = static_cast<double>(this->frames);
-  wlr_log(
-    WLR_INFO,
-    "frame profile: frames=%llu skipped=%llu outputs/frame=%.2f "
-    "tasks/frame=%.2f surfaces/frame=%.2f rects/frame=%.2f ops/frame=%.2f",
+  log::info(
+    "frame profile: frames={} skipped={} outputs/frame={:.2f} "
+    "tasks/frame={:.2f} surfaces/frame={:.2f} rects/frame={:.2f} ops/frame={:.2f}",
     static_cast<unsigned long long>(this->frames),
     static_cast<unsigned long long>(this->skipped),
     this->outputs / frames,
@@ -112,11 +108,10 @@ void UraFrameProfiler::maybe_report() {
     this->operations / frames
   );
   auto renders = static_cast<double>(this->renders);
-  wlr_log(
-    WLR_INFO,
-    "frame profile: world avg=%.3fms max=%.3fms | plan avg=%.3fms max=%.3fms "
-    "| merge avg=%.3fms max=%.3fms | render avg=%.3fms max=%.3fms "
-    "failures=%llu",
+  log::info(
+    "frame profile: world avg={:.3f}ms max={:.3f}ms | plan avg={:.3f}ms max={:.3f}ms "
+    "| merge avg={:.3f}ms max={:.3f}ms | render avg={:.3f}ms max={:.3f}ms "
+    "failures={}",
     avg_ms(this->world),
     max_ms(this->world),
     avg_ms(this->plan),
@@ -127,10 +122,9 @@ void UraFrameProfiler::maybe_report() {
     max_ms(this->render),
     static_cast<unsigned long long>(this->render_failures)
   );
-  wlr_log(
-    WLR_INFO,
-    "frame profile: renders=%llu full=%llu surfaces/render=%.2f "
-    "ops/render=%.2f damage/render=%.2f",
+  log::info(
+    "frame profile: renders={} full={} surfaces/render={:.2f} "
+    "ops/render={:.2f} damage/render={:.2f}",
     static_cast<unsigned long long>(this->renders),
     static_cast<unsigned long long>(this->full_redraws),
     renders > 0 ? this->damaged_surfaces / renders : 0.0,

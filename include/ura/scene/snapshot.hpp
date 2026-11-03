@@ -18,12 +18,16 @@ enum class SceneRole {
 struct SceneItemSnapshot {
   uint64_t id = 0;
   SceneRole role = SceneRole::Primitive;
-  Transform transform;
-  Geometry geometry;
+  WindowLayout layout;
+  SurfaceContent content;
+  SceneNode node;
   Visibility visibility;
   ZOrder z_order;
   Opacity opacity;
-  SurfaceHandle surface;
+  Effect effect;
+  // Non-zero when this node samples a renderer-owned frozen texture instead
+  // of a live client surface tree.
+  uint64_t render_target = 0;
 };
 
 struct SceneSnapshot {

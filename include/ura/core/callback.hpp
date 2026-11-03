@@ -112,6 +112,7 @@ void on_new_session_lock(wl_listener* listener, void* data);
 void on_session_lock_unlock(wl_listener* listener, void* data);
 void on_session_lock_destroy(wl_listener* listener, void* data);
 void on_session_lock_new_surface(wl_listener* listener, void* data);
+void on_session_lock_surface_commit(wl_listener* listener, void* data);
 void on_session_lock_surface_destroy(wl_listener* listener, void* data);
 
 // seat/text_input/callback.cpp

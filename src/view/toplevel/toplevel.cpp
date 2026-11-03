@@ -1,4 +1,8 @@
 #include "ura/view/toplevel.hpp"
+
+#include <cmath>
+
+#include "ura/scene/animation_system.hpp"
 #include "ura/scene/layer.hpp"
 #include "ura/util/flexible.hpp"
 #include "ura/ura.hpp"
@@ -14,16 +18,38 @@
 
 namespace ura {
 
+namespace {
+
+  Rect<double>
+  scale_rect_around_center(const Rect<double>& bounds, float scale) {
+    if (scale == 1.f || bounds.empty())
+      return bounds;
+    auto width = bounds.width * static_cast<double>(scale);
+    auto height = bounds.height * static_cast<double>(scale);
+    return Rect<double> {
+      .x = bounds.x + (bounds.width - width) / 2.0,
+      .y = bounds.y + (bounds.height - height) / 2.0,
+      .width = width,
+      .height = height,
+    };
+  }
+
+} // namespace
+
 UraScene& UraToplevel::scene_model() {
   return *UraServer::get_instance()->view->scene;
 }
 
-const Transform& UraToplevel::transform() {
-  return this->scene_model().get<Transform>(this->entity);
+const WindowLayout& UraToplevel::layout() {
+  return this->scene_model().get<WindowLayout>(this->entity);
 }
 
-const Geometry& UraToplevel::geometry() {
-  return this->scene_model().get<Geometry>(this->entity);
+const SurfaceContent& UraToplevel::content() {
+  return this->scene_model().get<SurfaceContent>(this->entity);
+}
+
+const SceneNode& UraToplevel::node() {
+  return this->scene_model().get<SceneNode>(this->entity);
 }
 
 const Visibility& UraToplevel::visibility() {
@@ -45,6 +71,8 @@ const Opacity& UraToplevel::opacity() {
 void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   auto server = UraServer::get_instance();
   this->xdg_toplevel = xdg_toplevel;
+  this->cached_title = xdg_toplevel->title ? xdg_toplevel->title : "";
+  this->cached_app_id = xdg_toplevel->app_id ? xdg_toplevel->app_id : "";
   this->entity = server->entities->create_toplevel(this);
 
   auto output = server->view->current_output();
@@ -54,8 +82,7 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
 
   server->view->scene->attach_toplevel(
     this->entity,
-    Transform {},
-    Geometry {},
+    Rect<double> {},
     std::move(tags),
     ZOrder { UraSceneLayer::Normal, 0 }
   );
@@ -134,6 +161,7 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
 void UraToplevel::destroy() {
   auto server = UraServer::get_instance();
   this->destroying = true;
+  this->cancel_transition_timer();
   for (auto* popup : server->seat->text_input->popups) {
     if (popup->parent == this)
       popup->parent = nullptr;
@@ -149,6 +177,62 @@ void UraToplevel::destroy() {
   auto args = flexible::create_table();
   args.set("id", this->id());
   server->lua->emit_hook("window-close", args);
+
+  // Close animations are opt-in. A plugin requests one from the window-close
+  // hook with ura.api.animate_window_close(); the request captured the final
+  // committed content while it was still alive.
+  auto* animations = server->view->animations.get();
+  auto close_target = this->pending_close_target;
+  auto close_bounds = this->pending_close_bounds;
+  auto close_options = this->pending_close_options;
+  auto close_scale = this->pending_close_scale;
+  auto close_opacity = this->pending_close_opacity;
+
+  if (animations && close_target != 0 && close_options.duration.count() > 0) {
+    auto ghost = server->entities->create_scene_node();
+    auto& registry = server->entities->raw();
+    auto& scene = this->scene_model();
+    registry.emplace_or_replace<WindowLayout>(ghost, this->layout());
+    registry.emplace_or_replace<SurfaceContent>(ghost, this->content());
+    auto node = this->node();
+    node.bounds = close_bounds;
+    registry.emplace_or_replace<SceneNode>(ghost, node);
+    registry.emplace_or_replace<Visibility>(
+      ghost,
+      Visibility { .visible = true, .occluded = false }
+    );
+    registry.emplace_or_replace<ZOrder>(ghost, this->z_order());
+    registry.emplace_or_replace<Opacity>(ghost, this->opacity());
+    registry.emplace_or_replace<ShaderEffect>(
+      ghost,
+      ShaderEffect { .effect = this->effect() }
+    );
+    registry.emplace_or_replace<RenderTarget>(
+      ghost,
+      RenderTarget { .resource = close_target }
+    );
+    registry.emplace_or_replace<WindowTransition>(ghost, WindowTransition {});
+    registry.emplace_or_replace<WindowAnimation>(ghost, WindowAnimation {});
+    scene.invalidate();
+
+    auto from = close_bounds;
+    auto to = scale_rect_around_center(from, close_scale);
+    auto options = close_options;
+    options.animate_opacity = true;
+    options.opacity = close_opacity;
+    animations->animate_from(ghost, from, to, options);
+    if (
+      auto* animation = registry.try_get<WindowAnimation>(ghost);
+      animation && animation->running
+    ) {
+      animation->destroy_on_finish = true;
+    } else {
+      server->view->destroy_scene_entity(ghost);
+    }
+  } else if (close_target != 0) {
+    server->view->release_render_target(close_target);
+  }
+  this->pending_close_target = 0;
 
   // Keep the entity resolvable while window-close runs, then invalidate it.
   server->entities->destroy(this->entity);
@@ -173,6 +257,9 @@ void UraToplevel::commit() {
     return;
   }
   this->set_output(output);
+  auto previous_content = this->content();
+  this->update_surface_content_from_surface();
+  auto content_changed = previous_content != this->content();
   // first commit
   if (this->xdg_toplevel->base->initial_commit) {
     if (this->decoration)
@@ -199,10 +286,19 @@ void UraToplevel::commit() {
     ) {
       this->resize(800, 600);
     } else {
-      auto geometry = this->geometry();
-      geometry.width = this->xdg_toplevel->base->current.geometry.width;
-      geometry.height = this->xdg_toplevel->base->current.geometry.height;
-      server->view->scene->set_geometry(this->entity, geometry);
+      auto target = this->layout().target;
+      auto content = this->content();
+      if (!content.empty()) {
+        target.width = static_cast<double>(content.geometry.width);
+        target.height = static_cast<double>(content.geometry.height);
+      } else {
+        target.width =
+          static_cast<double>(this->xdg_toplevel->base->current.geometry.width);
+        target.height = static_cast<double>(
+          this->xdg_toplevel->base->current.geometry.height
+        );
+      }
+      server->view->scene->set_layout_target(this->entity, target);
     }
     if (this->xdg_toplevel->requested.fullscreen) {
       auto geo = output->logical_geometry();
@@ -217,10 +313,44 @@ void UraToplevel::commit() {
     }
     this->prepared = true;
     this->apply_pending_fullscreen_output();
+    this->scene_model().sync_scene_node(this->entity);
 
     auto args = flexible::create_table();
     args.set("id", this->id());
     server->lua->emit_hook("window-new", args);
+  }
+
+  auto started_transition = this->check_transition_commit();
+  if (content_changed && !started_transition && this->prepared) {
+    auto* transition =
+      this->scene_model().try_get<WindowTransition>(this->entity);
+    auto waiting = transition
+      && transition->phase == WindowTransitionPhase::WaitingForCommit;
+    if (!waiting) {
+      auto* animation =
+        this->scene_model().try_get<WindowAnimation>(this->entity);
+      auto* animations = server->view->animations.get();
+      if (animation && animation->running && animations) {
+        auto now = AnimationClock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+          now - animation->start
+        );
+        auto remaining = animation->options.duration - elapsed;
+        if (remaining < std::chrono::milliseconds::zero())
+          remaining = std::chrono::milliseconds::zero();
+        auto options = animation->options;
+        options.duration = remaining;
+        animations->animate_from(
+          this->entity,
+          animations->sample(this->entity, now),
+          this->layout_target_rect(),
+          options,
+          now
+        );
+      } else {
+        this->scene_model().sync_scene_node(this->entity);
+      }
+    }
   }
 
   // update opacity
@@ -312,14 +442,18 @@ void UraToplevel::activate() {
 }
 
 bool UraToplevel::move(int x, int y) {
-  auto transform = this->transform();
-  if (x == transform.x && y == transform.y)
+  return this->move(x, y, AnimationOptions {});
+}
+
+bool UraToplevel::move(int x, int y, const AnimationOptions& options) {
+  auto target = this->layout().target;
+  if (x == target.x && y == target.y)
     return false;
 
   auto old_output = this->prepared ? this->output() : nullptr;
-  transform.x = x;
-  transform.y = y;
-  this->scene_model().set_transform(this->entity, transform);
+  target.x = static_cast<double>(x);
+  target.y = static_cast<double>(y);
+  this->scene_model().set_layout_target(this->entity, target);
   if (this->prepared) {
     auto new_output = this->output();
     this->set_output(new_output);
@@ -336,6 +470,42 @@ bool UraToplevel::move(int x, int y) {
   }
 
   auto server = UraServer::get_instance();
+  auto* scene = &this->scene_model();
+  if (this->prepared && this->visibility().visible) {
+    auto* transition = scene->try_get<WindowTransition>(this->entity);
+    if (
+      transition && transition->phase == WindowTransitionPhase::WaitingForCommit
+    ) {
+      // A resize is waiting for the client. Keep the old visual state but
+      // remember the new layout anchor; the FLIP animation will use it once
+      // the matching surface commit arrives.
+      transition->requested_target.x = static_cast<double>(x);
+      transition->requested_target.y = static_cast<double>(y);
+
+      // Layout plugins usually call resize() and move() together. If only the
+      // move rule is animated, the resize transition must inherit its timing;
+      // otherwise the commit would complete with a zero-duration snap.
+      transition->inherit(options);
+    } else if (auto* animations = server->view->animations.get()) {
+      animations->settle(this->entity);
+      auto from = scene->node_bounds(this->entity);
+      auto content = this->content();
+      auto to = Rect<double> {
+        .x = static_cast<double>(x),
+        .y = static_cast<double>(y),
+        .width = static_cast<double>(content.geometry.width),
+        .height = static_cast<double>(content.geometry.height),
+      };
+      if (to.empty()) {
+        scene->sync_scene_node(this->entity);
+      } else {
+        animations->animate_from(this->entity, from, to, options);
+      }
+    }
+  } else {
+    scene->sync_scene_node(this->entity);
+  }
+
   auto args = flexible::create_table();
   args.set("id", this->id());
   server->lua->emit_hook("window-move", args);
@@ -344,6 +514,14 @@ bool UraToplevel::move(int x, int y) {
 }
 
 bool UraToplevel::resize(int width, int height) {
+  return this->resize(width, height, AnimationOptions {});
+}
+
+bool UraToplevel::resize(
+  int width,
+  int height,
+  const AnimationOptions& options
+) {
   if (!this->xdg_toplevel->base->initialized)
     return false;
 
@@ -363,20 +541,192 @@ bool UraToplevel::resize(int width, int height) {
     height = std::max(height, this->xdg_toplevel->current.min_height);
   }
 
-  auto geometry = this->geometry();
-  if (width == geometry.width && height == geometry.height)
+  auto target = this->layout().target;
+  if (
+    width == static_cast<int>(target.width)
+    && height == static_cast<int>(target.height)
+  )
     return false;
 
-  geometry.width = width;
-  geometry.height = height;
-  this->scene_model().set_geometry(this->entity, geometry);
-  wlr_xdg_toplevel_set_size(this->xdg_toplevel, width, height);
-
   auto server = UraServer::get_instance();
+  auto* scene = &this->scene_model();
+  auto* transition = scene->try_get<WindowTransition>(this->entity);
+  auto previous_request =
+    transition ? transition->requested_target : Rect<double> {};
+  auto was_waiting =
+    transition && transition->phase == WindowTransitionPhase::WaitingForCommit;
+  auto same_pending_size = was_waiting
+    && static_cast<int>(previous_request.width) == width
+    && static_cast<int>(previous_request.height) == height;
+
+  target.width = static_cast<double>(width);
+  target.height = static_cast<double>(height);
+  scene->set_layout_target(this->entity, target);
+
+  if (!this->prepared || !this->visibility().visible) {
+    this->cancel_transition_timer();
+    if (transition) {
+      transition->phase = WindowTransitionPhase::Idle;
+      transition->generation++;
+    }
+    wlr_xdg_toplevel_set_size(this->xdg_toplevel, width, height);
+    scene->sync_scene_node(this->entity);
+
+    auto args = flexible::create_table();
+    args.set("id", this->id());
+    server->lua->emit_hook("window-resize", args);
+    return true;
+  }
+
+  if (!transition)
+    transition = &scene->ensure_window_transition(this->entity);
+
+  auto* animations = server->view->animations.get();
+  if (animations)
+    animations->settle(this->entity);
+
+  auto from = scene->node_bounds(this->entity);
+  auto layout = this->layout();
+  auto content = this->content();
+
+  transition->generation++;
+  transition->from = from;
+  transition->resolved_target = {};
+  transition->requested_target = Rect<double> {
+    .x = layout.target.x,
+    .y = layout.target.y,
+    .width = static_cast<double>(width),
+    .height = static_cast<double>(height),
+  };
+  transition->options = options;
+
+  auto size_matches_content =
+    content.geometry.width == width && content.geometry.height == height;
+  auto needs_configure =
+    !size_matches_content || (was_waiting && !same_pending_size);
+
+  if (!needs_configure) {
+    transition->phase = WindowTransitionPhase::Idle;
+    transition->resolved_target = Rect<double> {
+      .x = layout.target.x,
+      .y = layout.target.y,
+      .width = static_cast<double>(content.geometry.width),
+      .height = static_cast<double>(content.geometry.height),
+    };
+    this->cancel_transition_timer();
+    if (animations) {
+      animations->animate_from(
+        this->entity,
+        from,
+        transition->resolved_target,
+        options
+      );
+    }
+  } else {
+    transition->phase = WindowTransitionPhase::WaitingForCommit;
+    if (!same_pending_size) {
+      transition->base_configure_serial =
+        this->xdg_toplevel->base->current.configure_serial;
+      transition->base_seq = this->xdg_toplevel->base->surface->current.seq;
+      transition->configure_serial =
+        wlr_xdg_toplevel_set_size(this->xdg_toplevel, width, height);
+    }
+    transition->deadline =
+      AnimationClock::now() + std::chrono::milliseconds(250);
+    this->schedule_transition_timeout(transition->generation);
+  }
+
   auto args = flexible::create_table();
   args.set("id", this->id());
   server->lua->emit_hook("window-resize", args);
   return true;
+}
+
+void UraToplevel::animate_opacity(
+  float opacity,
+  const AnimationOptions& options
+) {
+  auto opacity_value = std::clamp(opacity, 0.f, 1.f);
+  auto server = UraServer::get_instance();
+  auto* scene = &this->scene_model();
+  if (!this->prepared || !this->visibility().visible) {
+    scene->set_opacity(this->entity, opacity_value);
+    return;
+  }
+
+  auto* animations = server->view->animations.get();
+  if (!animations) {
+    scene->set_opacity(this->entity, opacity_value);
+    return;
+  }
+
+  auto animation_options = options;
+  animation_options.animate_opacity = true;
+  animation_options.opacity = opacity_value;
+
+  // Bounds stay at their current value; only Opacity is interpolated. The
+  // animation system keeps the opacity transition alive if a layout change
+  // retargets the bounds animation in the meantime.
+  auto bounds = scene->node_bounds(this->entity);
+  animations->animate_from(this->entity, bounds, bounds, animation_options);
+}
+
+void UraToplevel::animate_open(
+  const AnimationOptions& options,
+  float from_scale,
+  float from_opacity,
+  float to_scale,
+  float to_opacity
+) {
+  auto server = UraServer::get_instance();
+  auto* animations = server->view->animations.get();
+  auto* scene = &this->scene_model();
+  if (!animations || !this->prepared || !this->visibility().visible)
+    return;
+
+  auto base = scene->node_bounds(this->entity);
+  if (base.empty())
+    return;
+
+  auto from = scale_rect_around_center(base, from_scale);
+  auto to = scale_rect_around_center(base, to_scale);
+  auto animation_options = options;
+  animation_options.animate_opacity = true;
+  animation_options.opacity = std::clamp(to_opacity, 0.f, 1.f);
+
+  scene->set_opacity(this->entity, std::clamp(from_opacity, 0.f, 1.f));
+  animations->animate_from(this->entity, from, to, animation_options);
+}
+
+void UraToplevel::request_close_animation(
+  const AnimationOptions& options,
+  float to_scale,
+  float to_opacity
+) {
+  if (
+    !this->prepared || !this->xdg_toplevel->base->surface
+    || options.duration.count() <= 0
+  )
+    return;
+
+  auto server = UraServer::get_instance();
+  if (this->pending_close_target != 0)
+    server->view->release_render_target(this->pending_close_target);
+
+  auto content = this->content();
+  auto handle = server->view->capture_surface(
+    this->xdg_toplevel->base->surface,
+    content.geometry.x,
+    content.geometry.y
+  );
+  if (handle == 0)
+    return;
+
+  this->pending_close_target = handle;
+  this->pending_close_bounds = this->node().bounds;
+  this->pending_close_options = options;
+  this->pending_close_scale = to_scale;
+  this->pending_close_opacity = std::clamp(to_opacity, 0.f, 1.f);
 }
 
 void UraToplevel::close() {
@@ -400,6 +750,14 @@ void UraToplevel::map() {
   server->lua->emit_hook("pre-window-map", args);
 
   this->scene_model().set_visible(this->entity, true);
+  this->scene_model().sync_scene_node(this->entity);
+  if (this->pending_close_target != 0) {
+    server->view->release_render_target(this->pending_close_target);
+    this->pending_close_target = 0;
+    this->pending_close_options = {};
+    this->pending_close_bounds = {};
+  }
+
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
 
   server->lua->emit_hook("window-map", args);
@@ -419,25 +777,43 @@ void UraToplevel::unmap() {
   args.set("id", this->id());
   server->lua->emit_hook("pre-window-unmap", args);
 
+  // Hidden windows must not keep a pending commit transition or a running
+  // layout animation alive. They are re-synchronized on the next map/commit.
+  this->cancel_transition_timer();
+  if (
+    auto* transition =
+      this->scene_model().try_get<WindowTransition>(this->entity)
+  ) {
+    transition->phase = WindowTransitionPhase::Idle;
+    transition->generation++;
+  }
+  if (auto* animations = server->view->animations.get())
+    animations->cancel(this->entity);
+
   this->scene_model().set_visible(this->entity, false);
   wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
 
   if (server->seat->focused_toplevel() == this) {
     server->seat->unfocus();
+    // The client may unmap as part of surface destruction before the
+    // xdg_toplevel destroy event. Move keyboard focus immediately so a
+    // closing/hidden window does not leave the seat without a focus.
+    server->seat->focus_lru();
   }
 
   server->lua->emit_hook("window-unmap", args);
 }
 
 std::string UraToplevel::title() {
-  return this->xdg_toplevel->title ? this->xdg_toplevel->title : "";
+  return this->cached_title;
 }
 
 std::string UraToplevel::app_id() {
-  return this->xdg_toplevel->app_id ? this->xdg_toplevel->app_id : "";
+  return this->cached_app_id;
 }
 
 void UraToplevel::set_title(std::string title) {
+  this->cached_title = title;
   wlr_foreign_toplevel_handle_v1_set_title(this->foreign_handle, title.data());
   auto server = UraServer::get_instance();
   auto args = flexible::create_table();
@@ -446,6 +822,7 @@ void UraToplevel::set_title(std::string title) {
 }
 
 void UraToplevel::set_app_id(std::string app_id) {
+  this->cached_app_id = app_id;
   wlr_foreign_toplevel_handle_v1_set_app_id(
     this->foreign_handle,
     app_id.data()
@@ -472,16 +849,143 @@ void UraToplevel::center() {
   if (!output)
     return;
   auto area = this->output()->usable_area;
-  auto transform = this->transform();
-  auto geometry = this->geometry();
-  auto geo = Vec4<int> {
-    transform.x,
-    transform.y,
-    geometry.width,
-    geometry.height,
+  auto target = this->layout().target;
+  auto geo = Rect<int> {
+    static_cast<int>(std::lround(target.x)),
+    static_cast<int>(std::lround(target.y)),
+    static_cast<int>(std::lround(target.width)),
+    static_cast<int>(std::lround(target.height)),
   };
   geo.center(area);
   this->move(geo.x, geo.y);
+}
+
+Rect<double> UraToplevel::layout_target_rect() {
+  return this->layout().resolve(this->content());
+}
+
+void UraToplevel::update_surface_content_from_surface() {
+  auto* base = this->xdg_toplevel->base;
+  auto geometry = base->geometry;
+  if (geometry.width <= 0 || geometry.height <= 0)
+    geometry = base->current.geometry;
+  if (geometry.width <= 0 || geometry.height <= 0) {
+    geometry.x = 0;
+    geometry.y = 0;
+    geometry.width = base->surface->current.width;
+    geometry.height = base->surface->current.height;
+  }
+  if (geometry.width <= 0 || geometry.height <= 0)
+    return;
+
+  this->scene_model().set_surface_content(
+    this->entity,
+    SurfaceContent {
+      .geometry =
+        Rect<int> {
+          .x = geometry.x,
+          .y = geometry.y,
+          .width = geometry.width,
+          .height = geometry.height,
+        },
+    }
+  );
+}
+
+bool UraToplevel::check_transition_commit() {
+  auto* transition =
+    this->scene_model().try_get<WindowTransition>(this->entity);
+  if (
+    !transition || transition->phase != WindowTransitionPhase::WaitingForCommit
+    || !this->prepared
+  )
+    return false;
+
+  auto* base = this->xdg_toplevel->base;
+  auto acked = base->current.configure_serial;
+  auto requested = transition->configure_serial;
+  if (acked == 0 || requested == 0)
+    return false;
+
+  // Accept the requested configure or any later one that includes the
+  // requested size. Serial arithmetic is modular, so compare as signed.
+  auto delta = static_cast<int32_t>(acked - requested);
+  if (delta < 0)
+    return false;
+  if (acked == transition->base_configure_serial)
+    return false;
+
+  // Acknowledgement alone is not enough: the matching buffer commit must have
+  // happened too. This is why the callback is a surface commit listener.
+  if (base->surface->current.seq == transition->base_seq)
+    return false;
+
+  this->start_window_animation(false);
+  return true;
+}
+
+void UraToplevel::start_window_animation(bool timed_out) {
+  (void)timed_out;
+  auto* transition =
+    this->scene_model().try_get<WindowTransition>(this->entity);
+  if (
+    !transition || transition->phase != WindowTransitionPhase::WaitingForCommit
+  )
+    return;
+
+  auto target = this->layout_target_rect();
+  if (target.empty())
+    target = transition->requested_target;
+
+  transition->resolved_target = target;
+  transition->phase = WindowTransitionPhase::Animating;
+  this->cancel_transition_timer();
+
+  auto* server = UraServer::get_instance();
+  if (auto* animations = server->view->animations.get()) {
+    animations->animate_from(
+      this->entity,
+      transition->from,
+      target,
+      transition->options
+    );
+  }
+}
+
+void UraToplevel::cancel_transition_timer() {
+  if (this->transition_timer < 0)
+    return;
+  auto* server = UraServer::get_instance();
+  if (server->dispatcher)
+    server->dispatcher->clear_timer(this->transition_timer);
+  this->transition_timer = -1;
+}
+
+void UraToplevel::schedule_transition_timeout(uint64_t generation) {
+  this->cancel_transition_timer();
+  auto* server = UraServer::get_instance();
+  if (!server->dispatcher)
+    return;
+
+  this->transition_timer = server->dispatcher->set_timeout(
+    [this, generation]() {
+      this->transition_timer = -1;
+      if (this->entity == entt::null)
+        return;
+      auto* transition =
+        this->scene_model().try_get<WindowTransition>(this->entity);
+      if (
+        !transition
+        || transition->phase != WindowTransitionPhase::WaitingForCommit
+        || transition->generation != generation
+      )
+        return;
+      // Fall back to the last valid content geometry. This moves the window
+      // without stretching stale content when a client never answers.
+      this->start_window_animation(true);
+    },
+    std::chrono::milliseconds(250)
+  );
 }
 
 void UraToplevel::dismiss_popups() {
@@ -527,13 +1031,12 @@ void UraToplevel::apply_fullscreen_output(
   if (geometry.width <= 0 || geometry.height <= 0)
     return;
   if (save_restore && !this->fullscreen_output_restore_valid) {
-    auto transform = this->transform();
-    auto geometry = this->geometry();
-    this->fullscreen_output_restore_geometry = Vec4<int> {
-      transform.x,
-      transform.y,
-      geometry.width,
-      geometry.height,
+    auto target = this->layout().target;
+    this->fullscreen_output_restore_geometry = Rect<int> {
+      static_cast<int>(std::lround(target.x)),
+      static_cast<int>(std::lround(target.y)),
+      static_cast<int>(std::lround(target.width)),
+      static_cast<int>(std::lround(target.height)),
     };
     auto tags = this->tags().values;
     this->fullscreen_output_restore_tags =
@@ -600,20 +1103,20 @@ bool UraToplevel::mapped() {
 
 UraOutput* UraToplevel::output() {
   auto server = UraServer::get_instance();
-  auto transform = this->transform();
-  auto geometry = this->geometry();
-  if (geometry.width <= 0 || geometry.height <= 0)
+  auto target = this->layout().target;
+  if (target.width <= 0 || target.height <= 0)
     return server->view->current_output();
 
-  auto output = wlr_output_layout_output_at(
-    server->output_layout,
-    transform.x,
-    transform.y
-  );
+  auto x = static_cast<int>(std::lround(target.x));
+  auto y = static_cast<int>(std::lround(target.y));
+  auto output = wlr_output_layout_output_at(server->output_layout, x, y);
   if (!output) {
-    auto x = transform.x + geometry.width / 2;
-    auto y = transform.y + geometry.height / 2;
-    output = wlr_output_layout_output_at(server->output_layout, x, y);
+    auto center_x =
+      static_cast<int>(std::lround(target.x + target.width / 2.0));
+    auto center_y =
+      static_cast<int>(std::lround(target.y + target.height / 2.0));
+    output =
+      wlr_output_layout_output_at(server->output_layout, center_x, center_y);
   }
   if (output)
     return UraOutput::from(output);
@@ -705,6 +1208,14 @@ bool UraToplevel::is_tag_matched() {
 
 void UraToplevel::set_opacity(float opacity) {
   this->scene_model().set_opacity(this->entity, opacity);
+}
+
+const Effect& UraToplevel::effect() {
+  return this->scene_model().get<ShaderEffect>(this->entity).effect;
+}
+
+void UraToplevel::set_effect(const Effect& effect) {
+  this->scene_model().set_effect(this->entity, effect);
 }
 
 unsigned int UraToplevel::border_width() {

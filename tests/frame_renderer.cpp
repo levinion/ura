@@ -4,6 +4,7 @@
 #include "ura/render/raylib/raylib_renderer.hpp"
 
 extern "C" {
+#include <drm_fourcc.h>
 #include <wlr/backend/headless.h>
 #include <wlr/render/drm_syncobj.h>
 }
@@ -91,6 +92,76 @@ int main() {
     if (timeline)
       plan.render_point = 2;
     ok = ura::render_frame(renderer, plan);
+  }
+
+  // A frozen SceneNode has no wlr_surface. Rendering must still sample its
+  // renderer-owned texture and skip surface-only presentation/frame callbacks.
+  if (ok) {
+    uint32_t pixels[16] = {};
+    for (auto& pixel : pixels) pixel = 0xFFFF0000u;
+    auto* frozen = wlr_texture_from_pixels(
+      renderer,
+      DRM_FORMAT_ARGB8888,
+      4 * sizeof(uint32_t),
+      4,
+      4,
+      pixels
+    );
+    if (!frozen)
+      return 1;
+
+    plan.surfaces.clear();
+    plan.rects.clear();
+    plan.operations.clear();
+    plan.damage.clear();
+    plan.full_redraw = true;
+    plan.surfaces.push_back(
+      ura::FrameSurface {
+        .surface = nullptr,
+        .texture = frozen,
+        .src_box = { 0, 0, 4, 4 },
+        .dst_box = { 40, 40, 80, 80 },
+        .transform = WL_OUTPUT_TRANSFORM_NORMAL,
+        .content_id = 1,
+        .effect = {},
+      }
+    );
+    plan.operations.push_back(
+      ura::FrameOperation {
+        .kind = ura::FrameOperationKind::Surface,
+        .index = 0,
+      }
+    );
+    if (timeline)
+      plan.render_point = 3;
+    ok = ura::render_frame(renderer, plan);
+
+    // Exercise the offscreen multi-pass path: copy, horizontal blur, vertical
+    // blur, then composite.
+    if (ok) {
+      plan.surfaces[0].effect = ura::Effect {
+        .type = ura::EffectType::Blur,
+        .radius = 4.f,
+      };
+      plan.full_redraw = true;
+      if (timeline)
+        plan.render_point = 4;
+      ok = ura::render_frame(renderer, plan);
+    }
+
+    // Tint uses the same target/copy pipeline without the blur passes.
+    if (ok) {
+      plan.surfaces[0].effect = ura::Effect {
+        .type = ura::EffectType::Tint,
+        .color = { 0.5f, 0.8f, 1.0f, 0.75f },
+      };
+      plan.full_redraw = true;
+      if (timeline)
+        plan.render_point = 5;
+      ok = ura::render_frame(renderer, plan);
+    }
+
+    wlr_texture_destroy(frozen);
   }
 
   if (timeline) {

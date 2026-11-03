@@ -1,5 +1,17 @@
 require("builtin.layout").setup()
 
+require("builtin.animation").setup()
+
+ura.animation.define("window-move", {
+  duration = 200,
+  easing = "out_cubic",
+})
+
+ura.animation.define("window-resize", {
+  duration = 200,
+  easing = "out_cubic",
+})
+
 ura.keymap.set({ "super+t" }, function()
   ura.api.spawn("foot")
 end)

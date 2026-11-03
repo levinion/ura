@@ -77,4 +77,17 @@ function M.emit(name, args)
   M._hooks[name](args)
 end
 
+--- Collect every hook result in priority order. Used by animation policy
+--- resolution, which needs the returned override tables rather than the final
+--- hook table itself.
+---@param name string
+---@param args table|nil
+---@return table
+function M.collect(name, args)
+  if not M._hooks[name] then
+    return {}
+  end
+  return M._hooks[name](args) or {}
+end
+
 return M

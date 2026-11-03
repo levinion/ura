@@ -2,6 +2,7 @@
 
 #include "ura/ura.hpp"
 #include "ura/util/vec.hpp"
+#include "ura/util/rect.hpp"
 
 namespace ura {
 
@@ -11,7 +12,7 @@ class UraInputMethodPopup {
 public:
   wlr_input_popup_surface_v2* popup_surface;
   UraToplevel* parent = nullptr;
-  Vec4<int> geometry = { 0, 0, 0, 0 };
+  Rect<int> geometry = { 0, 0, 0, 0 };
   void constrain(wlr_text_input_v3* text_input);
 };
 

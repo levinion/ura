@@ -1,4 +1,6 @@
 #include "ura/core/server.hpp"
+
+#include <cmath>
 #include "ura/seat/text_input.hpp"
 #include "ura/view/client.hpp"
 #include "ura/view/view.hpp"
@@ -12,7 +14,7 @@ void UraInputMethodPopup::constrain(wlr_text_input_v3* text_input) {
   auto parent = client.transform<UraToplevel>();
   auto cursor_rect = text_input->current.cursor_rectangle;
 
-  auto popup_rect = Vec4<int>();
+  auto popup_rect = Rect<int>();
 
   // transform local coordination to global coordination
   popup_rect.x = cursor_rect.x;
@@ -25,13 +27,15 @@ void UraInputMethodPopup::constrain(wlr_text_input_v3* text_input) {
   if (!output)
     return;
   auto geo = output->logical_geometry();
-  auto parent_transform = parent->transform();
+  auto parent_bounds = parent->node().bounds;
+  auto parent_x = static_cast<int>(std::lround(parent_bounds.x));
+  auto parent_y = static_cast<int>(std::lround(parent_bounds.y));
   auto avaliable_right =
-    geo.x + geo.width - (parent_transform.x + popup_rect.x + popup_rect.width);
-  auto avaliable_bottom = geo.y + geo.height
-    - (parent_transform.y + popup_rect.y + popup_rect.height);
+    geo.x + geo.width - (parent_x + popup_rect.x + popup_rect.width);
+  auto avaliable_bottom =
+    geo.y + geo.height - (parent_y + popup_rect.y + popup_rect.height);
   if (avaliable_right < 0)
-    popup_rect.x = geo.x + geo.width - popup_rect.width - parent_transform.x;
+    popup_rect.x = geo.x + geo.width - popup_rect.width - parent_x;
   if (avaliable_bottom < 0)
     popup_rect.y -= cursor_rect.height + popup_rect.height;
 

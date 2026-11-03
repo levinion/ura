@@ -28,11 +28,17 @@ This page covers the low-level functions installed under `ura.api` and the Lua h
 | `get_all_windows()` | Array of current window IDs. |
 | `get_window_output(id)` | Output ID for the window, or `nil`. |
 | `get_window_app_id(id)` / `get_window_title(id)` | App ID or title, or `nil` for an invalid ID. |
-| `get_window_geometry(id)` | `{ x, y, width, height }`, or `nil` for an invalid ID. Coordinates are in the compositor's logical layout. |
+| `get_window_geometry(id)` | `{ x, y, width, height }`, or `nil` for an invalid ID. This is the layout target in the compositor's logical layout. |
+| `get_window_visual_geometry(id)` | `{ x, y, width, height }`, or `nil` for an invalid ID. This is the current `SceneNode.bounds` rectangle visible on screen, including an in-flight animation. |
 | `get_window_z_index(id)` / `set_window_z_index(id, z)` | Read or change the window's scene-layer index. |
 | `focus_window(id)` / `activate_window(id)` / `close_window(id)` | Focus, activate, or request close for a window. Invalid IDs are ignored. |
-| `move_window(id, x, y)` | Move the window to logical coordinates. |
-| `resize_window(id, width, height)` | Set the window's size. |
+| `move_window(id, x, y)` | Move the window to logical coordinates immediately. |
+| `animate_window_move(id, x, y, duration, easing)` | Animate from the current visible rectangle to the target position. `duration` is in milliseconds. |
+| `resize_window(id, width, height)` | Set the layout target size. The compositor waits for a matching client commit before changing the visible size. |
+| `animate_window_resize(id, width, height, duration, easing)` | Send one final resize configure, wait for the matching surface commit, then FLIP-animate from the old visible rectangle to the committed content. |
+| `animate_window_opacity(id, opacity, duration, easing)` | Animate the window's opacity without moving or resizing it. `easing` may be a built-in name or a LUT table. |
+| `animate_window_open(id, duration, easing, options)` | Optional low-level opening animation. `options` may set `from_scale`, `from_opacity`, `to_scale`, and `to_opacity`. |
+| `animate_window_close(id, duration, easing, options)` | Capture the current surface tree and run a detached closing animation. `options` may set `to_scale` and `to_opacity`. |
 | `is_window_fullscreen(id)` / `is_window_fullscreen_requested(id)` | Current fullscreen state or the client's requested state; `nil` for an invalid ID. |
 | `set_window_fullscreen(id, enabled)` | Set fullscreen state. |
 | `is_window_maximized(id)` / `is_window_maximized_requested(id)` | Current maximized state or the client's requested state. |
@@ -42,6 +48,7 @@ This page covers the low-level functions installed under `ura.api` and the Lua h
 | `get_window_lru(id)` | Monotonic focus-order value, or `nil` for an invalid ID. It is useful for ordering, not as a timestamp. |
 | `get_window_opacity(id)` / `set_window_opacity(id, opacity)` | Read or set opacity in the range `[0, 1]`. Out-of-range values and invalid IDs are ignored by the setter. |
 | `get_window_border_color(id)` / `set_window_border_color(id, color)` | Read or set an `#RRGGBB` or `#RRGGBBAA` border color. |
+| `set_window_effect(id, spec)` / `clear_window_effect(id)` | Set or clear a multi-pass window effect (`blur`, `tint`, `mask`). |
 | `get_window_tags(id)` / `set_window_tags(id, tags)` | Read or replace the window's array of string tags. |
 
 ### Outputs

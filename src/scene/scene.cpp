@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "ura/scene/layer.hpp"
+
 namespace ura {
 
 UraScene::UraScene(UraEntityRegistry& entities) : entities(entities) {
@@ -14,8 +16,7 @@ UraScene::~UraScene() {
 
 void UraScene::attach_toplevel(
   entt::entity entity,
-  Transform transform,
-  Geometry geometry,
+  Rect<double> target,
   WindowTags tags,
   ZOrder z_order
 ) {
@@ -26,12 +27,26 @@ void UraScene::attach_toplevel(
   if (z_order.order == 0)
     z_order.order = this->next_order++;
 
-  registry.emplace_or_replace<Transform>(entity, transform);
-  registry.emplace_or_replace<Geometry>(entity, geometry);
+  WindowLayout layout { .target = target };
+  SurfaceContent content {
+    .geometry =
+      Rect<int> {
+        .width = static_cast<int>(target.width),
+        .height = static_cast<int>(target.height),
+      },
+  };
+  SceneNode node { .bounds = layout.resolve(content) };
+
+  registry.emplace_or_replace<WindowLayout>(entity, layout);
+  registry.emplace_or_replace<SurfaceContent>(entity, content);
+  registry.emplace_or_replace<SceneNode>(entity, node);
   registry.emplace_or_replace<Visibility>(entity, Visibility {});
   registry.emplace_or_replace<ZOrder>(entity, z_order);
   registry.emplace_or_replace<Opacity>(entity, Opacity {});
   registry.emplace_or_replace<WindowTags>(entity, std::move(tags));
+  registry.emplace_or_replace<WindowTransition>(entity, WindowTransition {});
+  registry.emplace_or_replace<WindowAnimation>(entity, WindowAnimation {});
+  registry.emplace_or_replace<ShaderEffect>(entity, ShaderEffect {});
   registry.emplace_or_replace<DirtyState>(
     entity,
     DirtyState {
@@ -45,8 +60,7 @@ void UraScene::attach_toplevel(
 
 void UraScene::attach_layer_shell(
   entt::entity entity,
-  Transform transform,
-  Geometry geometry,
+  Rect<double> target,
   ZOrder z_order
 ) {
   auto& registry = this->entities.raw();
@@ -56,10 +70,55 @@ void UraScene::attach_layer_shell(
   if (z_order.order == 0)
     z_order.order = this->next_order++;
 
-  registry.emplace_or_replace<Transform>(entity, transform);
-  registry.emplace_or_replace<Geometry>(entity, geometry);
+  WindowLayout layout { .target = target };
+  SurfaceContent content {
+    .geometry =
+      Rect<int> {
+        .width = static_cast<int>(target.width),
+        .height = static_cast<int>(target.height),
+      },
+  };
+  SceneNode node { .bounds = layout.resolve(content) };
+
+  registry.emplace_or_replace<WindowLayout>(entity, layout);
+  registry.emplace_or_replace<SurfaceContent>(entity, content);
+  registry.emplace_or_replace<SceneNode>(entity, node);
   registry.emplace_or_replace<Visibility>(entity, Visibility {});
   registry.emplace_or_replace<ZOrder>(entity, z_order);
+  registry.emplace_or_replace<Opacity>(entity, Opacity {});
+  registry.emplace_or_replace<WindowTransition>(entity, WindowTransition {});
+  registry.emplace_or_replace<WindowAnimation>(entity, WindowAnimation {});
+  registry.emplace_or_replace<ShaderEffect>(entity, ShaderEffect {});
+  registry.emplace_or_replace<DirtyState>(
+    entity,
+    DirtyState {
+      .epoch = this->current_epoch + 1,
+      .flags = static_cast<uint32_t>(DirtyFlag::All),
+    }
+  );
+  ++this->current_epoch;
+  this->notify_dirty();
+}
+
+void UraScene::attach_session_lock(entt::entity entity, Rect<double> bounds) {
+  auto& registry = this->entities.raw();
+  if (!registry.valid(entity))
+    return;
+
+  registry.emplace_or_replace<WindowLayout>(
+    entity,
+    WindowLayout { .target = bounds }
+  );
+  registry.emplace_or_replace<SurfaceContent>(entity, SurfaceContent {});
+  registry.emplace_or_replace<SceneNode>(
+    entity,
+    SceneNode { .bounds = bounds }
+  );
+  registry.emplace_or_replace<Visibility>(entity, Visibility {});
+  registry.emplace_or_replace<ZOrder>(
+    entity,
+    ZOrder { UraSceneLayer::LockScreen, this->next_order++ }
+  );
   registry.emplace_or_replace<Opacity>(entity, Opacity {});
   registry.emplace_or_replace<DirtyState>(
     entity,
@@ -72,20 +131,72 @@ void UraScene::attach_layer_shell(
   this->notify_dirty();
 }
 
-void UraScene::set_transform(entt::entity entity, const Transform& transform) {
-  auto* current = this->try_get<Transform>(entity);
-  if (!current || *current == transform)
+void UraScene::set_layout_target(
+  entt::entity entity,
+  const Rect<double>& target
+) {
+  auto* current = this->try_get<WindowLayout>(entity);
+  if (!current || current->target == target)
     return;
-  *current = transform;
-  this->touch(entity, DirtyFlag::Transform);
+  current->target = target;
+  this->touch(entity, DirtyFlag::Layout);
 }
 
-void UraScene::set_geometry(entt::entity entity, const Geometry& geometry) {
-  auto* current = this->try_get<Geometry>(entity);
-  if (!current || *current == geometry)
+void UraScene::set_surface_content(
+  entt::entity entity,
+  const SurfaceContent& content
+) {
+  auto* current = this->try_get<SurfaceContent>(entity);
+  if (!current || *current == content)
     return;
-  *current = geometry;
-  this->touch(entity, DirtyFlag::Geometry);
+  *current = content;
+  this->touch(entity, DirtyFlag::Content);
+}
+
+void UraScene::set_node_bounds(
+  entt::entity entity,
+  const Rect<double>& bounds
+) {
+  auto* current = this->try_get<SceneNode>(entity);
+  if (!current || current->bounds == bounds)
+    return;
+  auto previous = current->bounds;
+  current->bounds = bounds;
+  this->touch(entity, DirtyFlag::Visual, false);
+  this->notify_visual_dirty(entity, previous, bounds);
+}
+
+void UraScene::sync_scene_node(entt::entity entity) {
+  auto* layout = this->try_get<WindowLayout>(entity);
+  auto* content = this->try_get<SurfaceContent>(entity);
+  if (!layout || !content)
+    return;
+  this->set_node_bounds(entity, layout->resolve(*content));
+}
+
+Rect<double> UraScene::window_bounds(entt::entity entity) const {
+  auto* layout = this->try_get<WindowLayout>(entity);
+  auto* content = this->try_get<SurfaceContent>(entity);
+  if (!layout || !content)
+    return {};
+  return layout->resolve(*content);
+}
+
+Rect<double> UraScene::node_bounds(entt::entity entity) const {
+  auto* node = this->try_get<SceneNode>(entity);
+  return node ? node->bounds : Rect<double> {};
+}
+
+WindowTransition& UraScene::ensure_window_transition(entt::entity entity) {
+  if (auto* transition = this->try_get<WindowTransition>(entity))
+    return *transition;
+  return this->entities.raw().emplace<WindowTransition>(entity);
+}
+
+WindowAnimation& UraScene::ensure_window_animation(entt::entity entity) {
+  if (auto* animation = this->try_get<WindowAnimation>(entity))
+    return *animation;
+  return this->entities.raw().emplace<WindowAnimation>(entity);
 }
 
 void UraScene::set_layer(entt::entity entity, int layer) {
@@ -111,8 +222,34 @@ void UraScene::set_opacity(entt::entity entity, float opacity) {
   auto next = std::clamp(opacity, 0.f, 1.f);
   if (current->value == next)
     return;
+  auto* node = this->try_get<SceneNode>(entity);
+  auto bounds = node ? node->bounds : Rect<double> {};
   current->value = next;
-  this->touch(entity, DirtyFlag::Opacity);
+  if (!node) {
+    this->touch(entity, DirtyFlag::Opacity);
+    return;
+  }
+  // Opacity only affects the node's own rectangle. Treat it like a visual
+  // change so animation ticks damage the relevant outputs instead of all
+  // outputs.
+  this->touch(entity, DirtyFlag::Opacity, false);
+  this->notify_visual_dirty(entity, bounds, bounds);
+}
+
+void UraScene::set_effect(entt::entity entity, const Effect& effect) {
+  auto* current = this->try_get<ShaderEffect>(entity);
+  if (!current)
+    return;
+  if (current->effect == effect)
+    return;
+  auto* node = this->try_get<SceneNode>(entity);
+  auto bounds = node ? node->bounds : Rect<double> {};
+  current->effect = effect;
+  this->touch(entity, DirtyFlag::Effect, false);
+  if (node)
+    this->notify_visual_dirty(entity, bounds, bounds);
+  else
+    this->notify_dirty();
 }
 
 void UraScene::set_tags(entt::entity entity, WindowTags&& tags) {
@@ -139,6 +276,13 @@ void UraScene::set_dirty_callback(std::function<void()> callback) {
   this->dirty_callback = std::move(callback);
 }
 
+void UraScene::set_visual_dirty_callback(
+  std::function<void(entt::entity, const Rect<double>&, const Rect<double>&)>
+    callback
+) {
+  this->visual_dirty_callback = std::move(callback);
+}
+
 const SceneSnapshot& UraScene::snapshot() const {
   if (!this->snapshot_dirty)
     return this->cached_snapshot;
@@ -148,8 +292,14 @@ const SceneSnapshot& UraScene::snapshot() const {
   result.epoch = this->current_epoch;
 
   auto view = this->entities.raw()
-                .view<Transform, Geometry, Visibility, ZOrder, Opacity>();
-  for (auto [entity, transform, geometry, visibility, z_order, opacity] :
+                .view<
+                  WindowLayout,
+                  SurfaceContent,
+                  SceneNode,
+                  Visibility,
+                  ZOrder,
+                  Opacity>();
+  for (auto [entity, layout, content, node, visibility, z_order, opacity] :
        view.each()) {
     SceneRole role = SceneRole::Primitive;
     if (this->entities.raw().all_of<ToplevelRef>(entity))
@@ -158,21 +308,23 @@ const SceneSnapshot& UraScene::snapshot() const {
       role = SceneRole::LayerShell;
     else if (this->entities.raw().all_of<PopupRef>(entity))
       role = SceneRole::Popup;
+    else if (this->entities.raw().all_of<SessionLockRef>(entity))
+      role = SceneRole::SessionLock;
 
-    SurfaceHandle surface;
-    if (auto* ref = this->entities.raw().try_get<SurfaceRef>(entity))
-      surface = ref->handle;
-
+    auto* target = this->entities.raw().try_get<RenderTarget>(entity);
+    auto* shader_effect = this->entities.raw().try_get<ShaderEffect>(entity);
     result.items.push_back(
       SceneItemSnapshot {
         .id = UraEntityRegistry::to_id(entity),
         .role = role,
-        .transform = transform,
-        .geometry = geometry,
+        .layout = layout,
+        .content = content,
+        .node = node,
         .visibility = visibility,
         .z_order = z_order,
         .opacity = opacity,
-        .surface = surface,
+        .effect = shader_effect ? shader_effect->effect : Effect {},
+        .render_target = target ? target->resource : 0,
       }
     );
   }
@@ -198,18 +350,16 @@ std::optional<uint64_t> UraScene::topmost_at(int x, int y) const {
        ++item) {
     if (!item->visibility.visible || item->visibility.occluded)
       continue;
-    auto right = item->transform.x + item->geometry.width;
-    auto bottom = item->transform.y + item->geometry.height;
-    if (
-      x >= item->transform.x && x < right && y >= item->transform.y
-      && y < bottom
-    )
+    auto& bounds = item->node.bounds;
+    auto right = bounds.x + bounds.width;
+    auto bottom = bounds.y + bounds.height;
+    if (x >= bounds.x && x < right && y >= bounds.y && y < bottom)
       return item->id;
   }
   return {};
 }
 
-void UraScene::touch(entt::entity entity, DirtyFlag flag) {
+void UraScene::touch(entt::entity entity, DirtyFlag flag, bool notify) {
   auto& registry = this->entities.raw();
   if (!registry.valid(entity))
     return;
@@ -221,7 +371,14 @@ void UraScene::touch(entt::entity entity, DirtyFlag flag) {
   dirty->epoch = this->current_epoch + 1;
   dirty->flags |= static_cast<uint32_t>(flag);
   ++this->current_epoch;
-  this->notify_dirty();
+  if (notify)
+    this->notify_dirty();
+  else
+    this->snapshot_dirty = true;
+}
+
+void UraScene::destroy(entt::entity entity) {
+  this->entities.destroy(entity);
 }
 
 void UraScene::invalidate() {
@@ -235,6 +392,26 @@ void UraScene::notify_dirty() {
   this->snapshot_dirty = true;
   if (this->dirty_callback)
     this->dirty_callback();
+}
+
+void UraScene::notify_visual_dirty(
+  entt::entity entity,
+  const Rect<double>& previous,
+  const Rect<double>& current
+) {
+  this->snapshot_dirty = true;
+  if (this->visual_dirty_callback)
+    this->visual_dirty_callback(entity, previous, current);
+  else if (this->dirty_callback)
+    this->dirty_callback();
+}
+
+entt::registry& UraScene::raw() {
+  return this->entities.raw();
+}
+
+const entt::registry& UraScene::raw() const {
+  return this->entities.raw();
 }
 
 } // namespace ura

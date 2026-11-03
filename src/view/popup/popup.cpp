@@ -2,6 +2,7 @@
 #include "ura/core/server.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/view/popup.hpp"
+#include <cmath>
 #include <memory>
 #include "ura/ura.hpp"
 #include "ura/view/layer_shell.hpp"
@@ -79,17 +80,17 @@ void UraPopup::unconstrain() {
       case UraSurfaceType::Toplevel: {
         // try parse popup's parent as a toplevel
         auto toplevel = parent.transform<UraToplevel>();
-        auto transform = toplevel->transform();
-        box.x -= transform.x;
-        box.y -= transform.y;
+        auto bounds = toplevel->node().bounds;
+        box.x -= static_cast<int>(std::lround(bounds.x));
+        box.y -= static_cast<int>(std::lround(bounds.y));
         break;
       }
       case UraSurfaceType::LayerShell: {
         // try parse popup's parent as a layer_shell
         auto layer_shell = parent.transform<UraLayerShell>();
-        auto transform = layer_shell->transform();
-        box.x -= transform.x;
-        box.y -= transform.y;
+        auto bounds = layer_shell->node().bounds;
+        box.x -= static_cast<int>(std::lround(bounds.x));
+        box.y -= static_cast<int>(std::lround(bounds.y));
         break;
       }
       case UraSurfaceType::Popup: {

@@ -8,6 +8,12 @@ namespace ura {
 
 namespace {
 
+  uint64_t surface_identity(wlr_surface* surface, uint64_t content_id) {
+    return content_id != 0
+      ? content_id
+      : static_cast<uint64_t>(reinterpret_cast<uintptr_t>(surface));
+  }
+
   bool same_box(const wlr_box& lhs, const wlr_box& rhs) {
     return lhs.x == rhs.x && lhs.y == rhs.y && lhs.width == rhs.width
       && lhs.height == rhs.height;
@@ -56,7 +62,11 @@ FramePlan UraFramePlanner::build(
   plan.output = output.native;
   plan.damage_ring = output.damage_ring;
   plan.logical_box = output.logical_box;
-  plan.background_color = output.background_color;
+  // Never flash the desktop background color while a lock surface is waiting
+  // for its first commit.
+  plan.background_color = world.locked
+    ? std::array<float, 4> { { 0.f, 0.f, 0.f, 1.f } }
+    : output.background_color;
   if (
     !output.enabled || plan.logical_box.width <= 0
     || plan.logical_box.height <= 0
@@ -105,6 +115,9 @@ FramePlan UraFramePlanner::build(
           .wait_timeline = surface.wait_timeline,
           .wait_point = surface.wait_point,
           .seq = surface.seq,
+          .content_id = surface.content_id,
+          .effect = surface.effect,
+          .owner = surface.owner,
         }
       );
     } else {
@@ -126,21 +139,24 @@ FramePlan UraFramePlanner::build(
 
   std::vector<PreviousSurface> current;
   current.reserve(plan.surfaces.size());
-  std::unordered_map<wlr_surface*, std::pair<const FrameSurface*, std::size_t>>
+  std::unordered_map<uint64_t, std::pair<const FrameSurface*, std::size_t>>
     current_by_surface;
   for (std::size_t i = 0; i < plan.surfaces.size(); ++i) {
     auto& surface = plan.surfaces[i];
     current.push_back(
       PreviousSurface {
         .surface = surface.surface,
+        .content_id = surface.content_id,
         .dst_box = surface.dst_box,
         .transform = surface.transform,
         .opacity = surface.opacity,
         .seq = surface.seq,
         .order = i,
+        .effect = surface.effect,
       }
     );
-    current_by_surface[surface.surface] = { &surface, i };
+    current_by_surface
+      [surface_identity(surface.surface, surface.content_id)] = { &surface, i };
   }
 
   std::vector<PreviousRect> current_rects;
@@ -160,7 +176,9 @@ FramePlan UraFramePlanner::build(
 
   if (!full_redraw) {
     for (auto& previous : previous.surfaces) {
-      auto current_it = current_by_surface.find(previous.surface);
+      auto current_it = current_by_surface.find(
+        surface_identity(previous.surface, previous.content_id)
+      );
       if (current_it == current_by_surface.end()) {
         add_damage(plan, previous.dst_box);
         continue;
@@ -171,7 +189,8 @@ FramePlan UraFramePlanner::build(
       if (
         !same_box(previous.dst_box, surface->dst_box)
         || previous.transform != surface->transform
-        || previous.opacity != surface->opacity || previous.order != order
+        || previous.opacity != surface->opacity
+        || previous.effect != surface->effect || previous.order != order
       ) {
         add_damage(plan, previous.dst_box);
         add_damage(plan, surface->dst_box);
@@ -184,7 +203,8 @@ FramePlan UraFramePlanner::build(
       auto existed = std::ranges::any_of(
         previous.surfaces,
         [&](const PreviousSurface& previous) {
-          return previous.surface == surface.surface;
+          return surface_identity(previous.surface, previous.content_id)
+            == surface_identity(surface.surface, surface.content_id);
         }
       );
       if (!existed)

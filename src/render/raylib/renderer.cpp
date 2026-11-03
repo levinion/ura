@@ -1,11 +1,8 @@
 #include "ura/render/raylib/raylib_renderer.hpp"
+#include "ura/core/log.hpp"
 #include "ura/render/raylib/renderer.hpp"
 
 #include <cstdlib>
-
-extern "C" {
-#include <wlr/util/log.h>
-}
 
 namespace ura::render::raylib {
 
@@ -102,6 +99,7 @@ static void renderer_destroy(wlr_renderer* wlr_renderer) {
   }
 
   if (current) {
+    effect_targets_finish(renderer);
     shader_finish(renderer);
     if (renderer->rlgl_ready)
       rlglClose();
@@ -140,9 +138,12 @@ static void cleanup_failed_renderer(Renderer* renderer) {
     current = egl_make_current(&renderer->egl, &saved);
   }
 
-  if (current && renderer->rlgl_ready) {
-    shader_finish(renderer);
-    rlglClose();
+  if (current) {
+    effect_targets_finish(renderer);
+    if (renderer->rlgl_ready) {
+      shader_finish(renderer);
+      rlglClose();
+    }
   }
   renderer->rlgl_ready = false;
 
@@ -173,7 +174,7 @@ ura_raylib_renderer_create(struct wlr_backend* backend) {
   wl_list_init(&renderer->textures);
 
   if (!egl_context_init(&renderer->egl, backend)) {
-    wlr_log(WLR_ERROR, "Failed to initialize EGL for raylib renderer");
+    ura::log::error("Failed to initialize EGL for raylib renderer");
     cleanup_failed_renderer(renderer);
     return nullptr;
   }
@@ -187,7 +188,7 @@ ura_raylib_renderer_create(struct wlr_backend* backend) {
   rlLoadExtensions(reinterpret_cast<void*>(eglGetProcAddress));
   rlglInit(1, 1);
   if (rlGetShaderIdDefault() == 0 || rlGetTextureIdDefault() == 0) {
-    wlr_log(WLR_ERROR, "Failed to initialize rlgl");
+    ura::log::error("Failed to initialize rlgl");
     egl_restore_context(&saved);
     renderer->rlgl_ready = true; // Make cleanup call rlglClose().
     cleanup_failed_renderer(renderer);
@@ -200,9 +201,8 @@ ura_raylib_renderer_create(struct wlr_backend* backend) {
     reinterpret_cast<const char*>(glGetString(GL_RENDERER));
   const char* gl_version =
     reinterpret_cast<const char*>(glGetString(GL_VERSION));
-  wlr_log(
-    WLR_INFO,
-    "Raylib renderer GL: %s (%s)",
+  ura::log::info(
+    "Raylib renderer GL: {} ({})",
     gl_renderer ? gl_renderer : "unknown",
     gl_version ? gl_version : "unknown"
   );
@@ -214,7 +214,7 @@ ura_raylib_renderer_create(struct wlr_backend* backend) {
   }
 
   if (!renderer_init_surface_formats(renderer)) {
-    wlr_log(WLR_ERROR, "Raylib renderer has no usable surface formats");
+    ura::log::error("Raylib renderer has no usable surface formats");
     egl_restore_context(&saved);
     cleanup_failed_renderer(renderer);
     return nullptr;
@@ -233,10 +233,9 @@ ura_raylib_renderer_create(struct wlr_backend* backend) {
     && renderer->egl.has_fence_sync && renderer->egl.has_wait_sync;
   renderer->drm_fd = renderer->egl.drm_fd;
 
-  wlr_log(
-    WLR_INFO,
-    "Created raylib renderer (GLES2 via rlgl, drm_fd=%d, dmabuf=%s, "
-    "modifiers=%s, timeline=%s)",
+  ura::log::info(
+    "Created raylib renderer (GLES2 via rlgl, drm_fd={}, dmabuf={}, "
+    "modifiers={}, timeline={})",
     renderer->drm_fd,
     renderer->egl.has_dmabuf_import ? "yes" : "no",
     renderer->egl.has_dmabuf_modifiers ? "yes" : "no",

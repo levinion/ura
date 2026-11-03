@@ -265,7 +265,7 @@ void UraCursor::destroy() {
   wlr_cursor_destroy(this->cursor);
 }
 
-Vec2<double> UraCursor::position() {
+std::pair<double, double> UraCursor::position() {
   return { this->cursor->x, this->cursor->y };
 }
 

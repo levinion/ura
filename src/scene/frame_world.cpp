@@ -1,6 +1,7 @@
 #include "ura/scene/frame_world.hpp"
 
 #include <array>
+#include <cmath>
 #include <string_view>
 #include <variant>
 #include <vector>
@@ -39,8 +40,6 @@ namespace {
     bool has_border = false;
     std::array<float, 4> border_color {};
     int border_width = 0;
-    int width = 0;
-    int height = 0;
     uint64_t owner = 0;
     std::vector<InputPopupTask> input_popups;
   };
@@ -57,13 +56,30 @@ namespace {
     std::string_view output_name;
   };
 
-  using WorldTask = std::variant<ToplevelTask, LayerTask, LockTask>;
+  struct FrozenTask {
+    SceneItemSnapshot item;
+  };
+
+  using WorldTask = std::variant<ToplevelTask, LayerTask, LockTask, FrozenTask>;
 
   struct CollectContext {
     WorldChunk* chunk;
-    int base_x;
-    int base_y;
+    double bounds_x = 0.0;
+    double bounds_y = 0.0;
+    double scale_x = 1.0;
+    double scale_y = 1.0;
+    // Offset in root-surface coordinates before scaling. For a toplevel this
+    // is -window_geometry.origin; for a popup it is the popup offset relative
+    // to the parent window geometry.
+    double offset_x = 0.0;
+    double offset_y = 0.0;
+    Effect effect;
+    uint64_t owner = 0;
   };
+
+  int scaled_edge(double origin, double local, double scale) {
+    return static_cast<int>(std::lround(origin + local * scale));
+  }
 
   void append_surface(WorldChunk& chunk, FrameSurfaceSnapshot surface) {
     chunk.operations.push_back(
@@ -98,19 +114,36 @@ namespace {
     if (!texture)
       return;
 
+    auto local_x = static_cast<double>(sx) + context->offset_x;
+    auto local_y = static_cast<double>(sy) + context->offset_y;
+    auto left = scaled_edge(context->bounds_x, local_x, context->scale_x);
+    auto top = scaled_edge(context->bounds_y, local_y, context->scale_y);
+    auto right = scaled_edge(
+      context->bounds_x,
+      local_x + static_cast<double>(state->width),
+      context->scale_x
+    );
+    auto bottom = scaled_edge(
+      context->bounds_y,
+      local_y + static_cast<double>(state->height),
+      context->scale_y
+    );
+
     FrameSurfaceSnapshot item {
     .surface = surface,
     .texture = texture,
     .dst_box = {
-      context->base_x + sx,
-      context->base_y + sy,
-      state->width,
-      state->height,
+      left,
+      top,
+      std::max(1, right - left),
+      std::max(1, bottom - top),
     },
     .transform = state->transform,
     .opacity = 1.f,
     .seq = state->seq,
     .output_name = {},
+    .effect = context->effect,
+    .owner = context->owner,
   };
     wlr_surface_get_buffer_source_box(surface, &item.src_box);
 
@@ -130,17 +163,16 @@ namespace {
       return;
 
     auto width = task.border_width;
-    auto add = [&](int x, int y, int w, int h, int index) {
+    auto x = static_cast<int>(std::lround(task.item.node.bounds.x));
+    auto y = static_cast<int>(std::lround(task.item.node.bounds.y));
+    auto w = static_cast<int>(std::lround(task.item.node.bounds.width));
+    auto h = static_cast<int>(std::lround(task.item.node.bounds.height));
+    auto add = [&](int bx, int by, int bw, int bh, int index) {
       append_rect(
       chunk,
       FrameRectSnapshot {
         .rect = {
-          .dst_box = {
-            task.item.transform.x + x,
-            task.item.transform.y + y,
-            w,
-            h,
-          },
+          .dst_box = { x + bx, y + by, bw, bh },
           .color = task.border_color,
           .owner = task.owner,
           .index = index,
@@ -150,18 +182,33 @@ namespace {
     );
     };
 
-    add(-width, -width, task.width + 2 * width, width, 0);
-    add(task.width, -width, width, task.height + 2 * width, 1);
-    add(-width, task.height, task.width + 2 * width, width, 2);
-    add(-width, -width, width, task.height + 2 * width, 3);
+    add(-width, -width, w + 2 * width, width, 0);
+    add(w, -width, width, h + 2 * width, 1);
+    add(-width, h, w + 2 * width, width, 2);
+    add(-width, -width, width, h + 2 * width, 3);
   }
 
   void build_toplevel(WorldChunk& chunk, const ToplevelTask& task) {
     auto surface_start = chunk.surfaces.size();
+    auto& bounds = task.item.node.bounds;
+    auto& content = task.item.content;
+    auto scale_x = content.geometry.width > 0
+      ? bounds.width / static_cast<double>(content.geometry.width)
+      : 1.0;
+    auto scale_y = content.geometry.height > 0
+      ? bounds.height / static_cast<double>(content.geometry.height)
+      : 1.0;
+
     CollectContext context {
       .chunk = &chunk,
-      .base_x = task.item.transform.x - task.xdg_surface->geometry.x,
-      .base_y = task.item.transform.y - task.xdg_surface->geometry.y,
+      .bounds_x = bounds.x,
+      .bounds_y = bounds.y,
+      .scale_x = scale_x,
+      .scale_y = scale_y,
+      .offset_x = -static_cast<double>(content.geometry.x),
+      .offset_y = -static_cast<double>(content.geometry.y),
+      .effect = task.item.effect,
+      .owner = task.owner,
     };
     wlr_surface_for_each_surface(
       task.xdg_surface->surface,
@@ -178,8 +225,14 @@ namespace {
     for (auto& popup : task.input_popups) {
       CollectContext popup_context {
         .chunk = &chunk,
-        .base_x = task.item.transform.x + popup.x,
-        .base_y = task.item.transform.y + popup.y,
+        .bounds_x = bounds.x,
+        .bounds_y = bounds.y,
+        .scale_x = scale_x,
+        .scale_y = scale_y,
+        .offset_x = static_cast<double>(popup.x),
+        .offset_y = static_cast<double>(popup.y),
+        .effect = task.item.effect,
+        .owner = task.owner,
       };
       wlr_surface_for_each_surface(
         popup.surface,
@@ -194,10 +247,22 @@ namespace {
 
   void build_layer_shell(WorldChunk& chunk, const LayerTask& task) {
     auto previous_size = chunk.surfaces.size();
+    auto& bounds = task.item.node.bounds;
+    auto& content = task.item.content;
+    auto scale_x = content.geometry.width > 0
+      ? bounds.width / static_cast<double>(content.geometry.width)
+      : 1.0;
+    auto scale_y = content.geometry.height > 0
+      ? bounds.height / static_cast<double>(content.geometry.height)
+      : 1.0;
     CollectContext context {
       .chunk = &chunk,
-      .base_x = task.item.transform.x,
-      .base_y = task.item.transform.y,
+      .bounds_x = bounds.x,
+      .bounds_y = bounds.y,
+      .scale_x = scale_x,
+      .scale_y = scale_y,
+      .effect = task.item.effect,
+      .owner = task.item.id,
     };
     wlr_layer_surface_v1_for_each_surface(
       task.layer_surface,
@@ -214,14 +279,70 @@ namespace {
     auto previous_size = chunk.surfaces.size();
     CollectContext context {
       .chunk = &chunk,
-      .base_x = task.base.x,
-      .base_y = task.base.y,
+      .bounds_x = static_cast<double>(task.base.x),
+      .bounds_y = static_cast<double>(task.base.y),
+      .effect = {},
+      .owner = 0,
     };
     wlr_surface_for_each_surface(task.surface, collect_surface, &context);
     for (std::size_t i = previous_size; i < chunk.surfaces.size(); ++i) {
       chunk.surfaces[i].output_name = task.output_name;
       chunk.surfaces[i].lock_surface = true;
       chunk.surfaces[i].allow_direct_scanout = true;
+    }
+  }
+
+  void build_frozen(WorldChunk& chunk, const FrozenTask& task) {
+    auto* server = UraServer::get_instance();
+    auto* resource = server->view->render_target(task.item.render_target);
+    if (!resource)
+      return;
+
+    auto& bounds = task.item.node.bounds;
+    auto& content = task.item.content;
+    auto scale_x = content.geometry.width > 0
+      ? bounds.width / static_cast<double>(content.geometry.width)
+      : 1.0;
+    auto scale_y = content.geometry.height > 0
+      ? bounds.height / static_cast<double>(content.geometry.height)
+      : 1.0;
+
+    for (auto& frozen : resource->surfaces) {
+      if (!frozen.texture)
+        continue;
+
+      auto left = scaled_edge(bounds.x, frozen.dst_box.x, scale_x);
+      auto top = scaled_edge(bounds.y, frozen.dst_box.y, scale_y);
+      auto right = scaled_edge(
+        bounds.x,
+        static_cast<double>(frozen.dst_box.x + frozen.dst_box.width),
+        scale_x
+      );
+      auto bottom = scaled_edge(
+        bounds.y,
+        static_cast<double>(frozen.dst_box.y + frozen.dst_box.height),
+        scale_y
+      );
+
+      FrameSurfaceSnapshot surface {
+        .surface = nullptr,
+        .texture = frozen.texture,
+        .src_box = frozen.src_box,
+        .dst_box = {
+          left,
+          top,
+          std::max(1, right - left),
+          std::max(1, bottom - top),
+        },
+        .transform = frozen.transform,
+        .opacity = frozen.opacity * task.item.opacity.value,
+        .seq = 0,
+        .output_name = {},
+        .content_id = frozen.content_id,
+        .effect = task.item.effect,
+        .owner = task.item.id,
+      };
+      append_surface(chunk, surface);
     }
   }
 
@@ -234,8 +355,10 @@ namespace {
           build_toplevel(chunk, value);
         else if constexpr (std::is_same_v<T, LayerTask>)
           build_layer_shell(chunk, value);
-        else
+        else if constexpr (std::is_same_v<T, LockTask>)
           build_lock(chunk, value);
+        else
+          build_frozen(chunk, value);
       },
       task
     );
@@ -245,6 +368,11 @@ namespace {
   void
   collect_tasks(std::vector<WorldTask>& tasks, const SceneItemSnapshot& item) {
     auto* server = UraServer::get_instance();
+    if (item.render_target != 0) {
+      tasks.emplace_back(FrozenTask { .item = item });
+      return;
+    }
+
     if (item.role == SceneRole::Toplevel) {
       auto* toplevel =
         server->entities->toplevel(UraEntityRegistry::from_id(item.id));
@@ -255,8 +383,6 @@ namespace {
         .item = item,
         .xdg_surface = toplevel->xdg_toplevel->base,
         .fullscreen = toplevel->is_fullscreen(),
-        .width = toplevel->geometry().width,
-        .height = toplevel->geometry().height,
         .owner = toplevel->id(),
         .input_popups = {},
       };
@@ -293,6 +419,28 @@ namespace {
           .output_name = layer_shell->output,
         }
       );
+    } else if (item.role == SceneRole::SessionLock) {
+      auto* session_lock =
+        server->entities->session_lock(UraEntityRegistry::from_id(item.id));
+      if (
+        !session_lock || !session_lock->output
+        || !session_lock->surface->surface->mapped
+      )
+        return;
+
+      tasks.emplace_back(
+        LockTask {
+          .surface = session_lock->surface->surface,
+          .base = {
+            .x = static_cast<int>(std::lround(item.node.bounds.x)),
+            .y = static_cast<int>(std::lround(item.node.bounds.y)),
+            .width = static_cast<int>(std::lround(item.node.bounds.width)),
+            .height = static_cast<int>(std::lround(item.node.bounds.height)),
+          },
+          .output_name = session_lock->output ? session_lock->output->name
+                                              : std::string_view {},
+        }
+      );
     }
   }
 
@@ -304,27 +452,17 @@ FrameWorldSnapshot build_frame_world() {
   world.locked = server->seat->locked;
 
   std::vector<WorldTask> tasks;
-  if (world.locked) {
-    for (auto& [name, output] : server->view->outputs) {
-      auto* lock_surface = output->session_lock_surface;
-      if (!lock_surface || !lock_surface->surface->surface->mapped)
-        continue;
-      auto geometry = output->logical_geometry();
-      tasks.emplace_back(
-        LockTask {
-          .surface = lock_surface->surface->surface,
-          .base = geometry.to_wlr_box(),
-          .output_name = output->name,
-        }
-      );
-    }
-  } else {
-    auto& snapshot = server->view->scene->snapshot();
-    for (auto& item : snapshot.items) {
-      if (!item.visibility.visible || item.visibility.occluded)
-        continue;
-      collect_tasks(tasks, item);
-    }
+  auto& snapshot = server->view->scene->snapshot();
+  for (auto& item : snapshot.items) {
+    auto is_lock = item.role == SceneRole::SessionLock;
+    // A locked seat renders lock surfaces only. Keeping this gate in the
+    // planner/world boundary prevents any normal scene node from leaking
+    // through during or after a lock transition.
+    if (world.locked != is_lock)
+      continue;
+    if (!item.visibility.visible || item.visibility.occluded)
+      continue;
+    collect_tasks(tasks, item);
   }
 
   world.tasks = tasks.size();

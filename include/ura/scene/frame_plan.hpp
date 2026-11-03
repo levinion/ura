@@ -6,6 +6,7 @@
 #include <string_view>
 #include <vector>
 
+#include "ura/render/effect.hpp"
 #include "ura/ura.hpp"
 
 namespace ura {
@@ -27,6 +28,12 @@ struct FrameSurface {
   wlr_drm_syncobj_timeline* wait_timeline = nullptr;
   uint64_t wait_point = 0;
   uint32_t seq = 0;
+  // Stable identity for surfaces without a wlr_surface (frozen render
+  // targets). Zero means the identity is the wlr_surface pointer.
+  uint64_t content_id = 0;
+  Effect effect;
+  // SceneNode identity used to group multiple surfaces into one effect pass.
+  uint64_t owner = 0;
   // Frame callbacks are completed by a single output only.
   bool primary_output = false;
 };
@@ -48,10 +55,13 @@ struct FrameSurfaceSnapshot {
   wlr_drm_syncobj_timeline* wait_timeline = nullptr;
   uint64_t wait_point = 0;
   uint32_t seq = 0;
-  uint64_t owner = 0;
   std::string_view output_name;
   bool lock_surface = false;
   bool allow_direct_scanout = false;
+  uint64_t content_id = 0;
+  Effect effect;
+  // SceneNode identity used to group multiple surfaces into one effect pass.
+  uint64_t owner = 0;
 };
 
 struct FrameRectSnapshot {
@@ -104,6 +114,9 @@ struct FramePlan {
   // Damage rectangles in output-layout coordinates. Empty means no redraw.
   std::vector<wlr_box> damage;
   bool full_redraw = false;
+  // Renderer-owned slots used to keep the previous two swapchain buffers
+  // alive. May be NULL in tests or non-output clients.
+  std::array<wlr_buffer*, 2>* retained_buffers = nullptr;
   // Set only for scene trees that have no additional compositor drawing
   // (borders, future scene rects, ...) outside the surface list.
   bool allow_direct_scanout = false;

@@ -18,8 +18,9 @@ public:
   zwlr_layer_shell_v1_layer layer;
   uint64_t lru;
 
-  const Transform& transform();
-  const Geometry& geometry();
+  const WindowLayout& layout();
+  const SurfaceContent& content();
+  const SceneNode& node();
   const Visibility& visibility();
   const ZOrder& z_order();
 

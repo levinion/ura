@@ -16,6 +16,10 @@ ura::UraLayerShell* fake_layer_shell(uintptr_t value) {
   return reinterpret_cast<ura::UraLayerShell*>(value);
 }
 
+ura::UraSessionLockSurface* fake_session_lock(uintptr_t value) {
+  return reinterpret_cast<ura::UraSessionLockSurface*>(value);
+}
+
 bool test_snapshot_order() {
   ura::UraEntityRegistry entities;
   ura::UraScene scene(entities);
@@ -25,15 +29,13 @@ bool test_snapshot_order() {
 
   scene.attach_toplevel(
     first,
-    ura::Transform { 0, 0, 0.f, 1.0 },
-    ura::Geometry { 100, 100 },
+    ura::Rect<double> { .x = 0, .y = 0, .width = 100, .height = 100 },
     ura::WindowTags { { "1" } },
     ura::ZOrder { ura::UraSceneLayer::Normal, 0 }
   );
   scene.attach_toplevel(
     second,
-    ura::Transform { 10, 10, 0.f, 1.0 },
-    ura::Geometry { 50, 50 },
+    ura::Rect<double> { .x = 10, .y = 10, .width = 50, .height = 50 },
     ura::WindowTags { { "1" } },
     ura::ZOrder { ura::UraSceneLayer::Floating, 0 }
   );
@@ -65,19 +67,21 @@ bool test_epoch_and_stale_handle() {
 
   scene.attach_toplevel(
     entity,
-    ura::Transform {},
-    ura::Geometry { 320, 200 },
+    ura::Rect<double> { .width = 320, .height = 200 },
     ura::WindowTags {},
     ura::ZOrder { ura::UraSceneLayer::Normal, 0 }
   );
   auto initial_epoch = scene.epoch();
   scene.set_visible(entity, true);
   auto visible_epoch = scene.epoch();
-  scene.set_geometry(entity, ura::Geometry { 400, 300 });
+  scene.set_layout_target(
+    entity,
+    ura::Rect<double> { .width = 400, .height = 300 }
+  );
 
   auto snapshot = scene.snapshot();
   auto updated = snapshot.items.size() == 1
-    && snapshot.items[0].geometry.width == 400
+    && snapshot.items[0].layout.target.width == 400
     && snapshot.items[0].visibility.visible && scene.epoch() > visible_epoch
     && visible_epoch > initial_epoch;
 
@@ -95,15 +99,13 @@ bool test_layer_shell_order() {
 
   scene.attach_toplevel(
     toplevel,
-    ura::Transform { 0, 0, 0.f, 1.0 },
-    ura::Geometry { 100, 100 },
+    ura::Rect<double> { .x = 0, .y = 0, .width = 100, .height = 100 },
     ura::WindowTags { { "1" } },
     ura::ZOrder { ura::UraSceneLayer::Normal, 0 }
   );
   scene.attach_layer_shell(
     layer_shell,
-    ura::Transform { 0, 0, 0.f, 1.0 },
-    ura::Geometry { 100, 50 },
+    ura::Rect<double> { .x = 0, .y = 0, .width = 100, .height = 50 },
     ura::ZOrder { ura::UraSceneLayer::Top, 0 }
   );
   scene.set_visible(toplevel, true);
@@ -131,15 +133,13 @@ bool test_snapshot_cache() {
 
   scene.attach_toplevel(
     first,
-    ura::Transform { 0, 0, 0.f, 1.0 },
-    ura::Geometry { 100, 100 },
+    ura::Rect<double> { .x = 0, .y = 0, .width = 100, .height = 100 },
     ura::WindowTags { { "1" } },
     ura::ZOrder { ura::UraSceneLayer::Normal, 0 }
   );
   scene.attach_toplevel(
     second,
-    ura::Transform { 10, 10, 0.f, 1.0 },
-    ura::Geometry { 50, 50 },
+    ura::Rect<double> { .x = 10, .y = 10, .width = 50, .height = 50 },
     ura::WindowTags { { "1" } },
     ura::ZOrder { ura::UraSceneLayer::Floating, 0 }
   );
@@ -152,9 +152,12 @@ bool test_snapshot_cache() {
   if (&scene.snapshot() != cached)
     return false;
 
-  scene.set_transform(first, ura::Transform { 20, 30, 0.f, 1.0 });
+  scene.set_layout_target(
+    first,
+    ura::Rect<double> { .x = 20, .y = 30, .width = 100, .height = 100 }
+  );
   auto* updated = &scene.snapshot();
-  if (updated != cached || updated->items[0].transform.x != 20)
+  if (updated != cached || updated->items[0].layout.target.x != 20)
     return false;
 
   auto epoch_before_destroy = scene.epoch();
@@ -173,8 +176,7 @@ bool test_components_and_dirty_state() {
 
   scene.attach_toplevel(
     entity,
-    ura::Transform {},
-    ura::Geometry { 10, 10 },
+    ura::Rect<double> { .width = 10, .height = 10 },
     ura::WindowTags { { "alpha", "beta" } },
     ura::ZOrder { ura::UraSceneLayer::Normal, 0 }
   );
@@ -183,18 +185,102 @@ bool test_components_and_dirty_state() {
   dirty.flags = 0;
   scene.set_opacity(entity, 1.5f);
   scene.set_tags(entity, ura::WindowTags { { "gamma" } });
-  scene.set_geometry(entity, ura::Geometry { 20, 30 });
+  scene.set_layout_target(
+    entity,
+    ura::Rect<double> { .width = 20, .height = 30 }
+  );
   scene.set_layer(entity, ura::UraSceneLayer::Top);
+  scene.set_effect(
+    entity,
+    ura::Effect { .type = ura::EffectType::Blur, .radius = 4.f }
+  );
 
   auto& opacity = scene.get<ura::Opacity>(entity);
   auto& tags = scene.get<ura::WindowTags>(entity);
   auto& z_order = scene.get<ura::ZOrder>(entity);
 
-  auto geometry_flag =
-    dirty.flags & static_cast<uint32_t>(ura::DirtyFlag::Geometry);
+  auto layout_flag =
+    dirty.flags & static_cast<uint32_t>(ura::DirtyFlag::Layout);
+  auto effect_flag =
+    dirty.flags & static_cast<uint32_t>(ura::DirtyFlag::Effect);
+  auto snapshot = scene.snapshot();
   return opacity.value == 1.f && tags.contains("gamma")
     && !tags.contains("alpha") && z_order.layer == ura::UraSceneLayer::Top
-    && dirty.epoch > 0 && geometry_flag != 0;
+    && dirty.epoch > 0 && layout_flag != 0 && effect_flag != 0
+    && snapshot.items.size() == 1
+    && snapshot.items[0].effect.type == ura::EffectType::Blur;
+}
+
+bool test_rect_intersection() {
+  ura::Rect<double> area { .x = 0, .y = 0, .width = 10, .height = 10 };
+  auto overlap = area.intersection(
+    ura::Rect<double> { .x = 5, .y = 5, .width = 10, .height = 10 }
+  );
+  if (overlap != ura::Rect<double> { .x = 5, .y = 5, .width = 5, .height = 5 })
+    return false;
+  if (!area.intersects(
+        ura::Rect<double> { .x = 5, .y = 5, .width = 1, .height = 1 }
+      ))
+    return false;
+  if (
+    area.intersects(
+      ura::Rect<double> { .x = 10, .y = 0, .width = 5, .height = 5 }
+    )
+  )
+    return false;
+  if (
+    area.intersects(
+      ura::Rect<double> { .x = 20, .y = 20, .width = 5, .height = 5 }
+    )
+  )
+    return false;
+  if (ura::Rect<double> {}.intersects(area))
+    return false;
+
+  // Cross-scalar queries are used by output scheduling (double visual bounds
+  // against integer output geometry).
+  auto cross = area.intersection(
+    ura::Rect<int> { .x = 5, .y = 5, .width = 20, .height = 20 }
+  );
+  if (cross != ura::Rect<double> { .x = 5, .y = 5, .width = 5, .height = 5 })
+    return false;
+
+  wlr_box box { .x = 1, .y = 2, .width = 3, .height = 4 };
+  auto converted = ura::Rect<double>::from(box);
+  auto round_trip = converted.to_wlr_box();
+  return round_trip.x == box.x && round_trip.y == box.y
+    && round_trip.width == box.width && round_trip.height == box.height;
+}
+
+bool test_session_lock_role() {
+  ura::UraEntityRegistry entities;
+  ura::UraScene scene(entities);
+  auto entity = entities.create_session_lock(fake_session_lock(0x9000));
+
+  scene.attach_session_lock(
+    entity,
+    ura::Rect<double> { .x = 0, .y = 0, .width = 640, .height = 480 }
+  );
+  scene.set_visible(entity, true);
+
+  auto snapshot = scene.snapshot();
+  if (snapshot.items.size() != 1)
+    return false;
+  auto& item = snapshot.items[0];
+  if (
+    item.role != ura::SceneRole::SessionLock
+    || item.z_order.layer != ura::UraSceneLayer::LockScreen
+    || item.node.bounds.width != 640 || item.node.bounds.height != 480
+  )
+    return false;
+
+  auto hit = scene.topmost_at(10, 10);
+  if (!hit || *hit != ura::UraEntityRegistry::to_id(entity))
+    return false;
+
+  entities.destroy(entity);
+  auto empty = scene.snapshot();
+  return empty.items.empty();
 }
 
 } // namespace
@@ -217,6 +303,10 @@ int main(int argc, char** argv) {
     passed = test_layer_shell_order();
   else if (name == "snapshot-cache")
     passed = test_snapshot_cache();
+  else if (name == "session-lock")
+    passed = test_session_lock_role();
+  else if (name == "rect")
+    passed = test_rect_intersection();
   else {
     std::cerr << "Unknown test case: " << name << '\n';
     return 2;

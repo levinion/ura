@@ -39,6 +39,17 @@ entt::entity UraEntityRegistry::create_layer_shell(UraLayerShell* object) {
   return create_ref(this->registry, LayerShellRef { object });
 }
 
+entt::entity
+UraEntityRegistry::create_session_lock(UraSessionLockSurface* object) {
+  return create_ref(this->registry, SessionLockRef { object });
+}
+
+entt::entity UraEntityRegistry::create_scene_node() {
+  auto entity = this->registry.create();
+  this->registry.emplace<LuaUserdata>(entity);
+  return entity;
+}
+
 UraToplevel* UraEntityRegistry::toplevel(entt::entity entity) const {
   return lookup<ToplevelRef, UraToplevel>(this->registry, entity);
 }
@@ -69,6 +80,15 @@ UraLayerShell* UraEntityRegistry::layer_shell(entt::entity entity) const {
 
 UraLayerShell* UraEntityRegistry::layer_shell(uint64_t id) const {
   return this->layer_shell(from_id(id));
+}
+
+UraSessionLockSurface*
+UraEntityRegistry::session_lock(entt::entity entity) const {
+  return lookup<SessionLockRef, UraSessionLockSurface>(this->registry, entity);
+}
+
+UraSessionLockSurface* UraEntityRegistry::session_lock(uint64_t id) const {
+  return this->session_lock(from_id(id));
 }
 
 bool UraEntityRegistry::contains(entt::entity entity) const {

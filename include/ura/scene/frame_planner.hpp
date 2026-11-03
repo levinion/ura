@@ -35,11 +35,13 @@ public:
 
   struct PreviousSurface {
     wlr_surface* surface = nullptr;
+    uint64_t content_id = 0;
     wlr_box dst_box {};
     enum wl_output_transform transform = WL_OUTPUT_TRANSFORM_NORMAL;
     float opacity = 1.f;
     uint32_t seq = 0;
     std::size_t order = 0;
+    Effect effect;
   };
 
   struct PreviousRect {

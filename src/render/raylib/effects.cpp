@@ -1,12 +1,9 @@
 #include "ura/render/raylib/renderer.hpp"
+#include "ura/core/log.hpp"
 
 #include <cstdlib>
 
 #include "ura/util/rgb.hpp"
-
-extern "C" {
-#include <wlr/util/log.h>
-}
 
 namespace ura::render::raylib {
 
@@ -57,7 +54,7 @@ void effects_apply(Renderer* renderer, RenderPass* pass) {
   glDisable(GL_SCISSOR_TEST);
   glDisable(GL_BLEND);
   glUseProgram(0);
-  wlr_log(WLR_DEBUG, "Applied raylib tint effect %s", value);
+  log::debug("Applied raylib tint effect {}", value);
 }
 
 } // namespace ura::render::raylib

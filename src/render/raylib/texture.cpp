@@ -1,11 +1,8 @@
 #include "ura/render/raylib/renderer.hpp"
+#include "ura/core/log.hpp"
 
 #include <cstdlib>
 #include <cstring>
-
-extern "C" {
-#include <wlr/util/log.h>
-}
 
 namespace ura::render::raylib {
 
@@ -27,47 +24,6 @@ static const wlr_texture_impl texture_impl = {
   .preferred_read_format = texture_preferred_read_format,
   .destroy = handle_texture_destroy,
 };
-
-static size_t gl_format_bytes_per_pixel(const GlFormat* format) {
-  if (!format)
-    return 0;
-  switch (format->type) {
-    case GL_UNSIGNED_BYTE:
-      if (format->format == GL_RGBA || format->format == GL_BGRA_EXT)
-        return 4;
-      if (format->format == GL_RGB)
-        return 3;
-      return 1;
-    case GL_UNSIGNED_SHORT_5_6_5:
-      return 2;
-    case GL_UNSIGNED_INT_2_10_10_10_REV_EXT:
-      return 4;
-    default:
-      return 0;
-  }
-}
-
-static bool format_needs_swizzle(const GlFormat* format) {
-  return format->type == GL_UNSIGNED_BYTE
-    && (format->upload_swizzle[0] != 0 || format->upload_swizzle[1] != 1
-        || format->upload_swizzle[2] != 2 || format->upload_swizzle[3] != 3);
-}
-
-static void swizzle_row(
-  const uint8_t* src,
-  uint8_t* dst,
-  int width,
-  const uint8_t swizzle[4]
-) {
-  for (int x = 0; x < width; x++) {
-    const uint8_t* in = src + static_cast<size_t>(x) * 4;
-    uint8_t* out = dst + static_cast<size_t>(x) * 4;
-    out[0] = in[swizzle[0]];
-    out[1] = in[swizzle[1]];
-    out[2] = in[swizzle[2]];
-    out[3] = in[swizzle[3]];
-  }
-}
 
 static void upload_texture_rows(
   GLenum target,
@@ -142,7 +98,7 @@ static GLuint create_texture_object(
   size_t upload_stride = stride;
 
   uint8_t* converted = nullptr;
-  if (data && format_needs_swizzle(format)) {
+  if (data && format->needs_swizzle()) {
     converted = static_cast<uint8_t*>(
       malloc(static_cast<size_t>(width) * static_cast<size_t>(height) * 4)
     );
@@ -152,11 +108,10 @@ static GLuint create_texture_object(
     }
     auto src = static_cast<const uint8_t*>(data);
     for (int y = 0; y < height; y++) {
-      swizzle_row(
+      format->swizzle_row(
         src + static_cast<size_t>(y) * stride,
         converted + static_cast<size_t>(y) * width * 4,
-        width,
-        format->upload_swizzle
+        width
       );
     }
     upload_format = GL_RGBA;
@@ -180,7 +135,7 @@ static GLuint create_texture_object(
   if (upload_data) {
     size_t bpp = (upload_format == GL_RGBA && upload_type == GL_UNSIGNED_BYTE)
       ? 4
-      : gl_format_bytes_per_pixel(format);
+      : format->bytes_per_pixel();
     upload_texture_rows(
       GL_TEXTURE_2D,
       upload_format,
@@ -198,7 +153,7 @@ static GLuint create_texture_object(
 
   glBindTexture(GL_TEXTURE_2D, 0);
   if (glGetError() != GL_NO_ERROR) {
-    wlr_log(WLR_ERROR, "Failed to create GL texture for buffer");
+    log::error("Failed to create GL texture for buffer");
     glDeleteTextures(1, &texture);
     return 0;
   }
@@ -278,7 +233,7 @@ static Texture* texture_from_dmabuf(Renderer* renderer, wlr_buffer* buffer) {
   glBindTexture(target, 0);
 
   if (glGetError() != GL_NO_ERROR) {
-    wlr_log(WLR_ERROR, "Failed to import DMA-BUF as GL texture");
+    log::error("Failed to import DMA-BUF as GL texture");
     egl_restore_context(&saved);
     texture_destroy(texture);
     return nullptr;
@@ -300,7 +255,7 @@ static Texture* texture_from_pixels(
 ) {
   const GlFormat* gl_format = gl_format_from_drm(format);
   if (!gl_format) {
-    wlr_log(WLR_ERROR, "Unsupported SHM pixel format 0x%x", format);
+    log::error("Unsupported SHM pixel format 0x{:x}", format);
     return nullptr;
   }
 
@@ -358,7 +313,7 @@ Texture* texture_from_buffer(Renderer* renderer, wlr_buffer* buffer) {
         &format,
         &stride
       )) {
-    wlr_log(WLR_ERROR, "Failed to access buffer pixels");
+    log::error("Failed to access buffer pixels");
     return nullptr;
   }
 
@@ -399,7 +354,7 @@ static bool texture_update_from_buffer(
     wlr_buffer_end_data_ptr_access(buffer);
     return false;
   }
-  size_t bpp = gl_format_bytes_per_pixel(gl_format);
+  size_t bpp = gl_format->bytes_per_pixel();
   if (bpp == 0) {
     wlr_buffer_end_data_ptr_access(buffer);
     return false;
@@ -415,7 +370,7 @@ static bool texture_update_from_buffer(
   glBindTexture(GL_TEXTURE_2D, texture->tex);
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-  bool swizzle = format_needs_swizzle(gl_format);
+  bool swizzle = gl_format->needs_swizzle();
   uint8_t* row = nullptr;
   if (swizzle) {
     row = static_cast<uint8_t*>(
@@ -452,12 +407,7 @@ static bool texture_update_from_buffer(
       const void* src =
         bytes + static_cast<size_t>(y) * stride + static_cast<size_t>(x1) * bpp;
       if (swizzle) {
-        swizzle_row(
-          static_cast<const uint8_t*>(src),
-          row,
-          x2 - x1,
-          gl_format->upload_swizzle
-        );
+        gl_format->swizzle_row(static_cast<const uint8_t*>(src), row, x2 - x1);
         src = row;
       }
       glTexSubImage2D(
@@ -498,7 +448,7 @@ static bool bind_texture_fbo(Texture* texture, GLuint* fbo) {
   GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   if (status != GL_FRAMEBUFFER_COMPLETE) {
-    wlr_log(WLR_ERROR, "Texture framebuffer is incomplete: 0x%x", status);
+    log::error("Texture framebuffer is incomplete: 0x{:x}", status);
     glDeleteFramebuffers(1, fbo);
     *fbo = 0;
     return false;
@@ -516,7 +466,7 @@ static bool texture_read_pixels(
 
   const GlFormat* gl_format = gl_format_from_drm(options->format);
   if (!gl_format) {
-    wlr_log(WLR_ERROR, "Unsupported read format 0x%x", options->format);
+    log::error("Unsupported read format 0x{:x}", options->format);
     return false;
   }
 
@@ -543,7 +493,7 @@ static bool texture_read_pixels(
   glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
   if (gl_format->format != GL_RGBA || gl_format->type != GL_UNSIGNED_BYTE) {
-    wlr_log(WLR_ERROR, "Unsupported readback format 0x%x", options->format);
+    log::error("Unsupported readback format 0x{:x}", options->format);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDeleteFramebuffers(1, &fbo);
     egl_restore_context(&saved);

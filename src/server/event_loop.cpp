@@ -315,6 +315,8 @@ void UraServer::destroy() {
     this->view->frame_scheduler->shutdown();
   wl_display_destroy_clients(this->display);
   this->seat->cursor->destroy();
+  if (this->view)
+    this->view->clear_render_targets();
   wlr_allocator_destroy(this->allocator);
   wlr_renderer_destroy(this->renderer);
   wlr_backend_destroy(this->backend);

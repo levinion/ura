@@ -1,11 +1,8 @@
 #include "ura/render/raylib/renderer.hpp"
+#include "ura/core/log.hpp"
 
 #include <cstdlib>
 #include <initializer_list>
-
-extern "C" {
-#include <wlr/util/log.h>
-}
 
 namespace ura::render::raylib {
 
@@ -94,6 +91,40 @@ static const GlFormat formats[] = {
     { 0, 1, 2, 3 } },
 };
 
+size_t GlFormat::bytes_per_pixel() const {
+  switch (this->type) {
+    case GL_UNSIGNED_BYTE:
+      if (this->format == GL_RGBA || this->format == GL_BGRA_EXT)
+        return 4;
+      if (this->format == GL_RGB)
+        return 3;
+      return 1;
+    case GL_UNSIGNED_SHORT_5_6_5:
+      return 2;
+    case GL_UNSIGNED_INT_2_10_10_10_REV_EXT:
+      return 4;
+    default:
+      return 0;
+  }
+}
+
+bool GlFormat::needs_swizzle() const {
+  return this->type == GL_UNSIGNED_BYTE
+    && (this->upload_swizzle[0] != 0 || this->upload_swizzle[1] != 1
+        || this->upload_swizzle[2] != 2 || this->upload_swizzle[3] != 3);
+}
+
+void GlFormat::swizzle_row(const uint8_t* src, uint8_t* dst, int width) const {
+  for (int x = 0; x < width; x++) {
+    const uint8_t* in = src + static_cast<size_t>(x) * 4;
+    uint8_t* out = dst + static_cast<size_t>(x) * 4;
+    out[0] = in[this->upload_swizzle[0]];
+    out[1] = in[this->upload_swizzle[1]];
+    out[2] = in[this->upload_swizzle[2]];
+    out[3] = in[this->upload_swizzle[3]];
+  }
+}
+
 const GlFormat* gl_format_from_drm(uint32_t format) {
   for (const auto& fmt : formats) {
     if (fmt.drm_format == format)
@@ -174,10 +205,7 @@ static void init_shm_formats(EglContext* egl) {
 }
 
 static void init_dmabuf_fallback_formats(EglContext* egl) {
-  wlr_log(
-    WLR_INFO,
-    "EGL DMA-BUF modifier query unavailable, using ARGB8888/XRGB8888"
-  );
+  log::info("EGL DMA-BUF modifier query unavailable, using ARGB8888/XRGB8888");
   for (uint32_t format : { DRM_FORMAT_ARGB8888, DRM_FORMAT_XRGB8888 }) {
     add_simple_format(&egl->texture_formats, format);
     add_simple_format(&egl->render_formats, format);
@@ -186,7 +214,7 @@ static void init_dmabuf_fallback_formats(EglContext* egl) {
 
 static void init_dmabuf_formats(EglContext* egl) {
   if (!egl->has_dmabuf_import) {
-    wlr_log(WLR_INFO, "EGL DMA-BUF import is not available");
+    log::info("EGL DMA-BUF import is not available");
     return;
   }
 
@@ -203,7 +231,7 @@ static void init_dmabuf_formats(EglContext* egl) {
     !egl->query_dmabuf_formats(egl->display, 0, nullptr, &formats_len)
     || formats_len <= 0
   ) {
-    wlr_log(WLR_ERROR, "Failed to query EGL DMA-BUF formats");
+    log::error("Failed to query EGL DMA-BUF formats");
     init_dmabuf_fallback_formats(egl);
     return;
   }
@@ -220,7 +248,7 @@ static void init_dmabuf_formats(EglContext* egl) {
         egl_formats,
         &formats_len
       )) {
-    wlr_log(WLR_ERROR, "Failed to query EGL DMA-BUF formats");
+    log::error("Failed to query EGL DMA-BUF formats");
     free(egl_formats);
     init_dmabuf_fallback_formats(egl);
     return;
@@ -290,9 +318,8 @@ static void init_dmabuf_formats(EglContext* egl) {
   }
 
   free(egl_formats);
-  wlr_log(
-    WLR_DEBUG,
-    "Renderer advertises %zu DMA-BUF texture formats and %zu render formats",
+  log::debug(
+    "Renderer advertises {} DMA-BUF texture formats and {} render formats",
     egl->texture_formats.len,
     egl->render_formats.len
   );

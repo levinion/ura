@@ -81,12 +81,16 @@ void on_toplevel_request_fullscreen(wl_listener* listener, void* data) {
 void on_toplevel_set_app_id(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  toplevel->set_app_id(toplevel->app_id());
+  toplevel->set_app_id(
+    toplevel->xdg_toplevel->app_id ? toplevel->xdg_toplevel->app_id : ""
+  );
 }
 
 void on_toplevel_set_title(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);
-  toplevel->set_title(toplevel->title());
+  toplevel->set_title(
+    toplevel->xdg_toplevel->title ? toplevel->xdg_toplevel->title : ""
+  );
 }
 } // namespace ura

@@ -1,4 +1,9 @@
 #include "ura/render/raylib/renderer.hpp"
+#include "ura/core/log.hpp"
+#include "ura/render/effect.hpp"
+#include "ura/render/raylib/effect_renderer.hpp"
+
+#include <raymath.h>
 
 #include <unistd.h>
 
@@ -7,7 +12,6 @@
 
 extern "C" {
 #include <wlr/util/box.h>
-#include <wlr/util/log.h>
 #include <wlr/util/transform.h>
 }
 
@@ -29,88 +33,43 @@ static const wlr_render_pass_impl render_pass_impl = {
   .add_rect = render_pass_add_rect_cb,
 };
 
-static void mat3_identity(float m[9]) {
-  static const float identity[9] = {
-    1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-  };
-  memcpy(m, identity, sizeof(identity));
-}
-
-static void mat3_multiply(float out[9], const float a[9], const float b[9]) {
-  float product[9];
-  product[0] = a[0] * b[0] + a[1] * b[3] + a[2] * b[6];
-  product[1] = a[0] * b[1] + a[1] * b[4] + a[2] * b[7];
-  product[2] = a[0] * b[2] + a[1] * b[5] + a[2] * b[8];
-  product[3] = a[3] * b[0] + a[4] * b[3] + a[5] * b[6];
-  product[4] = a[3] * b[1] + a[4] * b[4] + a[5] * b[7];
-  product[5] = a[3] * b[2] + a[4] * b[5] + a[5] * b[8];
-  product[6] = a[6] * b[0] + a[7] * b[3] + a[8] * b[6];
-  product[7] = a[6] * b[1] + a[7] * b[4] + a[8] * b[7];
-  product[8] = a[6] * b[2] + a[7] * b[5] + a[8] * b[8];
-  memcpy(out, product, sizeof(product));
-}
-
-static void mat3_translate(float m[9], float x, float y) {
-  float translate[9] = {
-    1.0f, 0.0f, x, 0.0f, 1.0f, y, 0.0f, 0.0f, 1.0f,
-  };
-  mat3_multiply(m, m, translate);
-}
-
-static void mat3_scale(float m[9], float x, float y) {
-  float scale[9] = {
-    x, 0.0f, 0.0f, 0.0f, y, 0.0f, 0.0f, 0.0f, 1.0f,
-  };
-  mat3_multiply(m, m, scale);
-}
-
-static const float* transform_matrix(enum wl_output_transform transform) {
-  static const float normal[9] = { 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-                                   0.0f, 0.0f, 0.0f, 1.0f };
-  static const float rotate90[9] = { 0.0f, 1.0f, 0.0f, -1.0f, 0.0f,
-                                     0.0f, 0.0f, 0.0f, 1.0f };
-  static const float rotate180[9] = { -1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
-                                      0.0f,  0.0f, 0.0f, 1.0f };
-  static const float rotate270[9] = { 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-                                      0.0f, 0.0f,  0.0f, 1.0f };
-  static const float flipped[9] = { -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-                                    0.0f,  0.0f, 0.0f, 1.0f };
-  static const float flipped90[9] = { 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-                                      0.0f, 0.0f, 0.0f, 1.0f };
-  static const float flipped180[9] = { 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
-                                       0.0f, 0.0f, 0.0f, 1.0f };
-  static const float flipped270[9] = { 0.0f, -1.0f, 0.0f, -1.0f, 0.0f,
-                                       0.0f, 0.0f,  0.0f, 1.0f };
-
+// raymath stores matrices in row-major order, but MatrixMultiply(A, B)
+// returns B * A for that layout. Callers below therefore put the new factor
+// on the left to append it to the current transform.
+static Matrix transform_matrix(enum wl_output_transform transform) {
   switch (transform) {
     case WL_OUTPUT_TRANSFORM_NORMAL:
-      return normal;
+      return MatrixIdentity();
     case WL_OUTPUT_TRANSFORM_90:
-      return rotate90;
+      return MatrixRotateZ(90.0f * DEG2RAD);
     case WL_OUTPUT_TRANSFORM_180:
-      return rotate180;
+      return MatrixRotateZ(180.0f * DEG2RAD);
     case WL_OUTPUT_TRANSFORM_270:
-      return rotate270;
+      return MatrixRotateZ(270.0f * DEG2RAD);
     case WL_OUTPUT_TRANSFORM_FLIPPED:
-      return flipped;
+      return MatrixScale(-1.0f, 1.0f, 1.0f);
     case WL_OUTPUT_TRANSFORM_FLIPPED_90:
-      return flipped90;
+      return MatrixMultiply(
+        MatrixRotateZ(90.0f * DEG2RAD),
+        MatrixScale(-1.0f, 1.0f, 1.0f)
+      );
     case WL_OUTPUT_TRANSFORM_FLIPPED_180:
-      return flipped180;
+      return MatrixMultiply(
+        MatrixRotateZ(180.0f * DEG2RAD),
+        MatrixScale(-1.0f, 1.0f, 1.0f)
+      );
     case WL_OUTPUT_TRANSFORM_FLIPPED_270:
-      return flipped270;
+      return MatrixMultiply(
+        MatrixRotateZ(270.0f * DEG2RAD),
+        MatrixScale(-1.0f, 1.0f, 1.0f)
+      );
   }
-  return normal;
+  return MatrixIdentity();
 }
 
-static void mat3_transform(float m[9], enum wl_output_transform transform) {
-  mat3_multiply(m, m, transform_matrix(transform));
-}
-
-static void set_tex_matrix(
+static Matrix set_tex_matrix(
   const wlr_render_texture_options* options,
-  const Texture* texture,
-  float matrix[9]
+  const Texture* texture
 ) {
   wlr_fbox src {};
   wlr_render_texture_options_get_src_box(options, &src);
@@ -119,21 +78,27 @@ static void set_tex_matrix(
   src.width /= texture->base.width;
   src.height /= texture->base.height;
 
-  mat3_identity(matrix);
-  mat3_translate(matrix, src.x, src.y);
-  mat3_scale(matrix, src.width, src.height);
-  mat3_translate(matrix, 0.5f, 0.5f);
-  if (options->transform & WL_OUTPUT_TRANSFORM_90)
-    mat3_transform(matrix, wlr_output_transform_invert(options->transform));
-  else
-    mat3_transform(matrix, options->transform);
-  mat3_translate(matrix, -0.5f, -0.5f);
-}
+  auto transform = options->transform;
+  if (transform & WL_OUTPUT_TRANSFORM_90)
+    transform = wlr_output_transform_invert(transform);
 
-static void
-texcoord(const float matrix[9], float u, float v, float* out_u, float* out_v) {
-  *out_u = matrix[0] * u + matrix[3] * v + matrix[6];
-  *out_v = matrix[1] * u + matrix[4] * v + matrix[7];
+  Matrix matrix = MatrixIdentity();
+  matrix = MatrixMultiply(
+    MatrixTranslate(static_cast<float>(src.x), static_cast<float>(src.y), 0),
+    matrix
+  );
+  matrix = MatrixMultiply(
+    MatrixScale(
+      static_cast<float>(src.width),
+      static_cast<float>(src.height),
+      1
+    ),
+    matrix
+  );
+  matrix = MatrixMultiply(MatrixTranslate(0.5f, 0.5f, 0), matrix);
+  matrix = MatrixMultiply(transform_matrix(transform), matrix);
+  matrix = MatrixMultiply(MatrixTranslate(-0.5f, -0.5f, 0), matrix);
+  return matrix;
 }
 
 static void damage_add_box(RenderPass* pass, const wlr_box* box) {
@@ -247,51 +212,9 @@ static void draw_rect(
   glDisable(GL_SCISSOR_TEST);
 }
 
-static int format_bpp(uint32_t format) {
-  switch (format) {
-    case DRM_FORMAT_ARGB8888:
-    case DRM_FORMAT_XRGB8888:
-    case DRM_FORMAT_ABGR8888:
-    case DRM_FORMAT_XBGR8888:
-    case DRM_FORMAT_RGBA8888:
-    case DRM_FORMAT_RGBX8888:
-    case DRM_FORMAT_BGRA8888:
-    case DRM_FORMAT_BGRX8888:
-    case DRM_FORMAT_ABGR2101010:
-    case DRM_FORMAT_XBGR2101010:
-      return 4;
-    case DRM_FORMAT_RGB565:
-      return 2;
-    default:
-      return 0;
-  }
-}
-
-static bool format_needs_swizzle(const GlFormat* format) {
-  return format->type == GL_UNSIGNED_BYTE
-    && (format->upload_swizzle[0] != 0 || format->upload_swizzle[1] != 1
-        || format->upload_swizzle[2] != 2 || format->upload_swizzle[3] != 3);
-}
-
-static void swizzle_row(
-  const uint8_t* src,
-  uint8_t* dst,
-  int width,
-  const uint8_t swizzle[4]
-) {
-  for (int x = 0; x < width; x++) {
-    const uint8_t* in = src + static_cast<size_t>(x) * 4;
-    uint8_t* out = dst + static_cast<size_t>(x) * 4;
-    out[0] = in[swizzle[0]];
-    out[1] = in[swizzle[1]];
-    out[2] = in[swizzle[2]];
-    out[3] = in[swizzle[3]];
-  }
-}
-
 static bool create_shm_target(RenderPass* pass, const GlFormat* format) {
   while (glGetError() != GL_NO_ERROR) {}
-  int bpp = format_bpp(pass->shm_format);
+  auto bpp = format->bytes_per_pixel();
   if (bpp == 0)
     return false;
 
@@ -315,7 +238,7 @@ static bool create_shm_target(RenderPass* pass, const GlFormat* format) {
 
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   auto bytes = static_cast<const uint8_t*>(pass->shm_data);
-  bool swizzle = format_needs_swizzle(format);
+  bool swizzle = format->needs_swizzle();
   uint8_t* row = nullptr;
   if (swizzle) {
     row = static_cast<uint8_t*>(malloc(static_cast<size_t>(pass->width) * 4));
@@ -328,12 +251,7 @@ static bool create_shm_target(RenderPass* pass, const GlFormat* format) {
   for (int y = 0; y < pass->height; y++) {
     const void* src = bytes + static_cast<size_t>(y) * pass->shm_stride;
     if (swizzle) {
-      swizzle_row(
-        static_cast<const uint8_t*>(src),
-        row,
-        pass->width,
-        format->upload_swizzle
-      );
+      format->swizzle_row(static_cast<const uint8_t*>(src), row, pass->width);
       src = row;
     }
     glTexSubImage2D(
@@ -363,7 +281,7 @@ static bool create_shm_target(RenderPass* pass, const GlFormat* format) {
   GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   if (status != GL_FRAMEBUFFER_COMPLETE) {
-    wlr_log(WLR_ERROR, "SHM framebuffer is incomplete: 0x%x", status);
+    log::error("SHM framebuffer is incomplete: 0x{:x}", status);
     glDeleteFramebuffers(1, &pass->fbo);
     glDeleteTextures(1, &pass->shm_texture);
     pass->fbo = 0;
@@ -442,7 +360,10 @@ static bool readback_shm(RenderPass* pass) {
   if (!pass->shm_access || !pass->shm_writable)
     return false;
 
-  int bpp = format_bpp(pass->shm_format);
+  auto* format = gl_format_from_drm(pass->shm_format);
+  if (!format)
+    return false;
+  auto bpp = format->bytes_per_pixel();
   if (bpp == 0)
     return false;
   if (pass->shm_stride < static_cast<size_t>(pass->width) * bpp)
@@ -491,7 +412,7 @@ static bool signal_timeline(RenderPass* pass) {
   EGLSyncKHR sync =
     egl->create_sync(egl->display, EGL_SYNC_NATIVE_FENCE_ANDROID, attrs);
   if (sync == EGL_NO_SYNC_KHR) {
-    wlr_log(WLR_ERROR, "Failed to create EGL native fence sync");
+    log::error("Failed to create EGL native fence sync");
     return false;
   }
 
@@ -499,7 +420,7 @@ static bool signal_timeline(RenderPass* pass) {
   int fd = egl->dup_native_fence_fd(egl->display, sync);
   egl->destroy_sync(egl->display, sync);
   if (fd < 0) {
-    wlr_log(WLR_ERROR, "Failed to export EGL native fence");
+    log::error("Failed to export EGL native fence");
     return false;
   }
 
@@ -592,7 +513,7 @@ RenderPass* render_pass_begin(
         free(pass);
         return nullptr;
       }
-      wlr_log(WLR_INFO, "SHM render target is read-only");
+      log::info("SHM render target is read-only");
     }
 
     pass->shm_access = true;
@@ -679,14 +600,14 @@ bool render_pass_submit(RenderPass* pass) {
   bool ok = true;
   if (pass->shm_texture) {
     if (!readback_shm(pass)) {
-      wlr_log(WLR_ERROR, "Failed to read back SHM render target");
+      log::error("Failed to read back SHM render target");
       ok = false;
     }
   }
 
   if (pass->signal_timeline) {
     if (!signal_timeline(pass)) {
-      wlr_log(WLR_ERROR, "Failed to signal render timeline");
+      log::error("Failed to signal render timeline");
       ok = false;
     }
   } else if (!pass->shm_texture) {
@@ -749,7 +670,7 @@ static bool wait_for_timeline(
 
   int fd = wlr_drm_syncobj_timeline_export_sync_file(timeline, point);
   if (fd < 0) {
-    wlr_log(WLR_ERROR, "Failed to export render wait timeline");
+    log::error("Failed to export render wait timeline");
     return false;
   }
 
@@ -762,7 +683,7 @@ static bool wait_for_timeline(
     egl->create_sync(egl->display, EGL_SYNC_NATIVE_FENCE_ANDROID, attrs);
   if (sync == EGL_NO_SYNC_KHR) {
     close(fd);
-    wlr_log(WLR_ERROR, "Failed to create EGL wait fence");
+    log::error("Failed to create EGL wait fence");
     return false;
   }
 
@@ -777,6 +698,437 @@ static bool wait_for_timeline(
   }
   egl->destroy_sync(egl->display, sync);
   return ok;
+}
+
+static void effect_target_destroy(EffectTarget& target) {
+  if (target.fbo) {
+    glDeleteFramebuffers(1, &target.fbo);
+    target.fbo = 0;
+  }
+  if (target.texture) {
+    glDeleteTextures(1, &target.texture);
+    target.texture = 0;
+  }
+  target.width = 0;
+  target.height = 0;
+}
+
+void effect_targets_finish(Renderer* renderer) {
+  if (!renderer)
+    return;
+  for (auto& target : renderer->effect_targets) effect_target_destroy(target);
+}
+
+static bool
+effect_target_ensure(Renderer* renderer, int index, int width, int height) {
+  auto& target = renderer->effect_targets[index];
+  if (target.texture && target.width == width && target.height == height)
+    return true;
+
+  effect_target_destroy(target);
+
+  while (glGetError() != GL_NO_ERROR) {}
+  glGenTextures(1, &target.texture);
+  glBindTexture(GL_TEXTURE_2D, target.texture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(
+    GL_TEXTURE_2D,
+    0,
+    GL_RGBA,
+    width,
+    height,
+    0,
+    GL_RGBA,
+    GL_UNSIGNED_BYTE,
+    nullptr
+  );
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  glGenFramebuffers(1, &target.fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, target.fbo);
+  glFramebufferTexture2D(
+    GL_FRAMEBUFFER,
+    GL_COLOR_ATTACHMENT0,
+    GL_TEXTURE_2D,
+    target.texture,
+    0
+  );
+  auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  if (status != GL_FRAMEBUFFER_COMPLETE) {
+    log::error("Effect framebuffer is incomplete: 0x{:x}", status);
+    effect_target_destroy(target);
+    return false;
+  }
+
+  target.width = width;
+  target.height = height;
+  return true;
+}
+
+static void effect_pass_begin(int width, int height, GLuint fbo) {
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+  glViewport(0, 0, width, height);
+  glDisable(GL_SCISSOR_TEST);
+  glDisable(GL_BLEND);
+  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+}
+
+static void draw_effect_copy(
+  Renderer* renderer,
+  Texture* source,
+  const wlr_render_texture_options* options,
+  const Effect& effect,
+  int target_width,
+  int target_height,
+  const wlr_box& dst,
+  float alpha
+) {
+  auto matrix = set_tex_matrix(options, source);
+  auto uv0 = Vector2Transform({ 0.0f, 0.0f }, matrix);
+  auto uv1 = Vector2Transform({ 1.0f, 0.0f }, matrix);
+  auto uv2 = Vector2Transform({ 1.0f, 1.0f }, matrix);
+  auto uv3 = Vector2Transform({ 0.0f, 1.0f }, matrix);
+
+  float x1 = static_cast<float>(dst.x);
+  float y1 = static_cast<float>(dst.y);
+  float x2 = static_cast<float>(dst.x + dst.width);
+  float y2 = static_cast<float>(dst.y + dst.height);
+  const float vertices[] = {
+    x1, y1, uv0.x, uv0.y, x2, y1, uv1.x, uv1.y, x2, y2, uv2.x, uv2.y,
+    x1, y1, uv0.x, uv0.y, x2, y2, uv2.x, uv2.y, x1, y2, uv3.x, uv3.y,
+  };
+
+  auto& shader = renderer->effect_copy;
+  reset_vertex_attributes();
+  glUseProgram(shader.id);
+  shader_set_projection(shader.mvp, target_width, target_height);
+  glUniform1i(shader.texture, 0);
+  glUniform4f(shader.color, 1.0f, 1.0f, 1.0f, alpha);
+  glUniform4f(
+    shader.tint,
+    effect.color[0],
+    effect.color[1],
+    effect.color[2],
+    effect.color[3]
+  );
+  if (shader.opaque >= 0)
+    glUniform1f(shader.opaque, source->has_alpha ? 0.0f : 1.0f);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, source->tex);
+  glEnableVertexAttribArray(shader.pos_attrib);
+  glVertexAttribPointer(
+    shader.pos_attrib,
+    4,
+    GL_FLOAT,
+    GL_FALSE,
+    4 * sizeof(float),
+    vertices
+  );
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+  glDisableVertexAttribArray(shader.pos_attrib);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glUseProgram(0);
+}
+
+static void draw_effect_blur(
+  Renderer* renderer,
+  GLuint source,
+  GLuint fbo,
+  int width,
+  int height,
+  float dx,
+  float dy
+) {
+  effect_pass_begin(width, height, fbo);
+
+  float w = static_cast<float>(width);
+  float h = static_cast<float>(height);
+  const float vertices[] = {
+    0.0f, 0.0f, 0.0f, 0.0f, w, 0.0f, 1.0f, 0.0f, w,    h, 1.0f, 1.0f,
+    0.0f, 0.0f, 0.0f, 0.0f, w, h,    1.0f, 1.0f, 0.0f, h, 0.0f, 1.0f,
+  };
+
+  auto& shader = renderer->effect_blur;
+  reset_vertex_attributes();
+  glUseProgram(shader.id);
+  shader_set_projection(shader.mvp, width, height);
+  glUniform1i(shader.texture, 0);
+  glUniform4f(shader.color, 1.0f, 1.0f, 1.0f, 1.0f);
+  glUniform2f(shader.direction, dx, dy);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, source);
+  glEnableVertexAttribArray(shader.pos_attrib);
+  glVertexAttribPointer(
+    shader.pos_attrib,
+    4,
+    GL_FLOAT,
+    GL_FALSE,
+    4 * sizeof(float),
+    vertices
+  );
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+  glDisableVertexAttribArray(shader.pos_attrib);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glUseProgram(0);
+}
+
+static void draw_effect_composite(
+  RenderPass* pass,
+  GLuint texture,
+  const wlr_box& dst,
+  const wlr_render_texture_options* options
+) {
+  Renderer* renderer = pass->renderer;
+  auto& shader = renderer->tex_rgba;
+  float alpha = wlr_render_texture_options_get_alpha(options);
+  // The offscreen target may contain transparent padding (especially for
+  // blur), so alpha == 1 does not imply that opaque overwrite is safe.
+  bool blend_none = options->blend_mode == WLR_RENDER_BLEND_MODE_NONE;
+  setup_blend(pass, blend_none);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, pass->fbo);
+  glViewport(0, 0, pass->width, pass->height);
+  glDisable(GL_SCISSOR_TEST);
+
+  float x1 = static_cast<float>(dst.x);
+  float y1 = static_cast<float>(dst.y);
+  float x2 = static_cast<float>(dst.x + dst.width);
+  float y2 = static_cast<float>(dst.y + dst.height);
+  const float vertices[] = {
+    x1, y1, 0.0f, 0.0f, x2, y1, 1.0f, 0.0f, x2, y2, 1.0f, 1.0f,
+    x1, y1, 0.0f, 0.0f, x2, y2, 1.0f, 1.0f, x1, y2, 0.0f, 1.0f,
+  };
+
+  pixman_region32_t region;
+  pixman_region32_init_rect(&region, dst.x, dst.y, dst.width, dst.height);
+  if (options->clip)
+    pixman_region32_intersect(&region, &region, options->clip);
+
+  int rects_len = 0;
+  const pixman_box32_t* rects = pixman_region32_rectangles(&region, &rects_len);
+
+  reset_vertex_attributes();
+  glUseProgram(shader.id);
+  shader_set_projection(shader.mvp, pass->width, pass->height);
+  glUniform1i(shader.texture, 0);
+  glUniform4f(shader.color, 1.0f, 1.0f, 1.0f, alpha);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture);
+  glEnableVertexAttribArray(shader.pos_attrib);
+  glVertexAttribPointer(
+    shader.pos_attrib,
+    4,
+    GL_FLOAT,
+    GL_FALSE,
+    4 * sizeof(float),
+    vertices
+  );
+
+  for (int i = 0; i < rects_len; i++) {
+    flush_batch(pass);
+    if (!scissor_rect(pass, &rects[i]))
+      continue;
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDisable(GL_SCISSOR_TEST);
+  }
+
+  glDisableVertexAttribArray(shader.pos_attrib);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glUseProgram(0);
+  pixman_region32_fini(&region);
+  damage_add_box(pass, &dst);
+}
+
+bool render_pass_add_texture_group_effect(
+  wlr_render_pass* base,
+  const wlr_render_texture_options* options,
+  std::size_t count,
+  const Effect& effect
+) {
+  if (
+    !base || base->impl != &render_pass_impl || !options || count == 0
+    || !effect.active()
+  )
+    return false;
+
+  RenderPass* pass = wl_container_of(base, pass, base);
+  Renderer* renderer = pass->renderer;
+
+  wlr_box union_box {};
+  bool has_box = false;
+  for (std::size_t i = 0; i < count; ++i) {
+    if (!options[i].texture)
+      return false;
+    Texture* source = wl_container_of(options[i].texture, source, base);
+    if (source->target != GL_TEXTURE_2D)
+      return false;
+
+    wlr_box dst {};
+    wlr_render_texture_options_get_dst_box(&options[i], &dst);
+    if (dst.width <= 0 || dst.height <= 0)
+      continue;
+
+    if (!has_box) {
+      union_box = dst;
+      has_box = true;
+      continue;
+    }
+    auto right = std::max(union_box.x + union_box.width, dst.x + dst.width);
+    auto bottom = std::max(union_box.y + union_box.height, dst.y + dst.height);
+    union_box.x = std::min(union_box.x, dst.x);
+    union_box.y = std::min(union_box.y, dst.y);
+    union_box.width = right - union_box.x;
+    union_box.height = bottom - union_box.y;
+  }
+
+  if (!has_box)
+    return true;
+
+  int margin = 0;
+  if (effect.type == EffectType::Blur && effect.radius > 0.0f) {
+    auto radius = std::min(effect.radius, 64.0f);
+    margin = static_cast<int>(std::ceil(radius * 3.2307692308f));
+  }
+
+  wlr_box target_box {
+    .x = union_box.x - margin,
+    .y = union_box.y - margin,
+    .width = union_box.width + 2 * margin,
+    .height = union_box.height + 2 * margin,
+  };
+  if (target_box.width <= 0 || target_box.height <= 0)
+    return false;
+
+  GLint max_texture_size = 0;
+  glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
+  if (
+    max_texture_size > 0
+    && (target_box.width > max_texture_size || target_box.height > max_texture_size)
+  )
+    return false;
+
+  EglSavedContext saved {};
+  if (!egl_make_current(&renderer->egl, &saved))
+    return false;
+
+  auto restore = [&] {
+    glBindFramebuffer(GL_FRAMEBUFFER, pass->fbo);
+    glViewport(0, 0, pass->width, pass->height);
+    egl_restore_context(&saved);
+  };
+
+  if (
+    !effect_target_ensure(renderer, 0, target_box.width, target_box.height)
+    || !effect_target_ensure(renderer, 1, target_box.width, target_box.height)
+  ) {
+    restore();
+    return false;
+  }
+
+  effect_pass_begin(
+    target_box.width,
+    target_box.height,
+    renderer->effect_targets[0].fbo
+  );
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+  bool drew_any = false;
+  for (std::size_t i = 0; i < count; ++i) {
+    if (!options[i].texture)
+      continue;
+
+    if (!wait_for_timeline(
+          pass,
+          options[i].wait_timeline,
+          options[i].wait_point
+        ))
+      continue;
+
+    wlr_box dst {};
+    wlr_render_texture_options_get_dst_box(&options[i], &dst);
+    if (dst.width <= 0 || dst.height <= 0)
+      continue;
+
+    Texture* source = wl_container_of(options[i].texture, source, base);
+    wlr_box relative {
+      .x = dst.x - target_box.x,
+      .y = dst.y - target_box.y,
+      .width = dst.width,
+      .height = dst.height,
+    };
+    draw_effect_copy(
+      renderer,
+      source,
+      &options[i],
+      effect,
+      target_box.width,
+      target_box.height,
+      relative,
+      wlr_render_texture_options_get_alpha(&options[i])
+    );
+    drew_any = true;
+  }
+
+  if (!drew_any) {
+    restore();
+    return true;
+  }
+
+  glDisable(GL_BLEND);
+  if (effect.type == EffectType::Blur && effect.radius > 0.0f) {
+    auto radius = std::min(effect.radius, 64.0f);
+    float dx = radius / (static_cast<float>(target_box.width) * 3.2307692308f);
+    float dy = radius / (static_cast<float>(target_box.height) * 3.2307692308f);
+    draw_effect_blur(
+      renderer,
+      renderer->effect_targets[0].texture,
+      renderer->effect_targets[1].fbo,
+      target_box.width,
+      target_box.height,
+      dx,
+      0.0f
+    );
+    draw_effect_blur(
+      renderer,
+      renderer->effect_targets[1].texture,
+      renderer->effect_targets[0].fbo,
+      target_box.width,
+      target_box.height,
+      0.0f,
+      dy
+    );
+  }
+
+  auto composite = options[0];
+  composite.texture = nullptr;
+  composite.dst_box = target_box;
+  composite.alpha = nullptr;
+  composite.clip = options[0].clip;
+  composite.blend_mode = WLR_RENDER_BLEND_MODE_PREMULTIPLIED;
+  composite.wait_timeline = nullptr;
+  composite.wait_point = 0;
+  draw_effect_composite(
+    pass,
+    renderer->effect_targets[0].texture,
+    target_box,
+    &composite
+  );
+  restore();
+  return true;
+}
+
+bool render_pass_add_texture_effect(
+  wlr_render_pass* base,
+  const wlr_render_texture_options* options,
+  const Effect& effect
+) {
+  return render_pass_add_texture_group_effect(base, options, 1, effect);
 }
 
 void render_pass_add_texture(
@@ -829,22 +1181,19 @@ void render_pass_add_texture(
   glBindTexture(texture->target, 0);
   egl_restore_context(&saved);
 
-  float tex_matrix[9];
-  set_tex_matrix(options, texture, tex_matrix);
-
-  float u0, v0, u1, v1, u2, v2, u3, v3;
-  texcoord(tex_matrix, 0.0f, 0.0f, &u0, &v0);
-  texcoord(tex_matrix, 1.0f, 0.0f, &u1, &v1);
-  texcoord(tex_matrix, 1.0f, 1.0f, &u2, &v2);
-  texcoord(tex_matrix, 0.0f, 1.0f, &u3, &v3);
+  auto tex_matrix = set_tex_matrix(options, texture);
+  auto uv0 = Vector2Transform({ 0.0f, 0.0f }, tex_matrix);
+  auto uv1 = Vector2Transform({ 1.0f, 0.0f }, tex_matrix);
+  auto uv2 = Vector2Transform({ 1.0f, 1.0f }, tex_matrix);
+  auto uv3 = Vector2Transform({ 0.0f, 1.0f }, tex_matrix);
 
   float x1 = static_cast<float>(dst.x);
   float y1 = static_cast<float>(dst.y);
   float x2 = static_cast<float>(dst.x + dst.width);
   float y2 = static_cast<float>(dst.y + dst.height);
   const float vertices[] = {
-    x1, y1, u0, v0, x2, y1, u1, v1, x2, y2, u2, v2,
-    x1, y1, u0, v0, x2, y2, u2, v2, x1, y2, u3, v3,
+    x1, y1, uv0.x, uv0.y, x2, y1, uv1.x, uv1.y, x2, y2, uv2.x, uv2.y,
+    x1, y1, uv0.x, uv0.y, x2, y2, uv2.x, uv2.y, x1, y2, uv3.x, uv3.y,
   };
 
   pixman_region32_t region;

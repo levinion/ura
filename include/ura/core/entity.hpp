@@ -13,9 +13,8 @@ class UraToplevel;
 class UraOutput;
 class UraPopup;
 class UraLayerShell;
+class UraSessionLockSurface;
 
-// Wrappers keep the wlroots-facing object alive while the registry owns its
-// identity. The component is also the type tag used by the ID lookups below.
 struct ToplevelRef {
   UraToplevel* object = nullptr;
 };
@@ -32,22 +31,23 @@ struct LayerShellRef {
   UraLayerShell* object = nullptr;
 };
 
+struct SessionLockRef {
+  UraSessionLockSurface* object = nullptr;
+};
+
 struct LuaUserdata {
   flexible::object value;
 };
 
-// Process-local identity for objects exposed to Lua.
-//
-// The public handle is derived from entt::entity, so destroying an entity
-// invalidates its old handle even when EnTT recycles the underlying index.
-// EnTT entities are 32-bit; adding one keeps 0 as an invalid handle and keeps
-// every valid handle exactly representable by LuaJIT numbers.
 class UraEntityRegistry {
 public:
   entt::entity create_toplevel(UraToplevel* object);
   entt::entity create_output(UraOutput* object);
   entt::entity create_popup(UraPopup* object);
   entt::entity create_layer_shell(UraLayerShell* object);
+  entt::entity create_session_lock(UraSessionLockSurface* object);
+  // Detached compositor-owned scene node without a wlroots role object.
+  entt::entity create_scene_node();
 
   UraToplevel* toplevel(entt::entity entity) const;
   UraToplevel* toplevel(uint64_t id) const;
@@ -57,6 +57,8 @@ public:
   UraPopup* popup(uint64_t id) const;
   UraLayerShell* layer_shell(entt::entity entity) const;
   UraLayerShell* layer_shell(uint64_t id) const;
+  UraSessionLockSurface* session_lock(entt::entity entity) const;
+  UraSessionLockSurface* session_lock(uint64_t id) const;
 
   bool contains(entt::entity entity) const;
   bool contains(uint64_t id) const;

@@ -10,7 +10,6 @@
 #include <sol/property.hpp>
 #include <sol/state_handling.hpp>
 #include <string>
-#include <filesystem>
 
 namespace ura {
 
@@ -54,7 +53,12 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.set_window_z_index", api::core::set_window_z_index);
   LUAAPI("api.get_window_z_index", api::core::get_window_z_index);
   LUAAPI("api.move_window", api::core::move_window);
+  LUAAPI("api.animate_window_move", api::core::animate_window_move);
   LUAAPI("api.resize_window", api::core::resize_window);
+  LUAAPI("api.animate_window_resize", api::core::animate_window_resize);
+  LUAAPI("api.animate_window_opacity", api::core::animate_window_opacity);
+  LUAAPI("api.animate_window_open", api::core::animate_window_open);
+  LUAAPI("api.animate_window_close", api::core::animate_window_close);
   LUAAPI("api.get_window_app_id", api::core::get_window_app_id);
   LUAAPI("api.get_window_title", api::core::get_window_title);
   LUAAPI("api.set_window_fullscreen", api::core::set_window_fullscreen);
@@ -72,6 +76,10 @@ std::unique_ptr<Lua> Lua::init() {
     api::core::is_window_maximized_requested
   );
   LUAAPI("api.get_window_geometry", api::core::get_window_geometry);
+  LUAAPI(
+    "api.get_window_visual_geometry",
+    api::core::get_window_visual_geometry
+  );
   LUAAPI("api.get_window_output", api::core::get_window_output);
   LUAAPI("api.set_window_tags", api::core::set_window_tags);
   LUAAPI("api.get_window_tags", api::core::get_window_tags);
@@ -81,6 +89,8 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.get_window_lru", api::core::get_window_lru);
   LUAAPI("api.get_window_opacity", api::core::get_window_opacity);
   LUAAPI("api.set_window_opacity", api::core::set_window_opacity);
+  LUAAPI("api.set_window_effect", api::core::set_window_effect);
+  LUAAPI("api.clear_window_effect", api::core::clear_window_effect);
   LUAAPI("api.get_window_border_color", api::core::get_window_border_color);
   LUAAPI("api.set_window_border_color", api::core::set_window_border_color);
   // input

@@ -1,5 +1,6 @@
 #include "ura/view/view.hpp"
 #include <utility>
+#include "ura/scene/animation_system.hpp"
 #include "ura/scene/layer.hpp"
 #include "ura/view/client.hpp"
 #include "ura/view/layer_shell.hpp"
@@ -29,6 +30,10 @@ UraView::~UraView() {
 std::unique_ptr<UraView> UraView::init(UraEntityRegistry& entities) {
   auto view = std::make_unique<UraView>();
   view->scene = std::make_unique<UraScene>(entities);
+  view->animations = std::make_unique<UraAnimationSystem>(*view->scene);
+  view->animations->set_destroy_callback([view = view.get()](entt::entity e) {
+    view->destroy_scene_entity(e);
+  });
   view->frame_planner = std::make_unique<UraFramePlanner>();
   view->frame_profiler = std::make_unique<UraFrameProfiler>();
   view->frame_scheduler = std::make_unique<UraFrameScheduler>(
@@ -38,7 +43,119 @@ std::unique_ptr<UraView> UraView::init(UraEntityRegistry& entities) {
   view->scene->set_dirty_callback([view = view.get()] {
     view->schedule_frames();
   });
+  view->scene->set_visual_dirty_callback([view = view.get()](
+                                           entt::entity,
+                                           const Rect<double>& previous,
+                                           const Rect<double>& current
+                                         ) {
+    view->schedule_visual_change(previous, current);
+  });
   return view;
+}
+
+namespace {
+
+  struct CaptureContext {
+    UraView* view;
+    RenderTargetResource* resource;
+    int window_x;
+    int window_y;
+  };
+
+  void capture_surface_cb(wlr_surface* surface, int sx, int sy, void* data) {
+    auto* context = static_cast<CaptureContext*>(data);
+    // unmap() runs after wlr_surface.mapped has been cleared, so do not
+    // filter on that flag here. The buffer is still attached during a close.
+    if (!surface || !surface->buffer)
+      return;
+
+    auto* buffer = surface->buffer->source ? surface->buffer->source
+                                           : &surface->buffer->base;
+    auto* server = UraServer::get_instance();
+    auto* texture = wlr_texture_from_buffer(server->renderer, buffer);
+    if (!texture)
+      return;
+
+    auto* state = &surface->current;
+    FrozenSurface frozen {
+      .texture = texture,
+      .dst_box = {
+        sx - context->window_x,
+        sy - context->window_y,
+        state->width,
+        state->height,
+      },
+      .transform = state->transform,
+      .opacity = 1.f,
+      .content_id = context->view->allocate_content_id(),
+    };
+    wlr_surface_get_buffer_source_box(surface, &frozen.src_box);
+
+    if (auto* alpha = wlr_alpha_modifier_v1_get_surface_state(surface))
+      frozen.opacity = alpha->multiplier;
+
+    context->resource->surfaces.push_back(frozen);
+  }
+
+} // namespace
+
+uint64_t
+UraView::capture_surface(wlr_surface* surface, int window_x, int window_y) {
+  if (!surface)
+    return 0;
+
+  RenderTargetResource resource;
+  CaptureContext context {
+    .view = this,
+    .resource = &resource,
+    .window_x = window_x,
+    .window_y = window_y,
+  };
+  wlr_surface_for_each_surface(surface, capture_surface_cb, &context);
+  if (resource.surfaces.empty())
+    return 0;
+
+  auto handle = this->next_render_target++;
+  this->render_targets[handle] = std::move(resource);
+  return handle;
+}
+
+uint64_t UraView::allocate_content_id() {
+  return this->next_content_id++;
+}
+
+const RenderTargetResource* UraView::render_target(uint64_t handle) const {
+  auto it = this->render_targets.find(handle);
+  return it == this->render_targets.end() ? nullptr : &it->second;
+}
+
+void UraView::release_render_target(uint64_t handle) {
+  auto it = this->render_targets.find(handle);
+  if (it == this->render_targets.end())
+    return;
+  for (auto& surface : it->second.surfaces) {
+    if (surface.texture)
+      wlr_texture_destroy(surface.texture);
+  }
+  this->render_targets.erase(it);
+}
+
+void UraView::clear_render_targets() {
+  for (auto& [handle, resource] : this->render_targets) {
+    for (auto& surface : resource.surfaces) {
+      if (surface.texture)
+        wlr_texture_destroy(surface.texture);
+    }
+  }
+  this->render_targets.clear();
+}
+
+void UraView::destroy_scene_entity(entt::entity entity) {
+  if (!this->scene || !this->scene->raw().valid(entity))
+    return;
+  if (auto* target = this->scene->try_get<RenderTarget>(entity))
+    this->release_render_target(target->resource);
+  this->scene->destroy(entity);
 }
 
 void UraView::handle_surface_commit(wl_listener* listener, void* data) {
@@ -109,18 +226,44 @@ void UraView::schedule_frames() {
   }
 }
 
+void UraView::schedule_visual_change(
+  const Rect<double>& previous,
+  const Rect<double>& current
+) {
+  bool scheduled = false;
+  for (auto& [name, output] : this->outputs) {
+    if (!output->output || !output->output->enabled)
+      continue;
+    auto geometry = output->logical_geometry();
+    if (!previous.intersects(geometry) && !current.intersects(geometry))
+      continue;
+    this->frame_scheduler->mark_output_dirty(output);
+    wlr_output_schedule_frame(output->output);
+    scheduled = true;
+  }
+
+  // A node can be entirely outside the layout (for example while a close
+  // animation leaves the screen). There is nothing to repaint in that case.
+  (void)scheduled;
+}
+
+void UraView::tick_animations() {
+  if (!this->animations)
+    return;
+  this->animations->tick(AnimationClock::now());
+}
+
 UraOutput* UraView::current_output() {
   auto server = UraServer::get_instance();
-  auto pos = server->seat->cursor->position();
-  auto output =
-    wlr_output_layout_output_at(server->output_layout, pos.x, pos.y);
+  auto [px, py] = server->seat->cursor->position();
+  auto output = wlr_output_layout_output_at(server->output_layout, px, py);
   if (!output) {
     double x, y;
     wlr_output_layout_closest_point(
       server->output_layout,
       nullptr,
-      pos.x,
-      pos.y,
+      px,
+      py,
       &x,
       &y
     );
@@ -137,8 +280,8 @@ UraOutput* UraView::get_output_by_name(std::string_view name) {
 
 std::optional<UraClient> UraView::foreground_client() {
   auto server = UraServer::get_instance();
-  auto pos = server->seat->cursor->position();
-  return this->client_at(pos.x, pos.y);
+  auto [x, y] = server->seat->cursor->position();
+  return this->client_at(x, y);
 }
 
 std::optional<UraClient> UraView::client_at(double lx, double ly) {
@@ -154,43 +297,37 @@ std::optional<UraClient> UraView::client_at(double lx, double ly) {
     return client;
   };
 
-  // A session lock owns the whole output. It is not part of UraScene yet, but
-  // its geometry is known from the output layout and must win over every
-  // regular window while the seat is locked.
-  if (server->seat->locked) {
-    auto* output = wlr_output_layout_output_at(server->output_layout, lx, ly);
-    if (!output)
-      return {};
-    auto* ura_output = UraOutput::from(output);
-    if (!ura_output || !ura_output->session_lock_surface)
-      return {};
-    if (!ura_output->session_lock_surface->surface->surface->mapped)
-      return {};
-    auto geometry = ura_output->logical_geometry();
-    double sx, sy;
-    auto* surface = wlr_surface_surface_at(
-      ura_output->session_lock_surface->surface->surface,
-      lx - geometry.x,
-      ly - geometry.y,
-      &sx,
-      &sy
-    );
-    return make_client(surface, sx, sy);
-  }
-
   auto& snapshot = this->scene->snapshot();
   for (auto item = snapshot.items.rbegin(); item != snapshot.items.rend();
        ++item) {
     if (!item->visibility.visible || item->visibility.occluded)
       continue;
 
+    auto is_lock = item->role == SceneRole::SessionLock;
+    if (server->seat->locked != is_lock)
+      continue;
+
     auto entity = UraEntityRegistry::from_id(item->id);
     double sx, sy;
+
+    auto& bounds = item->node.bounds;
+    if (bounds.width <= 0 || bounds.height <= 0)
+      continue;
+    auto& content = item->content;
+    auto scale_x = content.geometry.width > 0
+      ? bounds.width / static_cast<double>(content.geometry.width)
+      : 1.0;
+    auto scale_y = content.geometry.height > 0
+      ? bounds.height / static_cast<double>(content.geometry.height)
+      : 1.0;
 
     if (item->role == SceneRole::Toplevel) {
       auto* toplevel = server->entities->toplevel(entity);
       if (!toplevel || !toplevel->mapped())
         continue;
+
+      auto local_x = (lx - bounds.x) / scale_x;
+      auto local_y = (ly - bounds.y) / scale_y;
 
       // Input method popups sit above the regular xdg surface tree.
       auto* text_input = server->seat->text_input.get();
@@ -205,8 +342,8 @@ std::optional<UraClient> UraView::client_at(double lx, double ly) {
         auto& geometry = (*popup)->geometry;
         auto* surface = wlr_surface_surface_at(
           popup_surface,
-          lx - item->transform.x - geometry.x,
-          ly - item->transform.y - geometry.y,
+          local_x - geometry.x,
+          local_y - geometry.y,
           &sx,
           &sy
         );
@@ -217,8 +354,8 @@ std::optional<UraClient> UraView::client_at(double lx, double ly) {
       auto* xdg_surface = toplevel->xdg_toplevel->base;
       auto* surface = wlr_xdg_surface_surface_at(
         xdg_surface,
-        lx - item->transform.x + xdg_surface->geometry.x,
-        ly - item->transform.y + xdg_surface->geometry.y,
+        local_x + content.geometry.x,
+        local_y + content.geometry.y,
         &sx,
         &sy
       );
@@ -231,8 +368,22 @@ std::optional<UraClient> UraView::client_at(double lx, double ly) {
 
       auto* surface = wlr_layer_surface_v1_surface_at(
         layer_shell->layer_surface,
-        lx - item->transform.x,
-        ly - item->transform.y,
+        (lx - bounds.x) / scale_x,
+        (ly - bounds.y) / scale_y,
+        &sx,
+        &sy
+      );
+      if (surface)
+        return make_client(surface, sx, sy);
+    } else if (item->role == SceneRole::SessionLock) {
+      auto* session_lock = server->entities->session_lock(entity);
+      if (!session_lock || !session_lock->surface->surface->mapped)
+        continue;
+
+      auto* surface = wlr_surface_surface_at(
+        session_lock->surface->surface,
+        (lx - bounds.x) / scale_x,
+        (ly - bounds.y) / scale_y,
         &sx,
         &sy
       );

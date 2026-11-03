@@ -8,6 +8,19 @@ ura::UraOutput* fake_output(uintptr_t value) {
   return reinterpret_cast<ura::UraOutput*>(value);
 }
 
+ura::FrameSurfaceSnapshot
+frozen_at(uint64_t content_id, int x, int y, int width, int height) {
+  return ura::FrameSurfaceSnapshot {
+    .surface = nullptr,
+    .texture = reinterpret_cast<wlr_texture*>(content_id + 0x1000),
+    .dst_box = { x, y, width, height },
+    .seq = 0,
+    .output_name = {},
+    .content_id = content_id,
+    .effect = {},
+  };
+}
+
 ura::FrameSurfaceSnapshot surface_at(
   uintptr_t surface,
   int x,
@@ -22,6 +35,7 @@ ura::FrameSurfaceSnapshot surface_at(
     .dst_box = { x, y, width, height },
     .seq = seq,
     .output_name = {},
+    .effect = {},
   };
 }
 
@@ -75,6 +89,95 @@ bool test_damage_and_commit_state() {
   auto filtered = planner.build(output_state, *state, next_filter, world);
   return filtered.surfaces.size() == 1
     && filtered.surfaces[0].surface == world.surfaces[0].surface;
+}
+
+bool test_frozen_surface_identity() {
+  ura::UraFramePlanner planner;
+  auto* output = fake_output(0x12000);
+  auto* state = planner.prepare_output(output);
+
+  ura::OutputFrameState output_state {
+    .output = output,
+    .enabled = true,
+    .name = "OUT-1",
+    .logical_box = { 0, 0, 200, 200 },
+  };
+
+  ura::FrameWorldSnapshot world;
+  world.surfaces.push_back(frozen_at(1, 10, 10, 40, 40));
+  world.surfaces.push_back(frozen_at(2, 80, 10, 40, 40));
+  world.operations.push_back({ ura::FrameOperationKind::Surface, 0 });
+  world.operations.push_back({ ura::FrameOperationKind::Surface, 1 });
+
+  ura::UraFramePlanner::OutputState next;
+  auto first = planner.build(output_state, *state, next, world);
+  if (!first.full_redraw || first.surfaces.size() != 2)
+    return false;
+  planner.commit_state(output, std::move(next));
+
+  world.surfaces[1].dst_box.x = 100;
+  state = planner.prepare_output(output);
+  ura::UraFramePlanner::OutputState moved_next;
+  auto moved = planner.build(output_state, *state, moved_next, world);
+  if (moved.full_redraw || moved.damage.empty() || moved.surfaces.size() != 2)
+    return false;
+  planner.commit_state(output, std::move(moved_next));
+
+  state = planner.prepare_output(output);
+  ura::UraFramePlanner::OutputState idle_next;
+  auto idle = planner.build(output_state, *state, idle_next, world);
+  if (idle.full_redraw || !idle.damage.empty() || idle.surfaces.size() != 2)
+    return false;
+  planner.commit_state(output, std::move(idle_next));
+
+  // Changing an effect invalidates the surface's damage even when its
+  // geometry and texture sequence are unchanged.
+  world.surfaces[0].effect = ura::Effect {
+    .type = ura::EffectType::Blur,
+    .radius = 4.f,
+  };
+  state = planner.prepare_output(output);
+  ura::UraFramePlanner::OutputState effect_next;
+  auto effect = planner.build(output_state, *state, effect_next, world);
+  if (
+    effect.full_redraw || effect.damage.empty() || effect.surfaces.size() != 2
+  )
+    return false;
+  planner.commit_state(output, std::move(effect_next));
+
+  state = planner.prepare_output(output);
+  ura::UraFramePlanner::OutputState effect_idle_next;
+  auto effect_idle =
+    planner.build(output_state, *state, effect_idle_next, world);
+  return !effect_idle.full_redraw && effect_idle.damage.empty()
+    && effect_idle.surfaces.size() == 2;
+}
+
+bool test_locked_world_filters_scene_surfaces() {
+  ura::UraFramePlanner planner;
+  auto* output = fake_output(0x15000);
+  auto* state = planner.prepare_output(output);
+
+  ura::OutputFrameState output_state {
+    .output = output,
+    .enabled = true,
+    .name = "OUT-1",
+    .logical_box = { 0, 0, 100, 100 },
+  };
+
+  ura::FrameWorldSnapshot world;
+  world.locked = true;
+  world.surfaces.push_back(surface_at(0x16000, 0, 0, 100, 100, 1));
+  world.surfaces.push_back(surface_at(0x17000, 0, 0, 100, 100, 1));
+  world.surfaces.back().lock_surface = true;
+  world.operations.push_back({ ura::FrameOperationKind::Surface, 0 });
+  world.operations.push_back({ ura::FrameOperationKind::Surface, 1 });
+
+  ura::UraFramePlanner::OutputState next;
+  auto plan = planner.build(output_state, *state, next, world);
+  return plan.full_redraw && plan.surfaces.size() == 1
+    && plan.surfaces[0].surface == world.surfaces[1].surface
+    && plan.background_color == std::array<float, 4> { { 0.f, 0.f, 0.f, 1.f } };
 }
 
 bool test_rect_damage() {
@@ -175,6 +278,14 @@ bool test_abort_frame_retry() {
 int main() {
   if (!test_damage_and_commit_state()) {
     std::cerr << "damage and commit state test failed\n";
+    return 1;
+  }
+  if (!test_frozen_surface_identity()) {
+    std::cerr << "frozen surface identity test failed\n";
+    return 1;
+  }
+  if (!test_locked_world_filters_scene_surfaces()) {
+    std::cerr << "locked world filter test failed\n";
     return 1;
   }
   if (!test_rect_damage()) {

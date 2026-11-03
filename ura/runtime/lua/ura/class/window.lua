@@ -20,6 +20,27 @@ function UraWindow:new(id)
   instance.id = id
   return instance
 end
+--- Resolve animation policy through the optional animation plugin. Without
+--- the plugin only explicit per-call duration enables animation.
+local function resolve_animation(name, event, opt)
+  local spec
+  if ura.animation and ura.animation.resolve then
+    spec = ura.animation.resolve(name, event, false)
+  else
+    spec = { enabled = false }
+  end
+
+  if not spec.enabled and opt and opt.duration ~= nil then
+    spec.enabled = opt.duration > 0
+    spec.duration = opt.duration
+    spec.easing = opt.easing or spec.easing or "in_out_cubic"
+  end
+
+  spec.duration = math.max(0, tonumber(spec.duration) or 0)
+  spec.easing = spec.easing or "in_out_cubic"
+  return spec
+end
+
 
 --- @return UraWindow|nil
 function UraWindow:current()
@@ -107,6 +128,11 @@ function UraWindow:geometry()
   return ura.api.get_window_geometry(self.id)
 end
 
+---@return table|nil
+function UraWindow:visual_geometry()
+  return ura.api.get_window_visual_geometry(self.id)
+end
+
 ---@return integer|nil
 function UraWindow:z_index()
   return ura.api.get_window_z_index(self.id)
@@ -173,46 +199,37 @@ function UraWindow:opacity()
 end
 
 ---@param opacity number
---- @param opt { duration?: integer, fps?: number }|nil
+--- @param opt { duration?: integer, fps?: number, easing?: string|fun(t: number): number }|nil
 function UraWindow:set_opacity(opacity, opt)
-  if self:userdata().opacity_timer then
-    self:update_userdata(function(t)
-      ura.api.clear_interval(t.opacity_timer)
-      t.opacity_timer = nil
-    end)
+  local start_opacity = ura.api.get_window_opacity(self.id)
+  if not start_opacity or start_opacity == opacity then
+    return
   end
 
-  local start_opacity = ura.api.get_window_opacity(self.id)
+  local spec = resolve_animation("window-opacity", {
+    id = self.id,
+    app_id = self:app_id(),
+    title = self:title(),
+    from = start_opacity,
+    to = opacity,
+    opt = opt,
+  }, opt)
 
-  local duration = opt and opt.duration or ura.opt.animation_duration or 200
-  local fps = opt and opt.fps or ura.opt.animation_fps or 60
-
-  if duration <= 0 then
+  if not spec.enabled or (spec.duration or 0) <= 0 then
     ura.api.set_window_opacity(self.id, opacity)
     return
   end
 
-  self:update_userdata(function(tb)
-    local start_time = ura.api.time_since_epoch() / 1e6
+  ura.api.animate_window_opacity(self.id, opacity, spec.duration, spec.easing)
+end
 
-    tb.opacity_timer = ura.api.set_interval(function()
-      local now = ura.api.time_since_epoch() / 1e6
-      local elapsed = now - start_time
-      local t = math.min(elapsed / duration, 1.0)
+---@param effect table
+function UraWindow:set_effect(effect)
+  ura.api.set_window_effect(self.id, effect)
+end
 
-      local ease_t = t < 0.5 and 4 * t * t * t or 1 - math.pow(-2 * t + 2, 3) / 2
-
-      local cur_o = start_opacity + (opacity - start_opacity) * ease_t
-
-      ura.api.set_window_opacity(self.id, cur_o)
-
-      if t >= 1.0 and tb.opacity_timer then
-        ura.api.clear_interval(tb.opacity_timer)
-        tb.opacity_timer = nil
-        ura.api.set_window_opacity(self.id, opacity)
-      end
-    end, 1000 / fps)
-  end)
+function UraWindow:clear_effect()
+  ura.api.clear_window_effect(self.id)
 end
 
 ---@return string|nil
@@ -227,119 +244,77 @@ end
 
 --- @param x integer
 --- @param y integer
---- @param opt { duration?: integer, fps?: number }|nil
+--- @param opt { duration?: integer, fps?: number, easing?: string|fun(t: number): number }|nil
 function UraWindow:move(x, y, opt)
   x = math.floor(x)
   y = math.floor(y)
 
-  local userdata = self:userdata()
-
-  if userdata.move_timer then
-    self:update_userdata(function(t)
-      ura.api.clear_interval(t.move_timer)
-      t.move_timer = nil
-    end)
-  end
-
   local geo = self:geometry()
   assert(geo)
-  local start_x = geo.x
-  local start_y = geo.y
-
-  if start_x == x and start_y == y then
+  if geo.x == x and geo.y == y then
     return
   end
 
-  local duration = opt and opt.duration or ura.opt.animation_duration or 200
-  local fps = opt and opt.fps or ura.opt.animation_fps or 60
+  local spec = resolve_animation("window-move", {
+    id = self.id,
+    app_id = self:app_id(),
+    title = self:title(),
+    from = geo,
+    to = { x = x, y = y, width = geo.width, height = geo.height },
+    opt = opt,
+  }, opt)
 
-  if duration <= 0 then
+  if not spec.enabled or (spec.duration or 0) <= 0 then
     ura.api.move_window(self.id, x, y)
     return
   end
 
-  self:update_userdata(function(tb)
-    local start_time = ura.api.time_since_epoch() / 1e6
-
-    tb.move_timer = ura.api.set_interval(function()
-      local now = ura.api.time_since_epoch() / 1e6
-      local elapsed = now - start_time
-      local t = math.min(elapsed / duration, 1.0)
-
-      local ease_t = t < 0.5 and 4 * t * t * t or 1 - math.pow(-2 * t + 2, 3) / 2
-
-      local cur_x = start_x + (x - start_x) * ease_t
-      local cur_y = start_y + (y - start_y) * ease_t
-
-      ura.api.move_window(self.id, math.floor(cur_x), math.floor(cur_y))
-
-      if t >= 1.0 and tb.move_timer then
-        ura.api.clear_interval(tb.move_timer)
-        tb.move_timer = nil
-        ura.api.move_window(self.id, x, y)
-      end
-    end, 1000 / fps)
-  end)
+  -- The compositor keeps the visual state and retargets from the current
+  -- position if another layout change interrupts this animation.
+  ura.api.animate_window_move(self.id, x, y, spec.duration, spec.easing)
 end
 
 --- @param width integer
 --- @param height integer
---- @param opt { duration?: integer, fps?: number }|nil
+--- @param opt { duration?: integer, fps?: number, easing?: string|fun(t: number): number }|nil
 function UraWindow:resize(width, height, opt)
   width = math.floor(width)
   height = math.floor(height)
 
-  local userdata = self:userdata()
-
-  if userdata.resize_timer then
-    self:update_userdata(function(t)
-      ura.api.clear_interval(t.resize_timer)
-      t.resize_timer = nil
-    end)
-    self:set_resizing(false)
-  end
-
   local geo = self:geometry()
   assert(geo)
-  local start_w = geo.width
-  local start_h = geo.height
-
-  if start_w == width and start_h == height then
+  if geo.width == width and geo.height == height then
     return
   end
 
-  local duration = opt and opt.duration or ura.opt.animation_duration or 200
-  local fps = opt and opt.fps or ura.opt.animation_fps or 60
+  local event = {
+    id = self.id,
+    app_id = self:app_id(),
+    title = self:title(),
+    from = geo,
+    to = { x = geo.x, y = geo.y, width = width, height = height },
+    opt = opt,
+  }
 
-  if duration <= 0 then
+  local spec = resolve_animation("window-resize", event, opt)
+
+  -- A layout move usually also changes size. If the user only configured
+  -- window-move, let that rule cover the combined resize+move transition.
+  if not spec.enabled and not (opt and opt.duration) then
+    spec = resolve_animation("window-move", event, nil)
+  end
+
+  if not spec.enabled or (spec.duration or 0) <= 0 then
+    -- Still commit-first: the compositor waits for the client's final content
+    -- and snaps the SceneNode when it arrives.
     ura.api.resize_window(self.id, width, height)
     return
   end
 
-  self:update_userdata(function(tb)
-    local start_time = ura.api.time_since_epoch() / 1e6
-    self:set_resizing(true)
-
-    tb.resize_timer = ura.api.set_interval(function()
-      local now = ura.api.time_since_epoch() / 1e6
-      local elapsed = now - start_time
-      local t = math.min(elapsed / duration, 1.0)
-
-      local ease_t = t < 0.5 and 4 * t * t * t or 1 - math.pow(-2 * t + 2, 3) / 2
-
-      local cur_w = start_w + (width - start_w) * ease_t
-      local cur_h = start_h + (height - start_h) * ease_t
-
-      ura.api.resize_window(self.id, math.floor(cur_w), math.floor(cur_h))
-
-      if t >= 1.0 and tb.resize_timer then
-        ura.api.clear_interval(tb.resize_timer)
-        tb.resize_timer = nil
-        ura.api.resize_window(self.id, width, height)
-        self:set_resizing(false)
-      end
-    end, 1000 / fps)
-  end)
+  -- One configure is sent for the final size. The compositor waits for the
+  -- client to commit that size, then runs a FLIP animation from the old
+  -- visible rectangle to the new one.
+  ura.api.animate_window_resize(self.id, width, height, spec.duration, spec.easing)
 end
 
 --- @param opt { duration?: integer, fps?: number }|nil

@@ -1,5 +1,6 @@
 #include "ura/api.hpp"
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <regex>
 #include <sol/forward.hpp>
@@ -11,6 +12,7 @@
 #include "ura/view/view.hpp"
 #include "ura/view/toplevel.hpp"
 #include "ura/util/keybinding.hpp"
+#include "ura/util/rgb.hpp"
 #include "ura/util/string.hpp"
 #include "ura/seat/seat.hpp"
 #include <fcntl.h>
@@ -92,18 +94,175 @@ void activate_window(uint64_t id) {
   toplevel->activate();
 }
 
+namespace {
+
+  flexible::object rect_table(const Rect<int>& rect) {
+    auto table = flexible::create_table();
+    table.set("x", rect.x);
+    table.set("y", rect.y);
+    table.set("width", rect.width);
+    table.set("height", rect.height);
+    return table;
+  }
+
+  ura::EasingCurve easing_curve(const flexible::object& value) {
+    if (value.valid() && value.is<std::string>())
+      return ura::EasingCurve::from_name(value.as<std::string>());
+
+    if (value.valid() && value.is<sol::table>()) {
+      auto table = value.as<sol::table>();
+      std::vector<float> samples;
+      samples.reserve(ura::EasingCurve::sample_count);
+      for (int i = 1; i <= static_cast<int>(ura::EasingCurve::sample_count);
+           ++i) {
+        auto sample = table.get<std::optional<float>>(i);
+        if (!sample)
+          break;
+        samples.push_back(*sample);
+      }
+      if (!samples.empty())
+        return ura::EasingCurve::from_samples(samples);
+    }
+
+    return ura::EasingCurve::from_name("in_out_cubic");
+  }
+
+  float
+  table_number(const sol::table& table, std::string_view key, float fallback) {
+    auto value = table.get<std::optional<float>>(std::string(key));
+    return value.value_or(fallback);
+  }
+
+  ura::AnimationOptions animation_options(
+    double duration,
+    const flexible::object& easing,
+    bool animate_opacity = false,
+    float opacity = 1.f
+  ) {
+    ura::AnimationOptions options;
+    auto milliseconds = std::llround(std::max(0.0, duration));
+    options.duration = std::chrono::milliseconds(milliseconds);
+    options.easing = easing_curve(easing);
+    options.animate_opacity = animate_opacity;
+    options.opacity = opacity;
+    return options;
+  }
+
+} // namespace
+
 void move_window(uint64_t id, int x, int y) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
-  toplevel->move(x, y);
+  auto options = animation_options(0, flexible::object {});
+  toplevel->move(x, y, options);
+}
+
+void animate_window_move(
+  uint64_t id,
+  int x,
+  int y,
+  double duration,
+  flexible::object easing
+) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return;
+  toplevel->move(x, y, animation_options(duration, easing));
 }
 
 void resize_window(uint64_t id, int width, int height) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
-  toplevel->resize(width, height);
+  auto options = animation_options(0, flexible::object {});
+  toplevel->resize(width, height, options);
+}
+
+void animate_window_resize(
+  uint64_t id,
+  int width,
+  int height,
+  double duration,
+  flexible::object easing
+) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return;
+  toplevel->resize(width, height, animation_options(duration, easing));
+}
+
+void animate_window_opacity(
+  uint64_t id,
+  float opacity,
+  double duration,
+  flexible::object easing
+) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return;
+  toplevel->animate_opacity(
+    opacity,
+    animation_options(duration, easing, true, opacity)
+  );
+}
+
+void animate_window_open(
+  uint64_t id,
+  double duration,
+  flexible::object easing,
+  flexible::object options
+) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return;
+
+  float from_scale = 0.95f;
+  float from_opacity = 0.f;
+  float to_scale = 1.f;
+  float to_opacity = 1.f;
+  if (options.valid() && options.is<sol::table>()) {
+    auto table = options.as<sol::table>();
+    from_scale = table_number(table, "from_scale", from_scale);
+    from_opacity = table_number(table, "from_opacity", from_opacity);
+    to_scale = table_number(table, "to_scale", to_scale);
+    to_opacity = table_number(table, "to_opacity", to_opacity);
+  }
+
+  toplevel->animate_open(
+    animation_options(duration, easing),
+    from_scale,
+    from_opacity,
+    to_scale,
+    to_opacity
+  );
+}
+
+void animate_window_close(
+  uint64_t id,
+  double duration,
+  flexible::object easing,
+  flexible::object options
+) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return;
+
+  float to_scale = 0.95f;
+  float to_opacity = 0.f;
+  if (options.valid() && options.is<sol::table>()) {
+    auto table = options.as<sol::table>();
+    to_scale = table_number(table, "scale", to_scale);
+    to_scale = table_number(table, "to_scale", to_scale);
+    to_opacity = table_number(table, "opacity", to_opacity);
+    to_opacity = table_number(table, "to_opacity", to_opacity);
+  }
+
+  toplevel->request_close_animation(
+    animation_options(duration, easing),
+    to_scale,
+    to_opacity
+  );
 }
 
 sol::optional<uint64_t> get_current_output() {
@@ -315,14 +474,14 @@ flexible::object get_output_logical_geometry(uint64_t id) {
   auto output = UraOutput::from(id);
   if (!output)
     return {};
-  return output->logical_geometry().to_table();
+  return rect_table(output->logical_geometry());
 }
 
 flexible::object get_output_usable_geometry(uint64_t id) {
   auto output = UraOutput::from(id);
   if (!output)
     return {};
-  return output->usable_area.to_table();
+  return rect_table(output->usable_area);
 }
 
 sol::optional<float> get_output_scale(uint64_t id) {
@@ -406,15 +565,27 @@ flexible::object get_window_geometry(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
-  auto transform = toplevel->transform();
-  auto geometry = toplevel->geometry();
-  auto box = Vec4<int> {
-    transform.x,
-    transform.y,
-    geometry.width,
-    geometry.height,
+  auto target = toplevel->layout().target;
+  auto box = Rect<int> {
+    static_cast<int>(std::lround(target.x)),
+    static_cast<int>(std::lround(target.y)),
+    static_cast<int>(std::lround(target.width)),
+    static_cast<int>(std::lround(target.height)),
   };
-  return box.to_table();
+  return rect_table(box);
+}
+
+flexible::object get_window_visual_geometry(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  auto bounds = toplevel->node().bounds;
+  auto table = flexible::create_table();
+  table.set("x", bounds.x);
+  table.set("y", bounds.y);
+  table.set("width", bounds.width);
+  table.set("height", bounds.height);
+  return table;
 }
 
 sol::optional<uint64_t> get_window_output(uint64_t id) {
@@ -531,7 +702,11 @@ sol::optional<uint64_t> get_window_lru(uint64_t id) {
 
 flexible::object get_cursor_pos() {
   auto server = UraServer::get_instance();
-  return server->seat->cursor->position().to_table();
+  auto [x, y] = server->seat->cursor->position();
+  auto table = flexible::create_table();
+  table.set("x", x);
+  table.set("y", y);
+  return table;
 }
 
 long time_since_epoch() {
@@ -552,6 +727,78 @@ void set_window_opacity(uint64_t id, float opacity) {
   if (!toplevel)
     return;
   toplevel->set_opacity(opacity);
+}
+
+namespace {
+
+  std::array<float, 4> effect_color(const sol::object& value) {
+    std::array<float, 4> fallback { { 1.f, 1.f, 1.f, 1.f } };
+    if (!value.valid())
+      return fallback;
+
+    if (value.is<std::string>()) {
+      auto color = util::hex2rgba(value.as<std::string>());
+      if (!color)
+        return fallback;
+      for (int i = 0; i < 3; ++i) (*color)[i] *= (*color)[3];
+      return *color;
+    }
+
+    if (!value.is<sol::table>())
+      return fallback;
+
+    auto table = value.as<sol::table>();
+    std::array<float, 4> color { { 1.f, 1.f, 1.f, 1.f } };
+    for (int i = 0; i < 4; ++i) {
+      auto component = table.get<std::optional<float>>(i + 1);
+      if (component)
+        color[i] = *component;
+      else if (
+        auto named = table.get<std::optional<float>>(
+          std::array<const char*, 4> { "r", "g", "b", "a" }[i]
+        )
+      )
+        color[i] = *named;
+    }
+    for (int i = 0; i < 3; ++i) color[i] *= color[3];
+    return color;
+  }
+
+} // namespace
+
+void set_window_effect(uint64_t id, flexible::object spec) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel || !spec.valid() || !spec.is<sol::table>())
+    return;
+
+  auto table = spec.as<sol::table>();
+  auto type = table.get<std::optional<std::string>>("type");
+  if (!type)
+    return;
+
+  Effect effect;
+  if (*type == "blur") {
+    effect.type = EffectType::Blur;
+    effect.radius = table.get<std::optional<float>>("radius").value_or(8.f);
+  } else if (*type == "tint") {
+    effect.type = EffectType::Tint;
+    effect.color = effect_color(table.get<sol::object>("color"));
+  } else if (*type == "mask") {
+    effect.type = EffectType::Mask;
+    effect.color = effect_color(table.get<sol::object>("color"));
+  } else {
+    return;
+  }
+
+  effect.shader = table.get<std::optional<uint64_t>>("shader").value_or(0);
+  toplevel->set_effect(effect);
+}
+
+void clear_window_effect(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return;
+  toplevel->set_effect(Effect {});
 }
 
 void set_window_border_color(uint64_t id, std::string color) {

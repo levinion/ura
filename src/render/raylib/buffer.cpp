@@ -1,10 +1,7 @@
 #include "ura/render/raylib/renderer.hpp"
+#include "ura/core/log.hpp"
 
 #include <cstdlib>
-
-extern "C" {
-#include <wlr/util/log.h>
-}
 
 namespace ura::render::raylib {
 
@@ -122,7 +119,7 @@ static EGLImageKHR create_egl_image(
     && attributes->modifier != DRM_FORMAT_MOD_LINEAR
     && !egl->has_dmabuf_modifiers
   ) {
-    wlr_log(WLR_ERROR, "EGL implementation does not support DMA-BUF modifiers");
+    log::error("EGL implementation does not support DMA-BUF modifiers");
     return EGL_NO_IMAGE_KHR;
   }
 
@@ -173,7 +170,7 @@ static EGLImageKHR create_egl_image(
     attribs
   );
   if (image == EGL_NO_IMAGE_KHR) {
-    wlr_log(WLR_ERROR, "eglCreateImageKHR failed");
+    log::error("eglCreateImageKHR failed");
     return EGL_NO_IMAGE_KHR;
   }
 
@@ -226,9 +223,8 @@ Buffer* buffer_get(Renderer* renderer, wlr_buffer* wlr_buffer) {
   );
   wl_list_insert(&renderer->buffers, &buffer->link);
 
-  wlr_log(
-    WLR_DEBUG,
-    "Imported DMA-BUF buffer %dx%d (format 0x%x, modifier 0x%llx)%s",
+  log::debug(
+    "Imported DMA-BUF buffer {}x{} (format 0x{:x}, modifier 0x{:x}){}",
     buffer->width,
     buffer->height,
     buffer->format,
@@ -245,7 +241,7 @@ bool buffer_ensure_render_target(Buffer* buffer) {
   if (buffer->fbo)
     return true;
   if (buffer->external_only) {
-    wlr_log(WLR_ERROR, "Cannot render to external-only DMA-BUF");
+    log::error("Cannot render to external-only DMA-BUF");
     return false;
   }
 
@@ -261,7 +257,7 @@ bool buffer_ensure_render_target(Buffer* buffer) {
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
   if (glGetError() != GL_NO_ERROR) {
-    wlr_log(WLR_ERROR, "Failed to attach EGLImage to renderbuffer");
+    log::error("Failed to attach EGLImage to renderbuffer");
     delete_buffer_gl_resources(buffer);
     egl_restore_context(&saved);
     return false;
@@ -281,7 +277,7 @@ bool buffer_ensure_render_target(Buffer* buffer) {
   egl_restore_context(&saved);
 
   if (status != GL_FRAMEBUFFER_COMPLETE) {
-    wlr_log(WLR_ERROR, "DMA-BUF framebuffer is incomplete: 0x%x", status);
+    log::error("DMA-BUF framebuffer is incomplete: 0x{:x}", status);
     delete_buffer_gl_resources(buffer);
     return false;
   }

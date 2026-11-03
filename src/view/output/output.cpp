@@ -1,4 +1,5 @@
 #include "ura/view/output.hpp"
+#include "ura/core/log.hpp"
 #include "ura/render/frame_renderer.hpp"
 #include "ura/scene/frame_planner.hpp"
 #include "ura/util/flexible.hpp"
@@ -51,7 +52,7 @@ void UraOutput::init(wlr_output* _wlr_output) {
   auto restored_context = this->restore_context();
   auto resume = restored_context.has_value();
   auto restored_geometry =
-    restored_context ? restored_context->logical_geometry : Vec4<int> {};
+    restored_context ? restored_context->logical_geometry : Rect<int> {};
   this->last_notified_scale = this->scale();
 
   // register callback
@@ -152,12 +153,16 @@ void UraOutput::refresh_geometry() {
       );
     }
   }
-  if (this->session_lock_surface && enabled) {
-    wlr_session_lock_surface_v1_configure(
-      this->session_lock_surface->surface,
-      geometry.width,
-      geometry.height
-    );
+  if (this->session_lock_surface) {
+    if (enabled) {
+      wlr_session_lock_surface_v1_configure(
+        this->session_lock_surface->surface,
+        geometry.width,
+        geometry.height
+      );
+    }
+    this->session_lock_surface->update_scene_geometry();
+    this->session_lock_surface->update_visibility();
   }
   this->configure_layers();
   if (!enabled)
@@ -173,9 +178,15 @@ wlr_damage_ring* UraOutput::damage_ring() {
   return &this->frame_damage_ring;
 }
 
+std::array<wlr_buffer*, 2>* UraOutput::retained_buffers() {
+  return &this->retained_frame_buffers;
+}
+
 void UraOutput::commit() {
   auto server = UraServer::get_instance();
+  server->view->tick_animations();
   auto plan = server->view->frame_scheduler->take(this);
+  plan.retained_buffers = this->retained_buffers();
   if (this->render_timeline) {
     plan.render_timeline = this->render_timeline;
     plan.render_point = ++this->render_point;
@@ -206,7 +217,7 @@ void UraOutput::commit() {
   );
   profiler->maybe_report();
   if (!rendered) {
-    wlr_log(WLR_ERROR, "Ura frame renderer failed");
+    log::error("Ura frame renderer failed");
     server->view->frame_scheduler->abort_frame(this);
     return;
   }
@@ -216,6 +227,8 @@ void UraOutput::commit() {
   clock_gettime(CLOCK_MONOTONIC, &now);
   for (auto& frame_surface : plan.surfaces) {
     auto* surface = frame_surface.surface;
+    if (!surface)
+      continue;
     auto* sync = wlr_linux_drm_syncobj_v1_get_surface_state(surface);
     if (
       sync && surface->buffer && surface->buffer->base.n_locks > 0
@@ -224,7 +237,7 @@ void UraOutput::commit() {
         &surface->buffer->base
       )
     )
-      wlr_log(WLR_ERROR, "Failed to signal surface release timeline");
+      log::error("Failed to signal surface release timeline");
     if (frame_surface.primary_output)
       wlr_surface_send_frame_done(surface, &now);
   }
@@ -236,14 +249,22 @@ void UraOutput::destroy() {
     toplevel->output_destroyed(this);
   this->detach_layer_shells();
   if (this->session_lock_surface) {
-    this->session_lock_surface->output = nullptr;
+    auto* lock_surface = this->session_lock_surface;
     this->session_lock_surface = nullptr;
+    lock_surface->output = nullptr;
+    lock_surface->update_visibility();
   }
   this->save_context();
   if (this->render_timeline) {
     wlr_drm_syncobj_timeline_signal(this->render_timeline, UINT64_MAX);
     wlr_drm_syncobj_timeline_unref(this->render_timeline);
     this->render_timeline = nullptr;
+  }
+  for (auto*& buffer : this->retained_frame_buffers) {
+    if (buffer) {
+      wlr_buffer_unlock(buffer);
+      buffer = nullptr;
+    }
   }
   wlr_damage_ring_finish(&this->frame_damage_ring);
   server->view->frame_scheduler->remove(this);
@@ -378,7 +399,7 @@ bool UraOutput::configure_layers() {
     || this->usable_area.width != usable_area.width
     || this->usable_area.height != usable_area.height
   ) {
-    this->usable_area = Vec4<int>::from(usable_area);
+    this->usable_area = Rect<int>::from(usable_area);
     auto args = flexible::create_table();
     args.set("id", this->id());
     server->lua->emit_hook("output-usable-geometry-change", args);
@@ -387,11 +408,11 @@ bool UraOutput::configure_layers() {
   return false;
 }
 
-Vec4<int> UraOutput::physical_geometry() {
+Rect<int> UraOutput::physical_geometry() {
   return { 0, 0, this->output->width, this->output->height };
 }
 
-Vec4<int> UraOutput::logical_geometry() {
+Rect<int> UraOutput::logical_geometry() {
   auto server = UraServer::get_instance();
   wlr_box box {};
   if (!wlr_output_layout_get(server->output_layout, this->output))

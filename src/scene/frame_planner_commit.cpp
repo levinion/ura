@@ -57,6 +57,9 @@ void UraFramePlanner::finish_plan(UraOutput* output, FramePlan& plan) {
   auto scale = output->output ? output->output->scale : 1.f;
   for (auto& surface : plan.surfaces) {
     surface.primary_output = primary_output_for_box(surface.dst_box) == output;
+    if (!surface.surface)
+      continue;
+
     view->track_surface(surface.surface);
 
     bool newly_entered = !state.entered_surfaces.contains(surface.surface);

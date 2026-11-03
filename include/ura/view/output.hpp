@@ -3,6 +3,7 @@
 #include "ura/core/entity.hpp"
 #include "ura/core/server.hpp"
 #include "ura/util/vec.hpp"
+#include "ura/util/rect.hpp"
 #include <sol/sol.hpp>
 #include <array>
 
@@ -14,7 +15,7 @@ class UraSessionLockSurface;
 class UraOutputContext {
 public:
   Vec<std::string> tags;
-  Vec4<int> logical_geometry;
+  Rect<int> logical_geometry;
   float scale = 1.0f;
 };
 
@@ -36,14 +37,18 @@ public:
   void destroy();
   void set_scale(float scale);
   void refresh_geometry();
-  Vec4<int> physical_geometry();
-  Vec4<int> logical_geometry();
+  Rect<int> physical_geometry();
+  Rect<int> logical_geometry();
   float scale();
 
   void set_dpms_mode(bool flag);
   wlr_damage_ring* damage_ring();
+  // Slots used by the frame renderer to hold the previous swapchain buffers.
+  // Some drivers (notably NVIDIA with DSC) keep reading recently released
+  // buffers; two retained slots give the driver a three-buffer rotation.
+  std::array<wlr_buffer*, 2>* retained_buffers();
 
-  Vec4<int> usable_area;
+  Rect<int> usable_area;
   UraSessionLockSurface* session_lock_surface = nullptr;
 
   Vec<UraLayerShell*> layer_shells();
@@ -54,11 +59,12 @@ public:
 
 private:
   wlr_damage_ring frame_damage_ring;
+  std::array<wlr_buffer*, 2> retained_frame_buffers { nullptr, nullptr };
   wlr_drm_syncobj_timeline* render_timeline = nullptr;
   uint64_t render_point = 0;
   float last_notified_scale = 1.0f;
   bool last_geometry_enabled = false;
-  Vec4<int> last_logical_geometry;
+  Rect<int> last_logical_geometry;
   void attach_layer_shells();
   void detach_layer_shells();
   void apply_layout(wlr_output_configuration_v1* config);

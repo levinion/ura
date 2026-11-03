@@ -57,9 +57,36 @@ ura.api = {
   --- @param y integer
   move_window = function(id, x, y) end,
   --- @param id integer
+  --- @param x integer
+  --- @param y integer
+  --- @param duration number Milliseconds
+  --- @param easing string|table
+  animate_window_move = function(id, x, y, duration, easing) end,
+  --- @param id integer
   --- @param width integer
   --- @param height integer
   resize_window = function(id, width, height) end,
+  --- @param id integer
+  --- @param width integer
+  --- @param height integer
+  --- @param duration number Milliseconds
+  --- @param easing string|table
+  animate_window_resize = function(id, width, height, duration, easing) end,
+  --- @param id integer
+  --- @param opacity number
+  --- @param duration number Milliseconds
+  --- @param easing string|table
+  animate_window_opacity = function(id, opacity, duration, easing) end,
+  --- @param id integer
+  --- @param duration number Milliseconds
+  --- @param easing string|table
+  --- @param options table|nil
+  animate_window_open = function(id, duration, easing, options) end,
+  --- @param id integer
+  --- @param duration number Milliseconds
+  --- @param easing string|table
+  --- @param options table|nil
+  animate_window_close = function(id, duration, easing, options) end,
   --- @param id integer
   --- @param flag boolean
   set_window_fullscreen = function(id, flag) end,
@@ -87,6 +114,9 @@ ura.api = {
   --- @param id integer
   --- @return table|nil
   get_window_geometry = function(id) end,
+  --- @param id integer
+  --- @return table|nil
+  get_window_visual_geometry = function(id) end,
   --- @param id integer
   --- @param tags table<string>
   set_window_tags = function(id, tags) end,
@@ -116,6 +146,11 @@ ura.api = {
   --- @param id integer
   --- @return string|nil
   get_window_border_color = function(id) end,
+  --- @param id integer
+  --- @param effect { type: string, radius?: number, color?: string|table }
+  set_window_effect = function(id, effect) end,
+  --- @param id integer
+  clear_window_effect = function(id) end,
 
   -- input
   --- @param rate integer

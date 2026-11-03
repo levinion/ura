@@ -92,12 +92,17 @@ if(BUILD_TESTING)
   add_test(NAME ura-core-entity-stale-handle COMMAND ura-entity-tests stale-handle)
   add_test(NAME ura-core-entity-userdata COMMAND ura-entity-tests userdata)
 
+  pkg_check_modules(WLROOTS_TEST REQUIRED IMPORTED_TARGET wlroots-0.20)
+
   add_executable(ura-scene-tests
     tests/scene.cpp
     src/core/entity.cpp
     src/scene/scene.cpp
   )
-  target_include_directories(ura-scene-tests PRIVATE include/)
+  target_include_directories(ura-scene-tests PRIVATE
+    include/
+    ${WLROOTS_TEST_INCLUDE_DIRS}
+  )
   target_include_directories(ura-scene-tests SYSTEM PRIVATE ${GLAZE_INCLUDE_DIR})
   target_link_libraries(ura-scene-tests PRIVATE EnTT::EnTT sol2)
   target_add_dependence(ura-scene-tests luajit)
@@ -107,6 +112,32 @@ if(BUILD_TESTING)
   add_test(NAME ura-scene-components COMMAND ura-scene-tests components)
   add_test(NAME ura-scene-layer-shell COMMAND ura-scene-tests layer-shell)
   add_test(NAME ura-scene-snapshot-cache COMMAND ura-scene-tests snapshot-cache)
+  add_test(NAME ura-scene-session-lock COMMAND ura-scene-tests session-lock)
+  add_test(NAME ura-scene-rect COMMAND ura-scene-tests rect)
+
+  add_executable(ura-animation-tests
+    tests/animation.cpp
+    src/core/entity.cpp
+    src/scene/scene.cpp
+    src/scene/animation_system.cpp
+  )
+  target_include_directories(ura-animation-tests PRIVATE
+    include/
+    ${WLROOTS_TEST_INCLUDE_DIRS}
+  )
+  target_include_directories(ura-animation-tests SYSTEM PRIVATE ${GLAZE_INCLUDE_DIR})
+  target_link_libraries(ura-animation-tests PRIVATE EnTT::EnTT sol2)
+  target_add_dependence(ura-animation-tests luajit)
+
+  add_test(NAME ura-animation-easing COMMAND ura-animation-tests easing)
+  add_test(NAME ura-animation-data-boundary COMMAND ura-animation-tests data-boundary)
+  add_test(NAME ura-animation-flip COMMAND ura-animation-tests flip)
+  add_test(NAME ura-animation-retarget COMMAND ura-animation-tests retarget)
+  add_test(NAME ura-animation-timeout COMMAND ura-animation-tests timeout)
+  add_test(NAME ura-animation-opacity COMMAND ura-animation-tests opacity)
+  add_test(NAME ura-animation-opacity-retarget COMMAND ura-animation-tests opacity-retarget)
+  add_test(NAME ura-animation-transition-move-merge COMMAND ura-animation-tests transition-move-merge)
+  add_test(NAME ura-animation-destroy-on-finish COMMAND ura-animation-tests destroy-on-finish)
 
   find_package(Threads REQUIRED)
   add_executable(ura-worker-pool-tests
@@ -153,6 +184,7 @@ if(BUILD_TESTING)
     ${RLGL_INCLUDE_DIR}
   )
   target_compile_definitions(ura-raylib-renderer-tests PRIVATE WLR_USE_UNSTABLE)
+  target_compile_definitions(ura-raylib-renderer-tests PRIVATE SPDLOG_NO_EXCEPTIONS)
   target_compile_options(ura-raylib-renderer-tests PRIVATE
     -Wall -Wextra -Wno-unused-parameter -fno-exceptions
   )
@@ -163,6 +195,7 @@ if(BUILD_TESTING)
   target_add_dependence(ura-raylib-renderer-tests gbm)
   target_add_dependence(ura-raylib-renderer-tests libdrm)
   target_add_dependence(ura-raylib-renderer-tests pixman-1)
+  target_add_dependence(ura-raylib-renderer-tests spdlog)
   add_test(NAME ura-raylib-renderer COMMAND ura-raylib-renderer-tests)
   set_tests_properties(ura-raylib-renderer PROPERTIES SKIP_RETURN_CODE 77)
 
@@ -177,6 +210,7 @@ if(BUILD_TESTING)
     ${RLGL_INCLUDE_DIR}
   )
   target_compile_definitions(ura-frame-renderer-tests PRIVATE WLR_USE_UNSTABLE)
+  target_compile_definitions(ura-frame-renderer-tests PRIVATE SPDLOG_NO_EXCEPTIONS)
   target_compile_options(ura-frame-renderer-tests PRIVATE
     -Wall -Wextra -Wno-unused-parameter -fno-exceptions
   )
@@ -187,10 +221,10 @@ if(BUILD_TESTING)
   target_add_dependence(ura-frame-renderer-tests gbm)
   target_add_dependence(ura-frame-renderer-tests libdrm)
   target_add_dependence(ura-frame-renderer-tests pixman-1)
+  target_add_dependence(ura-frame-renderer-tests spdlog)
   add_test(NAME ura-frame-renderer COMMAND ura-frame-renderer-tests)
   set_tests_properties(ura-frame-renderer PROPERTIES SKIP_RETURN_CODE 77)
 
-  pkg_check_modules(WLROOTS_TEST REQUIRED IMPORTED_TARGET wlroots-0.20)
   pkg_check_modules(XKBCOMMON_TEST REQUIRED IMPORTED_TARGET xkbcommon)
   add_executable(ura-util-tests tests/util.cpp)
   target_include_directories(ura-util-tests PRIVATE include/ include/protocols/)
@@ -206,6 +240,17 @@ if(BUILD_TESTING)
   add_test(NAME ura-core-dispatcher-pipe COMMAND ura-util-tests dispatcher-pipe)
   add_test(NAME ura-core-dispatcher-timeout COMMAND ura-util-tests dispatcher-timeout)
   set_tests_properties(ura-core-dispatcher-pipe ura-core-dispatcher-timeout PROPERTIES TIMEOUT 5)
+
+  find_program(LUAJIT_EXECUTABLE luajit)
+  if(LUAJIT_EXECUTABLE)
+    add_test(
+      NAME ura-animation-lua
+      COMMAND ${LUAJIT_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/lua/animation.lua
+    )
+    set_tests_properties(ura-animation-lua PROPERTIES
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+  endif()
 
   find_program(BASH_EXECUTABLE bash)
   if(BASH_EXECUTABLE)

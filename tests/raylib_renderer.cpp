@@ -2,6 +2,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "ura/render/effect.hpp"
+#include "ura/render/raylib/effect_renderer.hpp"
 #include "ura/render/raylib/raylib_renderer.hpp"
 #include "ura/ura.hpp"
 
@@ -199,6 +201,62 @@ int main() {
   texture_options.wait_point = 1;
   wlr_render_pass_add_texture(pass, &texture_options);
 
+  // Run the same texture through the offscreen tint pipeline. This exercises
+  // target allocation, the copy pass, and compositing into the SHM target.
+  auto effect_options = texture_options;
+  effect_options.dst_box = { .x = 32, .y = 32, .width = 16, .height = 16 };
+  auto tint = ura::Effect {
+    .type = ura::EffectType::Tint,
+    .color = { 0.5f, 0.5f, 1.0f, 1.0f },
+  };
+  if (!ura::render::raylib::render_pass_add_texture_effect(
+        pass,
+        &effect_options,
+        tint
+      )) {
+    fprintf(stderr, "effect render pass failed\n");
+    return 1;
+  }
+
+  // Separable blur uses two additional offscreen passes. A solid red source
+  // must still come back red rather than an empty/transparent target.
+  auto blur_options = texture_options;
+  blur_options.dst_box = { .x = 32, .y = 16, .width = 16, .height = 16 };
+  auto blur = ura::Effect {
+    .type = ura::EffectType::Blur,
+    .radius = 4.f,
+  };
+  if (!ura::render::raylib::render_pass_add_texture_effect(
+        pass,
+        &blur_options,
+        blur
+      )) {
+    fprintf(stderr, "blur effect render pass failed\n");
+    return 1;
+  }
+
+  // Two surfaces of the same SceneNode go through one group target and one
+  // effect application. This is what keeps CSD/subsurfaces from developing
+  // independent blur seams.
+  auto group_a = texture_options;
+  group_a.dst_box = { .x = 8, .y = 48, .width = 16, .height = 16 };
+  auto group_b = texture_options;
+  group_b.dst_box = { .x = 32, .y = 48, .width = 16, .height = 16 };
+  wlr_render_texture_options group_options[] = { group_a, group_b };
+  auto group_tint = ura::Effect {
+    .type = ura::EffectType::Tint,
+    .color = { 0.5f, 0.5f, 1.0f, 1.0f },
+  };
+  if (!ura::render::raylib::render_pass_add_texture_group_effect(
+        pass,
+        group_options,
+        2,
+        group_tint
+      )) {
+    fprintf(stderr, "group effect render pass failed\n");
+    return 1;
+  }
+
   if (!wlr_render_pass_submit(pass)) {
     fprintf(stderr, "render pass submit failed\n");
     return 1;
@@ -206,6 +264,7 @@ int main() {
 
   uint32_t white = pixel_at(target, 0, 0);
   uint32_t red = pixel_at(target, 12, 12);
+  uint32_t tinted = pixel_at(target, 36, 36);
   if (white != 0xFFFFFFFFu) {
     fprintf(stderr, "unexpected background pixel: 0x%08x\n", white);
     return 1;
@@ -214,6 +273,88 @@ int main() {
     fprintf(stderr, "unexpected textured pixel: 0x%08x\n", red);
     return 1;
   }
+  auto tinted_red = (tinted >> 16) & 0xFFu;
+  if (
+    (tinted & 0xFF000000u) != 0xFF000000u || tinted_red < 0x70u
+    || tinted_red > 0x90u || (tinted & 0x0000FFFFu) != 0
+  ) {
+    fprintf(stderr, "unexpected effect pixel: 0x%08x\n", tinted);
+    return 1;
+  }
+
+  uint32_t blurred = pixel_at(target, 36, 20);
+  if (blurred != 0xFFFF0000u) {
+    fprintf(stderr, "unexpected blur pixel: 0x%08x\n", blurred);
+    return 1;
+  }
+
+  for (auto point : { std::pair { 12, 52 }, std::pair { 36, 52 } }) {
+    uint32_t grouped = pixel_at(target, point.first, point.second);
+    auto grouped_red = (grouped >> 16) & 0xFFu;
+    if (
+      (grouped & 0xFF000000u) != 0xFF000000u || grouped_red < 0x70u
+      || grouped_red > 0x90u || (grouped & 0x0000FFFFu) != 0
+    ) {
+      fprintf(stderr, "unexpected group effect pixel: 0x%08x\n", grouped);
+      return 1;
+    }
+  }
+
+  // A non-zero src_box must select the requested sub-rectangle of the
+  // texture after the transform-matrix refactor (raymath uses a different
+  // matrix multiply order than the old hand-written helper).
+  TestBuffer* source_rect = create_test_buffer(4, 4, 0xFFFF0000);
+  if (!source_rect) {
+    fprintf(stderr, "failed to create source-rect buffer\n");
+    return 1;
+  }
+  for (int y = 0; y < 4; y++) {
+    for (int x = 2; x < 4; x++) {
+      uint32_t blue = 0xFF0000FFu;
+      memcpy(
+        source_rect->data + static_cast<size_t>(y) * source_rect->stride
+          + static_cast<size_t>(x) * 4,
+        &blue,
+        sizeof(blue)
+      );
+    }
+  }
+  TestBuffer* rect_target = create_test_buffer(32, 32, 0xFFFFFFFFu);
+  wlr_texture* rect_texture =
+    wlr_texture_from_buffer(renderer, &source_rect->base);
+  if (!rect_target || !rect_texture) {
+    fprintf(stderr, "failed to create source-rect texture/target\n");
+    return 1;
+  }
+  wlr_render_pass* rect_pass =
+    wlr_renderer_begin_buffer_pass(renderer, &rect_target->base, nullptr);
+  if (!rect_pass) {
+    fprintf(stderr, "failed to begin source-rect render pass\n");
+    return 1;
+  }
+  wlr_render_texture_options rect_texture_options {};
+  rect_texture_options.texture = rect_texture;
+  rect_texture_options.src_box = { .x = 2, .y = 0, .width = 2, .height = 4 };
+  rect_texture_options.dst_box = { .x = 8, .y = 8, .width = 16, .height = 16 };
+  rect_texture_options.transform = WL_OUTPUT_TRANSFORM_NORMAL;
+  rect_texture_options.filter_mode = WLR_SCALE_FILTER_NEAREST;
+  rect_texture_options.blend_mode = WLR_RENDER_BLEND_MODE_PREMULTIPLIED;
+  wlr_render_pass_add_texture(rect_pass, &rect_texture_options);
+  if (!wlr_render_pass_submit(rect_pass)) {
+    fprintf(stderr, "source-rect render pass submit failed\n");
+    return 1;
+  }
+  if (pixel_at(rect_target, 16, 16) != 0xFF0000FFu) {
+    fprintf(
+      stderr,
+      "unexpected source-rect pixel: 0x%08x\n",
+      pixel_at(rect_target, 16, 16)
+    );
+    return 1;
+  }
+  wlr_texture_destroy(rect_texture);
+  wlr_buffer_drop(&rect_target->base);
+  wlr_buffer_drop(&source_rect->base);
 
   // Verify the optional rlgl effect path on a separate render target.
   setenv("URA_RAYLIB_EFFECT_TINT", "#00FF00FF", 1);

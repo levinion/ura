@@ -1,4 +1,5 @@
 #include "ura/render/raylib/renderer.hpp"
+#include "ura/core/log.hpp"
 
 #include <fcntl.h>
 #include <gbm.h>
@@ -8,10 +9,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
-extern "C" {
-#include <wlr/util/log.h>
-}
 
 namespace ura::render::raylib {
 
@@ -36,7 +33,7 @@ bool egl_has_extension(const char* extensions, const char* name) {
 static int open_render_node() {
   int devices_len = drmGetDevices2(0, nullptr, 0);
   if (devices_len < 0) {
-    wlr_log(WLR_ERROR, "drmGetDevices2 failed: %s", strerror(-devices_len));
+    log::error("drmGetDevices2 failed: {}", strerror(-devices_len));
     return -1;
   }
 
@@ -48,7 +45,7 @@ static int open_render_node() {
   devices_len = drmGetDevices2(0, devices, devices_len);
   int fd = -1;
   if (devices_len < 0) {
-    wlr_log(WLR_ERROR, "drmGetDevices2 failed: %s", strerror(-devices_len));
+    log::error("drmGetDevices2 failed: {}", strerror(-devices_len));
     free(devices);
     return -1;
   }
@@ -62,10 +59,10 @@ static int open_render_node() {
       continue;
     fd = open(path, O_RDWR | O_CLOEXEC);
     if (fd >= 0) {
-      wlr_log(WLR_INFO, "Using DRM render node %s for raylib renderer", path);
+      log::info("Using DRM render node {} for raylib renderer", path);
       break;
     }
-    wlr_log(WLR_ERROR, "Failed to open %s: %s", path, strerror(errno));
+    log::error("Failed to open {}: {}", path, strerror(errno));
   }
 
   for (int i = 0; i < devices_len; i++) drmFreeDevice(&devices[i]);
@@ -91,7 +88,7 @@ static void resolve_drm_fd(EglContext* egl, wlr_backend* backend) {
       egl->owns_drm_fd = true;
       return;
     }
-    wlr_log(WLR_ERROR, "Failed to open %s: %s", device, strerror(errno));
+    log::error("Failed to open {}: {}", device, strerror(errno));
   }
 
   if ((backend->buffer_caps & WLR_BUFFER_CAP_DMABUF) == 0)
@@ -147,14 +144,14 @@ static bool choose_config(EglContext* egl) {
   )
     return true;
 
-  wlr_log(WLR_ERROR, "Failed to choose an EGL ES2 config");
+  log::error("Failed to choose an EGL ES2 config");
   return false;
 }
 
 static bool load_egl_extensions(EglContext* egl) {
   const char* exts = eglQueryString(egl->display, EGL_EXTENSIONS);
   if (!exts) {
-    wlr_log(WLR_ERROR, "Failed to query EGL display extensions");
+    log::error("Failed to query EGL display extensions");
     return false;
   }
 
@@ -247,8 +244,7 @@ static bool load_egl_extensions(EglContext* egl) {
     && egl->image_target_texture;
 
   if (!egl->has_bgra) {
-    wlr_log(
-      WLR_ERROR,
+    log::error(
       "GL_EXT_texture_format_BGRA8888 is required for wl_shm ARGB8888"
     );
     return false;
@@ -270,9 +266,8 @@ static bool try_egl_display(
 
   EGLint local_major = 0, local_minor = 0;
   if (!eglInitialize(display, &local_major, &local_minor)) {
-    wlr_log(
-      WLR_DEBUG,
-      "EGL display (%s) failed to initialize: 0x%x",
+    log::debug(
+      "EGL display ({}) failed to initialize: 0x{:x}",
       backend_name,
       eglGetError()
     );
@@ -312,7 +307,7 @@ bool egl_context_init(EglContext* egl, wlr_backend* backend) {
 
   const char* client_exts = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
   if (!client_exts) {
-    wlr_log(WLR_ERROR, "EGL_EXT_client_extensions not supported");
+    log::error("EGL_EXT_client_extensions not supported");
     return false;
   }
 
@@ -323,7 +318,7 @@ bool egl_context_init(EglContext* egl, wlr_backend* backend) {
   if (egl->drm_fd >= 0) {
     egl->gbm_device = gbm_create_device(egl->drm_fd);
     if (!egl->gbm_device) {
-      wlr_log(WLR_ERROR, "Failed to create GBM device");
+      log::error("Failed to create GBM device");
       return false;
     }
     egl->owns_gbm_device = true;
@@ -360,23 +355,22 @@ bool egl_context_init(EglContext* egl, wlr_backend* backend) {
   }
 
   if (!initialized || egl->display == EGL_NO_DISPLAY) {
-    wlr_log(WLR_ERROR, "Failed to create or initialize EGL display");
+    log::error("Failed to create or initialize EGL display");
     return false;
   }
 
   if (egl->surfaceless)
     drop_gbm_for_surfaceless(egl);
 
-  wlr_log(
-    WLR_INFO,
-    "Initialized EGL %d.%d for raylib renderer (%s)",
+  log::info(
+    "Initialized EGL {}.{} for raylib renderer ({})",
     major,
     minor,
     egl->display_backend ? egl->display_backend : "unknown"
   );
 
   if (!eglBindAPI(EGL_OPENGL_ES_API)) {
-    wlr_log(WLR_ERROR, "Failed to bind EGL OpenGL ES API");
+    log::error("Failed to bind EGL OpenGL ES API");
     return false;
   }
 
@@ -391,13 +385,13 @@ bool egl_context_init(EglContext* egl, wlr_backend* backend) {
   egl->context =
     eglCreateContext(egl->display, egl->config, EGL_NO_CONTEXT, context_attrs);
   if (egl->context == EGL_NO_CONTEXT) {
-    wlr_log(WLR_ERROR, "Failed to create EGL ES2 context");
+    log::error("Failed to create EGL ES2 context");
     return false;
   }
 
   EglSavedContext saved {};
   if (!egl_make_current(egl, &saved)) {
-    wlr_log(WLR_ERROR, "Failed to make EGL context current");
+    log::error("Failed to make EGL context current");
     return false;
   }
 
@@ -449,7 +443,7 @@ bool egl_make_current(EglContext* egl, EglSavedContext* saved) {
     };
     egl->surface = eglCreatePbufferSurface(egl->display, egl->config, attrs);
     if (egl->surface == EGL_NO_SURFACE) {
-      wlr_log(WLR_ERROR, "Failed to create EGL pbuffer");
+      log::error("Failed to create EGL pbuffer");
       return false;
     }
   }
@@ -463,7 +457,7 @@ bool egl_make_current(EglContext* egl, EglSavedContext* saved) {
       };
       egl->surface = eglCreatePbufferSurface(egl->display, egl->config, attrs);
       if (egl->surface == EGL_NO_SURFACE) {
-        wlr_log(WLR_ERROR, "Failed to create EGL pbuffer");
+        log::error("Failed to create EGL pbuffer");
         return false;
       }
     }
@@ -472,7 +466,7 @@ bool egl_make_current(EglContext* egl, EglSavedContext* saved) {
   }
 
   if (!eglMakeCurrent(egl->display, draw, read, egl->context)) {
-    wlr_log(WLR_ERROR, "eglMakeCurrent failed: 0x%x", eglGetError());
+    log::error("eglMakeCurrent failed: 0x{:x}", eglGetError());
     return false;
   }
   return true;

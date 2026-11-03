@@ -6,6 +6,7 @@ This reference documents the Lua surface currently loaded by Ura. The global `ur
 
 - [Configuration, keybindings, options, and constants](lua-api/configuration.md)
 - [Hooks and event payloads](lua-api/hooks.md)
+- [Animation policy and custom easing](lua-api/animation.md)
 - [Object wrappers: windows, outputs, blocks, and segments](lua-api/classes.md)
 - [Low-level `ura.api` functions and `ura.fn` helpers](lua-api/functions.md)
 
@@ -16,6 +17,7 @@ This reference documents the Lua surface currently loaded by Ura. The global `ur
 | `ura.api` | Low-level compositor operations and utility functions. |
 | `ura.class` | Object wrappers such as `UraWindow` and `UraOutput`. |
 | `ura.hook` | Register, remove, or emit Lua hooks. |
+| `ura.animation` | Optional declarative policy from the `builtin.animation` plugin. |
 | `ura.keymap` | Bind key or mouse patterns to Lua callbacks. |
 | `ura.opt` | User-defined configuration options; it starts as an empty table. |
 | `ura.fn` | Lua helpers for tables, tags, paths, and configuration loading. |

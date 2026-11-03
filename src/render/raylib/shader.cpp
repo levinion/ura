@@ -1,12 +1,11 @@
 #include "ura/render/raylib/renderer.hpp"
+#include "ura/core/log.hpp"
+
+#include <raymath.h>
 
 #include <cstdlib>
 #include <cstring>
 #include <initializer_list>
-
-extern "C" {
-#include <wlr/util/log.h>
-}
 
 namespace ura::render::raylib {
 
@@ -96,6 +95,38 @@ void main() {
 }
 )";
 
+static const char* effect_copy_fragment_source = R"(
+#version 100
+precision mediump float;
+varying vec2 fragTexCoord;
+uniform sampler2D texture0;
+uniform vec4 colDiffuse;
+uniform vec4 tintColor;
+uniform float forceOpaque;
+void main() {
+    vec4 texel = texture2D(texture0, fragTexCoord);
+    texel.a = mix(texel.a, 1.0, forceOpaque);
+    gl_FragColor = texel * tintColor * colDiffuse;
+}
+)";
+
+static const char* effect_blur_fragment_source = R"(
+#version 100
+precision mediump float;
+varying vec2 fragTexCoord;
+uniform sampler2D texture0;
+uniform vec4 colDiffuse;
+uniform vec2 direction;
+void main() {
+    vec4 color = texture2D(texture0, fragTexCoord) * 0.2270270270;
+    color += texture2D(texture0, fragTexCoord + direction * 1.3846153846) * 0.3162162162;
+    color += texture2D(texture0, fragTexCoord - direction * 1.3846153846) * 0.3162162162;
+    color += texture2D(texture0, fragTexCoord + direction * 3.2307692308) * 0.0702702703;
+    color += texture2D(texture0, fragTexCoord - direction * 3.2307692308) * 0.0702702703;
+    gl_FragColor = color * colDiffuse;
+}
+)";
+
 static const char* external_fragment_source = R"(
 #version 100
 #extension GL_OES_EGL_image_external : require
@@ -125,7 +156,7 @@ static GLuint compile_shader(GLenum type, const char* source) {
       auto log = static_cast<char*>(malloc(static_cast<size_t>(length)));
       if (log) {
         glGetShaderInfoLog(shader, length, nullptr, log);
-        wlr_log(WLR_ERROR, "Raylib renderer shader compile failed: %s", log);
+        log::error("Raylib renderer shader compile failed: {}", log);
         free(log);
       }
     }
@@ -172,7 +203,7 @@ load_shader(const char* vs, const char* fs, bool require_texture) {
       auto log = static_cast<char*>(malloc(static_cast<size_t>(length)));
       if (log) {
         glGetProgramInfoLog(shader.id, length, nullptr, log);
-        wlr_log(WLR_ERROR, "Raylib renderer shader link failed: %s", log);
+        log::error("Raylib renderer shader link failed: {}", log);
         free(log);
       }
     }
@@ -185,6 +216,8 @@ load_shader(const char* vs, const char* fs, bool require_texture) {
   shader.texture = glGetUniformLocation(shader.id, "texture0");
   shader.color = glGetUniformLocation(shader.id, "colDiffuse");
   shader.tint = glGetUniformLocation(shader.id, "tintColor");
+  shader.direction = glGetUniformLocation(shader.id, "direction");
+  shader.opaque = glGetUniformLocation(shader.id, "forceOpaque");
   shader.pos_attrib = glGetAttribLocation(shader.id, "vertexPosition");
   if (shader.pos_attrib < 0)
     shader.pos_attrib =
@@ -202,7 +235,7 @@ load_shader(const char* vs, const char* fs, bool require_texture) {
   shader.valid = shader.mvp >= 0 && shader.color >= 0 && shader.pos_attrib >= 0
     && (!require_texture || shader.texture >= 0);
   if (!shader.valid) {
-    wlr_log(WLR_ERROR, "Raylib renderer shader is missing required inputs");
+    log::error("Raylib renderer shader is missing required inputs");
     glDeleteProgram(shader.id);
     shader.id = 0;
   }
@@ -215,11 +248,17 @@ bool shader_init(Renderer* renderer) {
   memset(&renderer->tex_rgbx, 0, sizeof(renderer->tex_rgbx));
   memset(&renderer->external, 0, sizeof(renderer->external));
   memset(&renderer->effect, 0, sizeof(renderer->effect));
+  memset(&renderer->effect_copy, 0, sizeof(renderer->effect_copy));
+  memset(&renderer->effect_blur, 0, sizeof(renderer->effect_blur));
 
   renderer->rect =
     load_shader(vertex_shader_source, rect_fragment_source, false);
   renderer->effect =
     load_shader(vertex_shader_source, effect_fragment_source, true);
+  renderer->effect_copy =
+    load_shader(texture_vertex_source, effect_copy_fragment_source, true);
+  renderer->effect_blur =
+    load_shader(texture_vertex_source, effect_blur_fragment_source, true);
   // rlgl's non-VAO batch path binds every standard attribute location. Keep
   // unused ones valid for the optional effect pass.
   renderer->effect.locs[RL_SHADER_LOC_VERTEX_NORMAL] =
@@ -236,9 +275,11 @@ bool shader_init(Renderer* renderer) {
   if (
     !renderer->rect.valid || !renderer->effect.valid
     || renderer->effect.tint < 0 || !renderer->tex_rgba.valid
-    || !renderer->tex_rgbx.valid
+    || !renderer->tex_rgbx.valid || !renderer->effect_copy.valid
+    || renderer->effect_copy.tint < 0 || !renderer->effect_blur.valid
+    || renderer->effect_blur.direction < 0
   ) {
-    wlr_log(WLR_ERROR, "Failed to load raylib renderer shaders");
+    log::error("Failed to load raylib renderer shaders");
     shader_finish(renderer);
     return false;
   }
@@ -247,7 +288,7 @@ bool shader_init(Renderer* renderer) {
     renderer->external =
       load_shader(external_vertex_source, external_fragment_source, true);
     if (!renderer->external.valid)
-      wlr_log(WLR_INFO, "External OES textures will not be available");
+      log::info("External OES textures will not be available");
   }
 
   return true;
@@ -259,6 +300,8 @@ void shader_finish(Renderer* renderer) {
 
   for (Shader* shader : { &renderer->rect,
                           &renderer->effect,
+                          &renderer->effect_copy,
+                          &renderer->effect_blur,
                           &renderer->tex_rgba,
                           &renderer->tex_rgbx,
                           &renderer->external }) {
@@ -270,26 +313,16 @@ void shader_finish(Renderer* renderer) {
   }
 }
 
-Matrix shader_ortho_matrix(int width, int height) {
-  Matrix mat {};
-  mat.m0 = 2.0f / static_cast<float>(width);
-  mat.m5 = 2.0f / static_cast<float>(height);
-  mat.m10 = 1.0f;
-  mat.m12 = -1.0f;
-  mat.m13 = -1.0f;
-  mat.m15 = 1.0f;
-  return mat;
-}
-
 void shader_set_projection(int location, int width, int height) {
-  Matrix mat = shader_ortho_matrix(width, height);
-  // raylib's Matrix fields are grouped by row in memory. OpenGL expects a
-  // column-major float[16], so explicitly select the m0..m15 field order.
-  const float values[16] = {
-    mat.m0, mat.m1, mat.m2,  mat.m3,  mat.m4,  mat.m5,  mat.m6,  mat.m7,
-    mat.m8, mat.m9, mat.m10, mat.m11, mat.m12, mat.m13, mat.m14, mat.m15,
-  };
-  glUniformMatrix4fv(location, 1, GL_FALSE, values);
+  Matrix matrix = MatrixOrtho(
+    0.0,
+    static_cast<double>(width),
+    0.0,
+    static_cast<double>(height),
+    1.0,
+    -1.0
+  );
+  glUniformMatrix4fv(location, 1, GL_FALSE, MatrixToFloat(matrix));
 }
 
 } // namespace ura::render::raylib

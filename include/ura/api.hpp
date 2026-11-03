@@ -28,7 +28,39 @@ void set_window_z_index(uint64_t id, int z);
 sol::optional<int> get_window_z_index(uint64_t id);
 void activate_window(uint64_t id);
 void move_window(uint64_t id, int x, int y);
+void animate_window_move(
+  uint64_t id,
+  int x,
+  int y,
+  double duration,
+  flexible::object easing
+);
 void resize_window(uint64_t id, int width, int height);
+void animate_window_opacity(
+  uint64_t id,
+  float opacity,
+  double duration,
+  flexible::object easing
+);
+void animate_window_open(
+  uint64_t id,
+  double duration,
+  flexible::object easing,
+  flexible::object options
+);
+void animate_window_close(
+  uint64_t id,
+  double duration,
+  flexible::object easing,
+  flexible::object options
+);
+void animate_window_resize(
+  uint64_t id,
+  int width,
+  int height,
+  double duration,
+  flexible::object easing
+);
 sol::optional<std::string> get_window_app_id(uint64_t id);
 sol::optional<std::string> get_window_title(uint64_t id);
 void set_window_fullscreen(uint64_t id, bool flag);
@@ -40,6 +72,7 @@ void set_window_maximized(uint64_t id, bool flag);
 sol::optional<bool> is_window_maximized(uint64_t id);
 sol::optional<bool> is_window_maximized_requested(uint64_t id);
 flexible::object get_window_geometry(uint64_t id);
+flexible::object get_window_visual_geometry(uint64_t id);
 void set_window_tags(uint64_t id, std::vector<std::string> tags);
 flexible::object get_window_tags(uint64_t id);
 flexible::object get_all_windows();
@@ -48,6 +81,8 @@ sol::optional<bool> is_window_mapped(uint64_t id);
 sol::optional<bool> is_window_focused(uint64_t id);
 sol::optional<float> get_window_opacity(uint64_t id);
 void set_window_opacity(uint64_t id, float opacity);
+void set_window_effect(uint64_t id, flexible::object spec);
+void clear_window_effect(uint64_t id);
 void set_window_border_color(uint64_t id, std::string color);
 sol::optional<std::string> get_window_border_color(uint64_t id);
 

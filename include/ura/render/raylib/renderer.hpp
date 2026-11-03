@@ -7,8 +7,9 @@
 #include <drm_fourcc.h>
 #include <pixman.h>
 #include <rlgl.h>
-#include <ctime>
+#include <cstddef>
 #include <cstdint>
+#include <ctime>
 
 extern "C" {
 #include <wayland-server-core.h>
@@ -53,6 +54,10 @@ struct GlFormat {
   bool has_alpha;
   // Byte indices (R,G,B,A) used to convert DRM memory order to GL_RGBA.
   uint8_t upload_swizzle[4];
+
+  size_t bytes_per_pixel() const;
+  bool needs_swizzle() const;
+  void swizzle_row(const uint8_t* src, uint8_t* dst, int width) const;
 };
 
 struct Shader {
@@ -64,6 +69,8 @@ struct Shader {
   int pos_attrib;
   int tex_attrib;
   int tint;
+  int direction;
+  int opaque;
   bool valid;
 };
 
@@ -113,6 +120,13 @@ struct EglContext {
   wlr_drm_format_set shm_formats;
 };
 
+struct EffectTarget {
+  GLuint texture = 0;
+  GLuint fbo = 0;
+  int width = 0;
+  int height = 0;
+};
+
 struct Renderer {
   wlr_renderer base;
   EglContext egl;
@@ -122,6 +136,9 @@ struct Renderer {
   Shader tex_rgbx;
   Shader external;
   Shader effect;
+  Shader effect_copy;
+  Shader effect_blur;
+  EffectTarget effect_targets[2];
   GLuint white_texture;
   bool rlgl_ready;
   wl_list buffers; // Buffer::link
@@ -201,7 +218,6 @@ void renderer_finish_surface_formats(Renderer* renderer);
 // shader.cpp
 bool shader_init(Renderer* renderer);
 void shader_finish(Renderer* renderer);
-Matrix shader_ortho_matrix(int width, int height);
 void shader_set_projection(int location, int width, int height);
 // buffer.cpp
 Buffer* buffer_get(Renderer* renderer, wlr_buffer* buffer);
@@ -230,5 +246,6 @@ void render_pass_add_rect(
 
 // effects.cpp
 void effects_apply(Renderer* renderer, RenderPass* pass);
+void effect_targets_finish(Renderer* renderer);
 
 } // namespace ura::render::raylib

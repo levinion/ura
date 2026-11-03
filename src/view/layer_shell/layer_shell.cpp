@@ -14,12 +14,16 @@ UraScene& UraLayerShell::scene_model() {
   return *UraServer::get_instance()->view->scene;
 }
 
-const Transform& UraLayerShell::transform() {
-  return this->scene_model().get<Transform>(this->entity);
+const WindowLayout& UraLayerShell::layout() {
+  return this->scene_model().get<WindowLayout>(this->entity);
 }
 
-const Geometry& UraLayerShell::geometry() {
-  return this->scene_model().get<Geometry>(this->entity);
+const SurfaceContent& UraLayerShell::content() {
+  return this->scene_model().get<SurfaceContent>(this->entity);
+}
+
+const SceneNode& UraLayerShell::node() {
+  return this->scene_model().get<SceneNode>(this->entity);
 }
 
 const Visibility& UraLayerShell::visibility() {
@@ -83,14 +87,26 @@ void UraLayerShell::configure(wlr_box* full_area, wlr_box* usable_area) {
     box.y = bounds.y + bounds.height / 2 - box.height / 2;
   }
 
-  this->scene_model().set_transform(
+  this->scene_model().set_layout_target(
     this->entity,
-    Transform { box.x, box.y, 0.f, 1.0 }
+    Rect<double> {
+      .x = static_cast<double>(box.x),
+      .y = static_cast<double>(box.y),
+      .width = static_cast<double>(box.width),
+      .height = static_cast<double>(box.height),
+    }
   );
-  this->scene_model().set_geometry(
+  this->scene_model().set_surface_content(
     this->entity,
-    Geometry { box.width, box.height }
+    SurfaceContent {
+      .geometry =
+        Rect<int> {
+          .width = box.width,
+          .height = box.height,
+        },
+    }
   );
+  this->scene_model().sync_scene_node(this->entity);
   wlr_layer_surface_v1_configure(this->layer_surface, box.width, box.height);
 
   if (this->layer_surface->surface->mapped && state->exclusive_zone > 0) {
@@ -134,8 +150,7 @@ void UraLayerShell::init(wlr_layer_surface_v1* layer_surface) {
   this->entity = server->entities->create_layer_shell(this);
   server->view->scene->attach_layer_shell(
     this->entity,
-    Transform {},
-    Geometry {},
+    Rect<double> {},
     ZOrder {
       server->view->get_z_index_by_type(this->layer),
       0,
@@ -202,7 +217,7 @@ void UraLayerShell::unfocus() {
 void UraLayerShell::map() {
   auto server = UraServer::get_instance();
   auto output = server->view->get_output_by_name(this->output);
-  auto geometry = output ? output->logical_geometry() : Vec4<int> {};
+  auto geometry = output ? output->logical_geometry() : Rect<int> {};
   if (!output || geometry.width <= 0 || geometry.height <= 0) {
     this->refresh_visibility(false);
     return;
@@ -224,6 +239,24 @@ void UraLayerShell::commit() {
   auto output = server->view->get_output_by_name(this->output);
   if (!output)
     return;
+
+  // Layer surfaces have no xdg window geometry. Their effective content size
+  // is the committed surface size.
+  auto* surface = this->layer_surface->surface;
+  if (surface->current.width > 0 && surface->current.height > 0) {
+    this->scene_model().set_surface_content(
+      this->entity,
+      SurfaceContent {
+        .geometry =
+          Rect<int> {
+            .width = surface->current.width,
+            .height = surface->current.height,
+          },
+      }
+    );
+    this->scene_model().sync_scene_node(this->entity);
+  }
+
   auto layer_changed = false;
   if (
     this->layer_surface->initialized

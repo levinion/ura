@@ -33,11 +33,29 @@ For a wrapper `window`:
 | `center(options)` | Center in the output's usable geometry. |
 | `opacity()` / `set_opacity(value, options)` | Read or set opacity in `[0, 1]`. |
 | `border_color()` / `set_border_color(color)` | Read or set `#RRGGBB` / `#RRGGBBAA`. |
+| `set_effect(spec)` / `clear_effect()` | Set or clear a multi-pass visual effect. See below. |
 | `lru()` | Focus-order value, useful for ordering recent windows. |
 | `tags()` / `set_tags(tags)` | Read or replace tags. `set_tags` naturally sorts the input array. |
 | `userdata()` / `set_userdata(table)` / `update_userdata(callback)` | Read, replace, or mutate the window's in-memory Lua user data. |
 
-`move`, `resize`, and `set_opacity` accept an optional `{ duration = milliseconds, fps = number }` table. Defaults are `ura.opt.animation_duration` or `200` ms and `ura.opt.animation_fps` or `60`. A non-positive duration applies immediately. A new animation cancels the previous animation of the same property. `resize` toggles the resizing state during an animation.
+`move`, `resize`, and `set_opacity` accept an optional table with `duration` (milliseconds) and `easing` (a built-in name or a pure Lua function). Without the optional `builtin.animation` plugin, only an explicit duration enables animation; otherwise the change is immediate. With the plugin loaded, policy can be defined through `ura.animation` (see [animation](animation.md)). Layout retargets always start from the current visual `SceneNode.bounds`, so an interrupted animation does not jump. `resize` is commit-first: it sends one final client configure, waits for the matching surface commit, then runs the FLIP animation.
+
+### Effects
+
+`set_effect` accepts:
+
+```lua
+window:set_effect({ type = "blur", radius = 8 })
+window:set_effect({ type = "tint", color = "#89b4fa80" })
+window:set_effect({ type = "mask", color = "#00000080" })
+window:clear_effect()
+```
+
+`blur` uses two offscreen passes (horizontal and vertical Gaussian sampling).
+`tint` and `mask` use one offscreen copy pass before compositing. All
+consecutive surfaces belonging to the same SceneNode are first composited into
+one offscreen target, so CSD/subsurfaces are blurred as a unit. Effect nodes
+never use direct scanout.
 
 ## `UraOutput`
 

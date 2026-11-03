@@ -1,7 +1,10 @@
 #include "ura/render/frame_renderer.hpp"
+#include "ura/render/raylib/effect_renderer.hpp"
 
 #include <cmath>
 #include <cstdlib>
+#include <optional>
+#include <vector>
 
 #include "ura/ura.hpp"
 
@@ -60,6 +63,8 @@ namespace {
     )
       return false;
     if (item.opacity != 1.f)
+      return false;
+    if (item.effect.active())
       return false;
     if (surface->current.viewport.has_src || surface->current.viewport.has_dst)
       return false;
@@ -247,52 +252,52 @@ bool render_frame(wlr_renderer* renderer, const FramePlan& plan) {
   };
   wlr_render_pass_add_rect(pass, &background);
 
-  for (auto& operation : plan.operations) {
-    if (operation.kind == FrameOperationKind::Surface) {
-      auto& item = plan.surfaces[operation.index];
-      wlr_box dst = item.dst_box;
-      output_box(plan, buffer->width, buffer->height, &dst);
+  auto make_texture_options =
+    [&](const FrameSurface& item) -> std::optional<wlr_render_texture_options> {
+    wlr_box dst = item.dst_box;
+    output_box(plan, buffer->width, buffer->height, &dst);
 
-      pixman_region32_t intersection;
-      pixman_region32_init(&intersection);
-      pixman_region32_intersect_rect(
-        &intersection,
-        &damage,
-        dst.x,
-        dst.y,
-        dst.width,
-        dst.height
-      );
-      if (pixman_region32_empty(&intersection)) {
-        pixman_region32_fini(&intersection);
-        continue;
-      }
+    pixman_region32_t intersection;
+    pixman_region32_init(&intersection);
+    pixman_region32_intersect_rect(
+      &intersection,
+      &damage,
+      dst.x,
+      dst.y,
+      dst.width,
+      dst.height
+    );
+    if (pixman_region32_empty(&intersection)) {
       pixman_region32_fini(&intersection);
+      return {};
+    }
+    pixman_region32_fini(&intersection);
 
-      auto transform = wlr_output_transform_invert(item.transform);
-      transform =
-        wlr_output_transform_compose(transform, wlr_output->transform);
+    auto transform = wlr_output_transform_invert(item.transform);
+    transform = wlr_output_transform_compose(transform, wlr_output->transform);
 
-      wlr_render_texture_options options {
-        .texture = item.texture,
-        .src_box = item.src_box,
-        .dst_box = dst,
-        .alpha = &item.opacity,
-        .clip = &damage,
-        .transform = transform,
-        .filter_mode = WLR_SCALE_FILTER_BILINEAR,
-        .blend_mode = WLR_RENDER_BLEND_MODE_PREMULTIPLIED,
-        .transfer_function = WLR_COLOR_TRANSFER_FUNCTION_GAMMA22,
-        .primaries = nullptr,
-        .color_encoding = WLR_COLOR_ENCODING_NONE,
-        .color_range = WLR_COLOR_RANGE_NONE,
-        .luminance_multiplier = nullptr,
-        .wait_timeline = item.wait_timeline,
-        .wait_point = item.wait_point,
-      };
-      wlr_render_pass_add_texture(pass, &options);
-      wlr_presentation_surface_textured_on_output(item.surface, wlr_output);
-    } else {
+    return wlr_render_texture_options {
+      .texture = item.texture,
+      .src_box = item.src_box,
+      .dst_box = dst,
+      .alpha = &item.opacity,
+      .clip = &damage,
+      .transform = transform,
+      .filter_mode = WLR_SCALE_FILTER_BILINEAR,
+      .blend_mode = WLR_RENDER_BLEND_MODE_PREMULTIPLIED,
+      .transfer_function = WLR_COLOR_TRANSFER_FUNCTION_GAMMA22,
+      .primaries = nullptr,
+      .color_encoding = WLR_COLOR_ENCODING_NONE,
+      .color_range = WLR_COLOR_RANGE_NONE,
+      .luminance_multiplier = nullptr,
+      .wait_timeline = item.wait_timeline,
+      .wait_point = item.wait_point,
+    };
+  };
+
+  for (std::size_t i = 0; i < plan.operations.size();) {
+    auto& operation = plan.operations[i];
+    if (operation.kind == FrameOperationKind::Rect) {
       auto& rect = plan.rects[operation.index];
       wlr_box dst = rect.dst_box;
       output_box(plan, buffer->width, buffer->height, &dst);
@@ -308,7 +313,64 @@ bool render_frame(wlr_renderer* renderer, const FramePlan& plan) {
         .blend_mode = WLR_RENDER_BLEND_MODE_PREMULTIPLIED,
       };
       wlr_render_pass_add_rect(pass, &options);
+      ++i;
+      continue;
     }
+
+    auto& first = plan.surfaces[operation.index];
+    if (!first.effect.active()) {
+      auto options = make_texture_options(first);
+      if (options) {
+        wlr_render_pass_add_texture(pass, &*options);
+        if (first.surface)
+          wlr_presentation_surface_textured_on_output(
+            first.surface,
+            wlr_output
+          );
+      }
+      ++i;
+      continue;
+    }
+
+    // Consecutive surfaces belonging to the same SceneNode are rendered into
+    // one offscreen target, so subsurfaces/CSD are blurred as a single window.
+    std::vector<wlr_render_texture_options> group;
+    std::vector<const FrameSurface*> group_items;
+    std::size_t j = i;
+    while (j < plan.operations.size()) {
+      auto& next_operation = plan.operations[j];
+      if (next_operation.kind != FrameOperationKind::Surface)
+        break;
+      auto& item = plan.surfaces[next_operation.index];
+      if (item.owner != first.owner || item.effect != first.effect)
+        break;
+      auto options = make_texture_options(item);
+      if (options) {
+        group.push_back(*options);
+        group_items.push_back(&item);
+      }
+      ++j;
+    }
+
+    if (!group.empty()) {
+      bool rendered = render::raylib::render_pass_add_texture_group_effect(
+        pass,
+        group.data(),
+        group.size(),
+        first.effect
+      );
+      if (!rendered) {
+        for (auto& options : group) wlr_render_pass_add_texture(pass, &options);
+      }
+      for (auto* item : group_items) {
+        if (item->surface)
+          wlr_presentation_surface_textured_on_output(
+            item->surface,
+            wlr_output
+          );
+      }
+    }
+    i = j;
   }
 
   wlr_output_add_software_cursors_to_render_pass(wlr_output, pass, &damage);
@@ -332,8 +394,20 @@ bool render_frame(wlr_renderer* renderer, const FramePlan& plan) {
   wlr_buffer_unlock(buffer);
 
   bool ok = wlr_output_commit_state(wlr_output, &state);
-  if (!ok && plan.damage_ring)
+  if (ok && plan.retained_buffers) {
+    // Keep the last two presented buffers locked. With lazy swapchain
+    // allocation this forces a three-buffer rotation, giving drivers that
+    // still read a released buffer (NVIDIA + DSC) enough time to finish.
+    auto& retained = *plan.retained_buffers;
+    if (buffer != retained[0] && buffer != retained[1]) {
+      if (retained[1])
+        wlr_buffer_unlock(retained[1]);
+      retained[1] = retained[0];
+      retained[0] = wlr_buffer_lock(buffer);
+    }
+  } else if (!ok && plan.damage_ring) {
     wlr_damage_ring_add_whole(plan.damage_ring);
+  }
   pixman_region32_fini(&damage);
   wlr_output_state_finish(&state);
   return ok;
