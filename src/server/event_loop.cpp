@@ -124,6 +124,22 @@ void UraServer::setup_toplevel() {
     on_new_toplevel,
     nullptr
   );
+
+  this->toplevel_icon_manager =
+    wlr_xdg_toplevel_icon_manager_v1_create(this->display, 1);
+  if (this->toplevel_icon_manager) {
+    int sizes[] = { 16, 24, 32, 48, 64 };
+    wlr_xdg_toplevel_icon_manager_v1_set_sizes(
+      this->toplevel_icon_manager,
+      sizes,
+      std::size(sizes)
+    );
+    this->runtime->register_callback(
+      &this->toplevel_icon_manager->events.set_icon,
+      on_toplevel_set_icon,
+      nullptr
+    );
+  }
 }
 
 void UraServer::setup_popup() {

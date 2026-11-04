@@ -123,6 +123,16 @@ function UraWindow:title()
   return ura.api.get_window_title(self.id)
 end
 
+---@return string|nil
+function UraWindow:icon_name()
+  return ura.api.get_window_icon_name(self.id)
+end
+
+---@return table|nil
+function UraWindow:icon()
+  return ura.api.get_window_icon(self.id)
+end
+
 ---@return table|nil
 function UraWindow:geometry()
   return ura.api.get_window_geometry(self.id)

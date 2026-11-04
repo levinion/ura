@@ -26,6 +26,7 @@ extern "C" {
 #include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_shell.h>
+#include <wlr/types/wlr_xdg_toplevel_icon_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_output_power_management_v1.h>

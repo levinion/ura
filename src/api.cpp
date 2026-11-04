@@ -554,6 +554,42 @@ sol::optional<std::string> get_window_title(uint64_t id) {
   return toplevel->title();
 }
 
+sol::optional<std::string> get_window_icon_name(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  auto name = toplevel->icon_name();
+  if (name.empty())
+    return {};
+  return name;
+}
+
+flexible::object get_window_icon(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+
+  auto name = toplevel->icon_name();
+  auto icon_buffers = toplevel->icon_buffers();
+  if (name.empty() && icon_buffers.empty())
+    return {};
+
+  auto table = flexible::create_table();
+  if (!name.empty())
+    table.set("name", name);
+
+  auto buffers = flexible::create_table();
+  for (auto& values : icon_buffers) {
+    auto buffer = flexible::create_table();
+    buffer.set("width", values[0]);
+    buffer.set("height", values[1]);
+    buffer.set("scale", values[2]);
+    buffers.add(buffer);
+  }
+  table.set("buffers", buffers);
+  return table;
+}
+
 void set_window_fullscreen(uint64_t id, bool flag) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)

@@ -86,6 +86,17 @@ void on_toplevel_set_app_id(wl_listener* listener, void* data) {
   );
 }
 
+void on_toplevel_set_icon(wl_listener* listener, void* data) {
+  auto* event =
+    static_cast<wlr_xdg_toplevel_icon_manager_v1_set_icon_event*>(data);
+  if (!event || !event->toplevel)
+    return;
+  auto* toplevel = UraToplevel::from(event->toplevel->base->surface);
+  if (!toplevel)
+    return;
+  toplevel->set_icon(event->icon);
+}
+
 void on_toplevel_set_title(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto toplevel = server->runtime->fetch<UraToplevel*>(listener);

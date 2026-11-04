@@ -28,6 +28,8 @@ This page covers the low-level functions installed under `ura.api` and the Lua h
 | `get_all_windows()` | Array of current window IDs. |
 | `get_window_output(id)` | Output ID for the window, or `nil`. |
 | `get_window_app_id(id)` / `get_window_title(id)` | App ID or title, or `nil` for an invalid ID. |
+| `get_window_icon_name(id)` | xdg-toplevel-icon name, or `nil` if the client did not provide one. |
+| `get_window_icon(id)` | Icon name and available buffer metadata (`width`, `height`, `scale`), or `nil` if no icon is set. |
 | `get_window_geometry(id)` | `{ x, y, width, height }`, or `nil` for an invalid ID. This is the layout target in the compositor's logical layout. |
 | `get_window_visual_geometry(id)` | `{ x, y, width, height }`, or `nil` for an invalid ID. This is the current `SceneNode.bounds` rectangle visible on screen, including an in-flight animation. |
 | `get_window_z_index(id)` / `set_window_z_index(id, z)` | Read or change the window's scene-layer index. |

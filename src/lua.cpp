@@ -63,6 +63,8 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.animate_window_close", api::core::animate_window_close);
   LUAAPI("api.get_window_app_id", api::core::get_window_app_id);
   LUAAPI("api.get_window_title", api::core::get_window_title);
+  LUAAPI("api.get_window_icon_name", api::core::get_window_icon_name);
+  LUAAPI("api.get_window_icon", api::core::get_window_icon);
   LUAAPI("api.set_window_fullscreen", api::core::set_window_fullscreen);
   LUAAPI("api.is_window_fullscreen", api::core::is_window_fullscreen);
   LUAAPI(

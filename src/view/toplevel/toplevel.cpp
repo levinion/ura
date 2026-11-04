@@ -164,6 +164,10 @@ void UraToplevel::destroy() {
   auto server = UraServer::get_instance();
   this->destroying = true;
   this->cancel_transition_timer();
+  if (this->icon) {
+    wlr_xdg_toplevel_icon_v1_unref(this->icon);
+    this->icon = nullptr;
+  }
   for (auto* popup : server->seat->text_input->popups) {
     if (popup->parent == this)
       popup->parent = nullptr;
@@ -828,6 +832,42 @@ std::string UraToplevel::title() {
 
 std::string UraToplevel::app_id() {
   return this->cached_app_id;
+}
+
+void UraToplevel::set_icon(wlr_xdg_toplevel_icon_v1* next) {
+  if (next)
+    wlr_xdg_toplevel_icon_v1_ref(next);
+  if (this->icon)
+    wlr_xdg_toplevel_icon_v1_unref(this->icon);
+  this->icon = next;
+  auto server = UraServer::get_instance();
+  auto args = flexible::create_table();
+  args.set("id", this->id());
+  server->lua->emit_hook("window-icon-change", args);
+}
+
+std::string UraToplevel::icon_name() {
+  return this->icon && this->icon->name ? this->icon->name : "";
+}
+
+std::vector<std::array<int, 3>> UraToplevel::icon_buffers() {
+  std::vector<std::array<int, 3>> buffers;
+  if (!this->icon)
+    return buffers;
+
+  wlr_xdg_toplevel_icon_v1_buffer* buffer = nullptr;
+  wl_list_for_each(buffer, &this->icon->buffers, link) {
+    if (!buffer->buffer)
+      continue;
+    buffers.push_back(
+      std::array<int, 3> {
+        buffer->buffer->width,
+        buffer->buffer->height,
+        buffer->scale,
+      }
+    );
+  }
+  return buffers;
 }
 
 void UraToplevel::set_title(std::string title) {

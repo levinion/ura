@@ -4,9 +4,9 @@
 #include "ura/core/server.hpp"
 #include "ura/scene/components.hpp"
 #include "ura/ura.hpp"
-#include "ura/util/vec.hpp"
 #include "ura/util/rect.hpp"
 #include "ura/util/tag.hpp"
+#include <array>
 #include <string>
 #include <sol/sol.hpp>
 #include <string_view>
@@ -69,6 +69,9 @@ public:
   std::string app_id();
   void set_title(std::string title); // inner api
   void set_app_id(std::string app_id); // inner api
+  void set_icon(wlr_xdg_toplevel_icon_v1* icon);
+  std::string icon_name();
+  std::vector<std::array<int, 3>> icon_buffers();
   void activate();
   void set_z_index(int z);
   bool is_focused();
@@ -116,6 +119,7 @@ private:
   std::string pending_fullscreen_output;
   std::string cached_title;
   std::string cached_app_id;
+  wlr_xdg_toplevel_icon_v1* icon = nullptr;
   bool prepared = false;
   bool initial_map = true;
   int transition_timer = -1;

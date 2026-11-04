@@ -30,6 +30,7 @@ public:
   wlr_allocator* allocator;
   wlr_output_layout* output_layout;
   wlr_xdg_shell* xdg_shell;
+  wlr_xdg_toplevel_icon_manager_v1* toplevel_icon_manager;
   wlr_server_decoration_manager* server_decoration_manager;
   wlr_xdg_decoration_manager_v1* decoration_manager;
   wlr_layer_shell_v1* layer_shell;

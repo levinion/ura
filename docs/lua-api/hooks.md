@@ -47,6 +47,7 @@ The following names are emitted by the compositor or shipped Lua plugins in the 
 | `window-move` / `window-resize` | `{ id }` | Window geometry changes. |
 | `window-animation-start` | `{ kind, id, app_id, title, from, to }` | Resolve a window animation. Return a table that overrides `duration`, `easing`, `enabled`, `from`/`to` scale or opacity. This runs once per animation start, not per frame. |
 | `window-title-change` / `window-app_id-change` | `{ id }` | The corresponding toplevel metadata changes. |
+| `window-icon-change` | `{ id }` | The xdg-toplevel-icon was set, cleared, or replaced. |
 | `window-tags-change` | `{ id, from, to }` | Window tags changed; `from` and `to` are arrays of strings. |
 | `window-request-maximize` | `{ id }` | A client requests maximization. The built-in layout plugin handles this by toggling the `maximize` layout. |
 | `window-request-fullscreen` | `{ id, requested_fullscreen?, fullscreen?, output_id? }` | A client or foreign-toplevel request changes fullscreen state. The two boolean names are used by different request sources; `output_id` is optional. |
