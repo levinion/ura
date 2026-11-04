@@ -12,6 +12,7 @@
 #include "ura/core/lua.hpp"
 #include "ura/render/raylib/raylib_renderer.hpp"
 #include "ura/render/effect_registry.hpp"
+#include "ura/ext_workspace.hpp"
 #include <sys/epoll.h>
 
 namespace ura {
@@ -49,6 +50,7 @@ Status UraServer::setup_base() {
   this->display = wl_display_create();
   if (!this->display)
     return ResourceExhausted("failed to create Wayland display");
+  this->ext_workspace = UraExtWorkspace::create(this->display);
 
   auto event_loop = wl_display_get_event_loop(this->display);
   this->backend = wlr_backend_autocreate(event_loop, &this->session);
@@ -319,6 +321,7 @@ void UraServer::destroy() {
   this->seat->cursor->destroy();
   if (this->view)
     this->view->clear_render_targets();
+  this->ext_workspace.reset();
   wlr_allocator_destroy(this->allocator);
   wlr_renderer_destroy(this->renderer);
   wlr_backend_destroy(this->backend);

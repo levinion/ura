@@ -9,6 +9,7 @@
 #include "ura/seat/seat.hpp" // IWYU pragma: keep
 #include "ura/core/lua.hpp" // IWYU pragma: keep
 #include "ura/render/effect_registry.hpp" // IWYU pragma: keep
+#include "ura/ext_workspace.hpp" // IWYU pragma: keep
 
 namespace ura {
 

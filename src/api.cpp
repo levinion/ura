@@ -25,6 +25,7 @@
 #include "ura/util/flexible.hpp"
 #include "ura/render/effect_registry.hpp"
 #include "ura/util/image.hpp"
+#include "ura/ext_workspace.hpp"
 
 #include "ura/scene/animation_system.hpp"
 #include <fnmatch.h>
@@ -662,36 +663,231 @@ flexible::object parse_json(std::string str) {
   return flexible::from_str(str);
 }
 
+namespace {
+
+  std::vector<Tag> parse_tags(const std::vector<std::string>& values) {
+    std::set<Tag, TagLess> unique;
+    for (auto& value : values) {
+      if (auto tag = Tag::parse_or_default(value))
+        unique.insert(std::move(*tag));
+    }
+    return { unique.begin(), unique.end() };
+  }
+
+  flexible::object tag_table(const std::vector<Tag>& tags) {
+    auto table = flexible::create_table();
+    for (auto& tag : tags) table.add(tag.name());
+    return table;
+  }
+
+  flexible::object tag_descriptor(const Tag& tag) {
+    auto table = flexible::create_table();
+    table.set("name", tag.name());
+    table.set("namespace", tag.name_space);
+    table.set("index", tag.index);
+    return table;
+  }
+
+  std::vector<Tag> all_tags() {
+    std::set<Tag, TagLess> values;
+    auto* server = UraServer::get_instance();
+    if (server->view) {
+      for (auto& [_, output] : server->view->outputs) {
+        if (output)
+          values.insert(output->tags.begin(), output->tags.end());
+      }
+      for (auto* toplevel : server->view->toplevels) {
+        if (toplevel)
+          values.insert(
+            toplevel->tags().values.begin(),
+            toplevel->tags().values.end()
+          );
+      }
+    }
+    return { values.begin(), values.end() };
+  }
+
+  std::vector<std::string> namespace_names() {
+    std::set<std::string> names;
+    for (auto& tag : all_tags()) names.insert(tag.name_space);
+    std::vector<std::string> sorted(names.begin(), names.end());
+    std::sort(sorted.begin(), sorted.end(), [](auto& lhs, auto& rhs) {
+      return TagLess {}(Tag { .name_space = lhs }, Tag { .name_space = rhs });
+    });
+    return sorted;
+  }
+
+  std::optional<Tag> active_tag_for(std::string_view name_space) {
+    auto* server = UraServer::get_instance();
+    if (!server->view)
+      return {};
+
+    std::optional<Tag> best;
+    uint64_t best_lru = 0;
+    for (auto& tag : all_tags()) {
+      if (tag.name_space != name_space)
+        continue;
+      for (auto* toplevel : server->view->toplevels) {
+        if (!toplevel || !toplevel->tags().contains(tag))
+          continue;
+        auto lru = toplevel->lru;
+        if (!best || lru > best_lru) {
+          best = tag;
+          best_lru = lru;
+        }
+      }
+    }
+    return best;
+  }
+
+  std::pair<UraOutput*, std::optional<Tag>> current_output_tag() {
+    auto* server = UraServer::get_instance();
+    if (!server->view)
+      return { nullptr, {} };
+    auto* output = server->view->current_output();
+    if (!output || output->tags.empty())
+      return { output, {} };
+    return { output, output->tags.front() };
+  }
+
+  bool set_output_tag(UraOutput* output, const Tag& tag) {
+    if (!output)
+      return false;
+    output->set_tags({ tag });
+    return true;
+  }
+
+} // namespace
+
 void set_output_tags(uint64_t id, std::vector<std::string> tags) {
   auto output = UraOutput::from(id);
   if (!output)
     return;
-  Vec<std::string> v(tags.begin(), tags.end());
-  output->set_tags(std::move(v));
+  output->set_tags(parse_tags(tags));
 }
 
 void set_window_tags(uint64_t id, std::vector<std::string> tags) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return;
-  Vec<std::string> v(tags.begin(), tags.end());
-  toplevel->set_tags(std::move(v));
+  toplevel->set_tags(parse_tags(tags));
 }
 
 flexible::object get_output_tags(uint64_t id) {
   auto output = UraOutput::from(id);
   if (!output)
     return {};
-  return output->tags.to_table();
+  return tag_table(output->tags);
 }
 
 flexible::object get_window_tags(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
     return {};
+  return tag_table(toplevel->tags().values);
+}
+
+flexible::object get_tag(std::string name) {
+  auto tag = Tag::parse_or_default(name);
+  if (!tag)
+    return {};
+  return tag_descriptor(*tag);
+}
+
+flexible::object get_tags() {
   auto table = flexible::create_table();
-  for (auto& tag : toplevel->tags().values) table.add(tag);
+  for (auto& tag : all_tags()) table.add(tag_descriptor(tag));
   return table;
+}
+
+flexible::object get_namespaces() {
+  auto table = flexible::create_table();
+  for (auto& name : namespace_names()) table.add(name);
+  return table;
+}
+
+flexible::object get_active_tag(std::string name_space) {
+  auto tag = active_tag_for(name_space);
+  if (!tag)
+    return {};
+  return tag_descriptor(*tag);
+}
+
+flexible::object get_current_tag() {
+  auto [output, tag] = current_output_tag();
+  (void)output;
+  if (!tag)
+    return {};
+  return tag_descriptor(*tag);
+}
+
+bool set_current_tag(std::string name) {
+  auto tag = Tag::parse_or_default(name);
+  if (!tag)
+    return false;
+  auto [output, current] = current_output_tag();
+  (void)current;
+  return set_output_tag(output, *tag);
+}
+
+bool shift_tag_index(int delta) {
+  auto [output, tag] = current_output_tag();
+  if (!output || !tag)
+    return false;
+  auto index = tag->index + delta;
+  if (index < 1)
+    return false;
+  return set_output_tag(
+    output,
+    Tag { .name_space = tag->name_space, .index = index }
+  );
+}
+
+bool set_tag_index(int index) {
+  if (index < 1)
+    return false;
+  auto [output, tag] = current_output_tag();
+  if (!output || !tag)
+    return false;
+  return set_output_tag(
+    output,
+    Tag { .name_space = tag->name_space, .index = index }
+  );
+}
+
+bool shift_window_tag_index(int delta, bool update_output) {
+  auto* server = UraServer::get_instance();
+  auto* window = server->seat ? server->seat->focused_toplevel() : nullptr;
+  auto [output, tag] = current_output_tag();
+  if (!window || !output || !tag)
+    return false;
+
+  auto index = tag->index + delta;
+  if (index < 1)
+    return false;
+  Tag next { .name_space = tag->name_space, .index = index };
+  window->set_tags({ next });
+  if (update_output)
+    set_output_tag(output, next);
+  return true;
+}
+
+bool switch_tag_namespace(int delta) {
+  auto [output, tag] = current_output_tag();
+  if (!output || !tag)
+    return false;
+  auto namespaces = namespace_names();
+  auto it = std::ranges::find(namespaces, tag->name_space);
+  if (it == namespaces.end())
+    return false;
+  auto position = std::distance(namespaces.begin(), it);
+  auto target = position + delta;
+  if (target < 0 || target >= static_cast<std::ptrdiff_t>(namespaces.size()))
+    return false;
+  auto active = active_tag_for(namespaces[target]);
+  if (!active)
+    return false;
+  return set_output_tag(output, *active);
 }
 
 flexible::object get_all_windows() {

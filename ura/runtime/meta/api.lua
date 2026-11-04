@@ -223,6 +223,34 @@ ura.api = {
   --- @param id integer
   --- @return table<string>|nil
   get_output_tags = function(id) end,
+  --- @param name string
+  --- @return { name: string, namespace: string, index: integer }|nil
+  get_tag = function(name) end,
+  --- @return table<{ name: string, namespace: string, index: integer }>
+  get_tags = function() end,
+  --- @return table<string>
+  get_namespaces = function() end,
+  --- @param name_space string
+  --- @return { name: string, namespace: string, index: integer }|nil
+  get_active_tag = function(name_space) end,
+  --- @return { name: string, namespace: string, index: integer }|nil
+  get_current_tag = function() end,
+  --- @param name string
+  --- @return boolean
+  set_current_tag = function(name) end,
+  --- @param delta integer
+  --- @return boolean
+  shift_tag_index = function(delta) end,
+  --- @param index integer
+  --- @return boolean
+  set_tag_index = function(index) end,
+  --- @param delta integer
+  --- @param update_output boolean
+  --- @return boolean
+  shift_window_tag_index = function(delta, update_output) end,
+  --- @param delta integer
+  --- @return boolean
+  switch_tag_namespace = function(delta) end,
 
   -- fn
   --- @param name string

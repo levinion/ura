@@ -1,4 +1,5 @@
 #include "ura/view/output.hpp"
+#include "ura/ext_workspace.hpp"
 #include "ura/core/log.hpp"
 #include "ura/render/frame_renderer.hpp"
 #include "ura/scene/frame_planner.hpp"
@@ -9,6 +10,7 @@
 #include "ura/ura.hpp"
 #include "ura/util/rgb.hpp"
 #include "ura/util/vec.hpp"
+#include "ura/util/tag.hpp"
 #include "ura/view/layer_shell.hpp"
 #include "ura/view/toplevel.hpp"
 #include "ura/view/session_lock.hpp"
@@ -28,10 +30,17 @@ void UraOutput::init(wlr_output* _wlr_output) {
   this->output->data = this;
   this->name = this->output->name;
   this->entity = server->entities->create_output(this);
-  auto tags =
+  auto default_tags =
     server->lua->get_option<std::vector<std::string>>("default_output_tags")
       .value_or(std::vector<std::string> { ":1" });
-  this->tags = Vec<std::string>(tags.begin(), tags.end());
+  this->tags.clear();
+  for (auto& value : default_tags) {
+    if (auto tag = Tag::parse_or_default(value))
+      this->tags.push_back(std::move(*tag));
+  }
+  if (this->tags.empty())
+    this->tags.push_back(Tag { .name_space = "", .index = 1 });
+  std::ranges::sort(this->tags, TagLess {});
 
   this->background_color = util::hex2rgba("#1D727A").value();
   wlr_damage_ring_init(&this->frame_damage_ring);
@@ -95,6 +104,11 @@ void UraOutput::init(wlr_output* _wlr_output) {
     server->output_manager,
     configuration
   );
+
+  if (server->ext_workspace) {
+    server->ext_workspace->add_output(this);
+    server->ext_workspace->refresh();
+  }
 
   auto args = flexible::create_table();
   args.set("id", this->id());
@@ -245,6 +259,8 @@ void UraOutput::commit() {
 
 void UraOutput::destroy() {
   auto server = UraServer::get_instance();
+  if (server->ext_workspace)
+    server->ext_workspace->remove_output(this);
   for (auto toplevel : server->view->toplevels)
     toplevel->output_destroyed(this);
   this->detach_layer_shells();
@@ -270,6 +286,8 @@ void UraOutput::destroy() {
   server->view->frame_scheduler->remove(this);
   server->runtime->remove(this);
   server->view->outputs.erase(this->name);
+  if (server->ext_workspace)
+    server->ext_workspace->refresh();
   server->entities->destroy(this->entity);
   this->entity = entt::null;
 }
@@ -431,10 +449,14 @@ uint64_t UraOutput::id() {
   return UraEntityRegistry::to_id(this->entity);
 }
 
-void UraOutput::set_tags(Vec<std::string>&& tags) {
+void UraOutput::set_tags(std::vector<Tag>&& tags) {
   auto old_tags = this->tags;
-  this->tags = tags;
+  auto next_tags = std::move(tags);
+  std::ranges::sort(next_tags, TagLess {});
+  this->tags = std::move(next_tags);
   auto server = UraServer::get_instance();
+  if (server->ext_workspace)
+    server->ext_workspace->refresh();
   for (auto toplevel : server->view->toplevels
          | std::views::filter([this](auto v) { return v->output() == this; })) {
     if (toplevel->is_tag_matched()) {
@@ -447,14 +469,14 @@ void UraOutput::set_tags(Vec<std::string>&& tags) {
 
   auto args = flexible::create_table();
   args.set("id", this->id());
-  args.set(
-    "from",
-    sol::as_table(std::vector(old_tags.begin(), old_tags.end()))
-  );
-  args.set(
-    "to",
-    sol::as_table(std::vector(this->tags.begin(), this->tags.end()))
-  );
+  auto tag_names = [](const std::vector<Tag>& values) {
+    std::vector<std::string> names;
+    names.reserve(values.size());
+    for (auto& tag : values) names.push_back(tag.name());
+    return names;
+  };
+  args.set("from", sol::as_table(tag_names(old_tags)));
+  args.set("to", sol::as_table(tag_names(this->tags)));
   server->lua->emit_hook("output-tags-change", args);
 }
 

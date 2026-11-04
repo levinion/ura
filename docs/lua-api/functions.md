@@ -60,7 +60,16 @@ This page covers the low-level functions installed under `ura.api` and the Lua h
 | `migrate_effects()` | Rebind existing scene effects to newly registered pipelines with the same name. Uniform values are preserved by name/type. `ura.cmd.reload` calls this after a successful config reload. |
 | `set_window_effect_instance(id, effect_id, generation, uniforms, options)` | Apply a registered pipeline instance to a window. `options.outset` may override the pipeline outset. |
 | `animate_window_effect_uniform(id, name, from, to, duration, easing)` | Interpolate one scalar/vector effect uniform in C++. |
-| `get_window_tags(id)` / `set_window_tags(id, tags)` | Read or replace the window's array of string tags. |
+| `get_window_tags(id)` / `set_window_tags(id, tags)` | Read or replace the window's array of string tags. Bare names default to `:1`. |
+| `get_tag(name)` | Parse/normalize a tag and return `{ name, namespace, index }`, or `nil`. |
+| `get_tags()` | All tags from outputs and windows, naturally sorted as descriptors. |
+| `get_namespaces()` | Unique tag namespaces, naturally sorted. |
+| `get_active_tag(namespace)` | The tag in a namespace belonging to the most-recently-used window, or `nil`. |
+| `get_current_tag()` | The first active tag of the current output, as a descriptor, or `nil`. |
+| `set_current_tag(name)` | Replace the current output's active tag with `name`. |
+| `shift_tag_index(delta)` / `set_tag_index(index)` | Adjust the current output's active tag inside its namespace. |
+| `shift_window_tag_index(delta, update_output)` | Move the focused window's tag index, optionally updating the current output too. |
+| `switch_tag_namespace(delta)` | Switch the current output to the neighboring namespace's active tag. |
 
 ### Outputs
 

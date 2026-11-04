@@ -11,6 +11,7 @@
 #include "ura/core/runtime.hpp"
 #include "ura/core/server.hpp"
 #include "ura/view/output.hpp"
+#include "ura/ext_workspace.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/seat/seat.hpp"
 #include "ura/core/lua.hpp"
@@ -78,7 +79,7 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   auto output = server->view->current_output();
   WindowTags tags;
   if (output)
-    tags.values.assign(output->tags.begin(), output->tags.end());
+    tags.values = output->tags;
 
   server->view->scene->attach_toplevel(
     this->entity,
@@ -86,11 +87,12 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
     std::move(tags),
     ZOrder { UraSceneLayer::Normal, 0 }
   );
-
   xdg_toplevel->base->surface->data = this;
   this->set_scale(this->scale());
 
   server->view->toplevels.push_back(this);
+  if (server->ext_workspace)
+    server->ext_workspace->refresh();
 
   // register callback
   {
@@ -167,6 +169,8 @@ void UraToplevel::destroy() {
       popup->parent = nullptr;
   }
   server->view->toplevels.remove(this);
+  if (server->ext_workspace)
+    server->ext_workspace->refresh();
   if (this->is_focused()) {
     server->seat->focus_lru();
   }
@@ -445,7 +449,7 @@ void UraToplevel::activate() {
   if (!output)
     return;
   auto tags = this->tags().values;
-  output->set_tags(Vec<std::string>(tags.begin(), tags.end()));
+  output->set_tags(std::move(tags));
   server->seat->focus(this);
   server->lua->emit_hook("window-activate", args);
 }
@@ -1053,8 +1057,7 @@ void UraToplevel::apply_fullscreen_output(
       static_cast<int>(std::lround(target.height)),
     };
     auto tags = this->tags().values;
-    this->fullscreen_output_restore_tags =
-      Vec<std::string>(tags.begin(), tags.end());
+    this->fullscreen_output_restore_tags = tags;
     this->fullscreen_output_restore_valid = true;
   }
   this->move(geometry.x, geometry.y);
@@ -1180,13 +1183,16 @@ void UraToplevel::set_scale(double scale) {
   server->view->notify_scale(this->xdg_toplevel->base->surface, scale);
 }
 
-void UraToplevel::set_tags(Vec<std::string>&& tags) {
+void UraToplevel::set_tags(std::vector<Tag>&& tags) {
   auto old_tags = this->tags().values;
   WindowTags next_tags;
   next_tags.values.assign(tags.begin(), tags.end());
+  std::ranges::sort(next_tags.values, TagLess {});
   this->scene_model().set_tags(this->entity, std::move(next_tags));
 
   auto server = UraServer::get_instance();
+  if (server->ext_workspace)
+    server->ext_workspace->refresh();
 
   if (this->is_tag_matched()) {
     this->map();
@@ -1198,11 +1204,14 @@ void UraToplevel::set_tags(Vec<std::string>&& tags) {
 
   auto args = flexible::create_table();
   args.set("id", this->id());
-  args.set(
-    "from",
-    sol::as_table(std::vector(old_tags.begin(), old_tags.end()))
-  );
-  args.set("to", sol::as_table(this->tags().values));
+  auto tag_names = [](const std::vector<Tag>& values) {
+    std::vector<std::string> names;
+    names.reserve(values.size());
+    for (auto& tag : values) names.push_back(tag.name());
+    return names;
+  };
+  args.set("from", sol::as_table(tag_names(old_tags)));
+  args.set("to", sol::as_table(tag_names(this->tags().values)));
   server->lua->emit_hook("window-tags-change", args);
 }
 

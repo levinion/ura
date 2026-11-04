@@ -135,6 +135,16 @@ flexible::object get_output_logical_geometry(uint64_t id);
 flexible::object get_output_usable_geometry(uint64_t id);
 sol::optional<float> get_output_scale(uint64_t id);
 void set_output_tags(uint64_t id, std::vector<std::string> tags);
+flexible::object get_tag(std::string name);
+flexible::object get_tags();
+flexible::object get_namespaces();
+flexible::object get_active_tag(std::string name_space);
+flexible::object get_current_tag();
+bool set_current_tag(std::string name);
+bool shift_tag_index(int delta);
+bool set_tag_index(int index);
+bool shift_window_tag_index(int delta, bool update_output);
+bool switch_tag_namespace(int delta);
 flexible::object get_output_tags(uint64_t id);
 
 // fn

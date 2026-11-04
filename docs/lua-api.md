@@ -7,7 +7,7 @@ This reference documents the Lua surface currently loaded by Ura. The global `ur
 - [Configuration, keybindings, options, and constants](lua-api/configuration.md)
 - [Hooks and event payloads](lua-api/hooks.md)
 - [Animation policy and custom easing](lua-api/animation.md)
-- [Object wrappers: windows, outputs, blocks, and segments](lua-api/classes.md)
+- [Object wrappers: windows and outputs](lua-api/classes.md)
 - [Low-level `ura.api` functions and `ura.fn` helpers](lua-api/functions.md)
 
 ## `ura` modules
@@ -28,6 +28,27 @@ This reference documents the Lua surface currently loaded by Ura. The global `ur
 The built-in layout plugin extends `UraWindow` with layout helpers. Those methods are available when `builtin.layout` is loaded and set up (as in the shipped `assets/init.lua`). See [classes](lua-api/classes.md#built-in-layout-extension).
 
 `builtin.effects` is an optional example plugin for multi-pass shader effects. It is not loaded by default; see [window effects](lua-api/classes.md#effects).
+
+## `ext-workspace-v1` and tags
+
+Ura publishes its output tags through `ext-workspace-v1`. Each output becomes
+one workspace group; tag names become workspace names, and every currently
+active tag is marked active in that group. This means multiple workspaces can be
+active at once, matching Ura's multi-tag model.
+
+A normal activate request from a panel such as Waybar replaces that output's
+active tag set with the selected tag. Lua can still activate multiple tags:
+
+```lua
+local output = ura.class.UraOutput:current()
+output:set_tags({ ":1", ":3" })
+```
+
+The published workspace set is reconciled from the tags currently used by
+outputs and windows. A tag that no output has active and no window carries is
+removed from the panel immediately. Active output tags remain visible until
+the output changes tag. Tags are canonicalized as `namespace:index`; Lua
+setters accept a bare name and append `:1` when no numeric suffix is present.
 
 Ura replaces Lua's global `print(...)` with a buffered implementation; output is returned by the `ura-shell` command after the script completes.
 

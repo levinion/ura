@@ -6,6 +6,7 @@
 #include "ura/ura.hpp"
 #include "ura/util/vec.hpp"
 #include "ura/util/rect.hpp"
+#include "ura/util/tag.hpp"
 #include <string>
 #include <sol/sol.hpp>
 #include <string_view>
@@ -84,7 +85,7 @@ public:
   void output_destroyed(UraOutput* output);
   double scale();
   void set_scale(double scale);
-  void set_tags(Vec<std::string>&& tags);
+  void set_tags(std::vector<Tag>&& tags);
   bool is_tag_matched();
   void set_opacity(float opacity);
   const EffectInstance& effect();
@@ -111,7 +112,7 @@ private:
   double preferred_scale = -1.0;
   bool fullscreen_output_restore_valid = false;
   Rect<int> fullscreen_output_restore_geometry;
-  Vec<std::string> fullscreen_output_restore_tags;
+  std::vector<Tag> fullscreen_output_restore_tags;
   std::string pending_fullscreen_output;
   std::string cached_title;
   std::string cached_app_id;

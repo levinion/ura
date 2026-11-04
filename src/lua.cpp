@@ -123,6 +123,16 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.get_all_outputs", api::core::get_all_outputs);
   LUAAPI("api.get_output_name", api::core::get_output_name);
   LUAAPI("api.set_output_tags", api::core::set_output_tags);
+  LUAAPI("api.get_tag", api::core::get_tag);
+  LUAAPI("api.get_tags", api::core::get_tags);
+  LUAAPI("api.get_namespaces", api::core::get_namespaces);
+  LUAAPI("api.get_active_tag", api::core::get_active_tag);
+  LUAAPI("api.get_current_tag", api::core::get_current_tag);
+  LUAAPI("api.set_current_tag", api::core::set_current_tag);
+  LUAAPI("api.shift_tag_index", api::core::shift_tag_index);
+  LUAAPI("api.set_tag_index", api::core::set_tag_index);
+  LUAAPI("api.shift_window_tag_index", api::core::shift_window_tag_index);
+  LUAAPI("api.switch_tag_namespace", api::core::switch_tag_namespace);
   LUAAPI("api.get_output_tags", api::core::get_output_tags);
   LUAAPI(
     "api.get_output_logical_geometry",

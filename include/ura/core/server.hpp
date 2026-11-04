@@ -19,6 +19,7 @@ class UraSeat;
 class Lua;
 class UraView;
 class EffectRegistry;
+class UraExtWorkspace;
 
 class UraServer {
 public:
@@ -56,6 +57,7 @@ public:
   std::unique_ptr<EffectRegistry> effects;
   std::unique_ptr<UraSeat> seat;
   std::unique_ptr<UraView> view;
+  std::unique_ptr<UraExtWorkspace> ext_workspace;
   std::unique_ptr<UraDispatcher<128>> dispatcher;
   std::unique_ptr<UraLogger> logger;
 

@@ -1,6 +1,6 @@
 # Lua API: object classes
 
-The wrappers in `ura.class` hold opaque compositor IDs and call the matching `ura.api` functions. Use Lua's colon syntax (`:`) for wrapper methods. Comparing two wrappers of the same class compares their IDs (or labels for blocks/segments).
+The wrappers in `ura.class` hold opaque compositor IDs and call the matching `ura.api` functions. Use Lua's colon syntax (`:`) for wrapper methods. Comparing two wrappers of the same class compares their IDs.
 
 Geometry values use `{ x, y, width, height }`. Window/output coordinates are in the compositor's logical layout, not physical pixels.
 
@@ -169,33 +169,6 @@ Construct with `ura.class.UraOutput:new(id)`.
 | `userdata()` / `set_userdata(table)` / `update_userdata(callback)` | Read, replace, or mutate in-memory user data. |
 
 `UraOutput:set_dpms(flag)` exists in the Lua wrapper, but currently calls `ura.api.set_output_dpms`, which is not registered by the Lua runtime. Treat it as unavailable until that binding is added.
-
-## `UraBlock`
-
-A block is represented by a tag of the form `label:index`, where the final colon-delimited component is the numeric index. Labels may contain colons.
-
-| Method | Description |
-| --- | --- |
-| `UraBlock:new(label, index)` | Construct a block value. |
-| `UraBlock:from_tag(tag)` | Parse a tag; returns `nil` if its final component is not numeric. |
-| `UraBlock:current()` | Blocks represented by the current output's tags. |
-| `UraBlock:all()` | All parseable blocks found in window/output tags, naturally sorted. |
-| `tag()` | Serialize as `label:index`. |
-| `segment()` | Convert to the corresponding `UraSegment`. |
-| `windows()` | Windows tagged with this block. |
-
-## `UraSegment`
-
-A segment groups blocks that share a label.
-
-| Method | Description |
-| --- | --- |
-| `UraSegment:new(label)` | Construct a segment value. |
-| `UraSegment:from_tag(tag)` / `UraSegment:from_block(block)` | Convert a tag or block to its segment; malformed tags return `nil`. |
-| `UraSegment:all()` | Unique segments found in collected tags, naturally sorted. |
-| `UraSegment:current()` | Unique segments represented by current output tags. |
-| `blocks()` / `windows()` | Blocks or windows belonging to this segment. |
-| `active_block()` | The only block if there is one; otherwise the block containing the most-recently-used window, or `nil` if none can be selected. |
 
 ## Built-in layout extension
 

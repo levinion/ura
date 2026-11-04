@@ -4,6 +4,7 @@
 #include "ura/core/server.hpp"
 #include "ura/util/vec.hpp"
 #include "ura/util/rect.hpp"
+#include "ura/util/tag.hpp"
 #include <sol/sol.hpp>
 #include <array>
 
@@ -14,7 +15,7 @@ class UraSessionLockSurface;
 
 class UraOutputContext {
 public:
-  Vec<std::string> tags;
+  std::vector<Tag> tags;
   Rect<int> logical_geometry;
   float scale = 1.0f;
 };
@@ -24,7 +25,7 @@ public:
   entt::entity entity { entt::null };
   wlr_output* output;
   std::string name;
-  Vec<std::string> tags;
+  std::vector<Tag> tags;
   std::array<float, 4> background_color { { 0.f, 0.f, 0.f, 1.f } };
 
   void init(wlr_output* output);
@@ -55,7 +56,7 @@ public:
   Vec<UraLayerShell*>& layer_shells_from_layer(zwlr_layer_shell_v1_layer type);
   bool configure_layers();
 
-  void set_tags(Vec<std::string>&& tags);
+  void set_tags(std::vector<Tag>&& tags);
 
 private:
   wlr_damage_ring frame_damage_ring;

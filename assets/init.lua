@@ -41,63 +41,27 @@ ura.keymap.set({ "super+shift+f" }, function()
 end)
 
 ura.keymap.set({ "ctrl+left", "super+wheelup" }, function()
-  local blk = ura.class.UraBlock:current()[1]
-  assert(blk)
-  if blk.index > 1 then
-    blk.index = blk.index - 1
-    ura.class.UraOutput:current():set_tags({ blk:tag() })
-  end
+  ura.api.shift_tag_index(-1)
 end)
 
 ura.keymap.set({ "ctrl+right", "super+wheeldown" }, function()
-  local blk = ura.class.UraBlock:current()[1]
-  assert(blk)
-  blk.index = blk.index + 1
-  ura.class.UraOutput:current():set_tags({ blk:tag() })
+  ura.api.shift_tag_index(1)
 end)
 
 ura.keymap.set({ "ctrl+shift+left", "super+shift+wheelup" }, function()
-  local blk = ura.class.UraBlock:current()[1]
-  assert(blk)
-  if blk.index > 1 then
-    blk.index = blk.index - 1
-    ura.class.UraWindow:current():set_tags({ blk:tag() })
-    ura.class.UraOutput:current():set_tags({ blk:tag() })
-  end
+  ura.api.shift_window_tag_index(-1, true)
 end)
 
 ura.keymap.set({ "ctrl+shift+right", "super+shift+wheeldown" }, function()
-  local blk = ura.class.UraBlock:current()[1]
-  assert(blk)
-  blk.index = blk.index + 1
-  ura.class.UraWindow:current():set_tags({ blk:tag() })
-  ura.class.UraOutput:current():set_tags({ blk:tag() })
+  ura.api.shift_window_tag_index(1, true)
 end)
 
 ura.keymap.set({ "ctrl+alt+left", "super+mouseside" }, function()
-  local seg = ura.class.UraSegment:current()[1]
-  assert(seg)
-  local segs = ura.class.UraSegment:all()
-  local index = ura.fn.find(segs, function(v)
-    return v == seg
-  end)
-  assert(index)
-  if index > 1 then
-    ura.class.UraOutput:current():set_tags({ segs[index - 1]:active_block():tag() })
-  end
+  ura.api.switch_tag_namespace(-1)
 end)
 
 ura.keymap.set({ "ctrl+alt+right", "super+mouseextra" }, function()
-  local seg = ura.class.UraSegment:current()[1]
-  assert(seg)
-  local segs = ura.class.UraSegment:all()
-  local index = ura.fn.find(segs, function(v)
-    return v == seg
-  end)
-  assert(index)
-  if index < #segs then
-    ura.class.UraOutput:current():set_tags({ segs[index + 1]:active_block():tag() })
-  end
+  ura.api.switch_tag_namespace(1)
 end)
 
 ura.keymap.set({ "super+h" }, function()
@@ -127,12 +91,7 @@ end)
 for i = 1, 10 do
   local key = i == 10 and "0" or tostring(i)
   ura.keymap.set({ "super+" .. key }, function()
-    local output = ura.class.UraOutput:current()
-    assert(output)
-    local blk = ura.class.UraBlock:from_tag(output:tags()[1])
-    assert(blk)
-    blk.index = i
-    output:set_tags({ blk:tag() })
+    ura.api.set_tag_index(i)
   end)
 end
 

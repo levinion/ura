@@ -109,6 +109,7 @@ if(BUILD_TESTING)
     tests/scene.cpp
     src/core/entity.cpp
     src/scene/scene.cpp
+    src/util/tag.cpp
   )
   target_include_directories(ura-scene-tests PRIVATE
     include/
@@ -132,6 +133,7 @@ if(BUILD_TESTING)
     src/core/entity.cpp
     src/scene/scene.cpp
     src/scene/animation_system.cpp
+    src/util/tag.cpp
   )
   target_include_directories(ura-animation-tests PRIVATE
     include/

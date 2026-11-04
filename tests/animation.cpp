@@ -15,6 +15,10 @@ ura::UraToplevel* fake_toplevel(uintptr_t value) {
   return reinterpret_cast<ura::UraToplevel*>(value);
 }
 
+ura::Tag tag(std::string_view value) {
+  return *ura::Tag::parse_or_default(value);
+}
+
 constexpr auto epsilon = 1e-6;
 
 bool near(double lhs, double rhs) {
@@ -37,7 +41,7 @@ struct Fixture {
     this->scene.attach_toplevel(
       this->entity,
       ura::Rect<double> { .x = 10, .y = 20, .width = 100, .height = 100 },
-      ura::WindowTags { { "1" } },
+      ura::WindowTags { { tag("1") } },
       ura::ZOrder { ura::UraSceneLayer::Normal, 0 }
     );
     this->scene.set_visible(this->entity, true);

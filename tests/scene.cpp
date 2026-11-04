@@ -12,6 +12,10 @@ ura::UraToplevel* fake_toplevel(uintptr_t value) {
   return reinterpret_cast<ura::UraToplevel*>(value);
 }
 
+ura::Tag tag(std::string_view value) {
+  return *ura::Tag::parse_or_default(value);
+}
+
 ura::UraLayerShell* fake_layer_shell(uintptr_t value) {
   return reinterpret_cast<ura::UraLayerShell*>(value);
 }
@@ -30,13 +34,13 @@ bool test_snapshot_order() {
   scene.attach_toplevel(
     first,
     ura::Rect<double> { .x = 0, .y = 0, .width = 100, .height = 100 },
-    ura::WindowTags { { "1" } },
+    ura::WindowTags { { tag("1") } },
     ura::ZOrder { ura::UraSceneLayer::Normal, 0 }
   );
   scene.attach_toplevel(
     second,
     ura::Rect<double> { .x = 10, .y = 10, .width = 50, .height = 50 },
-    ura::WindowTags { { "1" } },
+    ura::WindowTags { { tag("1") } },
     ura::ZOrder { ura::UraSceneLayer::Floating, 0 }
   );
   scene.set_visible(first, true);
@@ -100,7 +104,7 @@ bool test_layer_shell_order() {
   scene.attach_toplevel(
     toplevel,
     ura::Rect<double> { .x = 0, .y = 0, .width = 100, .height = 100 },
-    ura::WindowTags { { "1" } },
+    ura::WindowTags { { tag("1") } },
     ura::ZOrder { ura::UraSceneLayer::Normal, 0 }
   );
   scene.attach_layer_shell(
@@ -134,13 +138,13 @@ bool test_snapshot_cache() {
   scene.attach_toplevel(
     first,
     ura::Rect<double> { .x = 0, .y = 0, .width = 100, .height = 100 },
-    ura::WindowTags { { "1" } },
+    ura::WindowTags { { tag("1") } },
     ura::ZOrder { ura::UraSceneLayer::Normal, 0 }
   );
   scene.attach_toplevel(
     second,
     ura::Rect<double> { .x = 10, .y = 10, .width = 50, .height = 50 },
-    ura::WindowTags { { "1" } },
+    ura::WindowTags { { tag("1") } },
     ura::ZOrder { ura::UraSceneLayer::Floating, 0 }
   );
   scene.set_visible(first, true);
@@ -177,14 +181,14 @@ bool test_components_and_dirty_state() {
   scene.attach_toplevel(
     entity,
     ura::Rect<double> { .width = 10, .height = 10 },
-    ura::WindowTags { { "alpha", "beta" } },
+    ura::WindowTags { { tag("alpha"), tag("beta") } },
     ura::ZOrder { ura::UraSceneLayer::Normal, 0 }
   );
 
   auto& dirty = scene.get<ura::DirtyState>(entity);
   dirty.flags = 0;
   scene.set_opacity(entity, 1.5f);
-  scene.set_tags(entity, ura::WindowTags { { "gamma" } });
+  scene.set_tags(entity, ura::WindowTags { { tag("gamma") } });
   scene.set_layout_target(
     entity,
     ura::Rect<double> { .width = 20, .height = 30 }
@@ -199,6 +203,7 @@ bool test_components_and_dirty_state() {
       .pipeline = pipeline,
       .version = 1,
       .outset = pipeline->max_outset,
+      .uniforms = {},
     }
   );
 
@@ -211,8 +216,8 @@ bool test_components_and_dirty_state() {
   auto effect_flag =
     dirty.flags & static_cast<uint32_t>(ura::DirtyFlag::Effect);
   auto snapshot = scene.snapshot();
-  return opacity.value == 1.f && tags.contains("gamma")
-    && !tags.contains("alpha") && z_order.layer == ura::UraSceneLayer::Top
+  return opacity.value == 1.f && tags.contains(tag("gamma"))
+    && !tags.contains(tag("alpha")) && z_order.layer == ura::UraSceneLayer::Top
     && dirty.epoch > 0 && layout_flag != 0 && effect_flag != 0
     && snapshot.items.size() == 1 && snapshot.items[0].effect.active()
     && snapshot.items[0].effect.pipeline == pipeline;

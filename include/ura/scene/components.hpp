@@ -9,6 +9,7 @@
 #include "ura/render/effect.hpp"
 #include "ura/scene/animation.hpp"
 #include "ura/util/rect.hpp"
+#include "ura/util/tag.hpp"
 
 namespace ura {
 
@@ -111,9 +112,9 @@ struct ZOrder {
 };
 
 struct WindowTags {
-  std::vector<std::string> values;
+  std::vector<Tag> values;
 
-  bool contains(const std::string& tag) const {
+  bool contains(const Tag& tag) const {
     return std::ranges::find(this->values, tag) != this->values.end();
   }
 
