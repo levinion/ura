@@ -123,6 +123,11 @@ function UraWindow:title()
   return ura.api.get_window_title(self.id)
 end
 
+---@return integer|nil
+function UraWindow:pid()
+  return ura.api.get_window_pid(self.id)
+end
+
 ---@return string|nil
 function UraWindow:icon_name()
   return ura.api.get_window_icon_name(self.id)
@@ -279,7 +284,7 @@ end
 ---@param name string
 ---@param from number|table|boolean
 ---@param to number|table|boolean
----@param opt { duration?: integer, easing?: string|fun(t: number): number }|nil
+---@param opt { duration?: integer, easing?: string|table }|nil
 function UraWindow:animate_effect_uniform(name, from, to, opt)
   opt = opt or {}
   ura.api.animate_window_effect_uniform(
@@ -296,7 +301,7 @@ function UraWindow:clear_effect()
   ura.api.clear_window_effect(self.id)
 end
 ---@param uniforms table
----@param opt { duration?: integer, easing?: string|fun(t: number): number }|nil
+---@param opt { duration?: integer, easing?: string|table }|nil
 function UraWindow:animate_effect_uniforms(uniforms, opt)
   opt = opt or {}
   for name, spec in pairs(uniforms or {}) do

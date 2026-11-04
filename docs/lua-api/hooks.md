@@ -35,9 +35,9 @@ The following names are emitted by the compositor or shipped Lua plugins in the 
 | `output-resume` | `{ id }` | An output is resumed/restored. |
 | `output-usable-geometry-change` | `{ id }` | The output's usable area changes, for example when an exclusive layer surface appears. |
 | `output-tags-change` | `{ id, from, to }` | Output tags changed; `from` and `to` are arrays of strings. |
-| `window-new` | `{ id }` | A toplevel is prepared. This occurs before its first map, not necessarily after it is focused. |
-| `pre-window-map` | `{ id, initial }` | Immediately before a window is mapped. `initial` is true for its initial map. |
-| `window-map` | `{ id, initial }` | After the window is mapped. |
+| `window-new` | `{ id, pid }` | A toplevel is prepared. This occurs before its first map, not necessarily after it is focused. |
+| `pre-window-map` | `{ id, initial, pid }` | Immediately before a window is mapped. `initial` is true for its initial map. |
+| `window-map` | `{ id, initial, pid }` | After the window is mapped. |
 | `pre-window-unmap` | `{ id }` | Immediately before a mapped window is unmapped. |
 | `window-unmap` | `{ id }` | After the window is unmapped. |
 | `window-close` | `{ id }` | The window is closing. Treat the ID as short-lived. |

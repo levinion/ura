@@ -74,6 +74,15 @@ void UraToplevel::init(wlr_xdg_toplevel* xdg_toplevel) {
   this->xdg_toplevel = xdg_toplevel;
   this->cached_title = xdg_toplevel->title ? xdg_toplevel->title : "";
   this->cached_app_id = xdg_toplevel->app_id ? xdg_toplevel->app_id : "";
+  if (auto* resource = xdg_toplevel->base->surface->resource) {
+    if (auto* client = wl_resource_get_client(resource)) {
+      pid_t client_pid = 0;
+      uid_t uid = 0;
+      gid_t gid = 0;
+      wl_client_get_credentials(client, &client_pid, &uid, &gid);
+      this->client_pid = static_cast<int>(client_pid);
+    }
+  }
   this->entity = server->entities->create_toplevel(this);
 
   auto output = server->view->current_output();
@@ -334,6 +343,7 @@ void UraToplevel::commit() {
 
     auto args = flexible::create_table();
     args.set("id", this->id());
+    args.set("pid", this->pid());
     server->lua->emit_hook("window-new", args);
   }
 
@@ -768,6 +778,7 @@ void UraToplevel::map() {
   auto args = flexible::create_table();
   args.set("id", this->id());
   args.set("initial", this->initial_map);
+  args.set("pid", this->pid());
 
   server->lua->emit_hook("pre-window-map", args);
 
@@ -832,6 +843,10 @@ std::string UraToplevel::title() {
 
 std::string UraToplevel::app_id() {
   return this->cached_app_id;
+}
+
+int UraToplevel::pid() const {
+  return this->client_pid;
 }
 
 void UraToplevel::set_icon(wlr_xdg_toplevel_icon_v1* next) {

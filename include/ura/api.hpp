@@ -70,6 +70,7 @@ void animate_window_resize(
 );
 sol::optional<std::string> get_window_app_id(uint64_t id);
 sol::optional<std::string> get_window_title(uint64_t id);
+sol::optional<int> get_window_pid(uint64_t id);
 sol::optional<std::string> get_window_icon_name(uint64_t id);
 flexible::object get_window_icon(uint64_t id);
 void set_window_fullscreen(uint64_t id, bool flag);

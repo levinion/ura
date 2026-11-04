@@ -70,6 +70,7 @@ public:
   void set_title(std::string title); // inner api
   void set_app_id(std::string app_id); // inner api
   void set_icon(wlr_xdg_toplevel_icon_v1* icon);
+  int pid() const;
   std::string icon_name();
   std::vector<std::array<int, 3>> icon_buffers();
   void activate();
@@ -119,6 +120,7 @@ private:
   std::string pending_fullscreen_output;
   std::string cached_title;
   std::string cached_app_id;
+  int client_pid = 0;
   wlr_xdg_toplevel_icon_v1* icon = nullptr;
   bool prepared = false;
   bool initial_map = true;

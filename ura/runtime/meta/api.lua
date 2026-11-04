@@ -51,6 +51,9 @@ ura.api = {
   --- @return string|nil
   get_window_title = function(id) end,
   --- @param id integer
+  --- @return integer|nil
+  get_window_pid = function(id) end,
+  --- @param id integer
   --- @return string|nil
   get_window_icon_name = function(id) end,
   --- @param id integer

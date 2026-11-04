@@ -21,7 +21,7 @@ For a wrapper `window`:
 | --- | --- |
 | `close()` / `focus()` / `activate()` | Close, focus, or activate the window. |
 | `output()` | Its `UraOutput` wrapper, or `nil`. |
-| `app_id()` / `title()` | Client app ID/title. |
+| `app_id()` / `title()` / `pid()` | Client app ID, title, and process ID. |
 | `icon_name()` / `icon()` | xdg-toplevel-icon name, or icon metadata. |
 | `geometry()` | `{ x, y, width, height }`, or `nil`. |
 | `z_index()` / `set_z_index(z)` | Get or set scene-layer index. See `ura.g.layer`. |

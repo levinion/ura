@@ -554,6 +554,13 @@ sol::optional<std::string> get_window_title(uint64_t id) {
   return toplevel->title();
 }
 
+sol::optional<int> get_window_pid(uint64_t id) {
+  auto toplevel = UraToplevel::from(id);
+  if (!toplevel)
+    return {};
+  return toplevel->pid();
+}
+
 sol::optional<std::string> get_window_icon_name(uint64_t id) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
