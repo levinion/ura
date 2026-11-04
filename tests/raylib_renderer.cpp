@@ -163,6 +163,23 @@ int main() {
     return 1;
   }
 
+  // zwlr-screencopy and ext-image-copy-capture advertise this format as a
+  // wl_shm buffer format, so it must be one the wl_shm global also exposes.
+  uint32_t read_format = wlr_texture_preferred_read_format(texture);
+  const wlr_drm_format_set* shm_formats =
+    wlr_renderer_get_texture_formats(renderer, WLR_BUFFER_CAP_SHM);
+  if (
+    read_format == DRM_FORMAT_INVALID || !shm_formats
+    || !wlr_drm_format_set_has(shm_formats, read_format, DRM_FORMAT_MOD_INVALID)
+  ) {
+    fprintf(
+      stderr,
+      "preferred read format 0x%08x is not available for wl_shm\n",
+      read_format
+    );
+    return 1;
+  }
+
   wlr_drm_syncobj_timeline* wait_timeline = nullptr;
   wlr_drm_syncobj_timeline* signal_timeline = nullptr;
   int drm_fd = wlr_renderer_get_drm_fd(renderer);

@@ -567,11 +567,9 @@ static uint32_t texture_preferred_read_format(wlr_texture* wlr_texture) {
     static_cast<GLenum>(gl_type),
     alpha_bits > 0
   );
-  if (fmt)
+  if (fmt && fmt->format == GL_RGBA && fmt->type == GL_UNSIGNED_BYTE)
     return fmt->drm_format;
-  if (renderer->egl.has_bgra)
-    return DRM_FORMAT_XRGB8888;
-  return DRM_FORMAT_INVALID;
+  return DRM_FORMAT_ARGB8888;
 }
 
 static void texture_destroy_impl(Texture* texture) {
