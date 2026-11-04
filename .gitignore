@@ -1,5 +1,6 @@
 /build/
-/include/protocols/
 /.cache
 .ruff_cache/
-/src/ipc.c
+/subprojects/packagecache/
+/subprojects/sol2-c1f*/
+/subprojects/.wraplock

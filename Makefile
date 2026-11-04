@@ -1,72 +1,37 @@
-BUILD_TYPE ?= Release
+BUILD_DIR ?= build
+BUILD_TYPE ?= release
+PREFIX ?= /usr
+SYSCONFDIR ?= /etc
+MESON ?= meson
 
-PROTOCOL_FILES = $(wildcard protocols/*.xml)
-PROTOCOL_HEADERS = $(patsubst protocols/%.xml,include/protocols/%-protocol.h,$(PROTOCOL_FILES))
+.PHONY: all build setup test install clean debug
 
-ifneq ($(shell command -v ninja),)
-    NINJA := -G Ninja 
-endif
+all: build
 
-ifneq ($(shell command -v sccache),)
-    LAUNCHER := -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-endif
+build: setup
+	$(MESON) compile -C "$(BUILD_DIR)"
 
-sudo-install:
-	sudo $(MAKE) clean
-	$(MAKE) build
-	sudo $(MAKE) install
+setup:
+	@if [ -f "$(BUILD_DIR)/meson-private/coredata.dat" ]; then \
+		$(MESON) setup --reconfigure "$(BUILD_DIR)" \
+			--buildtype="$(BUILD_TYPE)" \
+			--prefix="$(PREFIX)" \
+			--sysconfdir="$(SYSCONFDIR)"; \
+	else \
+		$(MESON) setup "$(BUILD_DIR)" \
+			--buildtype="$(BUILD_TYPE)" \
+			--prefix="$(PREFIX)" \
+			--sysconfdir="$(SYSCONFDIR)"; \
+	fi
 
-install:
-	install -Dm755 ./build/ura -t $(DESTDIR)/usr/bin/
-	install -Dm644 ./assets/ura.desktop -t $(DESTDIR)/usr/share/wayland-sessions/
-	install -Dm644 ./assets/init.lua -t $(DESTDIR)/etc/ura/
-	install -Dm644 ./assets/completions/zsh/* -t $(DESTDIR)/usr/share/zsh/site-functions/
-	cp -r ura $(DESTDIR)/usr/share/
-	install -Dm755 ./tools/scripts/* -t $(DESTDIR)/usr/bin/
-	install -Dm755 ./tools/ura-shell/target/release/ura-shell -t $(DESTDIR)/usr/bin/
+test: build
+	$(MESON) test -C "$(BUILD_DIR)" --print-errorlogs
 
-init: CMakeLists.txt include/protocols $(PROTOCOL_HEADERS) src/ipc.c cmake/CPM.cmake
-	cmake -B build \
-		$(NINJA) \
-		$(LAUNCHER) \
-		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
-
-build: init
-	cmake --build build -j$(shell nproc)
-	$(MAKE) build-tools
-
-build-tools:
-	cd ./tools/ura-shell && cargo build --release
-
-clean-dev:
-	rm -rf build
-	rm -rf include/protocols
-	rm -rf .cache
-	rm -f src/ipc.c
+install: build
+	DESTDIR="$(DESTDIR)" $(MESON) install -C "$(BUILD_DIR)"
 
 clean:
-	rm -f $(DESTDIR)/usr/bin/ura
-	rm -f $(DESTDIR)/usr/share/wayland-sessions/ura.desktop
-	rm -rf $(DESTDIR)/etc/ura
-	rm -rf $(DESTDIR)/usr/share/ura
-	rm -f $(DESTDIR)/usr/share/zsh/site-functions/_ura*
-
-clean-all: clean clean-dev
+	rm -rf "$(BUILD_DIR)"
 
 debug:
-	$(MAKE) BUILD_TYPE=Debug
-
-.PHONY: sudo-install install init build build-shell clean-dev clean clean-all debug
-
-include/protocols:
-	mkdir -p $@
-
-include/protocols/%-protocol.h: ./protocols/%.xml
-	wayland-scanner server-header $< $@
-
-src/ipc.c: ./protocols/ura-ipc.xml
-	wayland-scanner private-code $< $@
-
-cmake/CPM.cmake:
-	mkdir -p cmake
-	wget -O $@ https://github.com/cpm-cmake/CPM.cmake/releases/latest/download/get_cpm.cmake
+	$(MAKE) BUILD_DIR=build-debug BUILD_TYPE=debug build

@@ -22,33 +22,61 @@ Dependencies include:
 - [luajit](http://luajit.org/)
 - [libnotify](https://gitlab.gnome.org/GNOME/libnotify)
 - [spdlog](https://github.com/gabime/spdlog)
-- [EnTT](https://github.com/skypjack/entt) (auto-imported by CPM)
+- [EnTT](https://github.com/skypjack/entt)
 - raylib (only `rlgl.h` is required; the raylib window/2D modules are not initialized)
 - EGL, OpenGL ES 2.0, GBM and libdrm
 
-Make dependencies include:
+Build dependencies include:
 
 - wayland-protocols
-- [sol2](https://aur.archlinux.org/packages/sol2) (auto-imported by CPM)
-- cargo
-- make
-- cmake
+- [Meson](https://mesonbuild.com/) 1.8 or newer
+- ninja
 - pkgconf
+- cargo
+- make (optional wrapper)
+- [sol2](https://github.com/ThePhD/sol2) (downloaded by the Meson wrap)
 - [Glaze](https://github.com/stephenberry/glaze)
 - cxxopts
-- ninja (optional)
 - sccache (optional)
 
 ```shell
 git clone https://github.com/levinion/ura.git
 cd ura
-make
+meson setup build
+meson compile -C build
 ```
+
+Or use the Makefile wrapper:
+
+```shell
+make build
+```
+
+Source files are discovered at configure time. After adding or removing a
+`.cpp` file, run `make build` or `meson setup --reconfigure build`.
 
 Run the C++ and tool tests with:
 
 ```shell
-ctest --test-dir build --output-on-failure
+meson test -C build --print-errorlogs
+```
+
+or:
+
+```shell
+make test
+```
+
+Install with:
+
+```shell
+sudo meson install -C build
+```
+
+or:
+
+```shell
+sudo make install
 ```
 
 ### Docker
@@ -142,7 +170,7 @@ passes and readback. The frame renderer test covers full and partial-damage
 output commits:
 
 ```shell
-ctest --test-dir build -R ura-raylib-renderer --output-on-failure
+meson test -C build ura-raylib-renderer --print-errorlogs
 ```
 
 ## Configuration
