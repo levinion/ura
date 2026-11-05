@@ -9,6 +9,7 @@
 #include "ura/ura.hpp"
 #include "ura/core/callback.hpp"
 #include "ura/seat/seat.hpp"
+#include "ura/view/view.hpp"
 #include "ura/core/lua.hpp"
 
 namespace ura {
@@ -95,17 +96,41 @@ void UraCursor::set_xcursor(std::string name) {
   if (name.contains("resize")) {
     name = "left_ptr";
   }
+  bool was_visible = this->visible;
   wlr_cursor_set_xcursor(this->cursor, this->cursor_mgr, name.data());
   this->xcursor_name = name;
+  this->visible = true;
+  this->idle_hidden = false;
+  if (!was_visible)
+    UraServer::get_instance()->view->schedule_frames();
 }
 
-void UraCursor::set_visible(bool flag) {
-  if (flag) {
+void UraCursor::set_visible(bool flag, bool from_idle) {
+  if (!flag && from_idle) {
+    // swayidle's timeout command is asynchronous. If the user moved the
+    // pointer while the hide command was starting, a stale hide must not
+    // override the activity that already made the cursor visible again.
+    auto now = std::chrono::steady_clock::now();
+    if (now - this->last_activity < std::chrono::seconds(1))
+      return;
+    this->idle_hidden = true;
+  } else if (flag) {
+    this->idle_hidden = false;
     this->set_xcursor(this->xcursor_name);
   } else {
-    wlr_cursor_unset_image(this->cursor);
+    this->idle_hidden = false;
   }
+
+  if (!flag)
+    wlr_cursor_unset_image(this->cursor);
   this->visible = flag;
+  UraServer::get_instance()->view->schedule_frames();
+}
+
+void UraCursor::notify_activity() {
+  this->last_activity = std::chrono::steady_clock::now();
+  if (this->idle_hidden)
+    this->set_visible(true);
 }
 
 // internal method

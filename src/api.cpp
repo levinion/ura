@@ -64,7 +64,7 @@ void set_cursor_theme(std::string theme, int size) {
 
 void set_cursor_visible(bool flag) {
   auto server = UraServer::get_instance();
-  server->seat->cursor->set_visible(flag);
+  server->seat->cursor->set_visible(flag, true);
 }
 
 void set_cursor_shape(std::string name) {
@@ -424,6 +424,44 @@ void set_idle_inhibitor(bool flag) {
   server->seat->set_idle_inhibitor(flag);
 }
 
+void add_idle_timeout(
+  std::string name,
+  double seconds,
+  sol::optional<flexible::function> on_idle,
+  sol::optional<flexible::function> on_resume
+) {
+  auto server = UraServer::get_instance();
+  if (seconds <= 0) {
+    server->seat->remove_idle_timeout(name);
+    return;
+  }
+  auto ms = static_cast<int64_t>(seconds * 1000.0);
+  std::optional<sol::protected_function> idle_callback;
+  std::optional<sol::protected_function> resume_callback;
+  if (on_idle)
+    idle_callback = *on_idle;
+  if (on_resume)
+    resume_callback = *on_resume;
+  server->seat->add_idle_timeout(
+    std::move(name),
+    std::chrono::milliseconds(ms),
+    std::move(idle_callback),
+    std::move(resume_callback)
+  );
+}
+
+void remove_idle_timeout(std::string name) {
+  UraServer::get_instance()->seat->remove_idle_timeout(name);
+}
+
+void clear_idle_timeouts() {
+  UraServer::get_instance()->seat->clear_idle_timeouts();
+}
+
+bool is_idle() {
+  return UraServer::get_instance()->seat->is_idle();
+}
+
 void set_window_z_index(uint64_t id, int z) {
   auto toplevel = UraToplevel::from(id);
   if (!toplevel)
@@ -538,6 +576,13 @@ sol::optional<float> get_output_scale(uint64_t id) {
   if (!output)
     return {};
   return output->scale();
+}
+
+void set_output_dpms(uint64_t id, bool flag) {
+  auto output = UraOutput::from(id);
+  if (!output)
+    return;
+  output->set_dpms_mode(flag);
 }
 
 sol::optional<std::string> get_window_app_id(uint64_t id) {

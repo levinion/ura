@@ -57,6 +57,7 @@ function M.reload()
   -- the Lua context lets a reloaded config define fresh generations while
   -- existing SceneNodes keep their old shared references alive.
   ura.api.clear_effects()
+  ura.api.clear_idle_timeouts()
   local status, v = ura.fn._load_config()
   if not status then
     error(v)

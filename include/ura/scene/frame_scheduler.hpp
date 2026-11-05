@@ -30,6 +30,8 @@ public:
   void abort_frame(UraOutput* output);
   void invalidate();
   void mark_output_dirty(UraOutput* output);
+  // Repaint one output without rebuilding the scene world (cursor damage).
+  void mark_output_damage(UraOutput* output);
   void invalidate_output(UraOutput* output);
   void remove(UraOutput* output);
   // Stops retry timers before the Wayland event loop is destroyed.

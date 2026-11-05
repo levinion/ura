@@ -1,6 +1,7 @@
 #include "ura/core/callback.hpp"
 #include "ura/core/server.hpp"
 #include "ura/core/runtime.hpp"
+#include "ura/seat/seat.hpp"
 
 namespace ura {
 
@@ -12,12 +13,12 @@ void on_new_idle_inhibitor(wl_listener* listener, void* data) {
     on_idle_inhibitor_destroy,
     inhibitor
   );
-  wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, 1);
+  server->seat->set_idle_inhibitor(true);
 }
 
 void on_idle_inhibitor_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
-  wlr_idle_notifier_v1_set_inhibited(server->idle_notifier, 0);
+  server->seat->set_idle_inhibitor(false);
   auto inhibitor = server->runtime->fetch<wlr_idle_inhibitor_v1*>(listener);
   server->runtime->remove(inhibitor);
 }

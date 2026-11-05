@@ -67,6 +67,13 @@ void UraOutput::init(wlr_output* _wlr_output) {
   // register callback
   server->runtime
     ->register_callback(&this->output->events.frame, on_output_frame, this);
+  server->runtime
+    ->register_callback(&this->output->events.damage, on_output_damage, this);
+  server->runtime->register_callback(
+    &this->output->events.needs_frame,
+    on_output_needs_frame,
+    this
+  );
   server->runtime->register_callback(
     &this->output->events.request_state,
     on_output_request_state,
@@ -440,9 +447,30 @@ Rect<int> UraOutput::logical_geometry() {
 }
 
 void UraOutput::set_dpms_mode(bool flag) {
+  if (flag) {
+    if (this->output->enabled) {
+      this->dpms_off = false;
+      return;
+    }
+  } else if (!this->output->enabled) {
+    this->dpms_off = true;
+    return;
+  }
+
   wlr_output_state wlr_state {};
   wlr_output_state_set_enabled(&wlr_state, flag);
-  wlr_output_commit_state(this->output, &wlr_state);
+  if (!wlr_output_commit_state(this->output, &wlr_state)) {
+    log::error("Failed to set DPMS {} for output {}", flag, this->name);
+    return;
+  }
+  this->dpms_off = !flag;
+  auto server = UraServer::get_instance();
+  // Disabling an output can make the lock/layer surface invisible on its next
+  // commit. Refresh the scene state and invalidate cached plans before the
+  // wake frame so the lock surface is visible again immediately.
+  this->refresh_geometry();
+  server->view->frame_scheduler->invalidate_output(this);
+  server->view->schedule_frames();
 }
 
 uint64_t UraOutput::id() {

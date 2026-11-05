@@ -218,6 +218,13 @@ void UraView::schedule_surface(wlr_surface* surface) {
   }
 }
 
+void UraView::wake_outputs() {
+  for (auto& [name, output] : this->outputs) {
+    if (output && output->dpms_off)
+      output->set_dpms_mode(true);
+  }
+}
+
 void UraView::schedule_frames() {
   this->frame_scheduler->invalidate();
   for (auto& [name, output] : this->outputs) {

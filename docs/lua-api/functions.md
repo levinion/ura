@@ -17,6 +17,10 @@ This page covers the low-level functions installed under `ura.api` and the Lua h
 | `clear_interval(timer_id)` | Cancel an interval. |
 | `notify_idle_activity()` | Report user activity to the idle subsystem. |
 | `set_idle_inhibitor(enabled)` | Enable or disable the compositor's idle inhibitor. |
+| `add_idle_timeout(name, seconds, on_idle?, on_resume?)` | Add or replace a named idle stage. Multiple stages can be active; each fires `idle` at its own elapsed time. Stage-local callbacks are optional; a non-positive timeout removes the stage. |
+| `remove_idle_timeout(name)` | Remove a named idle stage. |
+| `clear_idle_timeouts()` | Remove all idle stages. |
+| `is_idle()` | Whether at least one idle stage has fired and no activity has resumed it yet. |
 
 ### Windows
 
@@ -85,6 +89,7 @@ This page covers the low-level functions installed under `ura.api` and the Lua h
 | `get_output_logical_geometry(id)` | `{ x, y, width, height }` in logical layout coordinates. |
 | `get_output_usable_geometry(id)` | Usable area after exclusive layer surfaces reserve space, in the same shape. |
 | `get_output_scale(id)` | Output scale, or `nil` for an invalid ID. |
+| `set_output_dpms(id, enabled)` | Enable or disable DPMS for an output. Disabling keeps the output's layout and windows intact; input activity automatically enables it again. |
 | `get_output_tags(id)` / `set_output_tags(id, tags)` | Read or replace the output's array of string tags. Changing output tags can map/unmap windows whose tags no longer match. |
 
 ### Input

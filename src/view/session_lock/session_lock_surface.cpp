@@ -44,8 +44,10 @@ void UraSessionLockSurface::update_visibility() {
     return;
 
   auto* server = UraServer::get_instance();
-  auto enabled =
-    this->output && this->output->output && this->output->output->enabled;
+  // DPMS temporarily disables the output; keep the lock surface in the scene
+  // so waking the output does not require a new lock-client commit.
+  auto enabled = this->output && this->output->output
+    && (this->output->output->enabled || this->output->dpms_off);
   server->view->scene->set_visible(
     this->entity,
     enabled && this->surface->surface->mapped

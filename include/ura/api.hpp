@@ -19,6 +19,15 @@ void clear_interval(int fd);
 // idle
 void notify_idle_activity();
 void set_idle_inhibitor(bool flag);
+void add_idle_timeout(
+  std::string name,
+  double seconds,
+  sol::optional<flexible::function> on_idle = {},
+  sol::optional<flexible::function> on_resume = {}
+);
+void remove_idle_timeout(std::string name);
+void clear_idle_timeouts();
+bool is_idle();
 // win
 void close_window(uint64_t id);
 sol::optional<uint64_t> get_current_window();
@@ -138,6 +147,7 @@ flexible::object get_output_logical_geometry(uint64_t id);
 flexible::object get_output_usable_geometry(uint64_t id);
 sol::optional<float> get_output_scale(uint64_t id);
 void set_output_tags(uint64_t id, std::vector<std::string> tags);
+void set_output_dpms(uint64_t id, bool flag);
 flexible::object get_tag(std::string name);
 flexible::object get_tags();
 flexible::object get_namespaces();

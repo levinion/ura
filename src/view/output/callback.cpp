@@ -27,6 +27,24 @@ void on_output_request_state(wl_listener* listener, void* data) {
   wlr_output_commit_state(output->output, event->state);
 }
 
+void on_output_damage(wl_listener* listener, void* data) {
+  auto server = UraServer::get_instance();
+  auto output = server->runtime->fetch<UraOutput*>(listener);
+  auto event = static_cast<wlr_output_event_damage*>(data);
+  if (!output->output || !output->output->enabled || !event->damage)
+    return;
+  wlr_damage_ring_add(output->damage_ring(), event->damage);
+  server->view->frame_scheduler->mark_output_damage(output);
+  wlr_output_schedule_frame(output->output);
+}
+
+void on_output_needs_frame(wl_listener* listener, void* data) {
+  auto server = UraServer::get_instance();
+  auto output = server->runtime->fetch<UraOutput*>(listener);
+  if (output->output && output->output->enabled)
+    wlr_output_schedule_frame(output->output);
+}
+
 void on_output_destroy(wl_listener* listener, void* data) {
   auto server = UraServer::get_instance();
   auto output = server->runtime->fetch<UraOutput*>(listener);

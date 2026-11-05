@@ -419,13 +419,14 @@ void UraToplevel::focus() {
 void UraToplevel::unfocus() {
   if (!this->xdg_toplevel->base->initialized)
     return;
-  if (!this->is_focused())
-    return;
 
+  auto focused = this->is_focused();
   if (!this->destroying) {
     wlr_xdg_toplevel_set_activated(this->xdg_toplevel, false);
     wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
   }
+  if (!focused)
+    return;
 
   auto server = UraServer::get_instance();
   server->seat->text_input->unfocus_active_text_input();
@@ -791,18 +792,26 @@ void UraToplevel::map() {
     this->pending_close_bounds = {};
   }
 
-  wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, true);
-
   server->lua->emit_hook("window-map", args);
 
   this->initial_map = false;
 }
 
 void UraToplevel::unmap() {
+  // Keep the foreign-toplevel state in sync even if the scene visibility was
+  // already cleared by another path.
+  wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
+
   // The surface's mapped flag may already be false when the unmap signal is
   // emitted, so use our scene visibility as the source of truth here.
-  if (!this->visibility().visible)
+  if (!this->visibility().visible) {
+    auto server = UraServer::get_instance();
+    if (server->seat->focused_toplevel() == this) {
+      server->seat->unfocus();
+      server->seat->focus_lru();
+    }
     return;
+  }
 
   auto server = UraServer::get_instance();
 
@@ -824,7 +833,6 @@ void UraToplevel::unmap() {
     animations->cancel(this->entity);
 
   this->scene_model().set_visible(this->entity, false);
-  wlr_foreign_toplevel_handle_v1_set_activated(this->foreign_handle, false);
 
   if (server->seat->focused_toplevel() == this) {
     server->seat->unfocus();

@@ -291,7 +291,7 @@ void UraServer::setup_others() {
   wlr_screencopy_manager_v1_create(this->display);
   wlr_ext_image_copy_capture_manager_v1_create(this->display, 1);
   wlr_ext_output_image_capture_source_manager_v1_create(this->display, 1);
-  wlr_data_control_manager_v1_create(this->display);
+  wlr_ext_data_control_manager_v1_create(this->display, 1);
   wlr_presentation_create(this->display, this->backend, 2);
   wlr_alpha_modifier_v1_create(this->display);
 }

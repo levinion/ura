@@ -63,7 +63,11 @@ public:
   void track_surface(wlr_surface* surface);
   void schedule_surface(wlr_surface* surface);
   void schedule_frames();
-  void schedule_visual_change(const Rect<double>& previous, const Rect<double>& current);
+  void wake_outputs();
+  void schedule_visual_change(
+    const Rect<double>& previous,
+    const Rect<double>& current
+  );
   void tick_animations();
 
 private:

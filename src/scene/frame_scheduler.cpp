@@ -140,6 +140,11 @@ void UraFrameScheduler::mark_output_dirty(UraOutput* output) {
   this->world_dirty = true;
 }
 
+void UraFrameScheduler::mark_output_damage(UraOutput* output) {
+  this->plans.erase(output);
+  this->dirty_outputs.insert(output);
+}
+
 void UraFrameScheduler::invalidate_output(UraOutput* output) {
   this->cancel_retry(output);
   this->plans.erase(output);

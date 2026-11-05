@@ -27,7 +27,9 @@ setup:
 test: build
 	$(MESON) test -C "$(BUILD_DIR)" --print-errorlogs
 
-install: build
+install:
+	@test -f "$(BUILD_DIR)/meson-private/coredata.dat" || \
+		(echo "Build directory is not configured; run 'make build' first."; exit 1)
 	DESTDIR="$(DESTDIR)" $(MESON) install -C "$(BUILD_DIR)"
 
 clean:

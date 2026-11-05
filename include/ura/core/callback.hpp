@@ -9,6 +9,8 @@ namespace ura {
 void on_new_output(wl_listener* listener, void* data);
 void on_output_frame(wl_listener* listener, void* data);
 void on_output_request_state(wl_listener* listener, void* data);
+void on_output_damage(wl_listener* listener, void* data);
+void on_output_needs_frame(wl_listener* listener, void* data);
 void on_output_destroy(wl_listener* listener, void* data);
 void on_output_manager_apply(wl_listener* listener, void* data);
 void on_output_layout_change(wl_listener* listener, void* data);

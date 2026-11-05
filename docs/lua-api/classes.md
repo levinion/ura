@@ -167,9 +167,8 @@ Construct with `ura.class.UraOutput:new(id)`.
 | `logical_geometry()` / `usable_geometry()` | Full logical bounds or usable area. |
 | `tags()` / `set_tags(tags)` | Read or replace tags; setting tags naturally sorts them and may map/unmap windows. |
 | `select(pattern)` | Set tags to those matching a shell-style glob against the collected tag list. |
+| `set_dpms(flag)` | Enable or disable DPMS for this output. |
 | `userdata()` / `set_userdata(table)` / `update_userdata(callback)` | Read, replace, or mutate in-memory user data. |
-
-`UraOutput:set_dpms(flag)` exists in the Lua wrapper, but currently calls `ura.api.set_output_dpms`, which is not registered by the Lua runtime. Treat it as unavailable until that binding is added.
 
 ## Built-in layout extension
 

@@ -27,6 +27,7 @@ public:
   std::string name;
   std::vector<Tag> tags;
   std::array<float, 4> background_color { { 0.f, 0.f, 0.f, 1.f } };
+  bool dpms_off = false;
 
   void init(wlr_output* output);
   static UraOutput* from(wlr_output* output);

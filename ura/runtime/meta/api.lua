@@ -26,6 +26,16 @@ ura.api = {
   notify_idle_activity = function() end,
   --- @param flag boolean
   set_idle_inhibitor = function(flag) end,
+  --- @param name string
+  --- @param seconds number
+  --- @param on_idle function|nil
+  --- @param on_resume function|nil
+  add_idle_timeout = function(name, seconds, on_idle, on_resume) end,
+  --- @param name string
+  remove_idle_timeout = function(name) end,
+  clear_idle_timeouts = function() end,
+  --- @return boolean
+  is_idle = function() end,
 
   -- win
   --- @param id integer
@@ -229,6 +239,9 @@ ura.api = {
   --- @param id integer
   --- @param tags table<string>
   set_output_tags = function(id, tags) end,
+  --- @param id integer
+  --- @param flag boolean
+  set_output_dpms = function(id, flag) end,
   --- @param id integer
   --- @return table<string>|nil
   get_output_tags = function(id) end,

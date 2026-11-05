@@ -40,7 +40,8 @@ void on_pointer_constraints_constraint_destroy(
 }
 
 void on_new_virtual_pointer(wl_listener* listener, void* data) {
-  auto virtual_pointer = static_cast<wlr_virtual_pointer_v1*>(data);
+  auto event = static_cast<wlr_virtual_pointer_v1_new_pointer_event*>(data);
+  auto virtual_pointer = event->new_pointer;
   auto device = &virtual_pointer->pointer.base;
   auto pointer = new UraPointer {};
   pointer->virt = true;

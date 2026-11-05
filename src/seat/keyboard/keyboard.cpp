@@ -94,6 +94,28 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
   auto modifiers = server->seat->get_modifiers();
   auto id = util::construct_keybinding_id(modifiers, sym);
 
+  // With Shift held, xkb reports the shifted keysym (e.g. "#" for Shift+3 on
+  // a US layout). Keybindings are normally written with the unshifted key
+  // ("super+shift+3"), so keep a fallback ID built from the level-0 keysym.
+  auto unshifted_id = id;
+  if (modifiers & WLR_MODIFIER_SHIFT) {
+    auto layout = xkb_state_key_get_layout(this->keyboard->xkb_state, keycode);
+    const xkb_keysym_t* syms = nullptr;
+    if (
+      layout != XKB_LAYOUT_INVALID
+      && xkb_keymap_key_get_syms_by_level(
+           this->keyboard->keymap,
+           keycode,
+           layout,
+           0,
+           &syms
+         )
+        == 1
+    ) {
+      unshifted_id = util::construct_keybinding_id(modifiers, syms[0]);
+    }
+  }
+
   auto args = flexible::create_table();
   args.set("id", id);
   args.set(
@@ -121,9 +143,14 @@ void UraKeyboard::process_key(wlr_keyboard_key_event* event) {
       if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
         if (server->lua->emit_keybinding(id))
           return;
+        if (unshifted_id != id && server->lua->emit_keybinding(unshifted_id))
+          return;
       } else if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED) {
         // ignore release event in codition
-        if (server->lua->contains_keybinding(id))
+        if (
+          server->lua->contains_keybinding(id)
+          || (unshifted_id != id && server->lua->contains_keybinding(unshifted_id))
+        )
           return;
       }
     }

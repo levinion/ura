@@ -5,16 +5,27 @@
 #include "ura/view/output.hpp"
 #include "ura/view/view.hpp"
 #include "ura/seat/seat.hpp"
+#include "ura/core/lua.hpp"
 
 namespace ura {
 namespace {
   void restore_session_after_unlock(UraSessionLock* lock) {
     auto server = UraServer::get_instance();
+    auto was_locked = server->seat->locked;
     server->seat->locked = false;
     server->seat->unfocus();
     server->seat->cursor->set_visible(true);
     server->seat->focus_lru();
+    // Do not leave a stale lock surface over the desktop if the lock client
+    // has not destroyed it yet.
+    for (auto& [_, output] : server->view->outputs) {
+      auto* lock_surface = output ? output->session_lock_surface : nullptr;
+      if (lock_surface && lock_surface->entity != entt::null)
+        server->view->scene->set_visible(lock_surface->entity, false);
+    }
     server->view->schedule_frames();
+    if (was_locked && server->lua)
+      server->lua->emit_hook("session-unlock", {});
   }
 } // namespace
 
@@ -103,11 +114,14 @@ void on_session_lock_new_surface(wl_listener* listener, void* data) {
     lock_surface
   );
 
+  auto was_locked = server->seat->locked;
   server->seat->unfocus();
   server->seat->cursor->set_visible(false);
   server->seat->locked = true;
   lock_surface->focus();
   server->view->schedule_frames();
+  if (!was_locked && server->lua)
+    server->lua->emit_hook("session-lock", {});
 }
 
 void on_session_lock_surface_commit(wl_listener* listener, void* data) {

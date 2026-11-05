@@ -46,6 +46,14 @@ namespace {
     return false;
   }
 
+  bool should_composite_cursor(wlr_output* output) {
+    // Capture protocols lock attach_render while a frame is being grabbed and
+    // only lock software cursors when the capture requested the cursor. Keep
+    // the cursor out of cursor-off captures even when it is a software cursor.
+    return output->attach_render_locks == 0
+      || output->software_cursor_locks > 0;
+  }
+
   bool try_direct_scanout(const FramePlan& plan) {
     auto* output = plan.output;
     if (!plan.allow_direct_scanout || !output)
@@ -446,7 +454,8 @@ bool render_frame(wlr_renderer* renderer, const FramePlan& plan) {
     i = j;
   }
 
-  wlr_output_add_software_cursors_to_render_pass(wlr_output, pass, &damage);
+  if (should_composite_cursor(wlr_output))
+    wlr_output_add_software_cursors_to_render_pass(wlr_output, pass, &damage);
 
   if (!wlr_render_pass_submit(pass)) {
     if (plan.damage_ring)

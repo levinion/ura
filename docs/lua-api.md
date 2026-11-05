@@ -7,6 +7,7 @@ This reference documents the Lua surface currently loaded by Ura. The global `ur
 - [Configuration, keybindings, options, and constants](lua-api/configuration.md)
 - [Hooks and event payloads](lua-api/hooks.md)
 - [Animation policy and custom easing](lua-api/animation.md)
+- [Idle timeouts and DPMS](lua-api/idle.md)
 - [Object wrappers: windows and outputs](lua-api/classes.md)
 - [Low-level `ura.api` functions and `ura.fn` helpers](lua-api/functions.md)
 

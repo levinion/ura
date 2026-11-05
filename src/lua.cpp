@@ -40,6 +40,10 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.spawn", api::core::spawn);
   LUAAPI("api.notify_idle_activity", api::core::notify_idle_activity);
   LUAAPI("api.set_idle_inhibitor", api::core::set_idle_inhibitor);
+  LUAAPI("api.add_idle_timeout", api::core::add_idle_timeout);
+  LUAAPI("api.remove_idle_timeout", api::core::remove_idle_timeout);
+  LUAAPI("api.clear_idle_timeouts", api::core::clear_idle_timeouts);
+  LUAAPI("api.is_idle", api::core::is_idle);
   LUAAPI("api.notify", api::core::notify);
   LUAAPI("api.set_timeout", api::core::set_timeout);
   LUAAPI("api.clear_timeout", api::core::clear_timeout);
@@ -126,6 +130,7 @@ std::unique_ptr<Lua> Lua::init() {
   LUAAPI("api.get_all_outputs", api::core::get_all_outputs);
   LUAAPI("api.get_output_name", api::core::get_output_name);
   LUAAPI("api.set_output_tags", api::core::set_output_tags);
+  LUAAPI("api.set_output_dpms", api::core::set_output_dpms);
   LUAAPI("api.get_tag", api::core::get_tag);
   LUAAPI("api.get_tags", api::core::get_tags);
   LUAAPI("api.get_namespaces", api::core::get_namespaces);
